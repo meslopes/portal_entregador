@@ -1,5 +1,5 @@
 // Configuração da API
-const API_BASE_URL = 'http://portal-entregador-back.onrender.com';
+const API_BASE_URL = 'https://portal-entregador-back.onrender.com';
 
 
 // Instância do axios com configurações padrão
