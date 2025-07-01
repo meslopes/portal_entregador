@@ -65,7 +65,7 @@ def create_app(config_name=None):
 
 # Criar aplicação
 app = create_app()
-CORS(app, resources={r"/api/*": {"origins": "https://portal-frontend-jmlgrwnir-mauros-projects-6953d23f.vercel.app/"}} )
+CORS(app, resources={r"/api/*": {"origins": "https://portal-frontend-m42faqhy6-mauros-projects-6953d23f.vercel.app"}} )
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
