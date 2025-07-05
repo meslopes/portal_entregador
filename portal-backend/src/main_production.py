@@ -65,9 +65,7 @@ def create_app(config_name=None):
 
 # Criar aplicação
 app = create_app()
-CORS(app, resources={r"/api/*": {"origins": "https://muv.log.br", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}} )
-
-
+CORS(app)
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     host = os.getenv('HOST', '0.0.0.0')
