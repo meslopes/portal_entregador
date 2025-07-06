@@ -1,11 +1,25 @@
 
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from src.models.portal_models import db, User, UserType, UserStatus
 from werkzeug.security import generate_password_hash
 
 # Import do Blueprint
 from flask import Blueprint
 auth_bp = Blueprint('auth', __name__)
+
+# Endpoint temporário para listar todas as rotas do app Flask
+@auth_bp.route('/rotas', methods=['GET'])
+def rotas():
+    """Endpoint temporário para listar todas as rotas do app Flask."""
+    app = current_app._get_current_object()
+    rotas = []
+    for rule in app.url_map.iter_rules():
+        rotas.append({
+            'endpoint': rule.endpoint,
+            'methods': list(rule.methods),
+            'rule': str(rule)
+        })
+    return jsonify(rotas=rotas)
 
 @auth_bp.route('/create-admin', methods=['POST'])
 def create_admin():
