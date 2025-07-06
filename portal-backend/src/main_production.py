@@ -25,8 +25,15 @@ def create_app(config_name=None):
     
     # Inicializar extensões
     db.init_app(app)
-    # Configurar CORS apenas aqui, removendo duplicidade no final do arquivo
-    CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
+    # Configurar CORS para todos os métodos e headers, e logar o valor em produção
+    print('CORS_ORIGINS:', app.config['CORS_ORIGINS'])
+    CORS(
+        app,
+        origins=app.config['CORS_ORIGINS'],
+        supports_credentials=True,
+        allow_headers="*",
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    )
     jwt = JWTManager(app)
     
     # Registrar blueprints
