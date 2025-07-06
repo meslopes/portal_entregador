@@ -19,7 +19,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Configurações de CORS
-    CORS_ORIGINS = ["http://muv.log.br"]
+    CORS_ORIGINS = ["http://muv.log.br", "https://muv.log.br"]
     
     # Configurações de logging
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
