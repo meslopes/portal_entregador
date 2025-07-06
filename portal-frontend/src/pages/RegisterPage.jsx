@@ -214,6 +214,7 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         required
                         className="pr-10"
+                        autoComplete="current-password"
                       />
                       <button
                         type="button"
@@ -236,6 +237,7 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         required
                         className="pr-10"
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
