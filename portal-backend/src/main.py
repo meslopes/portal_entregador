@@ -31,7 +31,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializa extensões
 jwt = JWTManager(app)
-CORS(app, origins="*")  # Permite CORS para todas as origens
+CORS(app, origins=["https://muv.log.br"], supports_credentials=True)
 
 # Registra blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
