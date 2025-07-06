@@ -25,7 +25,8 @@ def create_app(config_name=None):
     
     # Inicializar extensões
     db.init_app(app)
-    CORS(app, origins=app.config['CORS_ORIGINS'])
+    # Configurar CORS apenas aqui, removendo duplicidade no final do arquivo
+    CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
     jwt = JWTManager(app)
     
     # Registrar blueprints
@@ -65,11 +66,10 @@ def create_app(config_name=None):
 
 # Criar aplicação
 app = create_app()
-CORS(app)
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     host = os.getenv('HOST', '0.0.0.0')
     debug = os.getenv('FLASK_ENV', 'development') == 'development'
-    
     app.run(host=host, port=port, debug=debug)
 
