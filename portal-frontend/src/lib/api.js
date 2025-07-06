@@ -42,22 +42,24 @@ api.interceptors.response.use(
 // Serviços de autenticação
 export const authService = {
   login: async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
+    // Corrigido para usar o endpoint correto do backend
+    const response = await api.post('/api/auth/login', { email, password });
     return response.data;
   },
 
   register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
+    // Corrigido para usar o endpoint correto do backend
+    const response = await api.post('/api/auth/register', userData);
     return response.data;
   },
 
   getProfile: async () => {
-    const response = await api.get('/auth/profile');
+    const response = await api.get('/api/auth/profile');
     return response.data;
   },
 
   updateProfile: async (userData) => {
-    const response = await api.put('/auth/profile', userData);
+    const response = await api.put('/api/auth/profile', userData);
     return response.data;
   },
 
