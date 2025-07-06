@@ -99,6 +99,7 @@ const LoginPage = () => {
                     onChange={handleChange}
                     required
                     className="w-full pr-10"
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
