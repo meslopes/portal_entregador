@@ -16,6 +16,18 @@ from src.routes.order import order_bp
 from src.routes.admin import admin_bp
 
 def create_app(config_name=None):
+    # Handler global para garantir headers CORS em todas as respostas
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Origin', ','.join(app.config['CORS_ORIGINS']))
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+        return response
+
+    # Handler global para OPTIONS (preflight)
+    @app.route('/<path:path>', methods=['OPTIONS'])
+    def options_handler(path):
+        return '', 200
     """Factory function para criar a aplicação Flask"""
     if config_name is None:
         config_name = os.getenv('FLASK_ENV', 'development')
