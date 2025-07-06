@@ -23,19 +23,7 @@ def create_app(config_name=None):
     
 
     app = Flask(__name__)
-    # Endpoint temporário para listar todas as rotas do app Flask (fora de Blueprint)
-    @app.route('/rotas-teste', methods=['GET'])
-    def rotas_teste():
-    from flask import current_app
-    app_ = current_app._get_current_object()
-    rotas = []
-    for rule in app_.url_map.iter_rules():
-        rotas.append({
-            'endpoint': rule.endpoint,
-            'methods': list(rule.methods),
-            'rule': str(rule)
-        })
-    return jsonify(rotas=rotas)
+
     # Endpoint temporário para listar todas as rotas do app Flask (fora de Blueprint)
     @app.route('/rotas-teste', methods=['GET'])
     def rotas_teste():
