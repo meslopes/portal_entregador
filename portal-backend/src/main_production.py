@@ -16,6 +16,12 @@ from src.routes.order import order_bp
 from src.routes.admin import admin_bp
 
 def create_app(config_name=None):
+    """Factory function para criar a aplicação Flask"""
+    if config_name is None:
+        config_name = os.getenv('FLASK_ENV', 'development')
+    
+    app = Flask(__name__)
+
     # Handler global para garantir headers CORS em todas as respostas
     @app.after_request
     def after_request(response):
@@ -28,11 +34,6 @@ def create_app(config_name=None):
     @app.route('/<path:path>', methods=['OPTIONS'])
     def options_handler(path):
         return '', 200
-    """Factory function para criar a aplicação Flask"""
-    if config_name is None:
-        config_name = os.getenv('FLASK_ENV', 'development')
-    
-    app = Flask(__name__)
     app.config.from_object(config[config_name])
     
     # Inicializar extensões
