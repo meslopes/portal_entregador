@@ -23,11 +23,15 @@ def create_app(config_name=None):
     app = Flask(__name__)
 
     # Handler global para garantir headers CORS em todas as respostas
+    from flask import request
     @app.after_request
     def after_request(response):
-        response.headers.add('Access-Control-Allow-Origin', ','.join(app.config['CORS_ORIGINS']))
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+        origin = request.headers.get('Origin')
+        allowed_origins = app.config['CORS_ORIGINS']
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
         return response
 
     # Handler global para OPTIONS (preflight)
