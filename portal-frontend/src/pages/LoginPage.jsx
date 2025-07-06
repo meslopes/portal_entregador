@@ -84,6 +84,7 @@ const LoginPage = () => {
                   onChange={handleChange}
                   required
                   className="w-full"
+                  autoComplete="username"
                 />
               </div>
 
