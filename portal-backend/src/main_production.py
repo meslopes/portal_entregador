@@ -34,10 +34,7 @@ def create_app(config_name=None):
         response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
         return response
 
-    # Handler global para OPTIONS (preflight)
-    @app.route('/<path:path>', methods=['OPTIONS'])
-    def options_handler(path):
-        return '', 200
+    # Handler global para OPTIONS (preflight) removido para evitar conflito com rotas GET/POST
     app.config.from_object(config[config_name])
     
     # Inicializar extensões
