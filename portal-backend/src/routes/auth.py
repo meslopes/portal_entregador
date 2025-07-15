@@ -1,5 +1,6 @@
 
-
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from werkzeug.security import check_password_hash
 from flask import request, jsonify
 from src.models.portal_models import db, User, UserType, UserStatus
 from werkzeug.security import generate_password_hash
@@ -32,4 +33,23 @@ def create_admin():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# Endpoint para login
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    email = request.json.get('email', None)
+    password = request.json.get('password', None)
 
+    user = User.query.filter_by(email=email).first()
+
+    if user and check_password_hash(user.password_hash, password):
+        access_token = create_access_token(identity=user.id)
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({'message': 'Credenciais inválidas'}), 401
+    
+    # Exemplo de rota protegida (para teste)
+@auth_bp.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    current_user_id = get_jwt_identity()
+    return jsonify(logged_in_as=current_user_id), 200
