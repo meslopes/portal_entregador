@@ -38,6 +38,12 @@ cors_origins = [
     "http://localhost:5174",
     "https://muvlog.vercel.app",
     "https://muvlog-frontend.vercel.app",
+    "http://muv.log.br",
+    "https://muv.log.br",
+    "http://www.muv.log.br",
+    "https://www.muv.log.br",
+    "http://api.muv.log.br",
+    "https://api.muv.log.br",
 ]
 CORS(app, resources={r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}} )
 

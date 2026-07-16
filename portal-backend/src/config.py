@@ -22,6 +22,10 @@ class Config:
     CORS_ORIGINS = [
         "http://muv.log.br",
         "https://muv.log.br",
+        "http://www.muv.log.br",
+        "https://www.muv.log.br",
+        "http://api.muv.log.br",
+        "https://api.muv.log.br",
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:3000",
