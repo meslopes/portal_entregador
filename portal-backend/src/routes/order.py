@@ -14,7 +14,7 @@ order_bp = Blueprint('order', __name__)
 def get_available_orders():
     """Obtém pedidos disponíveis para o entregador"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -79,7 +79,7 @@ def get_available_orders():
 def accept_order(order_id):
     """Aceita um pedido"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -157,7 +157,7 @@ def accept_order(order_id):
 def update_order_status(order_id):
     """Atualiza o status do pedido"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -255,7 +255,7 @@ def update_order_status(order_id):
 def get_current_order():
     """Obtém o pedido atual do entregador"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -293,6 +293,7 @@ def get_current_order():
         return jsonify({'error': str(e)}), 500
 
 @order_bp.route('/', methods=['POST'])
+@jwt_required()
 def create_order():
     """Cria um novo pedido (para simulação/testes)"""
     try:
@@ -367,7 +368,7 @@ def create_order():
 def get_order_details(order_id):
     """Obtém detalhes de um pedido específico"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         order = Order.query.get(order_id)

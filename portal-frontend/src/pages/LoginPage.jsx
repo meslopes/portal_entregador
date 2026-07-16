@@ -36,8 +36,10 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-      await login(formData.email, formData.password);
-      navigate(from, { replace: true });
+      const response = await login(formData.email, formData.password);
+      const userType = response?.user?.user_type;
+      const target = userType === 'ADMIN' ? '/admin' : from;
+      navigate(target, { replace: true });
     } catch (error) {
       // Erro já tratado no contexto
     } finally {
@@ -50,10 +52,10 @@ const LoginPage = () => {
       <div className="w-full max-w-md">
         {/* Logo e título */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
-            <Truck className="w-8 h-8 text-primary-foreground" />
+          <div className="mb-4">
+            <img src="/logo-muvy.jpg" alt="muv.log" className="h-16 w-auto mx-auto rounded-lg shadow-lg" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">PORTAL</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">muv.log</h1>
           <p className="text-gray-600">Controle de Entregadores</p>
         </div>
 
@@ -150,8 +152,8 @@ const LoginPage = () => {
                 <strong>Credenciais de teste:</strong>
               </p>
               <p className="text-xs text-gray-600 text-center">
-                Email: admin@portal.com<br />
-                Senha: admin123
+                Admin: admin@muv.log.br / admin123<br />
+                Entregador: entregador@teste.com / 123456
               </p>
             </div>
           </CardContent>

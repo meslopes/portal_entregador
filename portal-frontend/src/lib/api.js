@@ -1,5 +1,5 @@
 // Configuração da API
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 
 // Instância do axios com configurações padrão
@@ -64,7 +64,7 @@ export const authService = {
   },
 
   changePassword: async (currentPassword, newPassword) => {
-    const response = await api.post('/auth/change-password', {
+    const response = await api.post('/api/auth/change-password', {
       current_password: currentPassword,
       new_password: newPassword,
     });
@@ -75,7 +75,7 @@ export const authService = {
 // Serviços do entregador
 export const driverService = {
   toggleOnlineStatus: async (isOnline, latitude, longitude) => {
-    const response = await api.post('/driver/status', {
+    const response = await api.post('/api/driver/status', {
       is_online: isOnline,
       latitude,
       longitude,
@@ -84,7 +84,7 @@ export const driverService = {
   },
 
   updateLocation: async (latitude, longitude) => {
-    const response = await api.post('/driver/location', {
+    const response = await api.post('/api/driver/location', {
       latitude,
       longitude,
     });
@@ -92,7 +92,7 @@ export const driverService = {
   },
 
   getStats: async () => {
-    const response = await api.get('/driver/stats');
+    const response = await api.get('/api/driver/stats');
     return response.data;
   },
 
@@ -101,12 +101,12 @@ export const driverService = {
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     
-    const response = await api.get('/driver/earnings', { params });
+    const response = await api.get('/api/driver/earnings', { params });
     return response.data;
   },
 
   getDeliveryHistory: async (page = 1, perPage = 20) => {
-    const response = await api.get('/driver/delivery-history', {
+    const response = await api.get('/api/driver/delivery-history', {
       params: { page, per_page: perPage },
     });
     return response.data;
@@ -116,32 +116,32 @@ export const driverService = {
 // Serviços de pedidos
 export const orderService = {
   getAvailableOrders: async () => {
-    const response = await api.get('/orders/available');
+    const response = await api.get('/api/orders/available');
     return response.data;
   },
 
   acceptOrder: async (orderId) => {
-    const response = await api.post(`/orders/${orderId}/accept`);
+    const response = await api.post(`/api/orders/${orderId}/accept`);
     return response.data;
   },
 
   updateOrderStatus: async (orderId, status) => {
-    const response = await api.put(`/orders/${orderId}/status`, { status });
+    const response = await api.put(`/api/orders/${orderId}/status`, { status });
     return response.data;
   },
 
   getCurrentOrder: async () => {
-    const response = await api.get('/orders/current');
+    const response = await api.get('/api/orders/current');
     return response.data;
   },
 
   getOrderDetails: async (orderId) => {
-    const response = await api.get(`/orders/${orderId}`);
+    const response = await api.get(`/api/orders/${orderId}`);
     return response.data;
   },
 
   createOrder: async (orderData) => {
-    const response = await api.post('/orders', orderData);
+    const response = await api.post('/api/orders', orderData);
     return response.data;
   },
 };
@@ -149,24 +149,24 @@ export const orderService = {
 // Serviços administrativos
 export const adminService = {
   getDashboard: async () => {
-    const response = await api.get('/admin/dashboard');
+    const response = await api.get('/api/admin/dashboard');
     return response.data;
   },
 
   getDrivers: async (page = 1, perPage = 20, search = '', status = 'all') => {
-    const response = await api.get('/admin/drivers', {
+    const response = await api.get('/api/admin/drivers', {
       params: { page, per_page: perPage, search, status },
     });
     return response.data;
   },
 
   getDriverDetails: async (driverId) => {
-    const response = await api.get(`/admin/drivers/${driverId}`);
+    const response = await api.get(`/api/admin/drivers/${driverId}`);
     return response.data;
   },
 
   updateDriverStatus: async (driverId, status) => {
-    const response = await api.put(`/admin/drivers/${driverId}/status`, { status });
+    const response = await api.put(`/api/admin/drivers/${driverId}/status`, { status });
     return response.data;
   },
 
@@ -176,12 +176,12 @@ export const adminService = {
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
     
-    const response = await api.get('/admin/orders', { params });
+    const response = await api.get('/api/admin/orders', { params });
     return response.data;
   },
 
   assignOrderToDriver: async (orderId, driverId) => {
-    const response = await api.post(`/admin/orders/${orderId}/assign`, {
+    const response = await api.post(`/api/admin/orders/${orderId}/assign`, {
       driver_id: driverId,
     });
     return response.data;
@@ -192,12 +192,12 @@ export const adminService = {
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
     
-    const response = await api.get('/admin/reports/earnings', { params });
+    const response = await api.get('/api/admin/reports/earnings', { params });
     return response.data;
   },
 
   getLiveTracking: async () => {
-    const response = await api.get('/admin/live-tracking');
+    const response = await api.get('/api/admin/live-tracking');
     return response.data;
   },
 };

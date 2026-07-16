@@ -1,7 +1,7 @@
 import os
 import sys
-# DON'T CHANGE: Add the src directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# DON'T CHANGE: Add the project root to the Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -24,6 +24,9 @@ def create_app(config_name=None):
 
     app = Flask(__name__)
 
+    # Carrega configuração ANTES de qualquer handler que dependa dela
+    app.config.from_object(config[config_name])
+
     # Endpoint temporário para listar todas as rotas do app Flask (fora de Blueprint)
     @app.route('/rotas-teste', methods=['GET'])
     def rotas_teste():
@@ -43,16 +46,13 @@ def create_app(config_name=None):
     @app.after_request
     def after_request(response):
         origin = request.headers.get('Origin')
-        allowed_origins = app.config['CORS_ORIGINS']
+        allowed_origins = app.config.get('CORS_ORIGINS', [])
         if origin in allowed_origins:
             response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
         return response
 
-    # Handler global para OPTIONS (preflight) removido para evitar conflito com rotas GET/POST
-    app.config.from_object(config[config_name])
-    
     # Inicializar extensões
     db.init_app(app)
     # Configurar CORS para todos os métodos e headers, e logar o valor em produção

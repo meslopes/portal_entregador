@@ -19,7 +19,15 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Configurações de CORS
-    CORS_ORIGINS = ["http://muv.log.br", "https://muv.log.br"]
+    CORS_ORIGINS = [
+        "http://muv.log.br",
+        "https://muv.log.br",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "https://muvlog.vercel.app",
+        "https://muvlog-frontend.vercel.app",
+    ]
     
     # Configurações de logging
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')

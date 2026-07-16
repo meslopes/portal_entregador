@@ -11,7 +11,7 @@ driver_bp = Blueprint('driver', __name__)
 def toggle_online_status():
     """Alterna o status online/offline do entregador"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -49,7 +49,7 @@ def toggle_online_status():
 def update_location():
     """Atualiza a localização do entregador"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -87,7 +87,7 @@ def update_location():
 def get_driver_stats():
     """Obtém estatísticas do entregador"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -141,7 +141,7 @@ def get_driver_stats():
 def get_earnings_history():
     """Obtém o histórico de ganhos do entregador"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -188,7 +188,7 @@ def get_earnings_history():
 def get_delivery_history():
     """Obtém o histórico de entregas do entregador"""
     try:
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -243,6 +243,7 @@ def get_delivery_history():
         return jsonify({'error': str(e)}), 500
 
 @driver_bp.route('/nearby', methods=['GET'])
+@jwt_required()
 def get_nearby_drivers():
     """Obtém entregadores próximos (para uso administrativo)"""
     try:

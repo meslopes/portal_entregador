@@ -9,17 +9,19 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { 
-  Truck, 
-  Home, 
-  Package, 
-  DollarSign, 
-  Clock, 
-  User, 
-  Settings, 
+import {
+  Truck,
+  Home,
+  Package,
+  DollarSign,
+  Clock,
+  User,
+  Settings,
   LogOut,
   Menu,
-  X
+  X,
+  LayoutDashboard,
+  Users
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -34,16 +36,28 @@ const Layout = ({ children }) => {
     navigate('/login');
   };
 
-  const navigation = [
+  const isAdmin = user?.user_type === 'ADMIN';
+
+  const driverNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Pedidos', href: '/orders', icon: Package },
     { name: 'Ganhos', href: '/earnings', icon: DollarSign },
     { name: 'Histórico', href: '/history', icon: Clock },
   ];
 
+  const adminNavigation = [
+    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'Entregadores', href: '/admin/drivers', icon: Users },
+    { name: 'Pedidos', href: '/admin/orders', icon: Package },
+  ];
+
+  const navigation = isAdmin ? adminNavigation : driverNavigation;
+
   const isActive = (href) => location.pathname === href;
 
-  const userInitials = user ? `${user.first_name[0]}${user.last_name[0]}` : 'U';
+  const userInitials = user?.first_name && user?.last_name 
+    ? `${user.first_name[0]}${user.last_name[0]}` 
+    : user?.email ? user.email[0].toUpperCase() : 'U';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -54,8 +68,8 @@ const Layout = ({ children }) => {
             {/* Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <Truck className="w-8 h-8 text-primary mr-2" />
-                <span className="text-xl font-bold text-gray-900">PORTAL</span>
+                <img src="/logo-muvy.jpg" alt="muv.log" className="h-8 w-auto mr-2 rounded" />
+                <span className="text-xl font-bold text-gray-900">muv.log</span>
               </div>
             </div>
 
@@ -165,7 +179,7 @@ const Layout = ({ children }) => {
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-500">
-              © 2024 PORTAL. Todos os direitos reservados.
+              © 2024 muv.log. Todos os direitos reservados.
             </p>
             <div className="flex space-x-6">
               <Link to="#" className="text-sm text-gray-500 hover:text-gray-900">

@@ -7,6 +7,11 @@ import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
 import OrdersPage from '@/pages/OrdersPage';
+import EarningsPage from '@/pages/EarningsPage';
+import HistoryPage from '@/pages/HistoryPage';
+import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
+import AdminDriversPage from '@/pages/admin/AdminDriversPage';
+import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
 import './App.css';
 
 function App() {
@@ -32,7 +37,7 @@ function App() {
             } 
           />
 
-          {/* Rotas protegidas */}
+          {/* Rotas do entregador */}
           <Route 
             path="/dashboard" 
             element={
@@ -43,15 +48,67 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/orders" 
+          <Route
+            path="/orders"
             element={
               <ProtectedRoute>
                 <Layout>
                   <OrdersPage />
                 </Layout>
               </ProtectedRoute>
-            } 
+            }
+          />
+          <Route
+            path="/earnings"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <EarningsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <HistoryPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas do admin */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminDashboardPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/drivers"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminDriversPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminOrdersPage />
+                </Layout>
+              </ProtectedRoute>
+            }
           />
 
           {/* Redirecionamento padrão */}
@@ -64,4 +121,3 @@ function App() {
 }
 
 export default App;
-

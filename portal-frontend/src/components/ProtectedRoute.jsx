@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ProtectedRoute = ({ children, requireAuth = true, redirectTo = '/login' }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -19,7 +19,8 @@ const ProtectedRoute = ({ children, requireAuth = true, redirectTo = '/login' })
   }
 
   if (!requireAuth && isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    const defaultRoute = user?.user_type === 'ADMIN' ? '/admin' : '/dashboard';
+    return <Navigate to={defaultRoute} replace />;
   }
 
   return children;

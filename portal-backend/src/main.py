@@ -19,6 +19,7 @@ from src.routes.order import order_bp
 from src.routes.admin import admin_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
+app.url_map.strict_slashes = False
 
 # Configurações
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -31,7 +32,14 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializa extensões
 jwt = JWTManager(app)
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://localhost:5173"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}} )
+cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://muvlog.vercel.app",
+    "https://muvlog-frontend.vercel.app",
+]
+CORS(app, resources={r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}} )
 
 # Registra blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')

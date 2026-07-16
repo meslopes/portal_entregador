@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Truck, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,15 +36,6 @@ const RegisterPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    clearError();
-    setLocalError('');
-  };
-
-  const handleSelectChange = (name, value) => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
@@ -93,10 +83,10 @@ const RegisterPage = () => {
       <div className="w-full max-w-2xl">
         {/* Logo e título */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
-            <Truck className="w-8 h-8 text-primary-foreground" />
+          <div className="mb-4">
+            <img src="/logo-muvy.jpg" alt="muv.log" className="h-16 w-auto mx-auto rounded-lg shadow-lg" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">PORTAL</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">muv.log</h1>
           <p className="text-gray-600">Cadastro de Entregador</p>
         </div>
 
@@ -258,17 +248,20 @@ const RegisterPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="vehicle_type">Tipo de Veículo</Label>
-                    <Select onValueChange={(value) => handleSelectChange('vehicle_type', value)} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CAR">Carro</SelectItem>
-                        <SelectItem value="MOTORCYCLE">Moto</SelectItem>
-                        <SelectItem value="BICYCLE">Bicicleta</SelectItem>
-                        <SelectItem value="FOOT">A pé</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <select
+                      id="vehicle_type"
+                      name="vehicle_type"
+                      value={formData.vehicle_type}
+                      onChange={handleChange}
+                      required
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Selecione o tipo</option>
+                      <option value="CAR">Carro</option>
+                      <option value="MOTORCYCLE">Moto</option>
+                      <option value="BICYCLE">Bicicleta</option>
+                      <option value="FOOT">A pé</option>
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="driver_license">CNH</Label>

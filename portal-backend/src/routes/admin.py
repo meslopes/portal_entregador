@@ -14,7 +14,7 @@ def admin_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        user_id = get_jwt_identity()
+        user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         if not user or user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Acesso restrito a administradores'}), 403
