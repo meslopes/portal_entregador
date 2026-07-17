@@ -2,8 +2,8 @@ services:
   - type: web
     name: muvlog-api
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn src.main_production:app
+    buildCommand: cd portal-backend && pip install -r requirements.txt
+    startCommand: cd portal-backend && gunicorn src.main_production:app
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
