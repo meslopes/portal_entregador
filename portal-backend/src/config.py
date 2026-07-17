@@ -31,6 +31,8 @@ class Config:
         "http://localhost:3000",
         "https://muvlog.vercel.app",
         "https://muvlog-frontend.vercel.app",
+        "https://portal-entregador-gamma.vercel.app",
+        "https://portal-entregador.vercel.app",
     ]
     
     # Configurações de logging
