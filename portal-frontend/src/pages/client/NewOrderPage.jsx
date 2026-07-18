@@ -27,6 +27,7 @@ const NewOrderPage = () => {
     delivery_state: 'RS',
     delivery_zip_code: '',
     // Pagamento do cliente (itens)
+    product_value: '', // valor dos itens/produtos a cobrar do cliente
     product_payment_type: 'ESTABLISHMENT', // ESTABLISHMENT ou DELIVERY
     product_payment_method: 'CASH', // CASH, CARD, PIX (quando for na entrega)
     change_for: '', // valor para troco (se pagamento em dinheiro na entrega)
@@ -99,6 +100,7 @@ const NewOrderPage = () => {
         total_amount: DELIVERY_FEE,
         payment_method: form.product_payment_type === 'DELIVERY' ? form.product_payment_method : 'CASH',
         special_instructions: JSON.stringify({
+          product_value: parseFloat(form.product_value) || 0,
           product_payment_type: form.product_payment_type,
           product_payment_method: form.product_payment_method,
           change_for: form.change_for || null,
@@ -266,6 +268,13 @@ const NewOrderPage = () => {
           <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1rem' }}>
             Como o cliente vai pagar pelos itens/produtos?
           </p>
+
+          {/* Valor dos itens */}
+          <Field label="Valor dos Itens/Produtos (R$) *">
+            <input name="product_value" value={form.product_value} onChange={handleChange}
+              placeholder="Ex: 45,00" required />
+          </Field>
+
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
             <PaymentOption
               active={form.product_payment_type === 'ESTABLISHMENT'}
@@ -380,6 +389,12 @@ const NewOrderPage = () => {
               {form.product_payment_type === 'ESTABLISHMENT' ? 'No estabelecimento' : `Na entrega (${form.product_payment_method === 'CASH' ? 'Dinheiro' : form.product_payment_method === 'CARD' ? 'Cartão' : 'PIX'})`}
             </span>
           </div>
+          {form.product_value && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem', fontSize: '0.875rem' }}>
+              <span style={{ color: '#64748b' }}>Valor dos Itens</span>
+              <span style={{ color: '#1e293b', fontWeight: 600 }}>R$ {parseFloat(form.product_value).toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
           <div style={{
             paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9',
             display: 'flex', justifyContent: 'space-between',
