@@ -1,167 +1,195 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Truck, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Truck, MapPin, BarChart3, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
   const from = location.state?.from?.pathname || '/dashboard';
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     clearError();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
     try {
       const response = await login(formData.email, formData.password);
       const userType = response?.user?.user_type;
-      const target = userType === 'ADMIN' ? '/admin' : from;
-      navigate(target, { replace: true });
-    } catch (error) {
-      // Erro já tratado no contexto
+      navigate(userType === 'ADMIN' ? '/admin' : from, { replace: true });
+    } catch (err) {
+      // erro tratado no contexto
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo e título */}
-        <div className="text-center mb-8">
-          <div className="mb-4">
-            <img src="/logo-muvy.jpg" alt="muv.log" className="h-16 w-auto mx-auto rounded-lg shadow-lg" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">muv.log</h1>
-          <p className="text-gray-600">Controle de Entregadores</p>
-        </div>
+    <div className="auth-split-layout">
+      {/* Lado esquerdo - Branding */}
+      <div className="auth-branding" style={{ flex: '0 0 45%' }}>
+        <div className="auth-animate-in" style={{ position: 'relative', zIndex: 1, maxWidth: '400px' }}>
+          <img
+            src="/logo-muvy.jpg"
+            alt="muv.log"
+            style={{ height: '80px', marginBottom: '2rem', borderRadius: '0.75rem', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
+          />
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
+            muv.log
+          </h1>
+          <p style={{ fontSize: '1.125rem', opacity: 0.9, marginBottom: '3rem', lineHeight: 1.6 }}>
+            Plataforma completa para gestão<br />de entregadores
+          </p>
 
-        <Card className="shadow-lg">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Entrar</CardTitle>
-            <CardDescription className="text-center">
+          <div style={{ textAlign: 'left' }}>
+            <div className="feature-item">
+              <div className="feature-icon"><Truck size={20} /></div>
+              <span>Gestão completa de entregadores</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon"><MapPin size={20} /></div>
+              <span>Tracking em tempo real</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon"><BarChart3 size={20} /></div>
+              <span>Relatórios e analytics</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon"><Shield size={20} /></div>
+              <span>Pagamentos seguros e rápidos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lado direito - Formulário */}
+      <div className="auth-form-panel">
+        <div className="auth-form-container auth-animate-in">
+          <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>
+              Bem-vindo de volta
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
               Faça login para acessar sua conta
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            </p>
+          </div>
+
+          <div className="auth-form-card">
+            <form onSubmit={handleSubmit}>
               {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+                <div className="auth-error">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1C4.1 1 1 4.1 1 8s3.1 7 7 7 7-3.1 7-7-3.1-7-7-7zm-.5 3h1v5h-1V4zm.5 7.5c-.4 0-.7-.3-.7-.7s.3-.7.7-.7.7.3.7.7-.3.7-.7.7z"/>
+                  </svg>
+                  {error}
+                </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label className="auth-form-label">Email</label>
+                <input
                   type="email"
+                  name="email"
+                  className="auth-form-input"
                   placeholder="seu@email.com"
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full"
                   autoComplete="username"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
+              <div style={{ marginBottom: '0.5rem' }}>
+                <label className="auth-form-label">Senha</label>
+                <div className="password-wrapper">
+                  <input
                     type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    className="auth-form-input"
                     placeholder="Sua senha"
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="w-full pr-10"
                     autoComplete="current-password"
+                    style={{ paddingRight: '2.75rem' }}
                   />
                   <button
                     type="button"
+                    className="password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer' }}>
+                  Esqueci minha senha
+                </span>
+              </div>
+
+              <button type="submit" className="auth-btn-primary" disabled={isLoading}>
                 {isLoading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <>
+                    <div style={{
+                      width: '1rem', height: '1rem',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderTopColor: 'white',
+                      borderRadius: '50%',
+                      animation: 'spin 0.6s linear infinite'
+                    }} />
                     Entrando...
-                  </div>
+                  </>
                 ) : (
-                  'Entrar'
+                  <>
+                    Entrar
+                    <ArrowRight size={18} />
+                  </>
                 )}
-              </Button>
+              </button>
             </form>
+          </div>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Não tem uma conta?{' '}
-                <Link
-                  to="/register"
-                  className="font-medium text-primary hover:text-primary/80 transition-colors"
-                >
-                  Cadastre-se
-                </Link>
-              </p>
-            </div>
+          <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
+              Não tem uma conta?{' '}
+              <Link to="/register" className="auth-footer-link">
+                Cadastre-se como entregador
+              </Link>
+            </p>
+          </div>
 
-            {/* Credenciais de teste */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600 text-center mb-2">
-                <strong>Credenciais de teste:</strong>
-              </p>
-              <p className="text-xs text-gray-600 text-center">
-                Admin: admin@muv.log.br / admin123<br />
-                Entregador: entregador@teste.com / 123456
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Credenciais de teste - sutil */}
+          <div style={{
+            marginTop: '2rem',
+            padding: '1rem',
+            background: '#f1f5f9',
+            borderRadius: '0.5rem',
+            fontSize: '0.75rem',
+            color: '#94a3b8',
+            textAlign: 'center'
+          }}>
+            <strong style={{ color: '#64748b' }}>Teste:</strong> admin@muv.log.br / admin123
+          </div>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
 
 export default LoginPage;
-
