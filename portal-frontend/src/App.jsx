@@ -9,6 +9,7 @@ import DashboardPage from '@/pages/DashboardPage';
 import OrdersPage from '@/pages/OrdersPage';
 import EarningsPage from '@/pages/EarningsPage';
 import HistoryPage from '@/pages/HistoryPage';
+import ActiveDeliveryPage from '@/pages/ActiveDeliveryPage';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
@@ -74,6 +75,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <HistoryPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery/active"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ActiveDeliveryPage />
                 </Layout>
               </ProtectedRoute>
             }

@@ -166,17 +166,29 @@ const DashboardPage = () => {
 
       {/* Pedido em andamento */}
       {currentOrder && (
-        <div style={{
-          background: 'white',
-          borderRadius: '0.75rem',
-          padding: '1.5rem',
-          marginBottom: '1.5rem',
-          borderLeft: '4px solid #2563eb',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <Package size={20} style={{ color: '#2563eb' }} />
-            <span style={{ fontWeight: 600, color: '#1e293b' }}>Pedido em Andamento</span>
+        <div
+          onClick={() => navigate('/delivery/active')}
+          style={{
+            background: 'white',
+            borderRadius: '0.75rem',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+            borderLeft: '4px solid #2563eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            cursor: 'pointer',
+            transition: 'all 0.15s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.15)'}
+          onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Package size={20} style={{ color: '#2563eb' }} />
+              <span style={{ fontWeight: 600, color: '#1e293b' }}>Pedido em Andamento</span>
+            </div>
+            <span style={{ fontSize: '0.8125rem', color: '#2563eb', fontWeight: 500 }}>
+              Acompanhar →
+            </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
             <div>
