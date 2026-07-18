@@ -75,6 +75,15 @@ def create_app(config_name=None):
     # Criar tabelas do banco de dados
     with app.app_context():
         db.create_all()
+
+        # Migration: adicionar CLIENT ao enum usertype no PostgreSQL
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'CLIENT' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'usertype')) THEN ALTER TYPE usertype ADD VALUE 'CLIENT'; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
     
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
