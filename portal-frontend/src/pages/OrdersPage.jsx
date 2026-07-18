@@ -1,19 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Package, 
-  MapPin, 
-  Clock, 
-  DollarSign, 
-  Navigation,
-  Store,
-  User,
-  AlertCircle,
-  RefreshCw
+import {
+  Package, MapPin, Clock, DollarSign, Navigation,
+  Store, User, AlertCircle, RefreshCw, ChevronRight,
+  Phone, Bike, ShoppingCart, ArrowRight
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
 
@@ -26,8 +16,6 @@ const OrdersPage = () => {
 
   useEffect(() => {
     loadAvailableOrders();
-    
-    // Atualiza a lista a cada 30 segundos
     const interval = setInterval(loadAvailableOrders, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -39,8 +27,8 @@ const OrdersPage = () => {
       setOrders(response.orders || []);
       setError('');
     } catch (error) {
-      setError('Erro ao carregar pedidos disponíveis');
-      console.error('Erro ao carregar pedidos:', error);
+      setError('Erro ao carregar pedidos');
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -50,20 +38,17 @@ const OrdersPage = () => {
     try {
       setAcceptingOrder(orderId);
       await orderService.acceptOrder(orderId);
-      
-      // Remove o pedido da lista e navega para o dashboard
       setOrders(orders.filter(order => order.id !== orderId));
       navigate('/dashboard');
     } catch (error) {
       setError('Erro ao aceitar pedido');
-      console.error('Erro ao aceitar pedido:', error);
+      console.error(error);
     } finally {
       setAcceptingOrder(null);
     }
   };
 
   const calculateEarnings = (order) => {
-    // Estimativa de ganhos (70% da taxa de entrega + bônus por distância)
     const baseEarning = order.delivery_fee * 0.7;
     const distanceBonus = (order.delivery_distance_km || 0) * 0.5;
     return baseEarning + distanceBonus;
@@ -71,206 +56,331 @@ const OrdersPage = () => {
 
   if (isLoading && orders.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          width: '3rem', height: '3rem',
+          border: '3px solid #e2e8f0',
+          borderTopColor: '#2563eb',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite'
+        }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Pedidos Disponíveis</h1>
-              <p className="text-gray-600">
-                {orders.length} pedido{orders.length !== 1 ? 's' : ''} disponível{orders.length !== 1 ? 'eis' : ''} na sua região
+    <div style={{ padding: '1.5rem', maxWidth: '900px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
+            Pedidos Disponíveis
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
+            {orders.length} pedido{orders.length !== 1 ? 's' : ''} disponível{orders.length !== 1 ? 'eis' : ''} na sua região
+          </p>
+        </div>
+        <button
+          onClick={loadAvailableOrders}
+          disabled={isLoading}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.625rem 1.25rem',
+            borderRadius: '0.5rem',
+            border: '1px solid #e2e8f0',
+            background: 'white',
+            color: '#475569',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'all 0.15s'
+          }}
+        >
+          <RefreshCw size={16} style={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
+          Atualizar
+        </button>
+      </div>
+
+      {/* Erro */}
+      {error && (
+        <div style={{
+          background: '#fef2f2', border: '1px solid #fecaca',
+          color: '#dc2626', padding: '0.75rem 1rem',
+          borderRadius: '0.5rem', marginBottom: '1.5rem',
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+          fontSize: '0.875rem'
+        }}>
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Lista de pedidos */}
+      {orders.length === 0 ? (
+        <div style={{
+          background: 'white',
+          borderRadius: '0.75rem',
+          padding: '4rem 2rem',
+          textAlign: 'center',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+        }}>
+          <div style={{
+            width: '5rem', height: '5rem',
+            borderRadius: '50%',
+            background: '#f1f5f9',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1.5rem'
+          }}>
+            <Package size={32} style={{ color: '#94a3b8' }} />
+          </div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>
+            Nenhum pedido disponível
+          </h3>
+          <p style={{ color: '#64748b', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
+            Não há pedidos disponíveis na sua região no momento. Verifique novamente em alguns minutos.
+          </p>
+          <button
+            onClick={loadAvailableOrders}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '0.5rem',
+              border: 'none',
+              background: '#2563eb',
+              color: 'white',
+              fontSize: '0.9375rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s'
+            }}
+          >
+            <RefreshCw size={16} /> Verificar Novamente
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {orders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              onAccept={handleAcceptOrder}
+              isAccepting={acceptingOrder === order.id}
+              calculateEarnings={calculateEarnings}
+            />
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+};
+
+const OrderCard = ({ order, onAccept, isAccepting, calculateEarnings }) => {
+  const earnings = calculateEarnings(order);
+
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '0.75rem',
+      overflow: 'hidden',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.15s'
+    }}>
+      {/* Header do pedido */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '1rem 1.25rem',
+        borderBottom: '1px solid #f1f5f9',
+        background: '#fafbfc'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: '2.5rem', height: '2.5rem',
+            borderRadius: '0.5rem',
+            background: '#eff6ff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <ShoppingCart size={18} style={{ color: '#2563eb' }} />
+          </div>
+          <div>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
+              Pedido #{order.order_number}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              {order.items?.length || 0} ite{order.items?.length !== 1 ? 'ns' : 'm'}
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            padding: '0.375rem 0.875rem',
+            borderRadius: '9999px',
+            background: '#dcfce7',
+            color: '#16a34a',
+            fontSize: '0.875rem',
+            fontWeight: 600
+          }}>
+            +{utils.formatCurrency(earnings)}
+          </div>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div style={{ padding: '1.25rem' }}>
+        {/* Coleta */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{
+            width: '2rem', height: '2rem',
+            borderRadius: '0.375rem',
+            background: '#fef3c7',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Store size={14} style={{ color: '#d97706' }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coletar em</p>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {order.restaurant?.name || 'Restaurante'}
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {order.restaurant?.address || 'Endereço não informado'}
+            </p>
+            {order.distance_to_restaurant_km && (
+              <p style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: '0.125rem' }}>
+                📍 {order.distance_to_restaurant_km} km de você
               </p>
-            </div>
-            <Button
-              onClick={loadAvailableOrders}
-              disabled={isLoading}
-              variant="outline"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
+            )}
           </div>
         </div>
 
-        {/* Alertas */}
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Lista de pedidos */}
-        {orders.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Nenhum pedido disponível
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Não há pedidos disponíveis na sua região no momento. 
-                Verifique novamente em alguns minutos.
+        {/* Entrega */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{
+            width: '2rem', height: '2rem',
+            borderRadius: '0.375rem',
+            background: '#dcfce7',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <MapPin size={14} style={{ color: '#16a34a' }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregar em</p>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {order.customer?.name || 'Cliente'}
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {order.delivery_address?.street || ''}{order.delivery_address?.neighborhood ? `, ${order.delivery_address.neighborhood}` : ''}
+            </p>
+            {order.delivery_distance_km && (
+              <p style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '0.125rem' }}>
+                🏁 {order.delivery_distance_km} km de distância
               </p>
-              <Button onClick={loadAvailableOrders}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Verificar Novamente
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            {orders.map((order) => (
-              <Card key={order.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center">
-                      <Package className="w-5 h-5 mr-2" />
-                      Pedido #{order.order_number}
-                    </CardTitle>
-                    <Badge className={utils.getStatusColor(order.status)}>
-                      {utils.getStatusText(order.status)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Informações do restaurante */}
-                    <div className="space-y-4">
-                      <div className="flex items-start space-x-3">
-                        <Store className="w-5 h-5 text-gray-500 mt-1" />
-                        <div>
-                          <p className="font-semibold">{order.restaurant.name}</p>
-                          <p className="text-sm text-gray-600">{order.restaurant.address}</p>
-                          {order.distance_to_restaurant_km && (
-                            <p className="text-sm text-blue-600">
-                              {order.distance_to_restaurant_km} km de você
-                            </p>
-                          )}
-                        </div>
-                      </div>
+            )}
+          </div>
+        </div>
 
-                      <div className="flex items-start space-x-3">
-                        <User className="w-5 h-5 text-gray-500 mt-1" />
-                        <div>
-                          <p className="font-semibold">{order.customer.name}</p>
-                          <p className="text-sm text-gray-600">{order.customer.phone}</p>
-                        </div>
-                      </div>
+        {/* Info do pedido */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '0.75rem',
+          padding: '0.875rem',
+          background: '#f8fafc',
+          borderRadius: '0.5rem',
+          marginBottom: '1rem'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Total</p>
+            <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9375rem' }}>{utils.formatCurrency(order.total_amount)}</p>
+          </div>
+          <div style={{ textAlign: 'center', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Pagamento</p>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem' }}>{utils.getStatusText(order.payment_method)}</p>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Tempo</p>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+              <Clock size={12} /> {order.estimated_delivery_time_minutes || '—'} min
+            </p>
+          </div>
+        </div>
 
-                      <div className="flex items-start space-x-3">
-                        <MapPin className="w-5 h-5 text-gray-500 mt-1" />
-                        <div>
-                          <p className="font-semibold">Endereço de Entrega</p>
-                          <p className="text-sm text-gray-600">
-                            {order.delivery_address.street}, {order.delivery_address.neighborhood}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {order.delivery_address.city} - {order.delivery_address.state}
-                          </p>
-                          {order.delivery_distance_km && (
-                            <p className="text-sm text-green-600">
-                              {order.delivery_distance_km} km de distância
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Informações do pedido */}
-                    <div className="space-y-4">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h4 className="font-semibold mb-2">Itens do Pedido</h4>
-                        <div className="space-y-1">
-                          {order.items.map((item, index) => (
-                            <div key={index} className="flex justify-between text-sm">
-                              <span>{item.quantity}x {item.name}</span>
-                              <span>{utils.formatCurrency(item.price * item.quantity)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-600">Valor Total</p>
-                          <p className="text-lg font-bold">{utils.formatCurrency(order.total_amount)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600">Seus Ganhos</p>
-                          <p className="text-lg font-bold text-green-600">
-                            {utils.formatCurrency(calculateEarnings(order))}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-600">Pagamento</p>
-                          <p className="font-semibold">{utils.getStatusText(order.payment_method)}</p>
-                        </div>
-                        {order.estimated_delivery_time_minutes && (
-                          <div>
-                            <p className="text-sm text-gray-600">Tempo Estimado</p>
-                            <p className="font-semibold flex items-center">
-                              <Clock className="w-4 h-4 mr-1" />
-                              {order.estimated_delivery_time_minutes} min
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {order.special_instructions && (
-                        <div>
-                          <p className="text-sm text-gray-600">Instruções Especiais</p>
-                          <p className="text-sm bg-yellow-50 p-2 rounded border-l-4 border-yellow-400">
-                            {order.special_instructions}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex space-x-4">
-                    <Button
-                      onClick={() => handleAcceptOrder(order.id)}
-                      disabled={acceptingOrder === order.id}
-                      className="flex-1"
-                    >
-                      {acceptingOrder === order.id ? (
-                        <div className="flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Aceitando...
-                        </div>
-                      ) : (
-                        <>
-                          <Package className="w-4 h-4 mr-2" />
-                          Aceitar Pedido
-                        </>
-                      )}
-                    </Button>
-                    <Button variant="outline" className="flex-1">
-                      <Navigation className="w-4 h-4 mr-2" />
-                      Ver no Mapa
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        {/* Instruções especiais */}
+        {order.special_instructions && (
+          <div style={{
+            background: '#fffbeb',
+            borderLeft: '3px solid #f59e0b',
+            padding: '0.75rem 1rem',
+            borderRadius: '0 0.375rem 0.375rem 0',
+            marginBottom: '1rem',
+            fontSize: '0.8125rem',
+            color: '#92400e'
+          }}>
+            📝 {order.special_instructions}
           </div>
         )}
+
+        {/* Botões */}
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={() => onAccept(order.id)}
+            disabled={isAccepting}
+            style={{
+              flex: 2,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              padding: '0.875rem 1.5rem',
+              borderRadius: '0.5rem',
+              border: 'none',
+              background: isAccepting ? '#93c5fd' : '#2563eb',
+              color: 'white',
+              fontSize: '0.9375rem',
+              fontWeight: 600,
+              cursor: isAccepting ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s'
+            }}
+          >
+            {isAccepting ? (
+              <>
+                <div style={{
+                  width: '1rem', height: '1rem',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: 'white',
+                  borderRadius: '50%',
+                  animation: 'spin 0.6s linear infinite'
+                }} />
+                Aceitando...
+              </>
+            ) : (
+              <>Aceitar Pedido</>
+            )}
+          </button>
+          <button
+            style={{
+              flex: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              padding: '0.875rem 1.5rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0',
+              background: 'white',
+              color: '#475569',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.15s'
+            }}
+          >
+            <Navigation size={16} /> Mapa
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default OrdersPage;
-
