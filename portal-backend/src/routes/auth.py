@@ -13,8 +13,9 @@ def _build_user_response(user):
     user_data = user.to_dict()
     if user.driver:
         user_data['driver'] = user.driver.to_dict()
-    if user.customer_profile:
-        user_data['customer'] = user.customer_profile.to_dict()
+    customer = Customer.query.filter_by(user_id=user.id).first()
+    if customer:
+        user_data['customer'] = customer.to_dict()
     return user_data
 
 
