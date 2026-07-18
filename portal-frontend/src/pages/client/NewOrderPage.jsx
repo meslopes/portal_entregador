@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, User, Phone, MapPin, DollarSign, Package,
-  Plus, Trash2, AlertCircle, CheckCircle, ShoppingBag
+  AlertCircle, CheckCircle, ShoppingCart, Truck, Info
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { orderService } from '@/lib/api';
@@ -20,15 +20,17 @@ const NewOrderPage = () => {
     customer_phone: '',
     // Endereço de entrega
     delivery_address: '',
+    delivery_number: '',
+    delivery_complement: '',
     delivery_neighborhood: '',
-    delivery_city: 'Porto Alegre',
+    delivery_city: 'Capão da Canoa',
     delivery_state: 'RS',
     delivery_zip_code: '',
-    // Itens do pedido
-    items: [{ name: '', quantity: 1, price: '' }],
-    // Pagamento
-    payment_method: 'CASH',
-    // Instruções
+    // Pagamento do cliente (itens)
+    product_payment_type: 'ESTABLISHMENT', // ESTABLISHMENT ou DELIVERY
+    product_payment_method: 'CASH', // CASH, CARD, PIX (quando for na entrega)
+    change_for: '', // valor para troco (se pagamento em dinheiro na entrega)
+    // Observações
     special_instructions: '',
   });
 
@@ -37,34 +39,18 @@ const NewOrderPage = () => {
     setError('');
   };
 
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...form.items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setForm(prev => ({ ...prev, items: newItems }));
+  // Simulação de distância (km) baseada no tamanho do endereço
+  // TODO: substituir por API de geolocalização
+  const simulateDistance = () => {
+    if (!form.delivery_address || !form.delivery_neighborhood) return 0;
+    // Simulação: gera distância entre 2 e 12 km
+    const hash = (form.delivery_address.length + form.delivery_neighborhood.length) % 10;
+    return Math.max(2, hash + 2);
   };
 
-  const addItem = () => {
-    setForm(prev => ({
-      ...prev,
-      items: [...prev.items, { name: '', quantity: 1, price: '' }]
-    }));
-  };
-
-  const removeItem = (index) => {
-    if (form.items.length <= 1) return;
-    setForm(prev => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index)
-    }));
-  };
-
-  const calculateTotal = () => {
-    return form.items.reduce((sum, item) => {
-      const price = parseFloat(item.price) || 0;
-      const qty = parseInt(item.quantity) || 0;
-      return sum + (price * qty);
-    }, 0);
-  };
+  const DISTANCE_KM = simulateDistance();
+  const PRICE_PER_KM = 2.95;
+  const DELIVERY_FEE = DISTANCE_KM * PRICE_PER_KM;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,41 +69,43 @@ const NewOrderPage = () => {
       setError('Endereço de entrega é obrigatório');
       return;
     }
-    if (!form.delivery_neighborhood.trim()) {
-      setError('Bairro é obrigatório');
+    if (!form.delivery_number.trim()) {
+      setError('Número do endereço é obrigatório');
       return;
     }
-
-    const validItems = form.items.filter(item => item.name.trim() && item.price);
-    if (validItems.length === 0) {
-      setError('Adicione pelo menos um item ao pedido');
+    if (!form.delivery_neighborhood.trim()) {
+      setError('Bairro é obrigatório');
       return;
     }
 
     try {
       setIsLoading(true);
 
-      const subtotal = calculateTotal();
-      const deliveryFee = subtotal * 0.1; // 10% de taxa de entrega
+      const fullAddress = `${form.delivery_address}, ${form.delivery_number}${form.delivery_complement ? ' - ' + form.delivery_complement : ''}`;
 
       const orderData = {
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
-        delivery_address: form.delivery_address,
+        delivery_address: fullAddress,
         delivery_neighborhood: form.delivery_neighborhood,
         delivery_city: form.delivery_city,
         delivery_state: form.delivery_state,
         delivery_zip_code: form.delivery_zip_code,
-        items: validItems.map(item => ({
-          name: item.name,
-          quantity: parseInt(item.quantity) || 1,
-          price: parseFloat(item.price) || 0
-        })),
-        subtotal: subtotal,
-        delivery_fee: deliveryFee,
-        total_amount: subtotal + deliveryFee,
-        payment_method: form.payment_method,
-        special_instructions: form.special_instructions || null,
+        delivery_latitude: null,
+        delivery_longitude: null,
+        items: [{ name: 'Entrega', quantity: 1, price: DELIVERY_FEE }],
+        subtotal: DELIVERY_FEE,
+        delivery_fee: DELIVERY_FEE,
+        total_amount: DELIVERY_FEE,
+        payment_method: form.product_payment_type === 'DELIVERY' ? form.product_payment_method : 'CASH',
+        special_instructions: JSON.stringify({
+          product_payment_type: form.product_payment_type,
+          product_payment_method: form.product_payment_method,
+          change_for: form.change_for || null,
+          distance_km: DISTANCE_KM,
+          price_per_km: PRICE_PER_KM,
+          user_instructions: form.special_instructions || null,
+        }),
       };
 
       await orderService.createOrder(orderData);
@@ -151,10 +139,10 @@ const NewOrderPage = () => {
             <CheckCircle size={40} style={{ color: '#22c55e' }} />
           </div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#166534', marginBottom: '0.5rem' }}>
-            Pedido Criado!
+            Pedido Enviado!
           </h2>
           <p style={{ color: '#16a34a', marginBottom: '0.5rem' }}>
-            O pedido foi enviado para o sistema.
+            O pedido foi registrado com sucesso.
           </p>
           <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
             Um entregador será designado automaticamente.
@@ -179,7 +167,7 @@ const NewOrderPage = () => {
           Lançar Novo Pedido
         </h1>
         <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-          Preencha os dados do cliente e do pedido
+          Preencha os dados do cliente e do endereço de entrega
         </p>
       </div>
 
@@ -199,11 +187,11 @@ const NewOrderPage = () => {
         {/* Dados do Cliente Final */}
         <Section title="Dados do Cliente" icon={<User size={16} />}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <Field label="Nome do Cliente *" placeholder="Nome completo">
+            <Field label="Nome do Cliente *">
               <input name="customer_name" value={form.customer_name} onChange={handleChange}
                 placeholder="Ex: Seu Jair das Quantas" required />
             </Field>
-            <Field label="Telefone *" placeholder="Telefone">
+            <Field label="Telefone *">
               <input name="customer_phone" value={form.customer_phone} onChange={handleChange}
                 placeholder="(51) 99999-9999" required />
             </Field>
@@ -212,125 +200,202 @@ const NewOrderPage = () => {
 
         {/* Endereço de Entrega */}
         <Section title="Endereço de Entrega" icon={<MapPin size={16} />}>
-          <Field label="Endereço/Rua *" placeholder="Endereço completo">
+          <Field label="Endereço/Rua *">
             <input name="delivery_address" value={form.delivery_address} onChange={handleChange}
-              placeholder="Rua, número, complemento" required />
+              placeholder="Rua, avenida, travessa..." required />
           </Field>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem' }}>
-            <Field label="Bairro *" placeholder="Bairro">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+            <Field label="Número *">
+              <input name="delivery_number" value={form.delivery_number} onChange={handleChange}
+                placeholder="Nº" required />
+            </Field>
+            <Field label="Complemento">
+              <input name="delivery_complement" value={form.delivery_complement} onChange={handleChange}
+                placeholder="Ex: Casa 2, Apto 506, Bloco B" />
+            </Field>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+            <Field label="Bairro *">
               <input name="delivery_neighborhood" value={form.delivery_neighborhood} onChange={handleChange}
                 placeholder="Bairro" required />
             </Field>
-            <Field label="Cidade" placeholder="Cidade">
-              <input name="delivery_city" value={form.delivery_city} onChange={handleChange}
-                placeholder="Porto Alegre" />
-            </Field>
-            <Field label="CEP" placeholder="CEP">
+            <Field label="CEP">
               <input name="delivery_zip_code" value={form.delivery_zip_code} onChange={handleChange}
-                placeholder="90000-000" />
+                placeholder="95555-000" />
             </Field>
           </div>
-        </Section>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+            <Field label="Cidade">
+              <input name="delivery_city" value={form.delivery_city} onChange={handleChange} />
+            </Field>
+            <Field label="Estado">
+              <input name="delivery_state" value={form.delivery_state} onChange={handleChange} />
+            </Field>
+          </div>
 
-        {/* Itens do Pedido */}
-        <Section title="Itens do Pedido" icon={<Package size={16} />}>
-          {form.items.map((item, index) => (
-            <div key={index} style={{
-              display: 'grid', gridTemplateColumns: '3fr 1fr 1fr auto',
-              gap: '0.75rem', marginBottom: '0.75rem', alignItems: 'end'
+          {/* Distância e valor da entrega */}
+          {DISTANCE_KM > 0 && (
+            <div style={{
+              marginTop: '1rem', padding: '1rem',
+              background: '#f0fdfa', borderRadius: '0.5rem',
+              border: '1px solid #99f6e4'
             }}>
-              <Field label={index === 0 ? 'Item' : ''} placeholder="Nome do item">
-                <input value={item.name} onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                  placeholder="Ex: Pão Frances" />
-              </Field>
-              <Field label={index === 0 ? 'Qtd' : ''} placeholder="Qtd">
-                <input type="number" min="1" value={item.quantity}
-                  onChange={(e) => handleItemChange(index, 'quantity', e.target.value)} />
-              </Field>
-              <Field label={index === 0 ? 'Preço (R$)' : ''} placeholder="Preço">
-                <input type="number" step="0.01" min="0" value={item.price}
-                  onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                  placeholder="0,00" />
-              </Field>
-              <button type="button" onClick={() => removeItem(index)} style={{
-                padding: '0.5rem', borderRadius: '0.375rem',
-                border: '1px solid #fecaca', background: '#fef2f2',
-                color: '#dc2626', cursor: 'pointer', marginBottom: '2px',
-                opacity: form.items.length <= 1 ? 0.3 : 1
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <Truck size={16} style={{ color: '#0d9488' }} />
+                <span style={{ fontWeight: 600, color: '#0f766e', fontSize: '0.875rem' }}>Valor da Entrega</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#475569' }}>
+                <span>Distância estimada: {DISTANCE_KM} km</span>
+                <span>× R$ {PRICE_PER_KM.toFixed(2).replace('.', ',')}/km</span>
+              </div>
+              <div style={{
+                marginTop: '0.5rem', paddingTop: '0.5rem',
+                borderTop: '1px solid #99f6e4',
+                display: 'flex', justifyContent: 'space-between',
+                fontWeight: 700, color: '#0f766e', fontSize: '1.125rem'
               }}>
-                <Trash2 size={16} />
-              </button>
+                <span>Total da entrega</span>
+                <span>R$ {DELIVERY_FEE.toFixed(2).replace('.', ',')}</span>
+              </div>
             </div>
-          ))}
-          <button type="button" onClick={addItem} style={{
-            display: 'flex', alignItems: 'center', gap: '0.375rem',
-            padding: '0.5rem 1rem', borderRadius: '0.5rem',
-            border: '1px dashed #d1d5db', background: 'transparent',
-            color: '#64748b', cursor: 'pointer', fontSize: '0.875rem'
-          }}>
-            <Plus size={14} /> Adicionar item
-          </button>
-
-          {/* Total */}
-          <div style={{
-            marginTop: '1rem', padding: '0.875rem',
-            background: '#f8fafc', borderRadius: '0.5rem',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-          }}>
-            <span style={{ fontWeight: 500, color: '#475569' }}>Subtotal</span>
-            <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-              R$ {calculateTotal().toFixed(2).replace('.', ',')}
-            </span>
-          </div>
+          )}
         </Section>
 
-        {/* Pagamento */}
-        <Section title="Forma de Pagamento" icon={<DollarSign size={16} />}>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {[
-              { key: 'CASH', label: 'Dinheiro' },
-              { key: 'CARD', label: 'Cartão' },
-              { key: 'PIX', label: 'PIX' },
-            ].map(pm => (
-              <button key={pm.key} type="button"
-                onClick={() => setForm(prev => ({ ...prev, payment_method: pm.key }))}
-                style={{
-                  padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
-                  border: '1.5px solid', fontSize: '0.875rem', fontWeight: 500,
-                  cursor: 'pointer', transition: 'all 0.15s',
-                  borderColor: form.payment_method === pm.key ? '#0d9488' : '#e2e8f0',
-                  background: form.payment_method === pm.key ? '#f0fdfa' : 'white',
-                  color: form.payment_method === pm.key ? '#0f766e' : '#475569'
+        {/* Pagamento do Cliente (Itens) */}
+        <Section title="Pagamento do Cliente" icon={<ShoppingCart size={16} />}>
+          <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1rem' }}>
+            Como o cliente vai pagar pelos itens/produtos?
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <PaymentOption
+              active={form.product_payment_type === 'ESTABLISHMENT'}
+              onClick={() => setForm(prev => ({ ...prev, product_payment_type: 'ESTABLISHMENT' }))}
+              label="Pago no Estabelecimento"
+              description="Cliente já pagou ou vai pagar no local"
+            />
+            <PaymentOption
+              active={form.product_payment_type === 'DELIVERY'}
+              onClick={() => setForm(prev => ({ ...prev, product_payment_type: 'DELIVERY' }))}
+              label="Pagamento na Entrega"
+              description="Cliente vai pagar ao entregador"
+            />
+          </div>
+
+          {/* Opções de pagamento na entrega */}
+          {form.product_payment_type === 'DELIVERY' && (
+            <div style={{
+              padding: '1rem', background: '#f8fafc',
+              borderRadius: '0.5rem', border: '1px solid #e2e8f0'
+            }}>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.75rem' }}>
+                Forma de pagamento do cliente:
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                {[
+                  { key: 'CASH', label: 'Dinheiro' },
+                  { key: 'CARD', label: 'Cartão' },
+                  { key: 'PIX', label: 'PIX' },
+                ].map(pm => (
+                  <button key={pm.key} type="button"
+                    onClick={() => setForm(prev => ({ ...prev, product_payment_method: pm.key }))}
+                    style={{
+                      padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                      border: '1.5px solid', fontSize: '0.8125rem', fontWeight: 500,
+                      cursor: 'pointer', transition: 'all 0.15s',
+                      borderColor: form.product_payment_method === pm.key ? '#0d9488' : '#e2e8f0',
+                      background: form.product_payment_method === pm.key ? '#f0fdfa' : 'white',
+                      color: form.product_payment_method === pm.key ? '#0f766e' : '#475569'
+                    }}>
+                    {pm.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Campo de troco (se dinheiro) */}
+              {form.product_payment_method === 'CASH' && (
+                <Field label="Troco para (R$)">
+                  <input name="change_for" value={form.change_for} onChange={handleChange}
+                    placeholder="Ex: 50,00" />
+                </Field>
+              )}
+
+              {/* Aviso para cartão/PIX */}
+              {form.product_payment_method !== 'CASH' && (
+                <div style={{
+                  display: 'flex', alignItems: 'flex-start', gap: '0.5rem',
+                  padding: '0.75rem', background: '#fffbeb',
+                  borderRadius: '0.375rem', fontSize: '0.8125rem', color: '#92400e'
                 }}>
-                {pm.label}
-              </button>
-            ))}
-          </div>
+                  <Info size={16} style={{ flexShrink: 0, marginTop: '0.125rem' }} />
+                  <span>
+                    {form.product_payment_method === 'CARD'
+                      ? 'Lembre-se de fornecer a máquina de cartão ao entregador.'
+                      : 'Lembre-se de enviar o código PIX para o entregador.'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </Section>
 
-        {/* Instruções */}
-        <Section title="Observações" icon={<ShoppingBag size={16} />}>
+        {/* Observações */}
+        <Section title="Observações" icon={<Package size={16} />}>
           <textarea
             name="special_instructions"
             value={form.special_instructions}
             onChange={handleChange}
-            placeholder="Ex: Retorno com máquina de cartão, urgente, etc."
+            placeholder="Ex: Urgente, cuidado ao manusear, etc."
             rows={3}
             style={{
               width: '100%', padding: '0.625rem 0.875rem',
               borderRadius: '0.5rem', border: '1.5px solid #e2e8f0',
               fontSize: '0.875rem', resize: 'vertical', outline: 'none',
-              fontFamily: 'inherit'
+              fontFamily: 'inherit', boxSizing: 'border-box'
             }}
           />
         </Section>
+
+        {/* Resumo do pedido */}
+        <div style={{
+          background: 'white', borderRadius: '0.75rem',
+          padding: '1.25rem', marginBottom: '1rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+        }}>
+          <h3 style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.75rem', fontSize: '0.9375rem' }}>
+            Resumo
+          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem', fontSize: '0.875rem' }}>
+            <span style={{ color: '#64748b' }}>Cliente</span>
+            <span style={{ color: '#1e293b' }}>{form.customer_name || '—'}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem', fontSize: '0.875rem' }}>
+            <span style={{ color: '#64748b' }}>Endereço</span>
+            <span style={{ color: '#1e293b', textAlign: 'right', maxWidth: '60%' }}>
+              {form.delivery_address ? `${form.delivery_address}, ${form.delivery_number || 's/n'}` : '—'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+            <span style={{ color: '#64748b' }}>Pagamento</span>
+            <span style={{ color: '#1e293b' }}>
+              {form.product_payment_type === 'ESTABLISHMENT' ? 'No estabelecimento' : `Na entrega (${form.product_payment_method === 'CASH' ? 'Dinheiro' : form.product_payment_method === 'CARD' ? 'Cartão' : 'PIX'})`}
+            </span>
+          </div>
+          <div style={{
+            paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9',
+            display: 'flex', justifyContent: 'space-between',
+            fontWeight: 700, fontSize: '1.125rem', color: '#0f766e'
+          }}>
+            <span>Valor da Entrega</span>
+            <span>R$ {DELIVERY_FEE.toFixed(2).replace('.', ',')}</span>
+          </div>
+        </div>
 
         {/* Botão enviar */}
         <button type="submit" disabled={isLoading} style={{
           width: '100%', padding: '1rem', borderRadius: '0.75rem',
           border: 'none', background: '#0d9488', color: 'white',
           fontSize: '1rem', fontWeight: 600, cursor: isLoading ? 'not-allowed' : 'pointer',
-          opacity: isLoading ? 0.7 : 1, marginTop: '1rem',
+          opacity: isLoading ? 0.7 : 1,
           boxShadow: '0 4px 14px rgba(13, 148, 136, 0.3)'
         }}>
           {isLoading ? 'Enviando Pedido...' : 'Enviar Pedido'}
@@ -370,6 +435,21 @@ const Field = ({ label, children }) => (
       })}
     </div>
   </div>
+);
+
+const PaymentOption = ({ active, onClick, label, description }) => (
+  <button type="button" onClick={onClick} style={{
+    flex: 1, minWidth: '200px', padding: '0.875rem',
+    borderRadius: '0.5rem', border: '1.5px solid',
+    borderColor: active ? '#0d9488' : '#e2e8f0',
+    background: active ? '#f0fdfa' : 'white',
+    cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s'
+  }}>
+    <p style={{ fontWeight: 600, color: active ? '#0f766e' : '#1e293b', fontSize: '0.875rem', marginBottom: '0.125rem' }}>
+      {label}
+    </p>
+    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{description}</p>
+  </button>
 );
 
 export default NewOrderPage;
