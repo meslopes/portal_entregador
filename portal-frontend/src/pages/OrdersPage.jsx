@@ -40,7 +40,12 @@ const OrdersPage = () => {
       setAcceptingOrder(orderId);
       await orderService.acceptOrder(orderId);
       setOrders(orders.filter(order => order.id !== orderId));
-      navigate('/dashboard');
+      // Delay antes de navegar para evitar conflito DOM
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          navigate('/dashboard');
+        });
+      });
     } catch (error) {
       setError('Erro ao aceitar pedido');
       console.error(error);

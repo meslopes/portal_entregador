@@ -64,25 +64,27 @@ const ActiveDeliveryPage = () => {
     try {
       setIsUpdating(true);
       setError('');
-      await orderService.updateOrderStatus(order.id, action.next);
+      const response = await orderService.updateOrderStatus(order.id, action.next);
 
-      // Atualiza o status primeiro
-      const newOrder = { ...order, status: action.next };
-      setOrder(newOrder);
+      // Atualiza o status localmente
+      setOrder(prev => prev ? { ...prev, status: action.next } : prev);
 
-      // Navega depois de um delay para evitar conflito DOM
+      // Se entregue, navega para o dashboard
       if (action.next === 'DELIVERED') {
-        // Pequeno delay para garantir que o estado foi atualizado antes de navegar
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 100);
+        // Usa requestAnimationFrame para garantir que o DOM foi atualizado antes de navegar
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            navigate('/dashboard', { replace: true });
+          });
+        });
       }
     } catch (err) {
+      if (!isMounted.current) return;
       console.error('Erro ao atualizar status:', err);
       const msg = err.response?.data?.error || err.message || 'Erro ao atualizar status';
       setError(msg);
     } finally {
-      setIsUpdating(false);
+      if (isMounted.current) setIsUpdating(false);
     }
   };
 

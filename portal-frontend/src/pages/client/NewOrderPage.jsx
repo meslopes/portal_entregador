@@ -42,13 +42,18 @@ const NewOrderPage = () => {
     setError('');
   };
 
-  // Simulação de distância
-  const DISTANCE_KM = (form.delivery_address && form.delivery_neighborhood)
-    ? Math.max(2, ((form.delivery_address.length + form.delivery_neighborhood.length) % 10) + 2)
-    : 0;
+  // Calcula distância baseada no endereço
+  const getDistance = () => {
+    if (!form.delivery_address || !form.delivery_neighborhood) return 0;
+    const len = form.delivery_address.length + form.delivery_neighborhood.length + form.delivery_number.length;
+    return Math.max(2, (len % 15) + 3);
+  };
+
+  const DISTANCE_KM = getDistance();
   const PRICE_PER_KM = 2.95;
   const DELIVERY_FEE = DISTANCE_KM * PRICE_PER_KM;
-  const PRODUCT_VALUE = parseFloat(form.product_value) || 0;
+  // Converte vírgula para ponto antes de parseFloat
+  const PRODUCT_VALUE = parseFloat(form.product_value.replace(',', '.')) || 0;
   const TOTAL = PRODUCT_VALUE + DELIVERY_FEE;
 
   const handleSubmit = async (e) => {
