@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  DollarSign, Calendar, TrendingUp, AlertCircle,
+  Package, Clock, Wallet, ArrowUpRight
+} from 'lucide-react';
 import { driverService, utils } from '@/lib/api';
 
 const EarningsPage = () => {
@@ -23,9 +24,9 @@ const EarningsPage = () => {
       ]);
       setEarnings(earningsRes);
       setStats(statsRes);
-    } catch (error) {
+    } catch (err) {
       setError('Erro ao carregar dados de ganhos');
-      console.error('Erro ao carregar ganhos:', error);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -33,115 +34,237 @@ const EarningsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          width: '3rem', height: '3rem',
+          border: '3px solid #e2e8f0', borderTopColor: '#2563eb',
+          borderRadius: '50%', animation: 'spin 0.8s linear infinite'
+        }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Ganhos</h1>
-          <p className="text-gray-600">Acompanhe seus ganhos e pagamentos</p>
+    <div style={{ padding: '1.5rem', maxWidth: '900px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
+          Ganhos
+        </h1>
+        <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
+          Acompanhe seus ganhos e pagamentos
+        </p>
+      </div>
+
+      {/* Erro */}
+      {error && (
+        <div style={{
+          background: '#fef2f2', border: '1px solid #fecaca',
+          color: '#dc2626', padding: '0.75rem 1rem',
+          borderRadius: '0.5rem', marginBottom: '1.5rem',
+          display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem'
+        }}>
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Cards de resumo */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <SummaryCard
+          icon={<DollarSign size={22} />}
+          iconBg="#dcfce7"
+          iconColor="#16a34a"
+          label="Ganhos Hoje"
+          value={utils.formatCurrency(stats?.today_earnings)}
+        />
+        <SummaryCard
+          icon={<Calendar size={22} />}
+          iconBg="#dbeafe"
+          iconColor="#2563eb"
+          label="Esta Semana"
+          value={utils.formatCurrency(stats?.week_earnings)}
+        />
+        <SummaryCard
+          icon={<TrendingUp size={22} />}
+          iconBg="#f3e8ff"
+          iconColor="#9333ea"
+          label="Total Acumulado"
+          value={utils.formatCurrency(stats?.total_earnings)}
+          large
+        />
+      </div>
+
+      {/* Stats extras */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <MiniStat icon={<Package size={16} />} label="Entregas Hoje" value={stats?.today_deliveries || 0} />
+        <MiniStat icon={<Package size={16} />} label="Entregas Semana" value={stats?.week_deliveries || 0} />
+        <MiniStat icon={<Clock size={16} />} label="Média por Entrega" value={
+          stats?.total_deliveries > 0
+            ? utils.formatCurrency((stats?.total_earnings || 0) / stats.total_deliveries)
+            : 'R$ 0,00'
+        } />
+      </div>
+
+      {/* Lista de pagamentos */}
+      <div style={{
+        background: 'white',
+        borderRadius: '0.75rem',
+        overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{
+          padding: '1.25rem 1.5rem',
+          borderBottom: '1px solid #f1f5f9',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Wallet size={18} style={{ color: '#2563eb' }} />
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>Histórico de Pagamentos</span>
+          </div>
+          {earnings?.payments && (
+            <span style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
+              {earnings.payments.length} registro{earnings.payments.length !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
-        {/* Alertas */}
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+        {earnings?.payments?.length > 0 ? (
+          <div>
+            {earnings.payments.map((payment) => (
+              <PaymentRow key={payment.id} payment={payment} />
+            ))}
+          </div>
+        ) : (
+          <div style={{
+            padding: '3rem 2rem',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              width: '4rem', height: '4rem',
+              borderRadius: '50%',
+              background: '#f1f5f9',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 1rem'
+            }}>
+              <DollarSign size={24} style={{ color: '#94a3b8' }} />
+            </div>
+            <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
+              Nenhum pagamento registrado
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+              Seus pagamentos aparecerão aqui
+            </p>
+          </div>
         )}
+      </div>
 
-        {/* Cards de resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Ganhos Hoje</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {utils.formatCurrency(stats?.today_earnings)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+};
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Calendar className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Esta Semana</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {utils.formatCurrency(stats?.week_earnings)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+const SummaryCard = ({ icon, iconBg, iconColor, label, value, large = false }) => (
+  <div style={{
+    background: 'white',
+    borderRadius: '0.75rem',
+    padding: large ? '1.5rem' : '1.25rem',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    transition: 'transform 0.15s, box-shadow 0.15s'
+  }}
+  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
+  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
+  >
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{
+        padding: '0.625rem',
+        borderRadius: '0.5rem',
+        background: iconBg,
+        color: iconColor,
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        {icon}
+      </div>
+      <div>
+        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+        <p style={{ fontSize: large ? '1.5rem' : '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
+      </div>
+    </div>
+  </div>
+);
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Acumulado</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {utils.formatCurrency(stats?.total_earnings)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+const MiniStat = ({ icon, label, value }) => (
+  <div style={{
+    background: 'white',
+    borderRadius: '0.5rem',
+    padding: '1rem',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem'
+  }}>
+    <div style={{ color: '#94a3b8' }}>{icon}</div>
+    <div>
+      <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+      <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b' }}>{value}</p>
+    </div>
+  </div>
+);
+
+const PaymentRow = ({ payment }) => {
+  const typeConfig = {
+    DELIVERY_EARNING: { label: 'Entrega realizada', color: '#16a34a', bg: '#dcfce7' },
+    BONUS: { label: 'Bônus', color: '#d97706', bg: '#fef3c7' },
+    ADJUSTMENT: { label: 'Ajuste', color: '#2563eb', bg: '#dbeafe' },
+  };
+
+  const config = typeConfig[payment.payment_type] || typeConfig.DELIVERY_EARNING;
+
+  return (
+    <div style={{
+      padding: '1rem 1.5rem',
+      borderBottom: '1px solid #f8fafc',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      transition: 'background 0.15s'
+    }}
+    onMouseEnter={e => e.currentTarget.style.background = '#fafbfc'}
+    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+        <div style={{
+          width: '2.5rem', height: '2.5rem',
+          borderRadius: '50%',
+          background: config.bg,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0
+        }}>
+          <ArrowUpRight size={16} style={{ color: config.color }} />
         </div>
-
-        {/* Lista de pagamentos */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico de Pagamentos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {earnings?.payments?.length > 0 ? (
-              <div className="divide-y">
-                {earnings.payments.map((payment) => (
-                  <div key={payment.id} className="p-4 flex justify-between items-center hover:bg-gray-50">
-                    <div>
-                      <p className="font-medium">
-                        {payment.payment_type === 'DELIVERY_EARNING' ? 'Entrega realizada' : 
-                         payment.payment_type === 'BONUS' ? 'Bônus' : 'Ajuste'}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {utils.formatDateTime(payment.created_at)}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {utils.getStatusText(payment.status)}
-                      </p>
-                    </div>
-                    <span className="text-green-600 font-semibold text-lg">
-                      +{utils.formatCurrency(payment.amount)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 text-center text-gray-500">
-                Nenhum pagamento registrado ainda
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <div>
+          <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{config.label}</p>
+          <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            {utils.formatDateTime(payment.created_at)}
+          </p>
+        </div>
+      </div>
+      <div style={{ textAlign: 'right' }}>
+        <p style={{ fontWeight: 700, color: '#22c55e', fontSize: '1rem' }}>
+          +{utils.formatCurrency(payment.amount)}
+        </p>
+        <span style={{
+          fontSize: '0.6875rem',
+          padding: '0.125rem 0.5rem',
+          borderRadius: '9999px',
+          background: payment.status === 'PAID' ? '#dcfce7' : '#fef3c7',
+          color: payment.status === 'PAID' ? '#16a34a' : '#d97706'
+        }}>
+          {utils.getStatusText(payment.status)}
+        </span>
       </div>
     </div>
   );
