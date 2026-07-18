@@ -38,8 +38,8 @@ def get_available_orders():
                 lng_diff = abs(float(order.restaurant.longitude) - float(driver.current_longitude))
                 distance_to_restaurant = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
                 
-                # Só mostra pedidos dentro de um raio de 50km
-                if distance_to_restaurant > 50:
+                # Só mostra pedidos dentro de um raio de 200km
+                if distance_to_restaurant > 200:
                     continue
             else:
                 distance_to_restaurant = 0
