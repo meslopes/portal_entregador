@@ -313,19 +313,33 @@ const OrderCard = ({ order, onAccept, isAccepting, calculateEarnings }) => {
         </div>
 
         {/* Instruções especiais */}
-        {order.special_instructions && (
-          <div style={{
-            background: '#fffbeb',
-            borderLeft: '3px solid #f59e0b',
-            padding: '0.75rem 1rem',
-            borderRadius: '0 0.375rem 0.375rem 0',
-            marginBottom: '1rem',
-            fontSize: '0.8125rem',
-            color: '#92400e'
-          }}>
-            📝 {order.special_instructions}
-          </div>
-        )}
+        {order.special_instructions && (() => {
+          let instructions = order.special_instructions;
+          try {
+            const parsed = JSON.parse(order.special_instructions);
+            const parts = [];
+            if (parsed.product_value) parts.push(`Cobrar R$ ${parsed.product_value}`);
+            if (parsed.product_payment_method) {
+              const methods = { CASH: 'Dinheiro', CARD: 'Cartão', PIX: 'PIX' };
+              parts.push(`Pagamento: ${methods[parsed.product_payment_method] || parsed.product_payment_method}`);
+            }
+            if (parsed.change_for) parts.push(`Troco para R$ ${parsed.change_for}`);
+            if (parts.length > 0) instructions = parts.join(' | ');
+          } catch (e) {}
+          return (
+            <div style={{
+              background: '#fffbeb',
+              borderLeft: '3px solid #f59e0b',
+              padding: '0.75rem 1rem',
+              borderRadius: '0 0.375rem 0.375rem 0',
+              marginBottom: '1rem',
+              fontSize: '0.8125rem',
+              color: '#92400e'
+            }}>
+              📝 {instructions}
+            </div>
+          );
+        })()}
 
         {/* Botões */}
         <div style={{ display: 'flex', gap: '0.75rem' }}>
