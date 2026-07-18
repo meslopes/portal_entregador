@@ -27,8 +27,9 @@ const OrdersPage = () => {
       setOrders(response.orders || []);
       setError('');
     } catch (error) {
-      setError('Erro ao carregar pedidos');
-      console.error(error);
+      console.error('Erro ao carregar pedidos:', error);
+      const msg = error.response?.data?.error || error.message || 'Erro ao carregar pedidos';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }

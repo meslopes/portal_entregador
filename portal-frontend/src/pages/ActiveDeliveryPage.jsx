@@ -42,8 +42,9 @@ const ActiveDeliveryPage = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError('Erro ao carregar pedido');
-      console.error(err);
+      console.error('Erro ao carregar pedido:', err);
+      const msg = err.response?.data?.error || err.message || 'Erro ao carregar pedido';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -66,8 +67,9 @@ const ActiveDeliveryPage = () => {
         setTimeout(() => navigate('/dashboard'), 1500);
       }
     } catch (err) {
-      setError('Erro ao atualizar status');
-      console.error(err);
+      console.error('Erro ao atualizar status:', err);
+      const msg = err.response?.data?.error || err.message || 'Erro ao atualizar status';
+      setError(msg);
     } finally {
       setIsUpdating(false);
     }
