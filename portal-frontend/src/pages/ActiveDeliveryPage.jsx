@@ -69,14 +69,10 @@ const ActiveDeliveryPage = () => {
       // Atualiza o status localmente
       setOrder(prev => prev ? { ...prev, status: action.next } : prev);
 
-      // Se entregue, navega para o dashboard
+      // Se entregue, redireciona para o dashboard
       if (action.next === 'DELIVERED') {
-        // Usa requestAnimationFrame para garantir que o DOM foi atualizado antes de navegar
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            navigate('/dashboard', { replace: true });
-          });
-        });
+        // Usa window.location para evitar conflito DOM
+        window.location.href = '/dashboard';
       }
     } catch (err) {
       if (!isMounted.current) return;

@@ -180,7 +180,7 @@ const NewOrderPage = () => {
         {/* Pagamento */}
         <Card title="Pagamento do Cliente" icon={<ShoppingCart size={16} />}>
           <Label>Valor dos Itens/Produtos (R$) *</Label>
-          <input type="number" step="0.01" min="0" name="product_value" value={form.product_value} onChange={handleChange} placeholder="Ex: 45,00" required style={inputStyle} />
+          <input type="text" inputMode="decimal" name="product_value" value={form.product_value} onChange={handleChange} placeholder="Ex: 45,00" required style={inputStyle} />
 
           <Label>Como o cliente vai pagar?</Label>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
