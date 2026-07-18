@@ -270,10 +270,26 @@ const NewOrderPage = () => {
           </p>
 
           {/* Valor dos itens */}
-          <Field label="Valor dos Itens/Produtos (R$) *">
-            <input name="product_value" value={form.product_value} onChange={handleChange}
-              placeholder="Ex: 45,00" required />
-          </Field>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+              Valor dos Itens/Produtos (R$) *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              name="product_value"
+              value={form.product_value}
+              onChange={handleChange}
+              placeholder="Ex: 45,00"
+              required
+              style={{
+                width: '100%', padding: '0.625rem 0.875rem',
+                borderRadius: '0.5rem', border: '1.5px solid #e2e8f0',
+                fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
+              }}
+            />
+          </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
             <PaymentOption

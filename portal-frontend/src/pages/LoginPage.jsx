@@ -161,12 +161,18 @@ const LoginPage = () => {
           </div>
 
           <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-              Não tem uma conta?{' '}
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+              Não tem uma conta?
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
               <Link to="/register" className="auth-footer-link">
                 Cadastre-se como entregador
               </Link>
-            </p>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <Link to="/client/register" className="auth-footer-link">
+                Cadastre-se como estabelecimento
+              </Link>
+            </div>
           </div>
 
           {/* Credenciais de teste - sutil */}
