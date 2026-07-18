@@ -16,6 +16,7 @@ import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
 import NewOrderPage from '@/pages/client/NewOrderPage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
+import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
 import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
 import './App.css';
@@ -140,6 +141,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <AdminDashboardPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/establishments"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminEstablishmentsPage />
                 </Layout>
               </ProtectedRoute>
             }
