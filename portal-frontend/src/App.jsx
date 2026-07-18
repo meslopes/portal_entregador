@@ -10,6 +10,10 @@ import OrdersPage from '@/pages/OrdersPage';
 import EarningsPage from '@/pages/EarningsPage';
 import HistoryPage from '@/pages/HistoryPage';
 import ActiveDeliveryPage from '@/pages/ActiveDeliveryPage';
+import ClientLoginPage from '@/pages/client/ClientLoginPage';
+import ClientRegisterPage from '@/pages/client/ClientRegisterPage';
+import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
+import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
@@ -86,6 +90,34 @@ function App() {
                 <Layout>
                   <ActiveDeliveryPage />
                 </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas do cliente */}
+          <Route
+            path="/client/login"
+            element={
+              <ProtectedRoute requireAuth={false}>
+                <ClientLoginPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/register"
+            element={
+              <ProtectedRoute requireAuth={false}>
+                <ClientRegisterPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client"
+            element={
+              <ProtectedRoute>
+                <ClientLayout>
+                  <ClientDashboardPage />
+                </ClientLayout>
               </ProtectedRoute>
             }
           />

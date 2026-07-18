@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, Truck, MapPin, BarChart3, Shield } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, ArrowRight, ShoppingBag, Clock, MapPin, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-const LoginPage = () => {
+const ClientLoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -24,8 +22,13 @@ const LoginPage = () => {
     try {
       const response = await login(formData.email, formData.password);
       const userType = response?.user?.user_type;
-      const target = userType === 'ADMIN' ? '/admin' : userType === 'CLIENT' ? '/client' : from;
-      navigate(target, { replace: true });
+      if (userType === 'CLIENT') {
+        navigate('/client', { replace: true });
+      } else if (userType === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       // erro tratado no contexto
     } finally {
@@ -36,7 +39,7 @@ const LoginPage = () => {
   return (
     <div className="auth-split-layout">
       {/* Lado esquerdo - Branding */}
-      <div className="auth-branding" style={{ flex: '0 0 45%' }}>
+      <div className="auth-branding" style={{ flex: '0 0 45%', background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%)' }}>
         <div className="auth-animate-in" style={{ position: 'relative', zIndex: 1, maxWidth: '400px' }}>
           <img
             src="/logo-muvy.jpg"
@@ -47,25 +50,25 @@ const LoginPage = () => {
             muv.log
           </h1>
           <p style={{ fontSize: '1.125rem', opacity: 0.9, marginBottom: '3rem', lineHeight: 1.6 }}>
-            Plataforma completa para gestão<br />de entregadores
+            Peça suas entregas com<br />rapidez e segurança
           </p>
 
           <div style={{ textAlign: 'left' }}>
             <div className="feature-item">
-              <div className="feature-icon"><Truck size={20} /></div>
-              <span>Gestão completa de entregadores</span>
+              <div className="feature-icon"><ShoppingBag size={20} /></div>
+              <span>Faça pedidos de qualquer restaurante</span>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon"><Clock size={20} /></div>
+              <span>Entrega rápida e em tempo real</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon"><MapPin size={20} /></div>
-              <span>Tracking em tempo real</span>
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon"><BarChart3 size={20} /></div>
-              <span>Relatórios e analytics</span>
+              <span>Acompanhe seu pedido pelo mapa</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon"><Shield size={20} /></div>
-              <span>Pagamentos seguros e rápidos</span>
+              <span>Pagamento seguro e flexível</span>
             </div>
           </div>
         </div>
@@ -163,13 +166,12 @@ const LoginPage = () => {
           <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
             <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
               Não tem uma conta?{' '}
-              <Link to="/register" className="auth-footer-link">
-                Cadastre-se como entregador
+              <Link to="/client/register" className="auth-footer-link">
+                Cadastre-se
               </Link>
             </p>
           </div>
 
-          {/* Credenciais de teste - sutil */}
           <div style={{
             marginTop: '2rem',
             padding: '1rem',
@@ -179,18 +181,16 @@ const LoginPage = () => {
             color: '#94a3b8',
             textAlign: 'center'
           }}>
-            <strong style={{ color: '#64748b' }}>Teste:</strong> admin@muv.log.br / admin123
+            <strong style={{ color: '#64748b' }}>Teste:</strong> cliente@teste.com / 123456
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
 };
 
-export default LoginPage;
+export default ClientLoginPage;

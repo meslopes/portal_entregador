@@ -19,7 +19,7 @@ const ProtectedRoute = ({ children, requireAuth = true, redirectTo = '/login' })
   }
 
   if (!requireAuth && isAuthenticated) {
-    const defaultRoute = user?.user_type === 'ADMIN' ? '/admin' : '/dashboard';
+    const defaultRoute = user?.user_type === 'ADMIN' ? '/admin' : user?.user_type === 'CLIENT' ? '/client' : '/dashboard';
     return <Navigate to={defaultRoute} replace />;
   }
 

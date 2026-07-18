@@ -8,6 +8,7 @@ db = SQLAlchemy()
 class UserType(Enum):
     DRIVER = "DRIVER"
     ADMIN = "ADMIN"
+    CLIENT = "CLIENT"
 
 class UserStatus(Enum):
     ACTIVE = "ACTIVE"
@@ -179,15 +180,17 @@ class Restaurant(db.Model):
 
 class Customer(db.Model):
     __tablename__ = 'customers'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
     email = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relacionamentos
+    user = db.relationship('User', backref='customer_profile', uselist=False)
     addresses = db.relationship('Address', backref='customer', cascade='all, delete-orphan')
     orders = db.relationship('Order', backref='customer')
 

@@ -2,17 +2,19 @@
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask import request, jsonify
-from src.models.portal_models import db, User, Driver, UserType, UserStatus, VehicleType
+from src.models.portal_models import db, User, Driver, Customer, UserType, UserStatus, VehicleType
 from flask import Blueprint
 
 auth_bp = Blueprint('auth', __name__)
 
 
 def _build_user_response(user):
-    """Monta a resposta completa do usuário com dados do driver se aplicável."""
+    """Monta a resposta completa do usuário com dados do driver/customer se aplicável."""
     user_data = user.to_dict()
     if user.driver:
         user_data['driver'] = user.driver.to_dict()
+    if user.customer_profile:
+        user_data['customer'] = user.customer_profile.to_dict()
     return user_data
 
 
@@ -124,6 +126,61 @@ def register():
                 pass
 
         db.session.add(driver)
+        db.session.commit()
+
+        access_token = create_access_token(identity=str(user.id))
+        user_data = _build_user_response(user)
+
+        return jsonify({
+            'access_token': access_token,
+            'user': user_data
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Endpoint para registro de cliente
+@auth_bp.route('/register-client', methods=['POST'])
+def register_client():
+    try:
+        data = request.get_json() or {}
+
+        email = data.get('email')
+        password = data.get('password')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        phone = data.get('phone')
+
+        if not email or not password or not first_name or not last_name or not phone:
+            return jsonify({'error': 'Email, senha, nome, sobrenome e telefone são obrigatórios'}), 400
+
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Email já cadastrado'}), 400
+
+        if User.query.filter_by(phone=phone).first():
+            return jsonify({'error': 'Telefone já cadastrado'}), 400
+
+        user = User(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            user_type=UserType.CLIENT,
+            status=UserStatus.ACTIVE
+        )
+        user.set_password(password)
+        db.session.add(user)
+        db.session.flush()
+
+        customer = Customer(
+            user_id=user.id,
+            name=f"{first_name} {last_name}",
+            phone=phone,
+            email=email
+        )
+        db.session.add(customer)
         db.session.commit()
 
         access_token = create_access_token(identity=str(user.id))
