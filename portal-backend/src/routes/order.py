@@ -295,24 +295,46 @@ def get_current_order():
 @order_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_order():
-    """Cria um novo pedido (para simulação/testes)"""
+    """Cria um novo pedido"""
     try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
         data = request.get_json()
-        
-        # Busca ou cria restaurante
-        restaurant = Restaurant.query.filter_by(name=data['restaurant_name']).first()
-        if not restaurant:
-            restaurant = Restaurant(
-                name=data['restaurant_name'],
-                address=data['restaurant_address'],
-                latitude=data['restaurant_latitude'],
-                longitude=data['restaurant_longitude'],
-                phone=data.get('restaurant_phone', '(11) 99999-9999')
-            )
-            db.session.add(restaurant)
-            db.session.flush()
-        
-        # Busca ou cria cliente
+
+        # Se for estabelecimento (CLIENT), usa o restaurante vinculado ao seu customer profile
+        if user and user.user_type == UserType.CLIENT:
+            customer_profile = Customer.query.filter_by(user_id=user.id).first()
+            if not customer_profile:
+                return jsonify({'error': 'Perfil de estabelecimento não encontrado'}), 400
+
+            # Busca ou cria restaurante para este estabelecimento
+            restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+            if not restaurant:
+                restaurant = Restaurant(
+                    name=customer_profile.name,
+                    address=data.get('establishment_address', 'Endereço não informado'),
+                    latitude=data.get('establishment_latitude', -29.95),
+                    longitude=data.get('establishment_longitude', -50.45),
+                    phone=customer_profile.phone
+                )
+                db.session.add(restaurant)
+                db.session.flush()
+        else:
+            # Admin criando pedido (para testes)
+            restaurant = Restaurant.query.filter_by(name=data['restaurant_name']).first()
+            if not restaurant:
+                restaurant = Restaurant(
+                    name=data['restaurant_name'],
+                    address=data['restaurant_address'],
+                    latitude=data['restaurant_latitude'],
+                    longitude=data['restaurant_longitude'],
+                    phone=data.get('restaurant_phone', '(11) 99999-9999')
+                )
+                db.session.add(restaurant)
+                db.session.flush()
+
+        # Busca ou cria cliente final
         customer = Customer.query.filter_by(phone=data['customer_phone']).first()
         if not customer:
             customer = Customer(
@@ -322,21 +344,21 @@ def create_order():
             )
             db.session.add(customer)
             db.session.flush()
-        
+
         # Cria endereço de entrega
         address = Address(
             customer_id=customer.id,
             street=data['delivery_address'],
             neighborhood=data['delivery_neighborhood'],
-            city=data['delivery_city'],
-            state=data['delivery_state'],
-            zip_code=data['delivery_zip_code'],
-            latitude=data['delivery_latitude'],
-            longitude=data['delivery_longitude']
+            city=data.get('delivery_city', 'Porto Alegre'),
+            state=data.get('delivery_state', 'RS'),
+            zip_code=data.get('delivery_zip_code', '90000-000'),
+            latitude=data.get('delivery_latitude'),
+            longitude=data.get('delivery_longitude')
         )
         db.session.add(address)
         db.session.flush()
-        
+
         # Cria o pedido
         order = Order(
             restaurant_id=restaurant.id,
@@ -345,20 +367,20 @@ def create_order():
             order_number=f"PED{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}",
             items=data['items'],
             subtotal=data['subtotal'],
-            delivery_fee=data['delivery_fee'],
+            delivery_fee=data.get('delivery_fee', 0),
             total_amount=data['total_amount'],
             payment_method=PaymentMethod(data['payment_method']),
             special_instructions=data.get('special_instructions')
         )
-        
+
         db.session.add(order)
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Pedido criado com sucesso',
             'order': order.to_dict()
         }), 201
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

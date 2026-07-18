@@ -13,6 +13,7 @@ import ActiveDeliveryPage from '@/pages/ActiveDeliveryPage';
 import ClientLoginPage from '@/pages/client/ClientLoginPage';
 import ClientRegisterPage from '@/pages/client/ClientRegisterPage';
 import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
+import NewOrderPage from '@/pages/client/NewOrderPage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminDriversPage from '@/pages/admin/AdminDriversPage';
@@ -117,6 +118,16 @@ function App() {
               <ProtectedRoute>
                 <ClientLayout>
                   <ClientDashboardPage />
+                </ClientLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/new-order"
+            element={
+              <ProtectedRoute>
+                <ClientLayout>
+                  <NewOrderPage />
                 </ClientLayout>
               </ProtectedRoute>
             }
