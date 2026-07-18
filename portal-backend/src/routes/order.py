@@ -123,18 +123,19 @@ def accept_order(order_id):
             delivery.driver_earnings = base_earning
         
         db.session.add(delivery)
-        
-        # Cria notificação para o cliente
-        notification = Notification(
-            user_id=order.customer.id if hasattr(order.customer, 'user_id') else None,
-            title="Pedido aceito",
-            message=f"Seu pedido #{order.order_number} foi aceito por um entregador",
-            type=NotificationType.ORDER_UPDATE,
-            related_id=order.id
-        )
-        if notification.user_id:
+
+        # Cria notificação para o cliente (usa user_id do customer, não o customer_id)
+        customer_user_id = order.customer.user_id if order.customer and order.customer.user_id else None
+        if customer_user_id:
+            notification = Notification(
+                user_id=customer_user_id,
+                title="Pedido aceito",
+                message=f"Seu pedido #{order.order_number} foi aceito por um entregador",
+                type=NotificationType.ORDER_UPDATE,
+                related_id=order.id
+            )
             db.session.add(notification)
-        
+
         db.session.commit()
         
         order_dict = order.to_dict()
