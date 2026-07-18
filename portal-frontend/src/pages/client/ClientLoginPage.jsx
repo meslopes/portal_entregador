@@ -50,21 +50,21 @@ const ClientLoginPage = () => {
             muv.log
           </h1>
           <p style={{ fontSize: '1.125rem', opacity: 0.9, marginBottom: '3rem', lineHeight: 1.6 }}>
-            Peça suas entregas com<br />rapidez e segurança
+            Gerencie suas entregas<br />com eficiência
           </p>
 
           <div style={{ textAlign: 'left' }}>
             <div className="feature-item">
               <div className="feature-icon"><ShoppingBag size={20} /></div>
-              <span>Faça pedidos de qualquer restaurante</span>
+              <span>Lance pedidos com facilidade</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon"><Clock size={20} /></div>
-              <span>Entrega rápida e em tempo real</span>
+              <span>Acompanhe cada entrega</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon"><MapPin size={20} /></div>
-              <span>Acompanhe seu pedido pelo mapa</span>
+              <span>Entregadores automáticos por proximidade</span>
             </div>
             <div className="feature-item">
               <div className="feature-icon"><Shield size={20} /></div>

@@ -60,7 +60,7 @@ const ClientLayout = ({ children }) => {
                 background: '#f0fdfa',
                 color: '#0d9488'
               }}>
-                Cliente
+                Estabelecimento
               </span>
             </Link>
 
@@ -180,7 +180,7 @@ const ClientLayout = ({ children }) => {
       <footer style={{ background: 'white', borderTop: '1px solid #e2e8f0', padding: '1rem 0' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
-            © 2026 muv.log — Portal do Cliente
+            © 2026 muv.log — Portal do Estabelecimento
           </p>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             <a href="#" style={{ fontSize: '0.8125rem', color: '#94a3b8', textDecoration: 'none' }}>Suporte</a>
