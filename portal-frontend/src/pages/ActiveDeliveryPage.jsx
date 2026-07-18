@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Store, User, Phone,
@@ -27,26 +27,31 @@ const ActiveDeliveryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    isMounted.current = true;
     loadCurrentOrder();
+    return () => { isMounted.current = false; };
   }, []);
 
   const loadCurrentOrder = async () => {
     try {
       setIsLoading(true);
       const response = await orderService.getCurrentOrder();
+      if (!isMounted.current) return;
       if (response.order) {
         setOrder(response.order);
       } else {
         navigate('/dashboard');
       }
     } catch (err) {
+      if (!isMounted.current) return;
       console.error('Erro ao carregar pedido:', err);
       const msg = err.response?.data?.error || err.message || 'Erro ao carregar pedido';
       setError(msg);
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) setIsLoading(false);
     }
   };
 
@@ -61,10 +66,16 @@ const ActiveDeliveryPage = () => {
       setError('');
       await orderService.updateOrderStatus(order.id, action.next);
 
-      setOrder(prev => ({ ...prev, status: action.next }));
+      // Atualiza o status primeiro
+      const newOrder = { ...order, status: action.next };
+      setOrder(newOrder);
 
+      // Navega depois de um delay para evitar conflito DOM
       if (action.next === 'DELIVERED') {
-        setTimeout(() => navigate('/dashboard'), 1500);
+        // Pequeno delay para garantir que o estado foi atualizado antes de navegar
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 100);
       }
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
