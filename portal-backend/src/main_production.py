@@ -84,6 +84,15 @@ def create_app(config_name=None):
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+        # Migration: adicionar coluna user_id na tabela customers
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'customers' AND column_name = 'user_id') THEN ALTER TABLE customers ADD COLUMN user_id INTEGER REFERENCES users(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
     
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
