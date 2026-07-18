@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Users, 
-  Truck, 
-  Package, 
-  DollarSign, 
-  TrendingUp,
-  AlertCircle,
-  Clock,
-  CheckCircle
+import {
+  Users, Truck, Package, DollarSign, TrendingUp,
+  AlertCircle, Clock, CheckCircle, ArrowUpRight, BarChart3
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 
@@ -18,18 +10,16 @@ const AdminDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useEffect(() => { loadDashboard(); }, []);
 
   const loadDashboard = async () => {
     try {
       setLoading(true);
       const data = await adminService.getDashboard();
       setDashboard(data);
-    } catch (error) {
-      setError('Erro ao carregar dashboard administrativo');
-      console.error('Erro ao carregar dashboard:', error);
+    } catch (err) {
+      setError('Erro ao carregar dashboard');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -37,172 +27,164 @@ const AdminDashboardPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '3rem', height: '3rem', border: '3px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Painel Administrativo</h1>
-          <p className="text-gray-600">Visão geral do sistema muv.log</p>
+    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
+          Painel Administrativo
+        </h1>
+        <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
+          Visão geral do sistema muv.log
+        </p>
+      </div>
+
+      {/* Erro */}
+      {error && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Cards principais */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <StatCard icon={<Users size={22} />} iconBg="#dbeafe" iconColor="#2563eb" label="Total Entregadores" value={dashboard?.total_drivers || 0} />
+        <StatCard icon={<Truck size={22} />} iconBg="#dcfce7" iconColor="#16a34a" label="Online Agora" value={dashboard?.online_drivers || 0} />
+        <StatCard icon={<Package size={22} />} iconBg="#f3e8ff" iconColor="#9333ea" label="Total Pedidos" value={dashboard?.total_orders || 0} />
+        <StatCard icon={<DollarSign size={22} />} iconBg="#fef3c7" iconColor="#d97706" label="Receita Hoje" value={utils.formatCurrency(dashboard?.today_revenue || 0)} />
+      </div>
+
+      {/* Resumo + Status */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        {/* Resumo do dia */}
+        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Clock size={18} style={{ color: '#2563eb' }} />
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>Resumo do Dia</span>
+          </div>
+          <div style={{ padding: '1.25rem 1.5rem' }}>
+            <SummaryRow label="Pedidos Hoje" value={dashboard?.today_orders || 0} />
+            <SummaryRow label="Entregas Hoje" value={dashboard?.today_deliveries || 0} />
+            <SummaryRow label="Receita Hoje" value={utils.formatCurrency(dashboard?.today_revenue || 0)} highlight />
+          </div>
         </div>
 
-        {/* Alertas */}
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Cards de resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Entregadores</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboard?.total_drivers || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Truck className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Online Agora</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboard?.online_drivers || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Package className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Pedidos</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboard?.total_orders || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-yellow-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Receita Hoje</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {utils.formatCurrency(dashboard?.today_revenue || 0)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Pedidos por status */}
+        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <BarChart3 size={18} style={{ color: '#9333ea' }} />
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>Pedidos por Status</span>
+          </div>
+          <div style={{ padding: '1.25rem 1.5rem' }}>
+            {dashboard?.orders_by_status && Object.entries(dashboard.orders_by_status).map(([status, count]) => (
+              <StatusRow key={status} status={status} count={count} />
+            ))}
+            {(!dashboard?.orders_by_status || Object.keys(dashboard.orders_by_status).length === 0) && (
+              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem 0', fontSize: '0.875rem' }}>Nenhum pedido registrado</p>
+            )}
+          </div>
         </div>
+      </div>
 
-        {/* Cards do dia */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="w-5 h-5 mr-2" />
-                Resumo do Dia
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Pedidos Hoje</span>
-                  <span className="font-semibold">{dashboard?.today_orders || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Entregas Hoje</span>
-                  <span className="font-semibold">{dashboard?.today_deliveries || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Receita Hoje</span>
-                  <span className="font-semibold text-green-600">
-                    {utils.formatCurrency(dashboard?.today_revenue || 0)}
+      {/* Top Entregadores */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <TrendingUp size={18} style={{ color: '#16a34a' }} />
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>Entregadores Mais Ativos</span>
+          </div>
+          <span style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>Últimos 7 dias</span>
+        </div>
+        <div style={{ padding: '1.25rem 1.5rem' }}>
+          {dashboard?.top_drivers?.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {dashboard.top_drivers.map((driver, index) => (
+                <div key={driver.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.75rem 1rem', borderRadius: '0.5rem',
+                  background: index === 0 ? '#f0fdf4' : '#f8fafc'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{
+                      width: '1.75rem', height: '1.75rem', borderRadius: '50%',
+                      background: index === 0 ? '#22c55e' : index === 1 ? '#3b82f6' : index === 2 ? '#f59e0b' : '#e2e8f0',
+                      color: index < 3 ? 'white' : '#94a3b8',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.75rem', fontWeight: 700
+                    }}>
+                      {index + 1}
+                    </span>
+                    <span style={{ fontWeight: 500, color: '#1e293b' }}>{driver.name}</span>
+                  </div>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2563eb' }}>
+                    {driver.deliveries} entregas
                   </span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2" />
-                Pedidos por Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {dashboard?.orders_by_status && Object.entries(dashboard.orders_by_status).map(([status, count]) => (
-                  <div key={status} className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <CheckCircle className="w-4 h-4 mr-2 text-gray-400" />
-                      <span className="text-gray-600">{utils.getStatusText(status)}</span>
-                    </div>
-                    <span className="font-semibold">{count}</span>
-                  </div>
-                ))}
-                {(!dashboard?.orders_by_status || Object.keys(dashboard.orders_by_status).length === 0) && (
-                  <p className="text-gray-500 text-center py-4">Nenhum pedido registrado</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem 0', fontSize: '0.875rem' }}>Nenhum entregador ativo</p>
+          )}
         </div>
-
-        {/* Top Entregadores */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Truck className="w-5 h-5 mr-2" />
-              Entregadores Mais Ativos (7 dias)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {dashboard?.top_drivers?.length > 0 ? (
-              <div className="space-y-3">
-                {dashboard.top_drivers.map((driver, index) => (
-                  <div key={driver.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center">
-                      <span className="text-lg font-bold text-gray-400 w-8">{index + 1}º</span>
-                      <span className="font-medium">{driver.name}</span>
-                    </div>
-                    <span className="text-blue-600 font-semibold">{driver.deliveries} entregas</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">Nenhum entregador ativo</p>
-            )}
-          </CardContent>
-        </Card>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+};
+
+const StatCard = ({ icon, iconBg, iconColor, label, value }) => (
+  <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.15s' }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ padding: '0.625rem', borderRadius: '0.5rem', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+      <div>
+        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+        <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
+      </div>
+    </div>
+  </div>
+);
+
+const SummaryRow = ({ label, value, highlight = false }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.625rem 0', borderBottom: '1px solid #f8fafc' }}>
+    <span style={{ fontSize: '0.875rem', color: '#64748b' }}>{label}</span>
+    <span style={{ fontWeight: 600, color: highlight ? '#22c55e' : '#1e293b' }}>{value}</span>
+  </div>
+);
+
+const STATUS_CONFIG = {
+  PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente' },
+  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito' },
+  PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando' },
+  READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto' },
+  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'Coletado' },
+  DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue' },
+  CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelado' },
+};
+
+const StatusRow = ({ status, count }) => {
+  const config = STATUS_CONFIG[status] || { color: '#94a3b8', bg: '#f1f5f9', text: status };
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: config.color }} />
+        <span style={{ fontSize: '0.875rem', color: '#475569' }}>{config.text}</span>
+      </div>
+      <span style={{
+        padding: '0.125rem 0.625rem', borderRadius: '9999px',
+        fontSize: '0.75rem', fontWeight: 600,
+        background: config.bg, color: config.color
+      }}>
+        {count}
+      </span>
     </div>
   );
 };

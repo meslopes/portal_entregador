@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Package, 
-  AlertCircle,
-  Store,
-  User,
-  MapPin,
-  Clock,
-  Filter
+import {
+  Package, AlertCircle, Store, User, MapPin, Clock,
+  ChevronLeft, ChevronRight, Truck, Filter
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+
+const STATUS_FILTERS = [
+  { key: '', label: 'Todos', color: '#64748b' },
+  { key: 'PENDING', label: 'Pendente', color: '#f59e0b' },
+  { key: 'ACCEPTED', label: 'Aceito', color: '#2563eb' },
+  { key: 'PREPARING', label: 'Preparando', color: '#8b5cf6' },
+  { key: 'READY', label: 'Pronto', color: '#06b6d4' },
+  { key: 'PICKED_UP', label: 'Coletado', color: '#3b82f6' },
+  { key: 'DELIVERED', label: 'Entregue', color: '#22c55e' },
+  { key: 'CANCELLED', label: 'Cancelado', color: '#ef4444' },
+];
+
+const STATUS_COLORS = {
+  PENDING: { bg: '#fef3c7', text: '#d97706' },
+  ACCEPTED: { bg: '#dbeafe', text: '#2563eb' },
+  PREPARING: { bg: '#f3e8ff', text: '#8b5cf6' },
+  READY: { bg: '#cffafe', text: '#06b6d4' },
+  PICKED_UP: { bg: '#dbeafe', text: '#3b82f6' },
+  DELIVERED: { bg: '#dcfce7', text: '#22c55e' },
+  CANCELLED: { bg: '#fee2e2', text: '#ef4444' },
+};
 
 const AdminOrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -22,9 +34,7 @@ const AdminOrdersPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    loadOrders();
-  }, [page, statusFilter]);
+  useEffect(() => { loadOrders(); }, [page, statusFilter]);
 
   const loadOrders = async () => {
     try {
@@ -32,9 +42,9 @@ const AdminOrdersPage = () => {
       const response = await adminService.getAllOrders(page, 20, statusFilter);
       setOrders(response.orders || []);
       setTotalPages(response.pages || 1);
-    } catch (error) {
+    } catch (err) {
       setError('Erro ao carregar pedidos');
-      console.error('Erro ao carregar pedidos:', error);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -42,165 +52,163 @@ const AdminOrdersPage = () => {
 
   if (loading && orders.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '3rem', height: '3rem', border: '3px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Pedidos</h1>
-          <p className="text-gray-600">Gerencie todos os pedidos do sistema</p>
+    <div style={{ padding: '1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Pedidos</h1>
+        <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Gerencie todos os pedidos do sistema</p>
+      </div>
+
+      {/* Erro */}
+      {error && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
+
+      {/* Filtros */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <Filter size={16} style={{ color: '#94a3b8' }} />
+          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>Filtrar por status</span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+          {STATUS_FILTERS.map(f => {
+            const isActive = statusFilter === f.key;
+            return (
+              <button key={f.key} onClick={() => { setStatusFilter(f.key); setPage(1); }}
+                style={{
+                  padding: '0.375rem 0.875rem', borderRadius: '9999px',
+                  border: 'none', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                  background: isActive ? f.color : '#f1f5f9',
+                  color: isActive ? 'white' : '#64748b',
+                  transition: 'all 0.15s'
+                }}>
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Lista */}
+      {orders.length === 0 ? (
+        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '4rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <Package size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
+          <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>Nenhum pedido encontrado</p>
+          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Tente ajustar os filtros</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {orders.map(order => <OrderCard key={order.id} order={order} />)}
+        </div>
+      )}
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: page === 1 ? '#f8fafc' : 'white', color: page === 1 ? '#cbd5e1' : '#475569', fontSize: '0.875rem', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>
+            <ChevronLeft size={16} /> Anterior
+          </button>
+          <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>{page} / {totalPages}</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: page === totalPages ? '#f8fafc' : 'white', color: page === totalPages ? '#cbd5e1' : '#475569', fontSize: '0.875rem', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}>
+            Próxima <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+};
+
+const OrderCard = ({ order }) => {
+  const statusColor = STATUS_COLORS[order.status] || { bg: '#f1f5f9', text: '#64748b' };
+
+  return (
+    <div style={{
+      background: 'white', borderRadius: '0.75rem',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.15s', overflow: 'hidden'
+    }}
+    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
+    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '0.8125rem', color: '#64748b', fontWeight: 500 }}>#{order.order_number}</span>
+          <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: statusColor.bg, color: statusColor.text }}>
+            {utils.getStatusText(order.status)}
+          </span>
+          <span style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 500, background: '#f1f5f9', color: '#64748b' }}>
+            {utils.getStatusText(order.payment_method)}
+          </span>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontWeight: 700, color: '#1e293b' }}>{utils.formatCurrency(order.total_amount)}</p>
+          <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Taxa: {utils.formatCurrency(order.delivery_fee)}</p>
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div style={{ padding: '1rem 1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.875rem' }}>
+          {/* Restaurante */}
+          <div style={{ display: 'flex', gap: '0.625rem' }}>
+            <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Store size={14} style={{ color: '#d97706' }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Restaurante</p>
+              <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.name}</p>
+            </div>
+          </div>
+
+          {/* Cliente */}
+          <div style={{ display: 'flex', gap: '0.625rem' }}>
+            <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <User size={14} style={{ color: '#2563eb' }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cliente</p>
+              <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>{order.customer?.name}</p>
+            </div>
+          </div>
+
+          {/* Endereço */}
+          <div style={{ display: 'flex', gap: '0.625rem' }}>
+            <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <MapPin size={14} style={{ color: '#16a34a' }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entrega</p>
+              <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.delivery_address?.street}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Alertas */}
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Filtros */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-gray-500" />
-                <span className="text-sm font-medium">Filtrar por status:</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={statusFilter === '' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('')}
-                >
-                  Todos
-                </Button>
-                {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map((status) => (
-                  <Button
-                    key={status}
-                    variant={statusFilter === status ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setStatusFilter(status)}
-                  >
-                    {utils.getStatusText(status)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Lista de pedidos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Package className="w-5 h-5 mr-2" />
-              {orders.length} pedido(s) encontrado(s)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {orders.length > 0 ? (
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <div key={order.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="font-mono text-sm text-gray-500">#{order.order_number}</span>
-                          <Badge className={utils.getStatusColor(order.status)}>
-                            {utils.getStatusText(order.status)}
-                          </Badge>
-                          <Badge variant="outline">
-                            {utils.getStatusText(order.payment_method)}
-                          </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div className="flex items-start gap-2">
-                            <Store className="w-4 h-4 text-gray-400 mt-0.5" />
-                            <div>
-                              <p className="font-medium">{order.restaurant?.name}</p>
-                              <p className="text-gray-500">{order.restaurant?.address}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <User className="w-4 h-4 text-gray-400 mt-0.5" />
-                            <div>
-                              <p className="font-medium">{order.customer?.name}</p>
-                              <p className="text-gray-500">{order.customer?.phone}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                            <div>
-                              <p className="font-medium">Entrega</p>
-                              <p className="text-gray-500">{order.delivery_address?.street}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {order.driver && (
-                          <div className="mt-3 flex items-center gap-2 text-sm">
-                            <Truck className="w-4 h-4 text-green-500" />
-                            <span className="text-gray-600">Entregador:</span>
-                            <span className="font-medium">{order.driver.name}</span>
-                          </div>
-                        )}
-
-                        <div className="mt-2 text-xs text-gray-400 flex items-center gap-2">
-                          <Clock className="w-3 h-3" />
-                          {utils.formatDateTime(order.created_at)}
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="text-lg font-bold">{utils.formatCurrency(order.total_amount)}</p>
-                        <p className="text-sm text-gray-500">Total</p>
-                        <p className="text-sm text-green-600 font-medium mt-1">
-                          Taxa: {utils.formatCurrency(order.delivery_fee)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 text-center text-gray-500">
-                <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-lg font-medium">Nenhum pedido encontrado</p>
-              </div>
+        {/* Footer */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.875rem', paddingTop: '0.75rem', borderTop: '1px solid #f8fafc' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            {order.driver && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#2563eb', background: '#eff6ff', padding: '0.25rem 0.625rem', borderRadius: '9999px' }}>
+                <Truck size={11} /> {order.driver.name}
+              </span>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Paginação */}
-        {totalPages > 1 && (
-          <div className="mt-6 flex justify-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Anterior
-            </Button>
-            <span className="px-4 py-2 flex items-center">
-              {page} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              Próxima
-            </Button>
           </div>
-        )}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: '#94a3b8' }}>
+            <Clock size={11} /> {utils.formatDateTime(order.created_at)}
+          </span>
+        </div>
       </div>
     </div>
   );
