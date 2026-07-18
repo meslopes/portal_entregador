@@ -38,8 +38,8 @@ def get_available_orders():
                 lng_diff = abs(float(order.restaurant.longitude) - float(driver.current_longitude))
                 distance_to_restaurant = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
                 
-                # Só mostra pedidos dentro de um raio de 15km
-                if distance_to_restaurant > 15:
+                # Só mostra pedidos dentro de um raio de 50km
+                if distance_to_restaurant > 50:
                     continue
             else:
                 distance_to_restaurant = 0
@@ -227,16 +227,21 @@ def update_order_status(order_id):
             OrderStatus.PICKED_UP: "Seu pedido foi coletado e está a caminho",
             OrderStatus.DELIVERED: "Seu pedido foi entregue"
         }
-        
+
         if new_status_enum in status_messages:
-            notification = Notification(
-                user_id=order.customer.id if hasattr(order.customer, 'user_id') else None,
-                title="Atualização do pedido",
-                message=status_messages[new_status_enum],
-                type=NotificationType.ORDER_UPDATE,
-                related_id=order.id
-            )
-            if notification.user_id:
+            # Busca o user_id do customer (não o customer_id)
+            customer_user_id = None
+            if order.customer and hasattr(order.customer, 'user_id'):
+                customer_user_id = order.customer.user_id
+
+            if customer_user_id:
+                notification = Notification(
+                    user_id=customer_user_id,
+                    title="Atualização do pedido",
+                    message=status_messages[new_status_enum],
+                    type=NotificationType.ORDER_UPDATE,
+                    related_id=order.id
+                )
                 db.session.add(notification)
         
         db.session.commit()

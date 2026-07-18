@@ -141,7 +141,7 @@ export const orderService = {
   },
 
   createOrder: async (orderData) => {
-    const response = await api.post('/api/orders', orderData);
+    const response = await api.post('/api/orders/', orderData);
     return response.data;
   },
 };
