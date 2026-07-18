@@ -389,19 +389,26 @@ const NewOrderPage = () => {
               {form.product_payment_type === 'ESTABLISHMENT' ? 'No estabelecimento' : `Na entrega (${form.product_payment_method === 'CASH' ? 'Dinheiro' : form.product_payment_method === 'CARD' ? 'Cartão' : 'PIX'})`}
             </span>
           </div>
-          {form.product_value && (
+
+          <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem', fontSize: '0.875rem' }}>
               <span style={{ color: '#64748b' }}>Valor dos Itens</span>
-              <span style={{ color: '#1e293b', fontWeight: 600 }}>R$ {parseFloat(form.product_value).toFixed(2).replace('.', ',')}</span>
+              <span style={{ color: '#1e293b', fontWeight: 500 }}>R$ {form.product_value ? parseFloat(form.product_value).toFixed(2).replace('.', ',') : '0,00'}</span>
             </div>
-          )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem', fontSize: '0.875rem' }}>
+              <span style={{ color: '#64748b' }}>Valor da Entrega ({DISTANCE_KM > 0 ? `${DISTANCE_KM} km × R$ ${PRICE_PER_KM.toFixed(2).replace('.', ',')}` : '—'})</span>
+              <span style={{ color: '#1e293b', fontWeight: 500 }}>R$ {DELIVERY_FEE.toFixed(2).replace('.', ',')}</span>
+            </div>
+          </div>
+
           <div style={{
-            paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9',
+            marginTop: '0.75rem', paddingTop: '0.75rem',
+            borderTop: '2px solid #0d9488',
             display: 'flex', justifyContent: 'space-between',
-            fontWeight: 700, fontSize: '1.125rem', color: '#0f766e'
+            fontWeight: 700, fontSize: '1.25rem', color: '#0f766e'
           }}>
-            <span>Valor da Entrega</span>
-            <span>R$ {DELIVERY_FEE.toFixed(2).replace('.', ',')}</span>
+            <span>Total a Cobrar do Cliente</span>
+            <span>R$ {(parseFloat(form.product_value || 0) + DELIVERY_FEE).toFixed(2).replace('.', ',')}</span>
           </div>
         </div>
 
