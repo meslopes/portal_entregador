@@ -40,6 +40,10 @@ const NewOrderPage = () => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
     setError('');
+    // Debug temporário
+    if (name === 'product_value') {
+      console.log(' product_value mudou para:', value, '| parseFloat:', parseFloat(value.replace(',', '.')));
+    }
   };
 
   // Calcula distância baseada no endereço
