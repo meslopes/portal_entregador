@@ -201,34 +201,6 @@ export const adminService = {
     return response.data;
   },
 
-  // Gestão de Clientes
-  getCustomers: async (page = 1, perPage = 20, search = '') => {
-    const response = await api.get('/api/admin/customers', {
-      params: { page, per_page: perPage, search },
-    });
-    return response.data;
-  },
-
-  getCustomerDetails: async (customerId) => {
-    const response = await api.get(`/api/admin/customers/${customerId}`);
-    return response.data;
-  },
-
-  createCustomer: async (customerData) => {
-    const response = await api.post('/api/admin/customers', customerData);
-    return response.data;
-  },
-
-  updateCustomer: async (customerId, customerData) => {
-    const response = await api.put(`/api/admin/customers/${customerId}`, customerData);
-    return response.data;
-  },
-
-  deleteCustomer: async (customerId) => {
-    const response = await api.delete(`/api/admin/customers/${customerId}`);
-    return response.data;
-  },
-
   // Gestão de Estabelecimentos
   getEstablishments: async (page = 1, perPage = 20, search = '') => {
     const response = await api.get('/api/admin/establishments', {
