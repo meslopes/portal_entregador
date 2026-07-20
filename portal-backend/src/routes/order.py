@@ -4,6 +4,7 @@ from src.models.portal_models import (
     Order, Restaurant, Customer, Address, Driver, User, UserType, 
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
 )
+from sqlalchemy import func
 from datetime import datetime, timedelta
 import uuid
 
@@ -428,6 +429,136 @@ def get_order_details(order_id):
         
         return jsonify(order_dict), 200
         
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# ROTAS DO ESTABELECIMENTO
+# ============================================
+
+@order_bp.route('/my', methods=['GET'])
+@jwt_required()
+def get_my_orders():
+    """Obtém pedidos do estabelecimento logado"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type != UserType.CLIENT:
+            return jsonify({'error': 'Usuário não é um estabelecimento'}), 403
+
+        # Busca o customer profile vinculado ao user
+        customer_profile = Customer.query.filter_by(user_id=user.id).first()
+        if not customer_profile:
+            return jsonify({'orders': [], 'total': 0}), 200
+
+        # Busca o restaurante vinculado ao estabelecimento
+        restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+        if not restaurant:
+            return jsonify({'orders': [], 'total': 0}), 200
+
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        status_filter = request.args.get('status')
+
+        query = Order.query.filter_by(restaurant_id=restaurant.id)
+
+        if status_filter:
+            try:
+                status_enum = OrderStatus(status_filter)
+                query = query.filter(Order.status == status_enum)
+            except ValueError:
+                pass
+
+        orders = query.order_by(Order.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        orders_data = []
+        for order in orders.items:
+            order_dict = order.to_dict()
+            order_dict['customer'] = order.customer.to_dict()
+            order_dict['delivery_address'] = order.delivery_address.to_dict()
+            if order.driver:
+                order_dict['driver'] = {
+                    'id': order.driver.id,
+                    'name': f"{order.driver.user.first_name} {order.driver.user.last_name}",
+                    'phone': order.driver.user.phone
+                }
+            if order.delivery:
+                order_dict['delivery'] = order.delivery.to_dict()
+            orders_data.append(order_dict)
+
+        return jsonify({
+            'orders': orders_data,
+            'total': orders.total,
+            'pages': orders.pages,
+            'current_page': page
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@order_bp.route('/my/stats', methods=['GET'])
+@jwt_required()
+def get_my_stats():
+    """Obtém estatísticas do estabelecimento"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type != UserType.CLIENT:
+            return jsonify({'error': 'Usuário não é um estabelecimento'}), 403
+
+        customer_profile = Customer.query.filter_by(user_id=user.id).first()
+        if not customer_profile:
+            return jsonify({'today_orders': 0, 'week_orders': 0, 'total_orders': 0, 'total_revenue': 0}), 200
+
+        restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+        if not restaurant:
+            return jsonify({'today_orders': 0, 'week_orders': 0, 'total_orders': 0, 'total_revenue': 0}), 200
+
+        today = datetime.utcnow().date()
+        week_ago = datetime.utcnow() - timedelta(days=7)
+
+        today_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            func.date(Order.created_at) == today
+        ).count()
+
+        week_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.created_at >= week_ago
+        ).count()
+
+        total_orders = Order.query.filter_by(restaurant_id=restaurant.id).count()
+
+        total_revenue = db.session.query(func.sum(Order.total_amount)).filter_by(
+            restaurant_id=restaurant.id
+        ).scalar() or 0
+
+        # Pedidos em andamento
+        active_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status.in_([
+                OrderStatus.PENDING,
+                OrderStatus.ACCEPTED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY,
+                OrderStatus.PICKED_UP
+            ])
+        ).count()
+
+        return jsonify({
+            'today_orders': today_orders,
+            'week_orders': week_orders,
+            'total_orders': total_orders,
+            'total_revenue': float(total_revenue),
+            'active_orders': active_orders
+        }), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

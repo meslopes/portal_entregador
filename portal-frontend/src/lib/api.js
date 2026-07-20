@@ -144,6 +144,19 @@ export const orderService = {
     const response = await api.post('/api/orders/', orderData);
     return response.data;
   },
+
+  // Pedidos do estabelecimento
+  getMyOrders: async (page = 1, perPage = 20, status = '') => {
+    const params = { page, per_page: perPage };
+    if (status) params.status = status;
+    const response = await api.get('/api/orders/my', { params });
+    return response.data;
+  },
+
+  getMyStats: async () => {
+    const response = await api.get('/api/orders/my/stats');
+    return response.data;
+  },
 };
 
 // Serviços administrativos
