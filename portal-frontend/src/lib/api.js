@@ -228,6 +228,34 @@ export const adminService = {
     const response = await api.delete(`/api/admin/customers/${customerId}`);
     return response.data;
   },
+
+  // Gestão de Estabelecimentos
+  getEstablishments: async (page = 1, perPage = 20, search = '') => {
+    const response = await api.get('/api/admin/establishments', {
+      params: { page, per_page: perPage, search },
+    });
+    return response.data;
+  },
+
+  getEstablishmentDetails: async (establishmentId) => {
+    const response = await api.get(`/api/admin/establishments/${establishmentId}`);
+    return response.data;
+  },
+
+  createEstablishment: async (establishmentData) => {
+    const response = await api.post('/api/admin/establishments', establishmentData);
+    return response.data;
+  },
+
+  updateEstablishment: async (establishmentId, establishmentData) => {
+    const response = await api.put(`/api/admin/establishments/${establishmentId}`, establishmentData);
+    return response.data;
+  },
+
+  deleteEstablishment: async (establishmentId) => {
+    const response = await api.delete(`/api/admin/establishments/${establishmentId}`);
+    return response.data;
+  },
 };
 
 // Utilitários

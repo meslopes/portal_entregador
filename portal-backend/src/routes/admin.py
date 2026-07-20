@@ -632,3 +632,230 @@ def delete_customer(customer_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# GESTÃO DE ESTABELECIMENTOS
+# ============================================
+
+@admin_bp.route('/establishments', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_establishments():
+    """Lista todos os estabelecimentos"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        search = request.args.get('search', '')
+
+        query = Restaurant.query
+
+        if search:
+            query = query.filter(or_(
+                Restaurant.name.ilike(f'%{search}%'),
+                Restaurant.address.ilike(f'%{search}%'),
+                Restaurant.cnpj.ilike(f'%{search}%'),
+                Restaurant.phone.ilike(f'%{search}%')
+            ))
+
+        establishments = query.order_by(Restaurant.name).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        establishments_data = []
+        for est in establishments.items:
+            est_dict = est.to_dict()
+
+            # Estatísticas do estabelecimento
+            total_orders = Order.query.filter_by(restaurant_id=est.id).count()
+            total_revenue = db.session.query(func.sum(Order.total_amount)).filter_by(
+                restaurant_id=est.id
+            ).scalar() or 0
+
+            # Pedidos esta semana
+            week_ago = datetime.utcnow() - timedelta(days=7)
+            week_orders = Order.query.filter(
+                Order.restaurant_id == est.id,
+                Order.created_at >= week_ago
+            ).count()
+
+            # Pedidos hoje
+            today = datetime.utcnow().date()
+            today_orders = Order.query.filter(
+                Order.restaurant_id == est.id,
+                func.date(Order.created_at) == today
+            ).count()
+
+            # Ranking (baseado em total de pedidos)
+            est_dict['total_orders'] = total_orders
+            est_dict['total_revenue'] = float(total_revenue)
+            est_dict['week_orders'] = week_orders
+            est_dict['today_orders'] = today_orders
+            establishments_data.append(est_dict)
+
+        return jsonify({
+            'establishments': establishments_data,
+            'total': establishments.total,
+            'pages': establishments.pages,
+            'current_page': page,
+            'per_page': per_page
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishments/<int:establishment_id>', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_establishment_details(establishment_id):
+    """Obtém detalhes de um estabelecimento"""
+    try:
+        est = Restaurant.query.get(establishment_id)
+        if not est:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        est_dict = est.to_dict()
+
+        # Estatísticas
+        total_orders = Order.query.filter_by(restaurant_id=est.id).count()
+        total_revenue = db.session.query(func.sum(Order.total_amount)).filter_by(
+            restaurant_id=est.id
+        ).scalar() or 0
+
+        # Pedidos por status
+        orders_by_status = db.session.query(
+            Order.status, func.count(Order.id)
+        ).filter_by(restaurant_id=est.id).group_by(Order.status).all()
+
+        # Últimos pedidos
+        recent_orders = Order.query.filter_by(restaurant_id=est.id).order_by(
+            Order.created_at.desc()
+        ).limit(10).all()
+
+        est_dict['total_orders'] = total_orders
+        est_dict['total_revenue'] = float(total_revenue)
+        est_dict['orders_by_status'] = {status.value: count for status, count in orders_by_status}
+        est_dict['recent_orders'] = [order.to_dict() for order in recent_orders]
+
+        return jsonify(est_dict), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishments', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_establishment():
+    """Cria um novo estabelecimento"""
+    try:
+        data = request.get_json()
+
+        if not data.get('name') or not data.get('address'):
+            return jsonify({'error': 'Nome e endereço são obrigatórios'}), 400
+
+        # Verificar CNPJ se fornecido
+        if data.get('cnpj'):
+            existing = Restaurant.query.filter_by(cnpj=data['cnpj']).first()
+            if existing:
+                return jsonify({'error': 'CNPJ já cadastrado'}), 400
+
+        establishment = Restaurant(
+            name=data['name'],
+            cnpj=data.get('cnpj'),
+            phone=data.get('phone'),
+            email=data.get('email'),
+            address=data['address'],
+            latitude=data.get('latitude', 0),
+            longitude=data.get('longitude', 0),
+            opening_hours=data.get('opening_hours'),
+            is_active=data.get('is_active', True)
+        )
+
+        db.session.add(establishment)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Estabelecimento criado com sucesso',
+            'establishment': establishment.to_dict()
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishments/<int:establishment_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_establishment(establishment_id):
+    """Atualiza um estabelecimento"""
+    try:
+        est = Restaurant.query.get(establishment_id)
+        if not est:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        data = request.get_json()
+
+        if data.get('name'):
+            est.name = data['name']
+        if data.get('cnpj'):
+            existing = Restaurant.query.filter(
+                Restaurant.cnpj == data['cnpj'],
+                Restaurant.id != establishment_id
+            ).first()
+            if existing:
+                return jsonify({'error': 'CNPJ já cadastrado'}), 400
+            est.cnpj = data['cnpj']
+        if 'phone' in data:
+            est.phone = data['phone']
+        if 'email' in data:
+            est.email = data['email']
+        if data.get('address'):
+            est.address = data['address']
+        if data.get('latitude') is not None:
+            est.latitude = data['latitude']
+        if data.get('longitude') is not None:
+            est.longitude = data['longitude']
+        if 'opening_hours' in data:
+            est.opening_hours = data['opening_hours']
+        if 'is_active' in data:
+            est.is_active = data['is_active']
+
+        est.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Estabelecimento atualizado com sucesso',
+            'establishment': est.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishments/<int:establishment_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_establishment(establishment_id):
+    """Exclui um estabelecimento"""
+    try:
+        est = Restaurant.query.get(establishment_id)
+        if not est:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        # Verificar se tem pedidos
+        has_orders = Order.query.filter_by(restaurant_id=establishment_id).first()
+        if has_orders:
+            return jsonify({'error': 'Não é possível excluir estabelecimento com pedidos vinculados'}), 400
+
+        db.session.delete(est)
+        db.session.commit()
+
+        return jsonify({'message': 'Estabelecimento excluído com sucesso'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
