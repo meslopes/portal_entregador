@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
-    User, Driver, Order, Restaurant, Customer, Payment, Delivery,
+    User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
     UserType, OrderStatus, PaymentStatus, db
 )
 from datetime import datetime, timedelta
@@ -425,5 +425,210 @@ def get_live_tracking():
         }), 200
         
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# GESTÃO DE CLIENTES
+# ============================================
+
+@admin_bp.route('/customers', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_customers():
+    """Lista todos os clientes"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        search = request.args.get('search', '')
+
+        query = Customer.query
+
+        if search:
+            query = query.filter(or_(
+                Customer.name.ilike(f'%{search}%'),
+                Customer.email.ilike(f'%{search}%'),
+                Customer.phone.ilike(f'%{search}%')
+            ))
+
+        customers = query.order_by(Customer.name).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        customers_data = []
+        for customer in customers.items:
+            customer_dict = customer.to_dict()
+
+            # Contagem de pedidos
+            total_orders = Order.query.filter_by(customer_id=customer.id).count()
+            total_spent = db.session.query(func.sum(Order.total_amount)).filter_by(
+                customer_id=customer.id
+            ).scalar() or 0
+
+            customer_dict['total_orders'] = total_orders
+            customer_dict['total_spent'] = float(total_spent)
+            customer_dict['addresses_count'] = len(customer.addresses)
+            customers_data.append(customer_dict)
+
+        return jsonify({
+            'customers': customers_data,
+            'total': customers.total,
+            'pages': customers.pages,
+            'current_page': page,
+            'per_page': per_page
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/customers/<int:customer_id>', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_customer_details(customer_id):
+    """Obtém detalhes de um cliente específico"""
+    try:
+        customer = Customer.query.get(customer_id)
+        if not customer:
+            return jsonify({'error': 'Cliente não encontrado'}), 404
+
+        customer_dict = customer.to_dict()
+
+        # Estatísticas
+        total_orders = Order.query.filter_by(customer_id=customer.id).count()
+        total_spent = db.session.query(func.sum(Order.total_amount)).filter_by(
+            customer_id=customer.id
+        ).scalar() or 0
+
+        # Últimos pedidos
+        recent_orders = Order.query.filter_by(customer_id=customer.id).order_by(
+            Order.created_at.desc()
+        ).limit(10).all()
+
+        customer_dict['total_orders'] = total_orders
+        customer_dict['total_spent'] = float(total_spent)
+        customer_dict['addresses'] = [addr.to_dict() for addr in customer.addresses]
+        customer_dict['recent_orders'] = [order.to_dict() for order in recent_orders]
+
+        return jsonify(customer_dict), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/customers', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_customer():
+    """Cria um novo cliente"""
+    try:
+        data = request.get_json()
+
+        if not data.get('name') or not data.get('phone'):
+            return jsonify({'error': 'Nome e telefone são obrigatórios'}), 400
+
+        # Verificar se telefone já existe
+        existing = Customer.query.filter_by(phone=data['phone']).first()
+        if existing:
+            return jsonify({'error': 'Telefone já cadastrado'}), 400
+
+        customer = Customer(
+            name=data['name'],
+            phone=data['phone'],
+            email=data.get('email', ''),
+        )
+
+        db.session.add(customer)
+
+        # Criar endereço se fornecido
+        if data.get('address'):
+            addr = data['address']
+            address = Address(
+                customer=customer,
+                street=addr.get('street', ''),
+                complement=addr.get('complement', ''),
+                neighborhood=addr.get('neighborhood', ''),
+                city=addr.get('city', ''),
+                state=addr.get('state', ''),
+                zip_code=addr.get('zip_code', ''),
+                latitude=addr.get('latitude'),
+                longitude=addr.get('longitude'),
+                is_default=True
+            )
+            db.session.add(address)
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Cliente criado com sucesso',
+            'customer': customer.to_dict()
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/customers/<int:customer_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_customer(customer_id):
+    """Atualiza um cliente"""
+    try:
+        customer = Customer.query.get(customer_id)
+        if not customer:
+            return jsonify({'error': 'Cliente não encontrado'}), 404
+
+        data = request.get_json()
+
+        if data.get('name'):
+            customer.name = data['name']
+        if data.get('phone'):
+            # Verificar se telefone já existe em outro cliente
+            existing = Customer.query.filter(
+                Customer.phone == data['phone'],
+                Customer.id != customer_id
+            ).first()
+            if existing:
+                return jsonify({'error': 'Telefone já cadastrado'}), 400
+            customer.phone = data['phone']
+        if 'email' in data:
+            customer.email = data['email']
+
+        customer.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Cliente atualizado com sucesso',
+            'customer': customer.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/customers/<int:customer_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_customer(customer_id):
+    """Exclui um cliente"""
+    try:
+        customer = Customer.query.get(customer_id)
+        if not customer:
+            return jsonify({'error': 'Cliente não encontrado'}), 404
+
+        # Verificar se tem pedidos
+        has_orders = Order.query.filter_by(customer_id=customer_id).first()
+        if has_orders:
+            return jsonify({'error': 'Não é possível excluir cliente com pedidos vinculados'}), 400
+
+        db.session.delete(customer)
+        db.session.commit()
+
+        return jsonify({'message': 'Cliente excluído com sucesso'}), 200
+
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 

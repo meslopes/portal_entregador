@@ -19,6 +19,7 @@ import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
 import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
+import AdminCustomersPage from '@/pages/admin/AdminCustomersPage';
 import './App.css';
 
 function App() {
@@ -171,6 +172,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <AdminOrdersPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/customers"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminCustomersPage />
                 </Layout>
               </ProtectedRoute>
             }
