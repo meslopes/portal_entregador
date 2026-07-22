@@ -157,6 +157,11 @@ export const orderService = {
     const response = await api.get('/api/orders/my/stats');
     return response.data;
   },
+
+  rateOrder: async (orderId, rating, feedback = '') => {
+    const response = await api.post(`/api/orders/${orderId}/rate`, { rating, feedback });
+    return response.data;
+  },
 };
 
 // Serviços administrativos

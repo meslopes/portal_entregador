@@ -588,3 +588,76 @@ def get_my_stats():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# AVALIACAO DE ENTREGA
+# ============================================
+
+@order_bp.route('/<int:order_id>/rate', methods=['POST'])
+@jwt_required()
+def rate_delivery(order_id):
+    """Avalia a entrega de um pedido (pelo estabelecimento)"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type != UserType.CLIENT:
+            return jsonify({'error': 'Apenas estabelecimentos podem avaliar'}), 403
+
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
+        # Verifica se o pedido pertence ao estabelecimento
+        customer_profile = Customer.query.filter_by(user_id=user.id).first()
+        if not customer_profile:
+            return jsonify({'error': 'Perfil não encontrado'}), 404
+
+        restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+        if not restaurant or order.restaurant_id != restaurant.id:
+            return jsonify({'error': 'Pedido não pertence a este estabelecimento'}), 403
+
+        # Verifica se ja foi avaliado
+        if order.delivery and order.delivery.customer_rating:
+            return jsonify({'error': 'Pedido já foi avaliado'}), 400
+
+        # Verifica se esta entregue
+        if order.status != OrderStatus.DELIVERED:
+            return jsonify({'error': 'Apenas pedidos entregues podem ser avaliados'}), 400
+
+        data = request.get_json()
+        rating = data.get('rating')
+        feedback = data.get('feedback', '')
+
+        if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
+            return jsonify({'error': 'Avaliação deve ser um número de 1 a 5'}), 400
+
+        # Atualiza a avaliacao na entrega
+        if order.delivery:
+            order.delivery.customer_rating = rating
+            order.delivery.customer_feedback = feedback
+            order.delivery.updated_at = datetime.utcnow()
+
+            # Atualiza a media de avaliacao do entregador
+            driver = order.delivery.driver
+            if driver:
+                avg_rating = db.session.query(func.avg(Delivery.customer_rating)).filter(
+                    Delivery.driver_id == driver.id,
+                    Delivery.customer_rating.isnot(None)
+                ).scalar()
+                if avg_rating:
+                    driver.rating = round(float(avg_rating), 2)
+                driver.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Avaliação registrada com sucesso',
+            'rating': rating,
+            'feedback': feedback
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
