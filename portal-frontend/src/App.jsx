@@ -14,6 +14,7 @@ import ClientLoginPage from '@/pages/client/ClientLoginPage';
 import ClientRegisterPage from '@/pages/client/ClientRegisterPage';
 import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
 import NewOrderPage from '@/pages/client/NewOrderPage';
+import ClientOrdersPage from '@/pages/client/ClientOrdersPage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
@@ -129,6 +130,16 @@ function App() {
               <ProtectedRoute>
                 <ClientLayout>
                   <NewOrderPage />
+                </ClientLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/orders"
+            element={
+              <ProtectedRoute>
+                <ClientLayout>
+                  <ClientOrdersPage />
                 </ClientLayout>
               </ProtectedRoute>
             }
