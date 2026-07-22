@@ -332,6 +332,35 @@ export const adminService = {
     return response.data;
   },
 
+  // Gestao de usuarios
+  getAllUsers: async (page = 1, perPage = 20, type = '', search = '') => {
+    const params = { page, per_page: perPage };
+    if (type) params.type = type;
+    if (search) params.search = search;
+    const response = await api.get('/api/admin/users', { params });
+    return response.data;
+  },
+
+  getUserDetails: async (userId) => {
+    const response = await api.get(`/api/admin/users/${userId}`);
+    return response.data;
+  },
+
+  updateUser: async (userId, userData) => {
+    const response = await api.put(`/api/admin/users/${userId}`, userData);
+    return response.data;
+  },
+
+  deleteUser: async (userId) => {
+    const response = await api.delete(`/api/admin/users/${userId}`);
+    return response.data;
+  },
+
+  createAdminUser: async (adminData) => {
+    const response = await api.post('/api/admin/create-admin', adminData);
+    return response.data;
+  },
+
   // Relatórios
   getOrdersByDate: async (days = 30) => {
     const response = await api.get('/api/admin/reports/orders-by-date', { params: { days } });

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -44,6 +44,7 @@ const Layout = ({ children }) => {
     { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
     { name: 'Pagamentos', href: '/admin/driver-payments', icon: CreditCard },
     { name: 'Relatórios', href: '/admin/reports', icon: FileText },
+    { name: 'Usuários', href: '/admin/users', icon: Shield },
     { name: 'Config', href: '/admin/settings', icon: Settings },
   ];
 

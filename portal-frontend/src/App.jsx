@@ -28,6 +28,7 @@ import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
+import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import './App.css';
 
 function App() {
@@ -270,6 +271,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <AdminSettingsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminUsersPage />
                 </Layout>
               </ProtectedRoute>
             }

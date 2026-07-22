@@ -133,6 +133,248 @@ def reject_user(user_id):
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================
+# GESTAO DE USUARIOS (ADMIN/ENTREGADOR/ESTABELECIMENTO)
+# ============================================
+
+@admin_bp.route('/users', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_all_users():
+    """Lista todos os usuarios do sistema"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        user_type = request.args.get('type')
+        search = request.args.get('search', '')
+
+        query = User.query
+
+        if user_type:
+            try:
+                query = query.filter_by(user_type=UserType(user_type))
+            except ValueError:
+                pass
+
+        if search:
+            query = query.filter(or_(
+                User.first_name.ilike(f'%{search}%'),
+                User.last_name.ilike(f'%{search}%'),
+                User.email.ilike(f'%{search}%'),
+                User.phone.ilike(f'%{search}%')
+            ))
+
+        users = query.order_by(User.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+        users_data = []
+        for user in users.items:
+            user_dict = user.to_dict()
+            if user.user_type == UserType.DRIVER:
+                driver = Driver.query.filter_by(user_id=user.id).first()
+                if driver:
+                    user_dict['driver'] = driver.to_dict()
+            elif user.user_type == UserType.CLIENT:
+                customer = Customer.query.filter_by(user_id=user.id).first()
+                if customer:
+                    user_dict['customer'] = customer.to_dict()
+            users_data.append(user_dict)
+
+        return jsonify({
+            'users': users_data,
+            'total': users.total,
+            'pages': users.pages,
+            'current_page': page
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_user_details(user_id):
+    """Obtem detalhes de um usuario"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        user_dict = user.to_dict()
+        if user.user_type == UserType.DRIVER:
+            driver = Driver.query.filter_by(user_id=user.id).first()
+            if driver:
+                user_dict['driver'] = driver.to_dict()
+        elif user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                user_dict['customer'] = customer.to_dict()
+
+        return jsonify(user_dict), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_user(user_id):
+    """Atualiza dados de um usuario"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        data = request.get_json()
+
+        if data.get('first_name'):
+            user.first_name = data['first_name']
+        if data.get('last_name'):
+            user.last_name = data['last_name']
+        if data.get('phone'):
+            user.phone = data['phone']
+        if data.get('email'):
+            # Verifica se email ja existe
+            existing = User.query.filter(User.email == data['email'], User.id != user_id).first()
+            if existing:
+                return jsonify({'error': 'Email já cadastrado'}), 400
+            user.email = data['email']
+        if data.get('status'):
+            try:
+                user.status = UserStatus(data['status'])
+            except ValueError:
+                return jsonify({'error': 'Status inválido'}), 400
+
+        # Atualiza dados especificos do tipo
+        if user.user_type == UserType.DRIVER:
+            driver = Driver.query.filter_by(user_id=user.id).first()
+            if driver:
+                if data.get('vehicle_type'):
+                    try:
+                        from src.models.portal_models import VehicleType
+                        driver.vehicle_type = VehicleType(data['vehicle_type'])
+                    except ValueError:
+                        pass
+                if data.get('vehicle_plate'):
+                    driver.vehicle_plate = data['vehicle_plate']
+                if data.get('vehicle_model'):
+                    driver.vehicle_model = data['vehicle_model']
+                if data.get('vehicle_year'):
+                    driver.vehicle_year = data['vehicle_year']
+                if data.get('pix_key'):
+                    driver.pix_key = data['pix_key']
+                if data.get('max_concurrent_orders'):
+                    driver.max_concurrent_orders = data['max_concurrent_orders']
+
+        user.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({'message': 'Usuário atualizado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_user(user_id):
+    """Exclui um usuario"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Nao permite excluir a si mesmo
+        current_user_id = int(get_jwt_identity())
+        if user_id == current_user_id:
+            return jsonify({'error': 'Não é possível excluir sua própria conta'}), 400
+
+        # Nao permite excluir o admin padrao
+        if user.user_type == UserType.ADMIN:
+            admin_count = User.query.filter_by(user_type=UserType.ADMIN).count()
+            if admin_count <= 1:
+                return jsonify({'error': 'Não é possível excluir o último admin'}), 400
+
+        # Exclui dados especificos do tipo
+        if user.user_type == UserType.DRIVER:
+            driver = Driver.query.filter_by(user_id=user.id).first()
+            if driver:
+                # Verifica se tem pedidos
+                has_orders = Order.query.filter_by(driver_id=driver.id).first()
+                if has_orders:
+                    return jsonify({'error': 'Não é possível excluir entregador com pedidos vinculados'}), 400
+                db.session.delete(driver)
+        elif user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                has_orders = Order.query.filter_by(customer_id=customer.id).first()
+                if has_orders:
+                    return jsonify({'error': 'Não é possível excluir estabelecimento com pedidos vinculados'}), 400
+                db.session.delete(customer)
+
+        # Exclui notificacoes
+        Notification.query.filter_by(user_id=user.id).delete()
+
+        db.session.delete(user)
+        db.session.commit()
+
+        return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/create-admin', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_admin_user():
+    """Cria um novo admin (pelo admin existente)"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password', 'admin123')
+        first_name = data.get('first_name', 'Admin')
+        last_name = data.get('last_name', '')
+
+        if not email:
+            return jsonify({'error': 'Email é obrigatório'}), 400
+
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Email já cadastrado'}), 400
+
+        import uuid
+        unique_cpf = f"ADMIN{uuid.uuid4().hex[:8].upper()}"
+        unique_phone = f"119{uuid.uuid4().hex[:8]}"
+
+        user = User(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone=unique_phone,
+            cpf=unique_cpf,
+            user_type=UserType.ADMIN,
+            status=UserStatus.ACTIVE
+        )
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Admin criado com sucesso',
+            'user': {
+                'id': user.id,
+                'email': email,
+                'password': password,
+                'name': f"{first_name} {last_name}"
+            }
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/dashboard', methods=['GET'])
 @jwt_required()
 @admin_required
