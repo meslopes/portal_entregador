@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, Edit, Trash2, AlertCircle, X,
   Truck, Store, Shield, Mail, Phone, CheckCircle
@@ -34,7 +34,7 @@ const AdminUsersPage = () => {
       setTotalPages(data.pages);
       setTotal(data.total);
     } catch (err) {
-      setError('Erro ao carregar usuários');
+      setError('Erro ao carregar usuÃ¡rios');
       console.error(err);
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ const AdminUsersPage = () => {
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.first_name) {
-      setFormError('Email e nome são obrigatórios');
+      setFormError('Email e nome sÃ£o obrigatÃ³rios');
       return;
     }
     try {
@@ -92,7 +92,7 @@ const AdminUsersPage = () => {
   };
 
   const handleDelete = async (userId, userName) => {
-    if (!window.confirm(`Excluir ${userName}? Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(`Excluir ${userName}? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return;
     try {
       await adminService.deleteUser(userId);
       loadUsers();
@@ -140,8 +140,8 @@ const AdminUsersPage = () => {
     <div style={{ padding: '1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Usuários</h1>
-          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>{total} usuário(s) cadastrado(s)</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>UsuÃ¡rios</h1>
+          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>{total} usuÃ¡rio(s) cadastrado(s)</p>
         </div>
         <button onClick={openCreateAdmin} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
           <Plus size={18} /> NOVO ADMIN
@@ -172,7 +172,7 @@ const AdminUsersPage = () => {
       {users.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <Users size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
-          <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum usuário encontrado</p>
+          <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum usuÃ¡rio encontrado</p>
         </div>
       ) : (
         <>
@@ -202,7 +202,7 @@ const AdminUsersPage = () => {
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={pagBtn(page === 1)}>Anterior</button>
               <span style={{ fontSize: '0.875rem', color: '#64748b' }}>{page} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={pagBtn(page === totalPages)}>Próxima</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={pagBtn(page === totalPages)}>PrÃ³xima</button>
             </div>
           )}
         </>
@@ -236,7 +236,7 @@ const AdminUsersPage = () => {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Usuário</h2>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar UsuÃ¡rio</h2>
               <button onClick={() => setShowEdit(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleEdit} style={{ padding: '1.5rem' }}>
@@ -278,3 +278,4 @@ const btnSecondary = { padding: '0.625rem 1.25rem', borderRadius: '0.5rem', bord
 const pagBtn = (disabled) => ({ padding: '0.5rem 1rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, fontSize: '0.875rem' });
 
 export default AdminUsersPage;
+

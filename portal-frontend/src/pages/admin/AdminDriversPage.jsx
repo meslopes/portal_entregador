@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, AlertCircle, Truck, Phone, Mail,
-  Star, X, Edit, Eye, MapPin
+  Star, X, Edit, Eye, MapPin, User
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 
