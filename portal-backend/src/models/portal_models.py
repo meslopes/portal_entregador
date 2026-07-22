@@ -113,6 +113,7 @@ class Driver(db.Model):
     last_location_update = db.Column(db.DateTime)
     rating = db.Column(db.Numeric(3, 2), default=5.00)
     total_deliveries = db.Column(db.Integer, default=0)
+    max_concurrent_orders = db.Column(db.Integer, default=3)
     # Praça
     square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -141,6 +142,7 @@ class Driver(db.Model):
             'last_location_update': self.last_location_update.isoformat() if self.last_location_update else None,
             'rating': float(self.rating) if self.rating else None,
             'total_deliveries': self.total_deliveries,
+            'max_concurrent_orders': self.max_concurrent_orders,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

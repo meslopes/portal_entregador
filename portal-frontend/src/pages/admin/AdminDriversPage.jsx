@@ -23,7 +23,7 @@ const AdminDriversPage = () => {
     email: '', password: '123456', first_name: '', last_name: '',
     phone: '', cpf: '', vehicle_type: 'MOTORCYCLE', vehicle_plate: '',
     vehicle_model: '', vehicle_year: '', driver_license: '',
-    pix_key: '', bank_account: '', square_id: ''
+    pix_key: '', bank_account: '', square_id: '', max_concurrent_orders: '3'
   });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -57,7 +57,7 @@ const AdminDriversPage = () => {
       email: '', password: '123456', first_name: '', last_name: '',
       phone: '', cpf: '', vehicle_type: 'MOTORCYCLE', vehicle_plate: '',
       vehicle_model: '', vehicle_year: '', driver_license: '',
-      pix_key: '', bank_account: '', square_id: ''
+      pix_key: '', bank_account: '', square_id: '', max_concurrent_orders: '3'
     });
     setFormError('');
     setShowForm(true);
@@ -279,6 +279,11 @@ const AdminDriversPage = () => {
 
               <FormField label="CNH">
                 <input type="text" name="driver_license" value={formData.driver_license} onChange={handleFormChange} style={inputStyle} placeholder="Número da CNH" />
+              </FormField>
+
+              <FormField label="Máximo de Pedidos Simultâneos">
+                <input type="number" name="max_concurrent_orders" min="1" max="10" value={formData.max_concurrent_orders} onChange={handleFormChange} style={inputStyle} />
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Quantidade máxima de pedidos que o entregador pode ter ao mesmo tempo (configurável pelo admin)</p>
               </FormField>
 
               <FormField label="Chave PIX">

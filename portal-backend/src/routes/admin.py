@@ -232,7 +232,8 @@ def create_driver():
             vehicle_year=data.get('vehicle_year'),
             bank_account=data.get('bank_account'),
             pix_key=data.get('pix_key'),
-            square_id=data.get('square_id')
+            square_id=data.get('square_id'),
+            max_concurrent_orders=data.get('max_concurrent_orders', 3)
         )
 
         db.session.add(driver)

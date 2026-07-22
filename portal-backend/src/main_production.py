@@ -116,6 +116,15 @@ def create_app(config_name=None):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+        # Migration: adicionar max_concurrent_orders em drivers
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'max_concurrent_orders') THEN ALTER TABLE drivers ADD COLUMN max_concurrent_orders INTEGER DEFAULT 3; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
     
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])

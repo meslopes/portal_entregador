@@ -484,14 +484,37 @@ def create_order():
         )
 
         db.session.add(order)
+        db.session.flush()
+
+        # Atribuicao inteligente: busca entregador mais proximo
+        assigned_driver = find_nearest_available_driver(order)
+        if assigned_driver:
+            order.driver_id = assigned_driver.id
+            order.status = OrderStatus.ACCEPTED
+            # Notifica o entregador selecionado
+            try:
+                from src.services.whatsapp import whatsapp_service
+                if whatsapp_service.is_configured() and assigned_driver.user.phone:
+                    whatsapp_service.send_new_order_to_driver(
+                        assigned_driver.user.phone,
+                        {
+                            'order_number': order.order_number,
+                            'restaurant': restaurant.name,
+                            'total_amount': float(order.total_amount),
+                            'delivery_fee': float(order.delivery_fee)
+                        }
+                    )
+            except Exception:
+                pass
+
         db.session.commit()
 
-        # Envia notificacao WhatsApp (se configurado)
+        # Envia notificacao WhatsApp ao cliente (se configurado)
         try:
             from src.services.whatsapp import whatsapp_service
             if whatsapp_service.is_configured() and customer.phone:
                 whatsapp_service.send_order_notification(
-                    customer.phone, order.order_number, 'PENDING'
+                    customer.phone, order.order_number, order.status.value
                 )
         except Exception:
             pass  # Nao falha o pedido se WhatsApp falhar
@@ -909,4 +932,88 @@ def rate_delivery(order_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# ATRIBUICAO INTELIGENTE DE PEDIDOS
+# ============================================
+
+def find_nearest_available_driver(order):
+    """
+    Busca o entregador mais proximo que esteja disponivel.
+    
+    Logica:
+    1. Busca todos os entregadores online
+    2. Filtra por: distancia maxima e pedidos ativos < max_concurrent_orders
+    3. Ordena por distancia ate o restaurante
+    4. Retorna o mais proximo
+    """
+    try:
+        from src.models.portal_models import SystemConfig
+
+        # Busca configuracao de raio maximo
+        config = SystemConfig.query.filter_by(config_key='delivery_radius').first()
+        max_radius = float(config.config_value) if config else 200.0
+
+        # Coordenadas do restaurante
+        rest_lat = float(order.restaurant.latitude) if order.restaurant.latitude else None
+        rest_lng = float(order.restaurant.longitude) if order.restaurant.longitude else None
+
+        if not rest_lat or not rest_lng:
+            return None
+
+        # Busca entregadores online
+        online_drivers = Driver.query.filter(
+            Driver.is_online == True,
+            Driver.current_latitude.isnot(None),
+            Driver.current_longitude.isnot(None)
+        ).all()
+
+        available_drivers = []
+
+        for driver in online_drivers:
+            # Calcula distancia ate o restaurante
+            driver_lat = float(driver.current_latitude)
+            driver_lng = float(driver.current_longitude)
+
+            lat_diff = abs(driver_lat - rest_lat)
+            lng_diff = abs(driver_lng - rest_lng)
+            distance = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+
+            if distance > max_radius:
+                continue
+
+            # Conta pedidos ativos do entregador
+            active_orders = Order.query.filter(
+                Order.driver_id == driver.id,
+                Order.status.in_([
+                    OrderStatus.ACCEPTED,
+                    OrderStatus.PREPARING,
+                    OrderStatus.READY,
+                    OrderStatus.PICKED_UP
+                ])
+            ).count()
+
+            # Verifica se tem capacidade
+            max_concurrent = driver.max_concurrent_orders or 3
+            if active_orders >= max_concurrent:
+                continue
+
+            available_drivers.append({
+                'driver': driver,
+                'distance': distance,
+                'active_orders': active_orders
+            })
+
+        if not available_drivers:
+            return None
+
+        # Ordena por distancia (mais proximo primeiro)
+        available_drivers.sort(key=lambda x: x['distance'])
+
+        return available_drivers[0]['driver']
+
+    except Exception as e:
+        print(f"Erro na atribuicao inteligente: {e}")
+        return None
 
