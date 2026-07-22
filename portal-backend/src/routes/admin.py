@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+﻿from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Payment, Delivery,
@@ -10,7 +10,7 @@ from sqlalchemy import func, and_, or_
 admin_bp = Blueprint('admin', __name__)
 
 def admin_required(f):
-    """Decorator para verificar se o usuário é admin"""
+    """Decorator para verificar se o usuÃ¡rio Ã© admin"""
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -59,10 +59,10 @@ def approve_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'Usuário não encontrado'}), 404
+            return jsonify({'error': 'UsuÃ¡rio nÃ£o encontrado'}), 404
 
         if user.status != UserStatus.INACTIVE:
-            return jsonify({'error': 'Usuário não está pendente'}), 400
+            return jsonify({'error': 'UsuÃ¡rio nÃ£o estÃ¡ pendente'}), 400
 
         user.status = UserStatus.ACTIVE
         user.updated_at = datetime.utcnow()
@@ -74,14 +74,14 @@ def approve_user(user_id):
             if whatsapp_service.is_configured() and user.phone:
                 whatsapp_service.send_message(
                     user.phone,
-                    f"✅ *Conta Aprovada!*\n\n"
-                    f"Olá {user.first_name}, sua conta no muv.log foi aprovada!\n"
-                    f"Agora você pode fazer login e acessar o sistema."
+                    f"âœ… *Conta Aprovada!*\n\n"
+                    f"OlÃ¡ {user.first_name}, sua conta no muv.log foi aprovada!\n"
+                    f"Agora vocÃª pode fazer login e acessar o sistema."
                 )
         except Exception:
             pass
 
-        return jsonify({'message': 'Usuário aprovado com sucesso'}), 200
+        return jsonify({'message': 'UsuÃ¡rio aprovado com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -95,10 +95,10 @@ def reject_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'Usuário não encontrado'}), 404
+            return jsonify({'error': 'UsuÃ¡rio nÃ£o encontrado'}), 404
 
         if user.status != UserStatus.INACTIVE:
-            return jsonify({'error': 'Usuário não está pendente'}), 400
+            return jsonify({'error': 'UsuÃ¡rio nÃ£o estÃ¡ pendente'}), 400
 
         # Notifica o usuario via WhatsApp antes de excluir
         try:
@@ -106,9 +106,9 @@ def reject_user(user_id):
             if whatsapp_service.is_configured() and user.phone:
                 whatsapp_service.send_message(
                     user.phone,
-                    f"❌ *Cadastro Rejeitado*\n\n"
-                    f"Olá {user.first_name}, seu cadastro no muv.log não foi aprovado.\n"
-                    f"Entre em contato com o suporte para mais informações."
+                    f"âŒ *Cadastro Rejeitado*\n\n"
+                    f"OlÃ¡ {user.first_name}, seu cadastro no muv.log nÃ£o foi aprovado.\n"
+                    f"Entre em contato com o suporte para mais informaÃ§Ãµes."
                 )
         except Exception:
             pass
@@ -127,7 +127,7 @@ def reject_user(user_id):
         db.session.delete(user)
         db.session.commit()
 
-        return jsonify({'message': 'Usuário rejeitado e excluído'}), 200
+        return jsonify({'message': 'UsuÃ¡rio rejeitado e excluÃ­do'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -199,7 +199,7 @@ def get_user_details(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'Usuário não encontrado'}), 404
+            return jsonify({'error': 'UsuÃ¡rio nÃ£o encontrado'}), 404
 
         user_dict = user.to_dict()
         if user.user_type == UserType.DRIVER:
@@ -224,7 +224,7 @@ def update_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'Usuário não encontrado'}), 404
+            return jsonify({'error': 'UsuÃ¡rio nÃ£o encontrado'}), 404
 
         data = request.get_json()
 
@@ -238,13 +238,13 @@ def update_user(user_id):
             # Verifica se email ja existe
             existing = User.query.filter(User.email == data['email'], User.id != user_id).first()
             if existing:
-                return jsonify({'error': 'Email já cadastrado'}), 400
+                return jsonify({'error': 'Email jÃ¡ cadastrado'}), 400
             user.email = data['email']
         if data.get('status'):
             try:
                 user.status = UserStatus(data['status'])
             except ValueError:
-                return jsonify({'error': 'Status inválido'}), 400
+                return jsonify({'error': 'Status invÃ¡lido'}), 400
 
         # Atualiza dados especificos do tipo
         if user.user_type == UserType.DRIVER:
@@ -270,7 +270,7 @@ def update_user(user_id):
         user.updated_at = datetime.utcnow()
         db.session.commit()
 
-        return jsonify({'message': 'Usuário atualizado com sucesso'}), 200
+        return jsonify({'message': 'UsuÃ¡rio atualizado com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -284,18 +284,18 @@ def delete_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'Usuário não encontrado'}), 404
+            return jsonify({'error': 'UsuÃ¡rio nÃ£o encontrado'}), 404
 
         # Nao permite excluir a si mesmo
         current_user_id = int(get_jwt_identity())
         if user_id == current_user_id:
-            return jsonify({'error': 'Não é possível excluir sua própria conta'}), 400
+            return jsonify({'error': 'NÃ£o Ã© possÃ­vel excluir sua prÃ³pria conta'}), 400
 
         # Nao permite excluir o admin padrao
         if user.user_type == UserType.ADMIN:
             admin_count = User.query.filter_by(user_type=UserType.ADMIN).count()
             if admin_count <= 1:
-                return jsonify({'error': 'Não é possível excluir o último admin'}), 400
+                return jsonify({'error': 'NÃ£o Ã© possÃ­vel excluir o Ãºltimo admin'}), 400
 
         # Exclui dados especificos do tipo
         if user.user_type == UserType.DRIVER:
@@ -304,14 +304,14 @@ def delete_user(user_id):
                 # Verifica se tem pedidos
                 has_orders = Order.query.filter_by(driver_id=driver.id).first()
                 if has_orders:
-                    return jsonify({'error': 'Não é possível excluir entregador com pedidos vinculados'}), 400
+                    return jsonify({'error': 'NÃ£o Ã© possÃ­vel excluir entregador com pedidos vinculados'}), 400
                 db.session.delete(driver)
         elif user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
             if customer:
                 has_orders = Order.query.filter_by(customer_id=customer.id).first()
                 if has_orders:
-                    return jsonify({'error': 'Não é possível excluir estabelecimento com pedidos vinculados'}), 400
+                    return jsonify({'error': 'NÃ£o Ã© possÃ­vel excluir estabelecimento com pedidos vinculados'}), 400
                 db.session.delete(customer)
 
         # Exclui notificacoes
@@ -320,7 +320,7 @@ def delete_user(user_id):
         db.session.delete(user)
         db.session.commit()
 
-        return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+        return jsonify({'message': 'UsuÃ¡rio excluÃ­do com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -339,10 +339,10 @@ def create_admin_user():
         last_name = data.get('last_name', '')
 
         if not email:
-            return jsonify({'error': 'Email é obrigatório'}), 400
+            return jsonify({'error': 'Email Ã© obrigatÃ³rio'}), 400
 
         if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email já cadastrado'}), 400
+            return jsonify({'error': 'Email jÃ¡ cadastrado'}), 400
 
         import uuid
         unique_cpf = f"ADMIN{uuid.uuid4().hex[:8].upper()}"
@@ -379,9 +379,9 @@ def create_admin_user():
 @jwt_required()
 @admin_required
 def get_dashboard():
-    """Obtém dados do dashboard administrativo"""
+    """ObtÃ©m dados do dashboard administrativo"""
     try:
-        # Estatísticas gerais
+        # EstatÃ­sticas gerais
         total_drivers = Driver.query.count()
         online_drivers = Driver.query.filter_by(is_online=True).count()
         total_orders = Order.query.count()
@@ -391,7 +391,7 @@ def get_dashboard():
             Order.status, func.count(Order.id)
         ).group_by(Order.status).all()
         
-        # Estatísticas do dia atual
+        # EstatÃ­sticas do dia atual
         today = datetime.utcnow().date()
         today_orders = Order.query.filter(func.date(Order.created_at) == today).count()
         today_deliveries = Order.query.filter(
@@ -405,7 +405,7 @@ def get_dashboard():
             Order.status == OrderStatus.DELIVERED
         ).scalar() or 0
         
-        # Entregadores mais ativos (últimos 7 dias)
+        # Entregadores mais ativos (Ãºltimos 7 dias)
         week_ago = datetime.utcnow() - timedelta(days=7)
         top_drivers = db.session.query(
             Driver.id,
@@ -477,7 +477,7 @@ def get_drivers():
             driver_dict = driver.to_dict()
             driver_dict['user'] = driver.user.to_dict()
             
-            # Estatísticas do entregador
+            # EstatÃ­sticas do entregador
             total_earnings = db.session.query(func.sum(Payment.amount)).filter_by(
                 driver_id=driver.id
             ).scalar() or 0
@@ -500,16 +500,16 @@ def get_drivers():
 @jwt_required()
 @admin_required
 def get_driver_details(driver_id):
-    """Obtém detalhes de um entregador específico"""
+    """ObtÃ©m detalhes de um entregador especÃ­fico"""
     try:
         driver = Driver.query.get(driver_id)
         if not driver:
-            return jsonify({'error': 'Entregador não encontrado'}), 404
+            return jsonify({'error': 'Entregador nÃ£o encontrado'}), 404
         
         driver_dict = driver.to_dict()
         driver_dict['user'] = driver.user.to_dict()
         
-        # Estatísticas detalhadas
+        # EstatÃ­sticas detalhadas
         total_earnings = db.session.query(func.sum(Payment.amount)).filter_by(
             driver_id=driver.id
         ).scalar() or 0
@@ -518,7 +518,7 @@ def get_driver_details(driver_id):
             driver_id=driver.id
         ).scalar() or 5.0
         
-        # Entregas dos últimos 30 dias
+        # Entregas dos Ãºltimos 30 dias
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         recent_deliveries = Order.query.filter(
             Order.driver_id == driver.id,
@@ -551,10 +551,10 @@ def create_driver():
         last_name = data.get('last_name')
 
         if not email or not first_name or not last_name:
-            return jsonify({'error': 'Email, nome e sobrenome são obrigatórios'}), 400
+            return jsonify({'error': 'Email, nome e sobrenome sÃ£o obrigatÃ³rios'}), 400
 
         if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email já cadastrado'}), 400
+            return jsonify({'error': 'Email jÃ¡ cadastrado'}), 400
 
         # Cria usuario
         user = User(
@@ -616,13 +616,13 @@ def update_driver_status(driver_id):
     try:
         driver = Driver.query.get(driver_id)
         if not driver:
-            return jsonify({'error': 'Entregador não encontrado'}), 404
+            return jsonify({'error': 'Entregador nÃ£o encontrado'}), 404
         
         data = request.get_json()
         new_status = data.get('status')
         
         if new_status not in ['ACTIVE', 'INACTIVE', 'SUSPENDED']:
-            return jsonify({'error': 'Status inválido'}), 400
+            return jsonify({'error': 'Status invÃ¡lido'}), 400
         
         from src.models.portal_models import UserStatus
         driver.user.status = UserStatus(new_status)
@@ -711,20 +711,20 @@ def assign_order_to_driver(order_id):
     try:
         order = Order.query.get(order_id)
         if not order:
-            return jsonify({'error': 'Pedido não encontrado'}), 404
+            return jsonify({'error': 'Pedido nÃ£o encontrado'}), 404
         
         if order.status != OrderStatus.PENDING:
-            return jsonify({'error': 'Pedido não está pendente'}), 400
+            return jsonify({'error': 'Pedido nÃ£o estÃ¡ pendente'}), 400
         
         data = request.get_json()
         driver_id = data.get('driver_id')
         
         driver = Driver.query.get(driver_id)
         if not driver:
-            return jsonify({'error': 'Entregador não encontrado'}), 404
+            return jsonify({'error': 'Entregador nÃ£o encontrado'}), 404
         
         if not driver.is_online:
-            return jsonify({'error': 'Entregador não está online'}), 400
+            return jsonify({'error': 'Entregador nÃ£o estÃ¡ online'}), 400
         
         # Atribui o pedido
         order.driver_id = driver.id
@@ -749,7 +749,7 @@ def assign_order_to_driver(order_id):
         db.session.commit()
         
         return jsonify({
-            'message': 'Pedido atribuído com sucesso',
+            'message': 'Pedido atribuÃ­do com sucesso',
             'order': order.to_dict()
         }), 200
         
@@ -761,7 +761,7 @@ def assign_order_to_driver(order_id):
 @jwt_required()
 @admin_required
 def get_earnings_report():
-    """Relatório de ganhos"""
+    """RelatÃ³rio de ganhos"""
     try:
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
@@ -895,7 +895,7 @@ def get_finance_dashboard():
             func.sum(Order.total_amount).desc()
         ).limit(10).all()
 
-        # Receita diária (últimos 30 dias para gráfico)
+        # Receita diÃ¡ria (Ãºltimos 30 dias para grÃ¡fico)
         daily_revenue = db.session.query(
             func.date(Order.created_at).label('date'),
             func.sum(Order.total_amount).label('revenue'),
@@ -987,7 +987,7 @@ def get_finance_by_establishment():
 @jwt_required()
 @admin_required
 def get_live_tracking():
-    """Obtém localização em tempo real de todos os entregadores online"""
+    """ObtÃ©m localizaÃ§Ã£o em tempo real de todos os entregadores online"""
     try:
         online_drivers = Driver.query.filter(
             Driver.is_online == True,
@@ -1030,7 +1030,7 @@ def get_live_tracking():
 
 
 # ============================================
-# GESTÃO DE ESTABELECIMENTOS
+# GESTÃƒO DE ESTABELECIMENTOS
 # ============================================
 
 @admin_bp.route('/establishments', methods=['GET'])
@@ -1061,7 +1061,7 @@ def get_establishments():
         for est in establishments.items:
             est_dict = est.to_dict()
 
-            # Estatísticas do estabelecimento
+            # EstatÃ­sticas do estabelecimento
             total_orders = Order.query.filter_by(restaurant_id=est.id).count()
             total_revenue = db.session.query(func.sum(Order.total_amount)).filter_by(
                 restaurant_id=est.id
@@ -1104,15 +1104,15 @@ def get_establishments():
 @jwt_required()
 @admin_required
 def get_establishment_details(establishment_id):
-    """Obtém detalhes de um estabelecimento"""
+    """ObtÃ©m detalhes de um estabelecimento"""
     try:
         est = Restaurant.query.get(establishment_id)
         if not est:
-            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+            return jsonify({'error': 'Estabelecimento nÃ£o encontrado'}), 404
 
         est_dict = est.to_dict()
 
-        # Estatísticas
+        # EstatÃ­sticas
         total_orders = Order.query.filter_by(restaurant_id=est.id).count()
         total_revenue = db.session.query(func.sum(Order.total_amount)).filter_by(
             restaurant_id=est.id
@@ -1123,7 +1123,7 @@ def get_establishment_details(establishment_id):
             Order.status, func.count(Order.id)
         ).filter_by(restaurant_id=est.id).group_by(Order.status).all()
 
-        # Últimos pedidos
+        # Ãšltimos pedidos
         recent_orders = Order.query.filter_by(restaurant_id=est.id).order_by(
             Order.created_at.desc()
         ).limit(10).all()
@@ -1148,13 +1148,13 @@ def create_establishment():
         data = request.get_json()
 
         if not data.get('name') or not data.get('address'):
-            return jsonify({'error': 'Nome e endereço são obrigatórios'}), 400
+            return jsonify({'error': 'Nome e endereÃ§o sÃ£o obrigatÃ³rios'}), 400
 
         # Verificar CNPJ se fornecido
         if data.get('cnpj'):
             existing = Restaurant.query.filter_by(cnpj=data['cnpj']).first()
             if existing:
-                return jsonify({'error': 'CNPJ já cadastrado'}), 400
+                return jsonify({'error': 'CNPJ jÃ¡ cadastrado'}), 400
 
         # Cria usuario CLIENT para login
         user = None
@@ -1163,7 +1163,7 @@ def create_establishment():
 
         if email:
             if User.query.filter_by(email=email).first():
-                return jsonify({'error': 'Email já cadastrado'}), 400
+                return jsonify({'error': 'Email jÃ¡ cadastrado'}), 400
 
             user = User(
                 email=email,
@@ -1220,7 +1220,7 @@ def update_establishment(establishment_id):
     try:
         est = Restaurant.query.get(establishment_id)
         if not est:
-            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+            return jsonify({'error': 'Estabelecimento nÃ£o encontrado'}), 404
 
         data = request.get_json()
 
@@ -1232,7 +1232,7 @@ def update_establishment(establishment_id):
                 Restaurant.id != establishment_id
             ).first()
             if existing:
-                return jsonify({'error': 'CNPJ já cadastrado'}), 400
+                return jsonify({'error': 'CNPJ jÃ¡ cadastrado'}), 400
             est.cnpj = data['cnpj']
         if 'phone' in data:
             est.phone = data['phone']
@@ -1270,17 +1270,17 @@ def delete_establishment(establishment_id):
     try:
         est = Restaurant.query.get(establishment_id)
         if not est:
-            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+            return jsonify({'error': 'Estabelecimento nÃ£o encontrado'}), 404
 
         # Verificar se tem pedidos
         has_orders = Order.query.filter_by(restaurant_id=establishment_id).first()
         if has_orders:
-            return jsonify({'error': 'Não é possível excluir estabelecimento com pedidos vinculados'}), 400
+            return jsonify({'error': 'NÃ£o Ã© possÃ­vel excluir estabelecimento com pedidos vinculados'}), 400
 
         db.session.delete(est)
         db.session.commit()
 
-        return jsonify({'message': 'Estabelecimento excluído com sucesso'}), 200
+        return jsonify({'message': 'Estabelecimento excluÃ­do com sucesso'}), 200
 
     except Exception as e:
         db.session.rollback()
@@ -1288,14 +1288,14 @@ def delete_establishment(establishment_id):
 
 
 # ============================================
-# RELATÓRIOS
+# RELATÃ“RIOS
 # ============================================
 
 @admin_bp.route('/reports/orders-by-date', methods=['GET'])
 @jwt_required()
 @admin_required
 def report_orders_by_date():
-    """Relatório de pedidos por data"""
+    """RelatÃ³rio de pedidos por data"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
@@ -1331,7 +1331,7 @@ def report_orders_by_date():
 @jwt_required()
 @admin_required
 def report_drivers_performance():
-    """Relatório de desempenho dos entregadores"""
+    """RelatÃ³rio de desempenho dos entregadores"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
@@ -1374,7 +1374,7 @@ def report_drivers_performance():
 @jwt_required()
 @admin_required
 def report_establishments_ranking():
-    """Relatório de ranking dos estabelecimentos"""
+    """RelatÃ³rio de ranking dos estabelecimentos"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
@@ -1469,7 +1469,7 @@ def report_financial_summary():
 @jwt_required()
 @admin_required
 def report_cancellations():
-    """Relatório de cancelamentos"""
+    """RelatÃ³rio de cancelamentos"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
@@ -1504,7 +1504,7 @@ def report_cancellations():
 @jwt_required()
 @admin_required
 def report_ratings():
-    """Relatório de avaliações dos entregadores"""
+    """RelatÃ³rio de avaliaÃ§Ãµes dos entregadores"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
@@ -1557,7 +1557,7 @@ def report_ratings():
 @jwt_required()
 @admin_required
 def report_peak_hours():
-    """Relatório de horários de pico"""
+    """RelatÃ³rio de horÃ¡rios de pico"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
@@ -1582,7 +1582,7 @@ def report_peak_hours():
             func.extract('dow', Order.created_at)
         ).all()
 
-        day_names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+        day_names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b']
 
         return jsonify({
             'hourly': [{'hour': int(h.hour), 'count': h.count} for h in hourly],
@@ -1597,7 +1597,7 @@ def report_peak_hours():
 @jwt_required()
 @admin_required
 def report_deliveries_by_driver():
-    """Relatório detalhado de entregas por entregador"""
+    """RelatÃ³rio detalhado de entregas por entregador"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
@@ -1648,7 +1648,7 @@ def report_deliveries_by_driver():
 @jwt_required()
 @admin_required
 def get_settings():
-    """Obtém configurações do admin"""
+    """ObtÃ©m configuraÃ§Ãµes do admin"""
     try:
         from src.models.portal_models import SystemConfig
         configs = SystemConfig.query.all()
@@ -1662,7 +1662,7 @@ def get_settings():
 @jwt_required()
 @admin_required
 def update_settings():
-    """Atualiza configurações do admin"""
+    """Atualiza configuraÃ§Ãµes do admin"""
     try:
         from src.models.portal_models import SystemConfig
         data = request.get_json()
@@ -1677,7 +1677,7 @@ def update_settings():
                 db.session.add(config)
 
         db.session.commit()
-        return jsonify({'message': 'Configurações salvas com sucesso'}), 200
+        return jsonify({'message': 'ConfiguraÃ§Ãµes salvas com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1691,7 +1691,7 @@ def update_settings():
 @jwt_required()
 @admin_required
 def get_squares():
-    """Lista todas as praças"""
+    """Lista todas as praÃ§as"""
     try:
         from src.models.portal_models import Square
         squares = Square.query.order_by(Square.name).all()
@@ -1713,13 +1713,13 @@ def get_squares():
 @jwt_required()
 @admin_required
 def create_square():
-    """Cria uma nova praça"""
+    """Cria uma nova praÃ§a"""
     try:
         from src.models.portal_models import Square
         data = request.get_json()
 
         if not data.get('name') or not data.get('city') or not data.get('state'):
-            return jsonify({'error': 'Nome, cidade e estado são obrigatórios'}), 400
+            return jsonify({'error': 'Nome, cidade e estado sÃ£o obrigatÃ³rios'}), 400
 
         square = Square(
             name=data['name'],
@@ -1730,7 +1730,7 @@ def create_square():
         db.session.add(square)
         db.session.commit()
 
-        return jsonify({'message': 'Praça criada com sucesso', 'square': square.to_dict()}), 201
+        return jsonify({'message': 'PraÃ§a criada com sucesso', 'square': square.to_dict()}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1740,12 +1740,12 @@ def create_square():
 @jwt_required()
 @admin_required
 def update_square(square_id):
-    """Atualiza uma praça"""
+    """Atualiza uma praÃ§a"""
     try:
         from src.models.portal_models import Square
         square = Square.query.get(square_id)
         if not square:
-            return jsonify({'error': 'Praça não encontrada'}), 404
+            return jsonify({'error': 'PraÃ§a nÃ£o encontrada'}), 404
 
         data = request.get_json()
         if data.get('name'):
@@ -1760,7 +1760,7 @@ def update_square(square_id):
         square.updated_at = datetime.utcnow()
         db.session.commit()
 
-        return jsonify({'message': 'Praça atualizada com sucesso', 'square': square.to_dict()}), 200
+        return jsonify({'message': 'PraÃ§a atualizada com sucesso', 'square': square.to_dict()}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1770,23 +1770,23 @@ def update_square(square_id):
 @jwt_required()
 @admin_required
 def delete_square(square_id):
-    """Exclui uma praça"""
+    """Exclui uma praÃ§a"""
     try:
         from src.models.portal_models import Square
         square = Square.query.get(square_id)
         if not square:
-            return jsonify({'error': 'Praça não encontrada'}), 404
+            return jsonify({'error': 'PraÃ§a nÃ£o encontrada'}), 404
 
         # Verificar se tem estabelecimentos ou entregadores
         has_restaurants = Restaurant.query.filter_by(square_id=square_id).first()
         has_drivers = Driver.query.filter_by(square_id=square_id).first()
         if has_restaurants or has_drivers:
-            return jsonify({'error': 'Não é possível excluir praça com estabelecimentos ou entregadores'}), 400
+            return jsonify({'error': 'NÃ£o Ã© possÃ­vel excluir praÃ§a com estabelecimentos ou entregadores'}), 400
 
         db.session.delete(square)
         db.session.commit()
 
-        return jsonify({'message': 'Praça excluída com sucesso'}), 200
+        return jsonify({'message': 'PraÃ§a excluÃ­da com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1851,7 +1851,7 @@ def pay_driver(driver_id):
     try:
         driver = Driver.query.get(driver_id)
         if not driver:
-            return jsonify({'error': 'Entregador não encontrado'}), 404
+            return jsonify({'error': 'Entregador nÃ£o encontrado'}), 404
 
         # Marca pagamentos pendentes como processados
         pending_payments = Payment.query.filter_by(
@@ -1899,7 +1899,7 @@ def generate_invoice(restaurant_id):
 
         restaurant = Restaurant.query.get(restaurant_id)
         if not restaurant:
-            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+            return jsonify({'error': 'Estabelecimento nÃ£o encontrado'}), 404
 
         data = request.get_json() or {}
         week_start = data.get('week_start')
@@ -1924,7 +1924,7 @@ def generate_invoice(restaurant_id):
         ).all()
 
         if not orders:
-            return jsonify({'error': 'Nenhum pedido entregue no período'}), 400
+            return jsonify({'error': 'Nenhum pedido entregue no perÃ­odo'}), 400
 
         # Calcula totais
         total_fees = sum(float(o.delivery_fee or 0) for o in orders)
@@ -1998,3 +1998,36 @@ def generate_invoice(restaurant_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# RESET DO BANCO (TEMPORARIO - REMOVER DEPOIS)
+# ============================================
+
+@admin_bp.route('/reset-database', methods=['POST'])
+@jwt_required()
+@admin_required
+def reset_database():
+    """Zera o banco mantendo apenas o admin logado. USO UNICO!"""
+    try:
+        current_user_id = int(get_jwt_identity())
+
+        # Exclui todos os dados em ordem (respeitando foreign keys)
+        Notification.query.delete()
+        Payment.query.delete()
+        Delivery.query.delete()
+        Order.query.delete()
+        Address.query.delete()
+        Customer.query.delete()
+        Driver.query.delete()
+        Restaurant.query.delete()
+
+        # Exclui todos os usuarios EXCETO o admin logado
+        User.query.filter(User.id != current_user_id).delete()
+
+        db.session.commit()
+
+        return jsonify({'message': 'Banco zerado com sucesso! Apenas seu usuario admin foi mantenido.'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
