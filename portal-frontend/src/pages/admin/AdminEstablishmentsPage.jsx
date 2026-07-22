@@ -24,19 +24,27 @@ const AdminEstablishmentsPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [squares, setSquares] = useState([]);
 
   // Modal states
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', cnpj: '', phone: '', email: '', address: '',
-    latitude: '', longitude: ''
+    name: '', cnpj: '', phone: '', email: '', password: '123456', address: '',
+    latitude: '', longitude: '', square_id: ''
   });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadEstablishments(); }, [page, search]);
+  useEffect(() => { loadEstablishments(); loadSquares(); }, [page, search]);
+
+  const loadSquares = async () => {
+    try {
+      const data = await adminService.getSquares();
+      setSquares(data.squares || []);
+    } catch (e) {}
+  };
 
   const loadEstablishments = async () => {
     try {
@@ -60,7 +68,7 @@ const AdminEstablishmentsPage = () => {
 
   const openCreateForm = () => {
     setEditing(null);
-    setFormData({ name: '', cnpj: '', phone: '', email: '', address: '', latitude: '', longitude: '' });
+    setFormData({ name: '', cnpj: '', phone: '', email: '', password: '123456', address: '', latitude: '', longitude: '', square_id: '' });
     setFormError('');
     setShowForm(true);
   };
@@ -72,9 +80,11 @@ const AdminEstablishmentsPage = () => {
       cnpj: est.cnpj || '',
       phone: est.phone || '',
       email: est.email || '',
+      password: '',
       address: est.address || '',
       latitude: est.latitude || '',
-      longitude: est.longitude || ''
+      longitude: est.longitude || '',
+      square_id: est.square_id || ''
     });
     setFormError('');
     setShowForm(true);
@@ -100,9 +110,14 @@ const AdminEstablishmentsPage = () => {
         phone: formData.phone || null,
         email: formData.email || null,
         address: formData.address,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : 0,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : 0,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : -29.95,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : -50.45,
+        square_id: formData.square_id || null,
       };
+
+      if (!editing && formData.password) {
+        payload.password = formData.password;
+      }
 
       if (editing) {
         await adminService.updateEstablishment(editing.id, payload);
@@ -421,6 +436,22 @@ const AdminEstablishmentsPage = () => {
 
             <FormField label="E-mail">
               <input type="email" name="email" value={formData.email} onChange={handleFormChange} style={inputStyle} placeholder="contato@estabelecimento.com" />
+            </FormField>
+
+            {!editing && (
+              <FormField label="Senha de Acesso">
+                <input type="text" name="password" value={formData.password} onChange={handleFormChange} style={inputStyle} placeholder="123456 (padrão)" />
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Senha para o estabelecimento fazer login no portal</p>
+              </FormField>
+            )}
+
+            <FormField label="Praça">
+              <select name="square_id" value={formData.square_id} onChange={handleFormChange} style={inputStyle}>
+                <option value="">Selecione uma praça</option>
+                {squares.map(sq => (
+                  <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
+                ))}
+              </select>
             </FormField>
 
             <FormField label="Endereço *">

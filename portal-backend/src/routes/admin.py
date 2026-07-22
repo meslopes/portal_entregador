@@ -183,6 +183,76 @@ def get_driver_details(driver_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@admin_bp.route('/drivers', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_driver():
+    """Cria um novo entregador"""
+    try:
+        data = request.get_json()
+
+        email = data.get('email')
+        password = data.get('password', '123456')
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+
+        if not email or not first_name or not last_name:
+            return jsonify({'error': 'Email, nome e sobrenome são obrigatórios'}), 400
+
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Email já cadastrado'}), 400
+
+        # Cria usuario
+        user = User(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone=data.get('phone'),
+            cpf=data.get('cpf'),
+            user_type=UserType.DRIVER,
+            status=UserStatus.ACTIVE
+        )
+        user.set_password(password)
+        db.session.add(user)
+        db.session.flush()
+
+        # Cria perfil de entregador
+        vehicle_type_str = data.get('vehicle_type', 'MOTORCYCLE')
+        try:
+            vehicle_type = VehicleType(vehicle_type_str)
+        except ValueError:
+            vehicle_type = VehicleType.MOTORCYCLE
+
+        driver = Driver(
+            user_id=user.id,
+            driver_license=data.get('driver_license'),
+            vehicle_type=vehicle_type,
+            vehicle_plate=data.get('vehicle_plate'),
+            vehicle_model=data.get('vehicle_model'),
+            vehicle_year=data.get('vehicle_year'),
+            bank_account=data.get('bank_account'),
+            pix_key=data.get('pix_key'),
+            square_id=data.get('square_id')
+        )
+
+        db.session.add(driver)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Entregador criado com sucesso',
+            'driver': {
+                'id': driver.id,
+                'user_id': user.id,
+                'email': email,
+                'password': password,
+                'name': f"{first_name} {last_name}"
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @admin_bp.route('/drivers/<int:driver_id>/status', methods=['PUT'])
 @jwt_required()
 @admin_required
@@ -718,7 +788,7 @@ def get_establishment_details(establishment_id):
 @jwt_required()
 @admin_required
 def create_establishment():
-    """Cria um novo estabelecimento"""
+    """Cria um novo estabelecimento com usuario de login"""
     try:
         data = request.get_json()
 
@@ -731,24 +801,55 @@ def create_establishment():
             if existing:
                 return jsonify({'error': 'CNPJ já cadastrado'}), 400
 
+        # Cria usuario CLIENT para login
+        user = None
+        email = data.get('email')
+        password = data.get('password', '123456')  # Senha padrao
+
+        if email:
+            if User.query.filter_by(email=email).first():
+                return jsonify({'error': 'Email já cadastrado'}), 400
+
+            user = User(
+                email=email,
+                first_name=data.get('first_name', data['name']),
+                last_name=data.get('last_name', ''),
+                phone=data.get('phone'),
+                user_type=UserType.CLIENT,
+                status=UserStatus.ACTIVE
+            )
+            user.set_password(password)
+            db.session.add(user)
+            db.session.flush()
+
         establishment = Restaurant(
             name=data['name'],
             cnpj=data.get('cnpj'),
             phone=data.get('phone'),
-            email=data.get('email'),
+            email=email,
             address=data['address'],
-            latitude=data.get('latitude', 0),
-            longitude=data.get('longitude', 0),
+            latitude=data.get('latitude', -29.95),
+            longitude=data.get('longitude', -50.45),
             opening_hours=data.get('opening_hours'),
-            is_active=data.get('is_active', True)
+            is_active=data.get('is_active', True),
+            square_id=data.get('square_id'),
+            bank_name=data.get('bank_name'),
+            bank_agency=data.get('bank_agency'),
+            bank_account=data.get('bank_account'),
+            bank_pix_key=data.get('bank_pix_key')
         )
 
         db.session.add(establishment)
         db.session.commit()
 
+        result = establishment.to_dict()
+        if user:
+            result['login_email'] = email
+            result['login_password'] = password
+
         return jsonify({
             'message': 'Estabelecimento criado com sucesso',
-            'establishment': establishment.to_dict()
+            'establishment': result
         }), 201
 
     except Exception as e:
