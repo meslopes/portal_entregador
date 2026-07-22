@@ -169,6 +169,53 @@ const AdminDashboardPage = () => {
         </div>
       )}
 
+      {/* Links de Cadastro */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
+        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Links para Repassar</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '0.5rem', border: '1px solid #bbf7d0' }}>
+            <Truck size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#166534' }}>Cadastro de Entregadores</p>
+              <p style={{ fontSize: '0.6875rem', color: '#16a34a', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/register</p>
+            </div>
+            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/register')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#dcfce7', cursor: 'pointer', color: '#16a34a' }} title="Copiar link">
+              📋
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
+            <Store size={20} style={{ color: '#2563eb', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1e40af' }}>Cadastro de Estabelecimentos</p>
+              <p style={{ fontSize: '0.6875rem', color: '#2563eb', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/client/register</p>
+            </div>
+            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/client/register')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#dbeafe', cursor: 'pointer', color: '#2563eb' }} title="Copiar link">
+              📋
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#fef3c7', borderRadius: '0.5rem', border: '1px solid #fcd34d' }}>
+            <User size={20} style={{ color: '#d97706', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#92400e' }}>Acesso Entregador</p>
+              <p style={{ fontSize: '0.6875rem', color: '#d97706', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/login</p>
+            </div>
+            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/login')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#fef3c7', cursor: 'pointer', color: '#d97706' }} title="Copiar link">
+              📋
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
+            <Store size={20} style={{ color: '#0d9488', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#134e4a' }}>Acesso Estabelecimento</p>
+              <p style={{ fontSize: '0.6875rem', color: '#0d9488', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/client/login</p>
+            </div>
+            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/client/login')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#ccfbf1', cursor: 'pointer', color: '#0d9488' }} title="Copiar link">
+              📋
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Cards principais */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         <StatCard icon={<Users size={22} />} iconBg="#dbeafe" iconColor="#2563eb" label="Total Entregadores" value={dashboard?.total_drivers || 0} />
