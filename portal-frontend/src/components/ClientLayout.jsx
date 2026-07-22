@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus
+  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus, DollarSign
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -28,6 +28,7 @@ const ClientLayout = ({ children }) => {
     { name: 'Início', href: '/client', icon: Home },
     { name: 'Novo Pedido', href: '/client/new-order', icon: Plus },
     { name: 'Meus Pedidos', href: '/client/orders', icon: Package },
+    { name: 'Financeiro', href: '/client/financial', icon: DollarSign },
   ];
 
   const isActive = (href) => location.pathname === href;

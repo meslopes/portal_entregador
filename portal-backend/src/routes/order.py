@@ -654,6 +654,104 @@ def get_my_tracking():
 
 
 # ============================================
+# FINANCEIRO DO ESTABELECIMENTO
+# ============================================
+
+@order_bp.route('/my/financial', methods=['GET'])
+@jwt_required()
+def get_my_financial():
+    """Financeiro do estabelecimento: o que deve ao admin"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type != UserType.CLIENT:
+            return jsonify({'error': 'Usuário não é um estabelecimento'}), 403
+
+        customer_profile = Customer.query.filter_by(user_id=user.id).first()
+        if not customer_profile:
+            return jsonify({'error': 'Perfil não encontrado'}), 404
+
+        restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+        if not restaurant:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        now = datetime.utcnow()
+
+        # Total de frete acumulado (o que deve ao admin)
+        total_owed = db.session.query(func.sum(Order.delivery_fee)).filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status == OrderStatus.DELIVERED
+        ).scalar() or 0
+
+        # Frete desta semana (segunda a domingo)
+        days_since_monday = now.weekday()
+        week_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+        week_owed = db.session.query(func.sum(Order.delivery_fee)).filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= week_start
+        ).scalar() or 0
+
+        # Frete do mes
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_owed = db.session.query(func.sum(Order.delivery_fee)).filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= month_start
+        ).scalar() or 0
+
+        # Total de entregas
+        total_deliveries = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status == OrderStatus.DELIVERED
+        ).count()
+
+        # Entregas esta semana
+        week_deliveries = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= week_start
+        ).count()
+
+        # Historico semanal (ultimas 4 semanas)
+        weekly_history = []
+        for i in range(4):
+            w_start = week_start - timedelta(weeks=i)
+            w_end = w_start + timedelta(days=7)
+            w_fee = db.session.query(func.sum(Order.delivery_fee)).filter(
+                Order.restaurant_id == restaurant.id,
+                Order.status == OrderStatus.DELIVERED,
+                Order.created_at >= w_start,
+                Order.created_at < w_end
+            ).scalar() or 0
+            w_orders = Order.query.filter(
+                Order.restaurant_id == restaurant.id,
+                Order.status == OrderStatus.DELIVERED,
+                Order.created_at >= w_start,
+                Order.created_at < w_end
+            ).count()
+            weekly_history.append({
+                'week_start': w_start.date().isoformat(),
+                'week_end': w_end.date().isoformat(),
+                'delivery_fees': float(w_fee),
+                'orders': w_orders
+            })
+
+        return jsonify({
+            'total_owed': float(total_owed),
+            'week_owed': float(week_owed),
+            'month_owed': float(month_owed),
+            'total_deliveries': total_deliveries,
+            'week_deliveries': week_deliveries,
+            'weekly_history': weekly_history
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
 # AVALIACAO DE ENTREGA
 # ============================================
 
