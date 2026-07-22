@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Settings, Save, AlertCircle, CheckCircle, CreditCard,
   Building2, Truck, Store, DollarSign, Clock, Shield,
-  Bell, Globe, Users, MapPin, Package, Zap, ChevronRight
+  Bell, Globe, Users, MapPin, Package, Zap, ChevronRight, Mail
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
