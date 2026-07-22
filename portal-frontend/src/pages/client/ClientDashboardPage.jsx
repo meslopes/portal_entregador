@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, ShoppingBag,
   Plus, AlertCircle, ChevronRight, Store, User, Phone,
-  TrendingUp, Truck, CheckCircle, XCircle, Eye, Star
+  TrendingUp, Truck, CheckCircle, XCircle, Eye, Star, Navigation
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { orderService, utils } from '@/lib/api';
@@ -33,6 +33,10 @@ const ClientDashboardPage = () => {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [trackingDrivers, setTrackingDrivers] = useState([]);
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
 
   useEffect(() => {
     loadData();
@@ -41,13 +45,15 @@ const ClientDashboardPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [ordersData, statsData] = await Promise.all([
+      const [ordersData, statsData, trackingData] = await Promise.all([
         orderService.getMyOrders(page, 10, filter),
-        orderService.getMyStats()
+        orderService.getMyStats(),
+        orderService.getMyTracking()
       ]);
       setOrders(ordersData.orders);
       setTotalPages(ordersData.pages);
       setStats(statsData);
+      setTrackingDrivers(trackingData.drivers || []);
     } catch (err) {
       setError('Erro ao carregar dados');
       console.error(err);
@@ -55,6 +61,84 @@ const ClientDashboardPage = () => {
       setLoading(false);
     }
   };
+
+  // Refresh tracking a cada 10 segundos
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const data = await orderService.getMyTracking();
+        setTrackingDrivers(data.drivers || []);
+      } catch (e) {}
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Inicializa o mapa
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      if (mapRef.current && !mapInstanceRef.current) {
+        const L = window.L;
+        mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
+          .setView([-29.95, -50.45], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(mapInstanceRef.current);
+      }
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Atualiza marcadores
+  useEffect(() => {
+    if (!mapInstanceRef.current || !window.L) return;
+    const L = window.L;
+    const map = mapInstanceRef.current;
+
+    markersRef.current.forEach(m => map.removeLayer(m));
+    markersRef.current = [];
+
+    if (trackingDrivers.length === 0) return;
+
+    const bounds = [];
+    trackingDrivers.forEach(driver => {
+      const statusColors = {
+        ACCEPTED: '#f59e0b', PREPARING: '#8b5cf6', READY: '#06b6d4', PICKED_UP: '#2563eb'
+      };
+      const color = statusColors[driver.order_status] || '#22c55e';
+
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="width:36px;height:36px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">🚚</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+
+      const marker = L.marker([driver.latitude, driver.longitude], { icon })
+        .addTo(map)
+        .bindPopup(`<div style="min-width:160px"><strong>${driver.name}</strong><br><small>${driver.vehicle_type}</small><br><small>Pedido: #${driver.order_number}</small><br><span style="color:${color};font-weight:600">${driver.order_status}</span></div>`);
+
+      markersRef.current.push(marker);
+      bounds.push([driver.latitude, driver.longitude]);
+    });
+
+    if (bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+  }, [trackingDrivers]);
 
   const openOrderDetails = async (orderId) => {
     try {
@@ -99,6 +183,23 @@ const ClientDashboardPage = () => {
           <AlertCircle size={16} /> {error}
         </div>
       )}
+
+      {/* Mapa de Rastreamento */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Navigation size={18} style={{ color: '#0d9488' }} />
+            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregas em Andamento</span>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{trackingDrivers.length} entregador(es) ativo(s)</span>
+        </div>
+        <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
+        {trackingDrivers.length === 0 && (
+          <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>
+            Nenhuma entrega em andamento no momento
+          </div>
+        )}
+      </div>
 
       {/* Cards de Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>

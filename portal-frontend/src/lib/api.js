@@ -158,6 +158,11 @@ export const orderService = {
     return response.data;
   },
 
+  getMyTracking: async () => {
+    const response = await api.get('/api/orders/my/tracking');
+    return response.data;
+  },
+
   rateOrder: async (orderId, rating, feedback = '') => {
     const response = await api.post(`/api/orders/${orderId}/rate`, { rating, feedback });
     return response.data;

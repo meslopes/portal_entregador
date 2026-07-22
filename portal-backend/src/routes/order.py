@@ -590,6 +590,70 @@ def get_my_stats():
 
 
 # ============================================
+# RASTREAMENTO DE ENTREGADORES (ESTABELECIMENTO)
+# ============================================
+
+@order_bp.route('/my/tracking', methods=['GET'])
+@jwt_required()
+def get_my_tracking():
+    """Obtém localização dos entregadores com pedidos ativos do estabelecimento"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type != UserType.CLIENT:
+            return jsonify({'error': 'Usuário não é um estabelecimento'}), 403
+
+        customer_profile = Customer.query.filter_by(user_id=user.id).first()
+        if not customer_profile:
+            return jsonify({'drivers': []}), 200
+
+        restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+        if not restaurant:
+            return jsonify({'drivers': []}), 200
+
+        # Busca pedidos ativos (ACCEPTED ate PICKED_UP)
+        active_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status.in_([
+                OrderStatus.ACCEPTED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY,
+                OrderStatus.PICKED_UP
+            ]),
+            Order.driver_id.isnot(None)
+        ).all()
+
+        drivers_data = []
+        seen_drivers = set()
+
+        for order in active_orders:
+            driver = order.driver
+            if not driver or driver.id in seen_drivers:
+                continue
+            seen_drivers.add(driver.id)
+
+            if driver.current_latitude and driver.current_longitude:
+                drivers_data.append({
+                    'driver_id': driver.id,
+                    'name': f"{driver.user.first_name} {driver.user.last_name}",
+                    'phone': driver.user.phone,
+                    'vehicle_type': driver.vehicle_type.value,
+                    'latitude': float(driver.current_latitude),
+                    'longitude': float(driver.current_longitude),
+                    'order_id': order.id,
+                    'order_number': order.order_number,
+                    'order_status': order.status.value,
+                    'last_update': driver.last_location_update.isoformat() if driver.last_location_update else None
+                })
+
+        return jsonify({'drivers': drivers_data}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
 # AVALIACAO DE ENTREGA
 # ============================================
 
