@@ -70,9 +70,6 @@ def register():
         if User.query.filter_by(email=email).first():
             return jsonify({'error': 'Email já cadastrado'}), 400
 
-        if phone and User.query.filter_by(phone=phone).first():
-            return jsonify({'error': 'Telefone já cadastrado'}), 400
-
         user = User(
             email=email,
             first_name=first_name,
@@ -159,9 +156,6 @@ def register_client():
 
         if User.query.filter_by(email=email).first():
             return jsonify({'error': 'Email já cadastrado'}), 400
-
-        if User.query.filter_by(phone=phone).first():
-            return jsonify({'error': 'Telefone já cadastrado'}), 400
 
         user = User(
             email=email,
