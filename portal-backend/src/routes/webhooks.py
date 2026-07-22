@@ -294,3 +294,201 @@ def test_webhook():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# WEBHOOK WHATSAPP
+# ============================================
+
+@webhook_bp.route('/whatsapp', methods=['GET'])
+def whatsapp_verify():
+    """Verificacao do webhook WhatsApp (Meta Business)"""
+    mode = request.args.get('hub.mode')
+    token = request.args.get('hub.verify_token')
+    challenge = request.args.get('hub.challenge')
+
+    from src.models.portal_models import SystemConfig
+    config = SystemConfig.query.filter_by(config_key='whatsapp_verify_token').first()
+    expected_token = config.config_value if config else 'muvlog-whatsapp-verify'
+
+    if mode == 'subscribe' and token == expected_token:
+        return challenge, 200
+    return 'Forbidden', 403
+
+
+@webhook_bp.route('/whatsapp', methods=['POST'])
+def whatsapp_webhook():
+    """Recebe mensagens do WhatsApp e processa pedidos"""
+    try:
+        data = request.get_json()
+
+        if not data or 'entry' not in data:
+            return jsonify({'status': 'ignored'}), 200
+
+        for entry in data['entry']:
+            for change in entry.get('changes', []):
+                value = change.get('value', {})
+                messages = value.get('messages', [])
+
+                for message in messages:
+                    process_whatsapp_message(message)
+
+        return jsonify({'status': 'ok'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def process_whatsapp_message(message):
+    """Processa uma mensagem recebida via WhatsApp"""
+    try:
+        from src.services.whatsapp import whatsapp_service
+
+        phone = message.get('from', '')
+        msg_type = message.get('type', '')
+        text = message.get('text', {}).get('body', '') if msg_type == 'text' else ''
+
+        if not text:
+            return
+
+        text_lower = text.lower().strip()
+
+        # Comando: criar pedido
+        # Formato: "pedido [restaurante] [cliente] [endereco] [valor]"
+        # Ex: "pedido Padaria Central Joao Rua Principal 100 25.90"
+        if text_lower.startswith('pedido '):
+            parts = text.split(' ', 1)[1].split(' | ')
+            if len(parts) >= 3:
+                create_order_from_whatsapp(phone, parts)
+
+        # Comando: status
+        elif text_lower.startswith('status '):
+            order_number = text.split(' ', 1)[1].strip()
+            send_order_status_whatsapp(phone, order_number)
+
+        # Comando: ajuda
+        elif text_lower in ['ajuda', 'help', 'menu']:
+            whatsapp_service.send_message(phone,
+                "📋 *Comandos disponíveis:*\n\n"
+                "• *pedido [restaurante] | [cliente] | [endereco] | [valor]*\n"
+                "  Criar um novo pedido\n\n"
+                "• *status [numero do pedido]*\n"
+                "  Verificar status de um pedido\n\n"
+                "• *ajuda*\n"
+                "  Mostrar esta mensagem"
+            )
+
+    except Exception as e:
+        print(f"Erro ao processar mensagem WhatsApp: {e}")
+
+
+def create_order_from_whatsapp(phone, parts):
+    """Cria um pedido a partir de mensagem WhatsApp"""
+    try:
+        from src.services.whatsapp import whatsapp_service
+
+        restaurant_name = parts[0].strip() if len(parts) > 0 else ''
+        customer_name = parts[1].strip() if len(parts) > 1 else ''
+        address = parts[2].strip() if len(parts) > 2 else ''
+        amount_str = parts[3].strip() if len(parts) > 3 else '0'
+
+        try:
+            total_amount = float(amount_str.replace('R$', '').replace(',', '.').strip())
+        except:
+            total_amount = 0
+
+        # Busca restaurante
+        restaurant = Restaurant.query.filter_by(name=restaurant_name).first()
+        if not restaurant:
+            restaurant = Restaurant(
+                name=restaurant_name,
+                address='Endereço não informado',
+                latitude=-29.95,
+                longitude=-50.45
+            )
+            db.session.add(restaurant)
+            db.session.flush()
+
+        # Cria cliente
+        customer = Customer(
+            name=customer_name,
+            phone=phone,
+        )
+        db.session.add(customer)
+        db.session.flush()
+
+        # Cria endereco
+        addr = Address(
+            customer_id=customer.id,
+            street=address,
+            neighborhood='',
+            city='Porto Alegre',
+            state='RS',
+            zip_code='90000-000'
+        )
+        db.session.add(addr)
+        db.session.flush()
+
+        # Cria pedido
+        order = Order(
+            restaurant_id=restaurant.id,
+            customer_id=customer.id,
+            delivery_address_id=addr.id,
+            order_number=f"WHATS{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}",
+            items=[{'name': 'Pedido WhatsApp', 'quantity': 1, 'price': total_amount}],
+            subtotal=total_amount,
+            delivery_fee=total_amount * 0.1,  # 10% de frete
+            total_amount=total_amount * 1.1,
+            payment_method=PaymentMethod.CASH,
+            special_instructions=f"Pedido via WhatsApp de {phone}",
+            status=OrderStatus.PENDING
+        )
+
+        db.session.add(order)
+        db.session.commit()
+
+        # Notifica
+        whatsapp_service.send_message(phone,
+            f"✅ *Pedido Criado!*\n\n"
+            f"Pedido: #{order.order_number}\n"
+            f"Restaurante: {restaurant.name}\n"
+            f"Total: R$ {order.total_amount:.2f}\n\n"
+            f"Aguardando entregador..."
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao criar pedido WhatsApp: {e}")
+
+
+def send_order_status_whatsapp(phone, order_number):
+    """Envia status de um pedido via WhatsApp"""
+    try:
+        from src.services.whatsapp import whatsapp_service
+
+        order = Order.query.filter_by(order_number=order_number).first()
+        if not order:
+            whatsapp_service.send_message(phone, f"❌ Pedido #{order_number} não encontrado.")
+            return
+
+        status_texts = {
+            OrderStatus.PENDING: "⏳ Pendente",
+            OrderStatus.ACCEPTED: "✅ Aceito",
+            OrderStatus.PREPARING: "👨‍🍳 Preparando",
+            OrderStatus.READY: "📦 Pronto",
+            OrderStatus.PICKED_UP: "🚚 A caminho",
+            OrderStatus.DELIVERED: "✅ Entregue",
+            OrderStatus.CANCELLED: "❌ Cancelado"
+        }
+
+        status_text = status_texts.get(order.status, order.status.value)
+
+        whatsapp_service.send_message(phone,
+            f"📋 *Status do Pedido*\n\n"
+            f"Pedido: #{order.order_number}\n"
+            f"Status: {status_text}\n"
+            f"Total: R$ {order.total_amount:.2f}"
+        )
+
+    except Exception as e:
+        print(f"Erro ao enviar status WhatsApp: {e}")

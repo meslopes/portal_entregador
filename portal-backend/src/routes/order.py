@@ -283,6 +283,16 @@ def update_order_status(order_id):
 
         db.session.commit()
         
+        # Envia notificacao WhatsApp (se configurado)
+        try:
+            from src.services.whatsapp import whatsapp_service
+            if whatsapp_service.is_configured() and order.customer and order.customer.phone:
+                whatsapp_service.send_order_notification(
+                    order.customer.phone, order.order_number, new_status_enum.value
+                )
+        except Exception:
+            pass
+
         return jsonify({
             'message': 'Status atualizado com sucesso',
             'order': order.to_dict()
@@ -475,6 +485,16 @@ def create_order():
 
         db.session.add(order)
         db.session.commit()
+
+        # Envia notificacao WhatsApp (se configurado)
+        try:
+            from src.services.whatsapp import whatsapp_service
+            if whatsapp_service.is_configured() and customer.phone:
+                whatsapp_service.send_order_notification(
+                    customer.phone, order.order_number, 'PENDING'
+                )
+        except Exception:
+            pass  # Nao falha o pedido se WhatsApp falhar
 
         return jsonify({
             'message': 'Pedido criado com sucesso',
