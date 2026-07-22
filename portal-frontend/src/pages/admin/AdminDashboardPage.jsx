@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
-  Star, RefreshCw, Navigation
+  Star, RefreshCw, Navigation, Store
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 
