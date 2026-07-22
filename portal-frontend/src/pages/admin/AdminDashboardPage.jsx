@@ -31,8 +31,8 @@ const AdminDashboardPage = () => {
       const data = await adminService.getDashboard();
       setDashboard(data);
     } catch (err) {
+      console.error('Erro ao carregar dashboard:', err);
       setError('Erro ao carregar dashboard');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -91,17 +91,24 @@ const AdminDashboardPage = () => {
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     script.onload = () => {
-      if (mapRef.current && !mapInstanceRef.current) {
-        const L = window.L;
-        mapInstanceRef.current = L.map(mapRef.current, {
-          zoomControl: true,
-          scrollWheelZoom: true
-        }).setView([-29.95, -50.45], 12); // Porto Alegre area
+      try {
+        if (mapRef.current && !mapInstanceRef.current && window.L) {
+          const L = window.L;
+          mapInstanceRef.current = L.map(mapRef.current, {
+            zoomControl: true,
+            scrollWheelZoom: true
+          }).setView([-29.95, -50.45], 12);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(mapInstanceRef.current);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+          }).addTo(mapInstanceRef.current);
+        }
+      } catch (e) {
+        console.error('Erro ao inicializar mapa:', e);
       }
+    };
+    script.onerror = () => {
+      console.error('Erro ao carregar Leaflet');
     };
     document.head.appendChild(script);
 
