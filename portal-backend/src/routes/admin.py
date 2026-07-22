@@ -68,7 +68,7 @@ def approve_user(user_id):
         user.updated_at = datetime.utcnow()
         db.session.commit()
 
-        # Notifica o usuario
+        # Notifica o usuario via WhatsApp
         try:
             from src.services.whatsapp import whatsapp_service
             if whatsapp_service.is_configured() and user.phone:
@@ -77,19 +77,6 @@ def approve_user(user_id):
                     f"✅ *Conta Aprovada!*\n\n"
                     f"Olá {user.first_name}, sua conta no muv.log foi aprovada!\n"
                     f"Agora você pode fazer login e acessar o sistema."
-                )
-        except Exception:
-            pass
-
-        # Envia email de boas-vindas
-        try:
-            from src.services.email import email_service
-            if email_service.is_configured():
-                email_service.send_welcome_email(
-                    user.email,
-                    f"{user.first_name} {user.last_name}",
-                    "Senha definida no cadastro",
-                    user.user_type.value
                 )
         except Exception:
             pass
@@ -113,7 +100,7 @@ def reject_user(user_id):
         if user.status != UserStatus.INACTIVE:
             return jsonify({'error': 'Usuário não está pendente'}), 400
 
-        # Notifica o usuario antes de excluir
+        # Notifica o usuario via WhatsApp antes de excluir
         try:
             from src.services.whatsapp import whatsapp_service
             if whatsapp_service.is_configured() and user.phone:

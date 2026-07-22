@@ -129,20 +129,6 @@ def register():
         db.session.add(driver)
         db.session.commit()
 
-        # Notifica admins sobre novo cadastro
-        try:
-            from src.services.email import email_service
-            if email_service.is_configured():
-                admin_users = User.query.filter_by(user_type=UserType.ADMIN, status=UserStatus.ACTIVE).all()
-                for admin in admin_users:
-                    email_service.send_new_registration_alert(
-                        admin.email,
-                        f"{first_name} {last_name}",
-                        'DRIVER'
-                    )
-        except Exception:
-            pass
-
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
 
@@ -197,20 +183,6 @@ def register_client():
         )
         db.session.add(customer)
         db.session.commit()
-
-        # Notifica admins sobre novo cadastro
-        try:
-            from src.services.email import email_service
-            if email_service.is_configured():
-                admin_users = User.query.filter_by(user_type=UserType.ADMIN, status=UserStatus.ACTIVE).all()
-                for admin in admin_users:
-                    email_service.send_new_registration_alert(
-                        admin.email,
-                        f"{first_name} {last_name}",
-                        'DRIVER'
-                    )
-        except Exception:
-            pass
 
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
