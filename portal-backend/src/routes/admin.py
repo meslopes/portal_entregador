@@ -81,6 +81,19 @@ def approve_user(user_id):
         except Exception:
             pass
 
+        # Envia email de boas-vindas
+        try:
+            from src.services.email import email_service
+            if email_service.is_configured():
+                email_service.send_welcome_email(
+                    user.email,
+                    f"{user.first_name} {user.last_name}",
+                    "Senha definida no cadastro",
+                    user.user_type.value
+                )
+        except Exception:
+            pass
+
         return jsonify({'message': 'Usuário aprovado com sucesso'}), 200
     except Exception as e:
         db.session.rollback()

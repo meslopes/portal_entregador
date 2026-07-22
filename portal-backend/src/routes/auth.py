@@ -129,6 +129,20 @@ def register():
         db.session.add(driver)
         db.session.commit()
 
+        # Notifica admins sobre novo cadastro
+        try:
+            from src.services.email import email_service
+            if email_service.is_configured():
+                admin_users = User.query.filter_by(user_type=UserType.ADMIN, status=UserStatus.ACTIVE).all()
+                for admin in admin_users:
+                    email_service.send_new_registration_alert(
+                        admin.email,
+                        f"{first_name} {last_name}",
+                        'DRIVER'
+                    )
+        except Exception:
+            pass
+
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
 
@@ -169,7 +183,7 @@ def register_client():
             last_name=last_name,
             phone=phone,
             user_type=UserType.CLIENT,
-            status=UserStatus.ACTIVE
+            status=UserStatus.INACTIVE  # Pendente de aprovacao
         )
         user.set_password(password)
         db.session.add(user)
@@ -184,6 +198,20 @@ def register_client():
         db.session.add(customer)
         db.session.commit()
 
+        # Notifica admins sobre novo cadastro
+        try:
+            from src.services.email import email_service
+            if email_service.is_configured():
+                admin_users = User.query.filter_by(user_type=UserType.ADMIN, status=UserStatus.ACTIVE).all()
+                for admin in admin_users:
+                    email_service.send_new_registration_alert(
+                        admin.email,
+                        f"{first_name} {last_name}",
+                        'DRIVER'
+                    )
+        except Exception:
+            pass
+
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
 
@@ -194,6 +222,49 @@ def register_client():
 
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Endpoint para confirmar email
+@auth_bp.route('/confirm-email', methods=['POST'])
+def confirm_email():
+    """Confirma o email do usuario e ativa a conta"""
+    try:
+        data = request.get_json() or {}
+        token = data.get('token')
+
+        if not token:
+            return jsonify({'error': 'Token é obrigatório'}), 400
+
+        try:
+            user_id = int(token)
+        except ValueError:
+            return jsonify({'error': 'Token inválido'}), 400
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        if user.status != UserStatus.INACTIVE:
+            return jsonify({'error': 'Conta já foi confirmada ou está ativa'}), 400
+
+        user.status = UserStatus.ACTIVE
+        user.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        try:
+            from src.services.email import email_service
+            if email_service.is_configured():
+                email_service.send_welcome_email(
+                    user.email,
+                    f"{user.first_name} {user.last_name}"
+                )
+        except Exception:
+            pass
+
+        return jsonify({'message': 'Conta confirmada com sucesso! Você já pode fazer login.'}), 200
+
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
