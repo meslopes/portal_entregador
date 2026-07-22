@@ -103,6 +103,16 @@ def create_app(config_name=None):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+        # Migration: adicionar square_id em restaurants e drivers
+        for table in ['restaurants', 'drivers']:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'square_id') THEN ALTER TABLE {table} ADD COLUMN square_id INTEGER REFERENCES squares(id); END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
     
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])

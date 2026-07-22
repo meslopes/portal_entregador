@@ -113,6 +113,8 @@ class Driver(db.Model):
     last_location_update = db.Column(db.DateTime)
     rating = db.Column(db.Numeric(3, 2), default=5.00)
     total_deliveries = db.Column(db.Integer, default=0)
+    # Praça
+    square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -156,6 +158,8 @@ class Restaurant(db.Model):
     longitude = db.Column(db.Numeric(11, 8), nullable=False)
     opening_hours = db.Column(db.JSON)
     is_active = db.Column(db.Boolean, default=True)
+    # Praça
+    square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
     # Dados bancarios
     bank_name = db.Column(db.String(100))
     bank_agency = db.Column(db.String(20))
@@ -407,6 +411,33 @@ class SystemConfig(db.Model):
             'config_key': self.config_key,
             'config_value': self.config_value,
             'description': self.description,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+class Square(db.Model):
+    """Praça/Cidade onde o sistema opera"""
+    __tablename__ = 'squares'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(200), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(2), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    restaurants = db.relationship('Restaurant', backref='square')
+    drivers = db.relationship('Driver', backref='square')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'city': self.city,
+            'state': self.state,
+            'is_active': self.is_active,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

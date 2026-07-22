@@ -1228,6 +1228,115 @@ def update_settings():
 
 
 # ============================================
+# GESTAO DE PRACAS (MULTI-CIDADE)
+# ============================================
+
+@admin_bp.route('/squares', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_squares():
+    """Lista todas as praças"""
+    try:
+        from src.models.portal_models import Square
+        squares = Square.query.order_by(Square.name).all()
+
+        squares_data = []
+        for sq in squares:
+            sq_dict = sq.to_dict()
+            sq_dict['restaurants_count'] = Restaurant.query.filter_by(square_id=sq.id).count()
+            sq_dict['drivers_count'] = Driver.query.filter_by(square_id=sq.id).count()
+            sq_dict['orders_count'] = Order.query.join(Restaurant).filter(Restaurant.square_id == sq.id).count()
+            squares_data.append(sq_dict)
+
+        return jsonify({'squares': squares_data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/squares', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_square():
+    """Cria uma nova praça"""
+    try:
+        from src.models.portal_models import Square
+        data = request.get_json()
+
+        if not data.get('name') or not data.get('city') or not data.get('state'):
+            return jsonify({'error': 'Nome, cidade e estado são obrigatórios'}), 400
+
+        square = Square(
+            name=data['name'],
+            city=data['city'],
+            state=data['state'],
+            is_active=data.get('is_active', True)
+        )
+        db.session.add(square)
+        db.session.commit()
+
+        return jsonify({'message': 'Praça criada com sucesso', 'square': square.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/squares/<int:square_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_square(square_id):
+    """Atualiza uma praça"""
+    try:
+        from src.models.portal_models import Square
+        square = Square.query.get(square_id)
+        if not square:
+            return jsonify({'error': 'Praça não encontrada'}), 404
+
+        data = request.get_json()
+        if data.get('name'):
+            square.name = data['name']
+        if data.get('city'):
+            square.city = data['city']
+        if data.get('state'):
+            square.state = data['state']
+        if 'is_active' in data:
+            square.is_active = data['is_active']
+
+        square.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({'message': 'Praça atualizada com sucesso', 'square': square.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/squares/<int:square_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_square(square_id):
+    """Exclui uma praça"""
+    try:
+        from src.models.portal_models import Square
+        square = Square.query.get(square_id)
+        if not square:
+            return jsonify({'error': 'Praça não encontrada'}), 404
+
+        # Verificar se tem estabelecimentos ou entregadores
+        has_restaurants = Restaurant.query.filter_by(square_id=square_id).first()
+        has_drivers = Driver.query.filter_by(square_id=square_id).first()
+        if has_restaurants or has_drivers:
+            return jsonify({'error': 'Não é possível excluir praça com estabelecimentos ou entregadores'}), 400
+
+        db.session.delete(square)
+        db.session.commit()
+
+        return jsonify({'message': 'Praça excluída com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
 # CONTROLE DE PAGAMENTOS AOS ENTREGADORES
 # ============================================
 

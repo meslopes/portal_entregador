@@ -26,6 +26,7 @@ import AdminFinancePage from '@/pages/admin/AdminFinancePage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
+import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import './App.css';
 
 function App() {
@@ -238,6 +239,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <AdminDriverPaymentsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/squares"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminSquaresPage />
                 </Layout>
               </ProtectedRoute>
             }

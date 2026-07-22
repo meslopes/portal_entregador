@@ -280,6 +280,27 @@ export const adminService = {
     return response.data;
   },
 
+  // Praças
+  getSquares: async () => {
+    const response = await api.get('/api/admin/squares');
+    return response.data;
+  },
+
+  createSquare: async (squareData) => {
+    const response = await api.post('/api/admin/squares', squareData);
+    return response.data;
+  },
+
+  updateSquare: async (squareId, squareData) => {
+    const response = await api.put(`/api/admin/squares/${squareId}`, squareData);
+    return response.data;
+  },
+
+  deleteSquare: async (squareId) => {
+    const response = await api.delete(`/api/admin/squares/${squareId}`);
+    return response.data;
+  },
+
   // Relatórios
   getOrdersByDate: async (days = 30) => {
     const response = await api.get('/api/admin/reports/orders-by-date', { params: { days } });
