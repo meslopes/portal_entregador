@@ -168,6 +168,14 @@ export const orderService = {
     return response.data;
   },
 
+  generateInvoice: async (restaurantId, weekStart, weekEnd) => {
+    const response = await api.post(`/api/admin/invoices/${restaurantId}/generate`, {
+      week_start: weekStart,
+      week_end: weekEnd
+    });
+    return response.data;
+  },
+
   rateOrder: async (orderId, rating, feedback = '') => {
     const response = await api.post(`/api/orders/${orderId}/rate`, { rating, feedback });
     return response.data;

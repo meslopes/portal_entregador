@@ -1140,3 +1140,121 @@ def pay_driver(driver_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# FATURAS COM QR CODE
+# ============================================
+
+@admin_bp.route('/invoices/<int:restaurant_id>/generate', methods=['POST'])
+@jwt_required()
+@admin_required
+def generate_invoice(restaurant_id):
+    """Gera fatura semanal para um estabelecimento com QR Code"""
+    try:
+        from src.models.portal_models import SystemConfig
+        import qrcode
+        import io
+        import base64
+        from fpdf import FPDF
+
+        restaurant = Restaurant.query.get(restaurant_id)
+        if not restaurant:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        data = request.get_json() or {}
+        week_start = data.get('week_start')
+        week_end = data.get('week_end')
+
+        if not week_start or not week_end:
+            # Semana atual
+            now = datetime.utcnow()
+            days_since_monday = now.weekday()
+            week_start = (now - timedelta(days=days_since_monday)).strftime('%Y-%m-%d')
+            week_end = (now - timedelta(days=days_since_monday) + timedelta(days=6)).strftime('%Y-%m-%d')
+
+        start_date = datetime.strptime(week_start, '%Y-%m-%d')
+        end_date = datetime.strptime(week_end, '%Y-%m-%d') + timedelta(days=1)
+
+        # Busca pedidos entregues no periodo
+        orders = Order.query.filter(
+            Order.restaurant_id == restaurant_id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date,
+            Order.created_at < end_date
+        ).all()
+
+        if not orders:
+            return jsonify({'error': 'Nenhum pedido entregue no período'}), 400
+
+        # Calcula totais
+        total_fees = sum(float(o.delivery_fee or 0) for o in orders)
+        total_amount = sum(float(o.total_amount or 0) for o in orders)
+        total_orders = len(orders)
+
+        # Busca dados bancarios do admin
+        admin_bank = {}
+        for key in ['admin_bank_name', 'admin_bank_agency', 'admin_bank_account', 'admin_bank_pix_key', 'admin_cnpj', 'admin_company_name']:
+            config = SystemConfig.query.filter_by(config_key=key).first()
+            if config:
+                admin_bank[key] = config.config_value
+
+        # Gera payload PIX
+        pix_key = admin_bank.get('admin_bank_pix_key', '')
+        company_name = admin_bank.get('admin_company_name', 'Muv.log')
+        pix_payload = f"00020126580014BR.GOV.BCB.PIX0136{pix_key}5204000053039865404{total_fees:.2f}5802BR5913{company_name[:13]}6009SAO PAULO62070503***6304"
+
+        # Gera QR Code
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(pix_payload)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_buffer = io.BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_base64 = base64.b64encode(qr_buffer.getvalue()).decode()
+
+        # Gera numero da fatura
+        invoice_number = f"FAT{datetime.now().strftime('%Y%m%d')}{restaurant_id:04d}"
+
+        return jsonify({
+            'invoice_number': invoice_number,
+            'restaurant': {
+                'id': restaurant.id,
+                'name': restaurant.name,
+                'cnpj': restaurant.cnpj,
+                'phone': restaurant.phone,
+                'address': restaurant.address
+            },
+            'period': {
+                'start': week_start,
+                'end': week_end
+            },
+            'summary': {
+                'total_orders': total_orders,
+                'total_amount': total_amount,
+                'total_delivery_fees': total_fees,
+                'avg_per_order': round(total_fees / total_orders, 2) if total_orders > 0 else 0
+            },
+            'payment': {
+                'pix_key': pix_key,
+                'bank_name': admin_bank.get('admin_bank_name', ''),
+                'bank_agency': admin_bank.get('admin_bank_agency', ''),
+                'bank_account': admin_bank.get('admin_bank_account', ''),
+                'amount': total_fees,
+                'description': f"Fatura semanal {week_start} a {week_end}"
+            },
+            'qr_code_base64': qr_base64,
+            'orders': [
+                {
+                    'order_number': o.order_number,
+                    'date': o.created_at.strftime('%d/%m/%Y'),
+                    'amount': float(o.total_amount),
+                    'delivery_fee': float(o.delivery_fee or 0),
+                    'status': o.status.value
+                }
+                for o in orders
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+

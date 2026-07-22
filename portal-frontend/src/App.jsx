@@ -16,6 +16,7 @@ import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
 import NewOrderPage from '@/pages/client/NewOrderPage';
 import ClientOrdersPage from '@/pages/client/ClientOrdersPage';
 import ClientFinancialPage from '@/pages/client/ClientFinancialPage';
+import ClientInvoicePage from '@/pages/client/ClientInvoicePage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
@@ -155,6 +156,16 @@ function App() {
               <ProtectedRoute>
                 <ClientLayout>
                   <ClientFinancialPage />
+                </ClientLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/invoices"
+            element={
+              <ProtectedRoute>
+                <ClientLayout>
+                  <ClientInvoicePage />
                 </ClientLayout>
               </ProtectedRoute>
             }
