@@ -156,6 +156,115 @@ def accept_order(order_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@order_bp.route('/<int:order_id>/reject', methods=['POST'])
+@jwt_required()
+def reject_order(order_id):
+    """Recusa um pedido - envia para o proximo entregador"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user or user.user_type != UserType.DRIVER:
+            return jsonify({'error': 'Usuário não é um entregador'}), 403
+        
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+        
+        if order.status != OrderStatus.PENDING:
+            return jsonify({'error': 'Pedido não está pendente'}), 400
+
+        # Busca proximo entregador disponivel (excluindo o que recusou)
+        from src.models.portal_models import SystemConfig
+        
+        # Registra que este entregador recusou (usa special_instructions como flag)
+        reject_log = f"REJECTED_BY_{user_id}"
+        current_log = order.special_instructions or ''
+        if reject_log not in current_log:
+            order.special_instructions = f"{current_log}|{reject_log}" if current_log else reject_log
+
+        # Busca proximo entregador
+        next_driver = find_nearest_available_driver(order, exclude_driver_ids=[user_id])
+        
+        if next_driver:
+            # Notifica o proximo entregador
+            try:
+                from src.services.whatsapp import whatsapp_service
+                if whatsapp_service.is_configured() and next_driver.user.phone:
+                    restaurant = order.restaurant
+                    whatsapp_service.send_new_order_to_driver(
+                        next_driver.user.phone,
+                        {
+                            'order_number': order.order_number,
+                            'restaurant': restaurant.name,
+                            'total_amount': float(order.total_amount),
+                            'delivery_fee': float(order.delivery_fee)
+                        }
+                    )
+            except Exception:
+                pass
+            
+            db.session.commit()
+            return jsonify({
+                'message': 'Pedido recusado. Enviado para o próximo entregador.',
+                'next_driver': next_driver.user.first_name
+            }), 200
+        else:
+            # Nenhum entregador disponivel - notifica admin
+            db.session.commit()
+            notify_admin_no_drivers(order)
+            return jsonify({
+                'message': 'Pedido recusado. Nenhum entregador disponível no momento.',
+                'notify_admin': True
+            }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+def notify_admin_no_drivers(order):
+    """Notifica admin quando nenhum entregador aceita o pedido"""
+    try:
+        from src.models.portal_models import SystemConfig
+        
+        # Conta quantas vezes o pedido foi recusado
+        reject_count = 0
+        if order.special_instructions:
+            reject_count = order.special_instructions.count('REJECTED_BY_')
+        
+        # Notifica via WhatsApp se configurado
+        try:
+            from src.services.whatsapp import whatsapp_service
+            if whatsapp_service.is_configured():
+                admin_phone_config = SystemConfig.query.filter_by(config_key='admin_phone').first()
+                if admin_phone_config:
+                    whatsapp_service.send_message(
+                        admin_phone_config.config_value,
+                        f"⚠️ *ALERTA: Pedido sem entregador*\n\n"
+                        f"Pedido: #{order.order_number}\n"
+                        f"Restaurante: {order.restaurant.name}\n"
+                        f"Recusado por: {reject_count} entregador(es)\n\n"
+                        f"Ação necessária: Atribuir entregador manualmente."
+                    )
+        except Exception:
+            pass
+
+        # Notifica via sistema
+        admin_users = User.query.filter_by(user_type=UserType.ADMIN).all()
+        for admin in admin_users:
+            notification = Notification(
+                user_id=admin.id,
+                title="Pedido sem entregador",
+                message=f"Pedido #{order.order_number} foi recusado por {reject_count} entregadores. Ação necessária.",
+                type=NotificationType.SYSTEM,
+                related_id=order.id
+            )
+            db.session.add(notification)
+        
+        db.session.commit()
+    except Exception as e:
+        print(f"Erro ao notificar admin: {e}")
+
 @order_bp.route('/<int:order_id>/status', methods=['PUT'])
 @jwt_required()
 def update_order_status(order_id):
@@ -486,17 +595,15 @@ def create_order():
         db.session.add(order)
         db.session.flush()
 
-        # Atribuicao inteligente: busca entregador mais proximo
-        assigned_driver = find_nearest_available_driver(order)
-        if assigned_driver:
-            order.driver_id = assigned_driver.id
-            order.status = OrderStatus.ACCEPTED
-            # Notifica o entregador selecionado
+        # Atribuicao inteligente: notifica o entregador mais proximo (NAO aceita automaticamente)
+        notified_driver = find_nearest_available_driver(order)
+        if notified_driver:
+            # Notifica o entregador selecionado (pedido continua PENDING)
             try:
                 from src.services.whatsapp import whatsapp_service
-                if whatsapp_service.is_configured() and assigned_driver.user.phone:
+                if whatsapp_service.is_configured() and notified_driver.user.phone:
                     whatsapp_service.send_new_order_to_driver(
-                        assigned_driver.user.phone,
+                        notified_driver.user.phone,
                         {
                             'order_number': order.order_number,
                             'restaurant': restaurant.name,
@@ -938,18 +1045,22 @@ def rate_delivery(order_id):
 # ATRIBUICAO INTELIGENTE DE PEDIDOS
 # ============================================
 
-def find_nearest_available_driver(order):
+def find_nearest_available_driver(order, exclude_driver_ids=None):
     """
     Busca o entregador mais proximo que esteja disponivel.
     
     Logica:
     1. Busca todos os entregadores online
     2. Filtra por: distancia maxima e pedidos ativos < max_concurrent_orders
-    3. Ordena por distancia ate o restaurante
-    4. Retorna o mais proximo
+    3. Exclui entregadores que ja recusaram (exclude_driver_ids)
+    4. Ordena por distancia ate o restaurante
+    5. Retorna o mais proximo
     """
     try:
         from src.models.portal_models import SystemConfig
+
+        if exclude_driver_ids is None:
+            exclude_driver_ids = []
 
         # Busca configuracao de raio maximo
         config = SystemConfig.query.filter_by(config_key='delivery_radius').first()
@@ -972,6 +1083,10 @@ def find_nearest_available_driver(order):
         available_drivers = []
 
         for driver in online_drivers:
+            # Pula entregadores que ja recusaram
+            if driver.id in exclude_driver_ids:
+                continue
+
             # Calcula distancia ate o restaurante
             driver_lat = float(driver.current_latitude)
             driver_lng = float(driver.current_longitude)

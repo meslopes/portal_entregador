@@ -17,6 +17,7 @@ const OrdersPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [acceptingOrder, setAcceptingOrder] = useState(null);
+  const [rejectingOrder, setRejectingOrder] = useState(null);
   const [soundEnabled, setSoundEnabledState] = useState(getSoundEnabled());
   const [notifEnabled, setNotifEnabled] = useState(
     'Notification' in window && Notification.permission === 'granted'
@@ -78,6 +79,19 @@ const OrdersPage = () => {
       console.error(error);
     } finally {
       setAcceptingOrder(null);
+    }
+  };
+
+  const handleRejectOrder = async (orderId) => {
+    try {
+      setRejectingOrder(orderId);
+      await orderService.rejectOrder(orderId);
+      setOrders(orders.filter(order => order.id !== orderId));
+    } catch (error) {
+      setError('Erro ao recusar pedido');
+      console.error(error);
+    } finally {
+      setRejectingOrder(null);
     }
   };
 
@@ -185,7 +199,7 @@ const OrdersPage = () => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {orders.map((order) => (
-            <OrderCard key={order.id} order={order} onAccept={handleAcceptOrder} isAccepting={acceptingOrder === order.id} calculateEarnings={calculateEarnings} />
+            <OrderCard key={order.id} order={order} onAccept={handleAcceptOrder} onReject={handleRejectOrder} isAccepting={acceptingOrder === order.id} isRejecting={rejectingOrder === order.id} calculateEarnings={calculateEarnings} />
           ))}
         </div>
       )}
@@ -199,10 +213,10 @@ const OrdersPage = () => {
 };
 
 // Card do pedido
-const OrderCard = ({ order, onAccept, isAccepting, calculateEarnings }) => {
+const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calculateEarnings }) => {
   const earnings = calculateEarnings(order);
   return (
-    <div style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.15s' }}>
+    <div style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.15s', borderLeft: '4px solid #2563eb' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -264,6 +278,10 @@ const OrderCard = ({ order, onAccept, isAccepting, calculateEarnings }) => {
         {/* Instrucoes */}
         {order.special_instructions && (() => {
           let instructions = order.special_instructions;
+          // Filtra logs de rejeicao
+          if (instructions.includes('REJECTED_BY_')) {
+            instructions = '';
+          }
           try {
             const parsed = JSON.parse(order.special_instructions);
             const parts = [];
@@ -275,19 +293,24 @@ const OrderCard = ({ order, onAccept, isAccepting, calculateEarnings }) => {
             if (parsed.change_for) parts.push(`Troco para R$ ${parsed.change_for}`);
             if (parts.length > 0) instructions = parts.join(' | ');
           } catch (e) {}
+          if (!instructions) return null;
           return (
             <div style={{ background: '#fffbeb', borderLeft: '3px solid #f59e0b', padding: '0.75rem 1rem', borderRadius: '0 0.375rem 0.375rem 0', marginBottom: '1rem', fontSize: '0.8125rem', color: '#92400e' }}>
               📝 {instructions}
             </div>
           );
         })()}
-        {/* Botoes */}
+        {/* Aviso de volume */}
+        <div style={{ background: '#eff6ff', borderLeft: '3px solid #2563eb', padding: '0.625rem 1rem', borderRadius: '0 0.375rem 0.375rem 0', marginBottom: '1rem', fontSize: '0.8125rem', color: '#1e40af' }}>
+          🔊 Verifique se o volume do seu celular está alto para não perder este pedido!
+        </div>
+        {/* Botoes Aceitar/Recusar */}
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={() => onAccept(order.id)} disabled={isAccepting} style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem 1.5rem', borderRadius: '0.5rem', border: 'none', background: isAccepting ? '#93c5fd' : '#2563eb', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: isAccepting ? 'not-allowed' : 'pointer' }}>
-            {isAccepting ? (<><div style={{ width: '1rem', height: '1rem', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />Aceitando...</>) : 'Aceitar Pedido'}
+          <button onClick={() => onAccept(order.id)} disabled={isAccepting || isRejecting} style={{ flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem 1.5rem', borderRadius: '0.5rem', border: 'none', background: isAccepting ? '#93c5fd' : '#22c55e', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: isAccepting ? 'not-allowed' : 'pointer' }}>
+            {isAccepting ? (<><div style={{ width: '1rem', height: '1rem', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />Aceitando...</>) : '✓ Aceitar Pedido'}
           </button>
-          <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem 1.5rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}>
-            <Navigation size={16} /> Mapa
+          <button onClick={() => onReject(order.id)} disabled={isAccepting || isRejecting} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem 1.5rem', borderRadius: '0.5rem', border: 'none', background: isRejecting ? '#fca5a5' : '#ef4444', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: isRejecting ? 'not-allowed' : 'pointer' }}>
+            {isRejecting ? 'Recusando...' : '✕ Recusar'}
           </button>
         </div>
       </div>

@@ -7,6 +7,41 @@ let sirenInterval = null;
 let sirenOscillators = [];
 let audioContext = null;
 
+// --- TENTATIVA DE AUMENTAR VOLUME ---
+
+const tryIncreaseVolume = () => {
+  try {
+    // Tenta usar a Web Audio API para forcar volume maximo
+    if (audioContext) {
+      // Cria um GainNode com volume maximo
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 1.0; // Volume maximo
+    }
+
+    // Em dispositivos Android, tenta usar o Media Session API
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Pedido Disponível!',
+        artist: 'muv.log',
+        album: 'Entrega'
+      });
+    }
+
+    // Tenta tocar um som curto para "desbloquear" o audio
+    const tempOsc = audioContext?.createOscillator();
+    if (tempOsc) {
+      const tempGain = audioContext.createGain();
+      tempOsc.connect(tempGain);
+      tempGain.connect(audioContext.destination);
+      tempGain.gain.value = 0.01;
+      tempOsc.start();
+      tempOsc.stop(audioContext.currentTime + 0.01);
+    }
+  } catch (e) {
+    // Silencioso - nao falha o sistema
+  }
+};
+
 // --- SIRENE (Web Audio API) ---
 
 export const stopSiren = () => {
@@ -22,6 +57,9 @@ export const stopSiren = () => {
 
 export const startSiren = () => {
   stopSiren();
+
+  // Tenta aumentar o volume do celular
+  tryIncreaseVolume();
 
   try {
     if (!audioContext) {

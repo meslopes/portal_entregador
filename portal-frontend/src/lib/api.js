@@ -125,6 +125,11 @@ export const orderService = {
     return response.data;
   },
 
+  rejectOrder: async (orderId) => {
+    const response = await api.post(`/api/orders/${orderId}/reject`);
+    return response.data;
+  },
+
   updateOrderStatus: async (orderId, status, payload = {}) => {
     const response = await api.put(`/api/orders/${orderId}/status`, { status, ...payload });
     return response.data;
