@@ -256,6 +256,27 @@ export const adminService = {
     const response = await api.delete(`/api/admin/establishments/${establishmentId}`);
     return response.data;
   },
+
+  // Relatórios
+  getOrdersByDate: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/orders-by-date', { params: { days } });
+    return response.data;
+  },
+
+  getDriversPerformance: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/drivers-performance', { params: { days } });
+    return response.data;
+  },
+
+  getEstablishmentsRanking: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/establishments-ranking', { params: { days } });
+    return response.data;
+  },
+
+  getFinancialSummary: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/financial-summary', { params: { days } });
+    return response.data;
+  },
 };
 
 // Utilitários

@@ -830,3 +830,181 @@ def delete_establishment(establishment_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# RELATÓRIOS
+# ============================================
+
+@admin_bp.route('/reports/orders-by-date', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_orders_by_date():
+    """Relatório de pedidos por data"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        results = db.session.query(
+            func.date(Order.created_at).label('date'),
+            func.count(Order.id).label('total'),
+            func.sum(Order.total_amount).label('revenue'),
+            func.sum(Order.delivery_fee).label('delivery_fees')
+        ).filter(
+            Order.created_at >= start_date
+        ).group_by(func.date(Order.created_at)).order_by(
+            func.date(Order.created_at)
+        ).all()
+
+        return jsonify({
+            'data': [
+                {
+                    'date': r.date.isoformat(),
+                    'orders': r.total,
+                    'revenue': float(r.revenue or 0),
+                    'delivery_fees': float(r.delivery_fees or 0)
+                }
+                for r in results
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/reports/drivers-performance', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_drivers_performance():
+    """Relatório de desempenho dos entregadores"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        drivers = db.session.query(
+            Driver.id,
+            User.first_name,
+            User.last_name,
+            func.count(Order.id).label('deliveries'),
+            func.avg(Delivery.customer_rating).label('avg_rating'),
+            func.sum(Payment.amount).label('total_earnings')
+        ).join(User).outerjoin(Order, db.and_(
+            Order.driver_id == Driver.id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        )).outerjoin(Delivery, Delivery.order_id == Order.id).outerjoin(
+            Payment, db.and_(Payment.driver_id == Driver.id, Payment.status == PaymentStatus.PROCESSED)
+        ).group_by(Driver.id, User.first_name, User.last_name).order_by(
+            func.count(Order.id).desc()
+        ).all()
+
+        return jsonify({
+            'drivers': [
+                {
+                    'id': d.id,
+                    'name': f"{d.first_name} {d.last_name}",
+                    'deliveries': d.deliveries or 0,
+                    'avg_rating': round(float(d.avg_rating), 2) if d.avg_rating else None,
+                    'total_earnings': float(d.total_earnings or 0)
+                }
+                for d in drivers
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/reports/establishments-ranking', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_establishments_ranking():
+    """Relatório de ranking dos estabelecimentos"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        results = db.session.query(
+            Restaurant.id,
+            Restaurant.name,
+            func.count(Order.id).label('orders'),
+            func.sum(Order.total_amount).label('revenue'),
+            func.sum(Order.delivery_fee).label('delivery_fees'),
+            func.avg(Order.total_amount).label('avg_order')
+        ).outerjoin(Order, db.and_(
+            Order.restaurant_id == Restaurant.id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        )).group_by(Restaurant.id, Restaurant.name).order_by(
+            func.sum(Order.total_amount).desc()
+        ).all()
+
+        return jsonify({
+            'establishments': [
+                {
+                    'id': r.id,
+                    'name': r.name,
+                    'orders': r.orders or 0,
+                    'revenue': float(r.revenue or 0),
+                    'delivery_fees': float(r.delivery_fees or 0),
+                    'avg_order': round(float(r.avg_order or 0), 2)
+                }
+                for r in results
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/reports/financial-summary', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_financial_summary():
+    """Resumo financeiro geral"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        # Receita total
+        total_revenue = db.session.query(func.sum(Order.total_amount)).filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).scalar() or 0
+
+        # Frete total
+        total_fees = db.session.query(func.sum(Order.delivery_fee)).filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).scalar() or 0
+
+        # Pagamentos processados aos entregadores
+        driver_payments = db.session.query(func.sum(Payment.amount)).filter(
+            Payment.status == PaymentStatus.PROCESSED,
+            Payment.created_at >= start_date
+        ).scalar() or 0
+
+        # Total de pedidos
+        total_orders = Order.query.filter(Order.created_at >= start_date).count()
+        delivered_orders = Order.query.filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).count()
+
+        # Lucro do admin (receita - pagamentos aos entregadores)
+        admin_profit = float(total_revenue) - float(driver_payments)
+
+        return jsonify({
+            'period_days': days,
+            'total_revenue': float(total_revenue),
+            'total_delivery_fees': float(total_fees),
+            'driver_payments': float(driver_payments),
+            'admin_profit': admin_profit,
+            'total_orders': total_orders,
+            'delivered_orders': delivered_orders,
+            'conversion_rate': round(delivered_orders / total_orders * 100, 1) if total_orders > 0 else 0,
+            'avg_order_value': round(float(total_revenue) / delivered_orders, 2) if delivered_orders > 0 else 0
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -40,6 +40,7 @@ const Layout = ({ children }) => {
     { name: 'Entregadores', href: '/admin/drivers', icon: Users },
     { name: 'Pedidos', href: '/admin/orders', icon: Package },
     { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
+    { name: 'Relatórios', href: '/admin/reports', icon: FileText },
   ];
 
   const navigation = isAdmin ? adminNavigation : driverNavigation;
