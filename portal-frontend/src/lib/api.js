@@ -209,6 +209,16 @@ export const adminService = {
     return response.data;
   },
 
+  getFinanceDashboard: async (period = 'month') => {
+    const response = await api.get('/api/admin/finance', { params: { period } });
+    return response.data;
+  },
+
+  getFinanceByEstablishment: async (period = 'month') => {
+    const response = await api.get('/api/admin/finance/establishments', { params: { period } });
+    return response.data;
+  },
+
   getLiveTracking: async () => {
     const response = await api.get('/api/admin/live-tracking');
     return response.data;

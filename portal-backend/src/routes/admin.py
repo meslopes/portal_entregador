@@ -382,6 +382,182 @@ def get_earnings_report():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# DASHBOARD FINANCEIRO
+# ============================================
+
+@admin_bp.route('/finance', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_finance_dashboard():
+    """Dashboard financeiro completo"""
+    try:
+        period = request.args.get('period', 'month')  # today, week, month, year
+
+        # Define data de inicio baseado no periodo
+        now = datetime.utcnow()
+        if period == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'week':
+            start_date = now - timedelta(days=7)
+        elif period == 'month':
+            start_date = now - timedelta(days=30)
+        elif period == 'year':
+            start_date = now - timedelta(days=365)
+        else:
+            start_date = now - timedelta(days=30)
+
+        # Receita total (pedidos entregues no periodo)
+        revenue_result = db.session.query(
+            func.sum(Order.total_amount)
+        ).filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).scalar() or 0
+
+        # Total de pedidos no periodo
+        total_orders = Order.query.filter(
+            Order.created_at >= start_date
+        ).count()
+
+        # Pedidos entregues no periodo
+        delivered_orders = Order.query.filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).count()
+
+        # Pedidos pendentes
+        pending_orders = Order.query.filter(
+            Order.status == OrderStatus.PENDING
+        ).count()
+
+        # Ganhos dos entregadores no periodo (pagamentos processados)
+        driver_payments = db.session.query(
+            func.sum(Payment.amount)
+        ).filter(
+            Payment.status == PaymentStatus.PROCESSED,
+            Payment.created_at >= start_date
+        ).scalar() or 0
+
+        # Ganhos pendentes de processamento
+        pending_payments = db.session.query(
+            func.sum(Payment.amount)
+        ).filter(
+            Payment.status == PaymentStatus.PENDING
+        ).scalar() or 0
+
+        # Ticket medio
+        avg_order_value = float(revenue_result) / delivered_orders if delivered_orders > 0 else 0
+
+        # Frete total cobrado
+        total_delivery_fees = db.session.query(
+            func.sum(Order.delivery_fee)
+        ).filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).scalar() or 0
+
+        # Receita por estabelecimento (top 10)
+        revenue_by_establishment = db.session.query(
+            Restaurant.name,
+            func.sum(Order.total_amount).label('revenue'),
+            func.count(Order.id).label('order_count')
+        ).join(Order).filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).group_by(Restaurant.name).order_by(
+            func.sum(Order.total_amount).desc()
+        ).limit(10).all()
+
+        # Receita diária (últimos 30 dias para gráfico)
+        daily_revenue = db.session.query(
+            func.date(Order.created_at).label('date'),
+            func.sum(Order.total_amount).label('revenue'),
+            func.count(Order.id).label('orders')
+        ).filter(
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= now - timedelta(days=30)
+        ).group_by(func.date(Order.created_at)).order_by(
+            func.date(Order.created_at)
+        ).all()
+
+        return jsonify({
+            'period': period,
+            'revenue': float(revenue_result),
+            'total_orders': total_orders,
+            'delivered_orders': delivered_orders,
+            'pending_orders': pending_orders,
+            'driver_payments': float(driver_payments),
+            'pending_payments': float(pending_payments),
+            'avg_order_value': round(avg_order_value, 2),
+            'total_delivery_fees': float(total_delivery_fees),
+            'revenue_by_establishment': [
+                {'name': name, 'revenue': float(revenue), 'orders': orders}
+                for name, revenue, orders in revenue_by_establishment
+            ],
+            'daily_revenue': [
+                {'date': date.isoformat(), 'revenue': float(revenue), 'orders': orders}
+                for date, revenue, orders in daily_revenue
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/finance/establishments', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_finance_by_establishment():
+    """Financeiro por estabelecimento"""
+    try:
+        period = request.args.get('period', 'month')
+        now = datetime.utcnow()
+
+        if period == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'week':
+            start_date = now - timedelta(days=7)
+        elif period == 'month':
+            start_date = now - timedelta(days=30)
+        elif period == 'year':
+            start_date = now - timedelta(days=365)
+        else:
+            start_date = now - timedelta(days=30)
+
+        establishments = db.session.query(
+            Restaurant.id,
+            Restaurant.name,
+            Restaurant.phone,
+            func.sum(Order.total_amount).label('revenue'),
+            func.count(Order.id).label('total_orders'),
+            func.sum(Order.delivery_fee).label('delivery_fees')
+        ).outerjoin(Order, db.and_(
+            Order.restaurant_id == Restaurant.id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        )).group_by(Restaurant.id, Restaurant.name, Restaurant.phone).order_by(
+            func.sum(Order.total_amount).desc()
+        ).all()
+
+        data = []
+        for est in establishments:
+            data.append({
+                'id': est.id,
+                'name': est.name,
+                'phone': est.phone,
+                'revenue': float(est.revenue or 0),
+                'total_orders': est.total_orders or 0,
+                'delivery_fees': float(est.delivery_fees or 0),
+                'avg_order': round(float(est.revenue or 0) / est.total_orders, 2) if est.total_orders else 0
+            })
+
+        return jsonify({'establishments': data}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @admin_bp.route('/live-tracking', methods=['GET'])
 @jwt_required()
 @admin_required
