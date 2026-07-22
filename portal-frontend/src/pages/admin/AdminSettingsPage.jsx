@@ -233,9 +233,9 @@ const DeliverySettings = ({ config, onChange }) => (
       <input type="number" value={config.delivery_radius || '200'} onChange={e => onChange('delivery_radius', e.target.value)} style={inputStyle} />
       <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Distância máxima para buscar entregadores disponíveis</p>
     </FormField>
-    <FormField label="Timeout para Aceite (minutos)">
-      <input type="number" value={config.order_timeout_minutes || '5'} onChange={e => onChange('order_timeout_minutes', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Tempo máximo para um entregador aceitar o pedido</p>
+    <FormField label="Timeout para Notificar Admin (segundos)">
+      <input type="number" value={config.order_timeout_seconds || '120'} onChange={e => onChange('order_timeout_seconds', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Tempo máximo sem atendimento antes de notificar o admin via mensagem e alerta sonoro (padrão: 120s = 2 minutos)</p>
     </FormField>
     <FormField label="Auto-atribuição de Pedidos">
       <select value={config.auto_assign || 'true'} onChange={e => onChange('auto_assign', e.target.value)} style={inputStyle}>

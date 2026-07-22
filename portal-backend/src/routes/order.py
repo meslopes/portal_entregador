@@ -210,20 +210,35 @@ def reject_order(order_id):
                 'next_driver': next_driver.user.first_name
             }), 200
         else:
-            # Nenhum entregador disponivel - notifica admin
-            db.session.commit()
-            notify_admin_no_drivers(order)
-            return jsonify({
-                'message': 'Pedido recusado. Nenhum entregador disponível no momento.',
-                'notify_admin': True
-            }), 200
+            # Nenhum entregador disponivel - verifica timeout
+            time_elapsed = (datetime.utcnow() - order.created_at).total_seconds()
+            timeout_config = SystemConfig.query.filter_by(config_key='order_timeout_seconds').first()
+            timeout_seconds = int(timeout_config.config_value) if timeout_config else 120
+
+            if time_elapsed >= timeout_seconds:
+                # Timeout atingido - notifica admin
+                db.session.commit()
+                notify_admin_no_drivers(order)
+                return jsonify({
+                    'message': 'Pedido recusado. Timeout atingido, admin notificado.',
+                    'notify_admin': True,
+                    'time_elapsed': int(time_elapsed)
+                }), 200
+            else:
+                # Ainda tem tempo - apenas registra recusa
+                db.session.commit()
+                return jsonify({
+                    'message': f'Pedido recusado. Nenhum entregador disponível. Timeout em {int(timeout_seconds - time_elapsed)}s.',
+                    'notify_admin': False,
+                    'time_remaining': int(timeout_seconds - time_elapsed)
+                }), 200
         
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 def notify_admin_no_drivers(order):
-    """Notifica admin quando nenhum entregador aceita o pedido"""
+    """Notifica admin quando timeout atingido (nenhum entregador aceita)"""
     try:
         from src.models.portal_models import SystemConfig
         
@@ -232,6 +247,13 @@ def notify_admin_no_drivers(order):
         if order.special_instructions:
             reject_count = order.special_instructions.count('REJECTED_BY_')
         
+        # Calcula tempo desde criacao do pedido
+        time_elapsed = (datetime.utcnow() - order.created_at).total_seconds()
+        
+        # Busca timeout configuravel
+        timeout_config = SystemConfig.query.filter_by(config_key='order_timeout_seconds').first()
+        timeout_seconds = int(timeout_config.config_value) if timeout_config else 120
+
         # Notifica via WhatsApp se configurado
         try:
             from src.services.whatsapp import whatsapp_service
@@ -240,11 +262,13 @@ def notify_admin_no_drivers(order):
                 if admin_phone_config:
                     whatsapp_service.send_message(
                         admin_phone_config.config_value,
-                        f"⚠️ *ALERTA: Pedido sem entregador*\n\n"
+                        f"🚨 *ALERTA: Pedido sem entregador!*\n\n"
                         f"Pedido: #{order.order_number}\n"
                         f"Restaurante: {order.restaurant.name}\n"
-                        f"Recusado por: {reject_count} entregador(es)\n\n"
-                        f"Ação necessária: Atribuir entregador manualmente."
+                        f"Recusado por: {reject_count} entregador(es)\n"
+                        f"Tempo sem atendimento: {int(time_elapsed)}s\n"
+                        f"Timeout configurado: {timeout_seconds}s\n\n"
+                        f"⚡ Ação urgente: Atribuir entregador manualmente!"
                     )
         except Exception:
             pass
@@ -254,8 +278,8 @@ def notify_admin_no_drivers(order):
         for admin in admin_users:
             notification = Notification(
                 user_id=admin.id,
-                title="Pedido sem entregador",
-                message=f"Pedido #{order.order_number} foi recusado por {reject_count} entregadores. Ação necessária.",
+                title="🚨 Pedido sem entregador!",
+                message=f"Pedido #{order.order_number} sem atendimento há {int(time_elapsed)}s. {reject_count} recusas. Ação urgente!",
                 type=NotificationType.SYSTEM,
                 related_id=order.id
             )
