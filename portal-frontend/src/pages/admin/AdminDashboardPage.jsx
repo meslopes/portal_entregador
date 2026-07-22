@@ -5,8 +5,10 @@ import {
   Star, RefreshCw, Navigation, Store
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AdminDashboardPage = () => {
+  const { user } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
