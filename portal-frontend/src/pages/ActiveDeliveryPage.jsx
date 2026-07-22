@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Store, User, Phone,
-  AlertCircle, Navigation, CheckCircle, ArrowRight, ChevronRight
+  AlertCircle, Navigation, CheckCircle, ArrowRight, ChevronRight,
+  Camera, Image, X
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
 
@@ -27,6 +28,12 @@ const ActiveDeliveryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
+  const [proofPhoto, setProofPhoto] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -61,17 +68,28 @@ const ActiveDeliveryPage = () => {
     const action = STATUS_ACTIONS[order.status];
     if (!action) return;
 
+    // Se for entrega, pede foto
+    if (action.next === 'DELIVERED' && !proofPhoto) {
+      setShowCamera(true);
+      return;
+    }
+
     try {
       setIsUpdating(true);
       setError('');
-      const response = await orderService.updateOrderStatus(order.id, action.next);
+
+      const payload = { status: action.next };
+      if (action.next === 'DELIVERED' && proofPhoto) {
+        payload.proof_of_delivery = proofPhoto;
+      }
+
+      const response = await orderService.updateOrderStatus(order.id, action.next, payload);
 
       // Atualiza o status localmente
       setOrder(prev => prev ? { ...prev, status: action.next } : prev);
 
       // Se entregue, redireciona para o dashboard
       if (action.next === 'DELIVERED') {
-        // Usa window.location para evitar conflito DOM
         window.location.href = '/dashboard';
       }
     } catch (err) {
@@ -79,6 +97,86 @@ const ActiveDeliveryPage = () => {
       console.error('Erro ao atualizar status:', err);
       const msg = err.response?.data?.error || err.message || 'Erro ao atualizar status';
       setError(msg);
+    } finally {
+      if (isMounted.current) setIsUpdating(false);
+    }
+  };
+
+  // Funcoes de camera
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Erro ao acessar camera:', err);
+      setError('Não foi possível acessar a câmera');
+    }
+  };
+
+  useEffect(() => {
+    if (showCamera && !previewUrl) {
+      startCamera();
+    }
+    return () => {
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [showCamera, previewUrl]);
+
+  const takePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const url = canvas.toDataURL('image/jpeg', 0.8);
+    setPreviewUrl(url);
+    // Para o stream
+    video.srcObject?.getTracks().forEach(t => t.stop());
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreviewUrl(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const confirmPhoto = () => {
+    setProofPhoto(previewUrl);
+    setShowCamera(false);
+    setPreviewUrl(null);
+  };
+
+  const skipPhoto = () => {
+    setShowCamera(false);
+    setPreviewUrl(null);
+    // Avanca sem foto
+    handleAdvanceStatusSkip();
+  };
+
+  const handleAdvanceStatusSkip = async () => {
+    if (!order || isUpdating) return;
+    const action = STATUS_ACTIONS[order.status];
+    if (!action) return;
+    try {
+      setIsUpdating(true);
+      setError('');
+      await orderService.updateOrderStatus(order.id, action.next, { status: action.next });
+      setOrder(prev => prev ? { ...prev, status: action.next } : prev);
+      if (action.next === 'DELIVERED') {
+        window.location.href = '/dashboard';
+      }
+    } catch (err) {
+      if (!isMounted.current) return;
+      setError(err.response?.data?.error || 'Erro ao atualizar status');
     } finally {
       if (isMounted.current) setIsUpdating(false);
     }
@@ -263,6 +361,85 @@ const ActiveDeliveryPage = () => {
             </>
           )}
         </button>
+      )}
+
+      {/* Foto de prova preview */}
+      {proofPhoto && !isDelivered && (
+        <div style={{
+          background: 'white', borderRadius: '0.75rem',
+          padding: '1rem', marginBottom: '1rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          display: 'flex', alignItems: 'center', gap: '1rem'
+        }}>
+          <div style={{ width: '4rem', height: '4rem', borderRadius: '0.5rem', overflow: 'hidden', flexShrink: 0 }}>
+            <img src={proofPhoto} alt="Prova" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>Prova de entrega</p>
+            <p style={{ fontSize: '0.75rem', color: '#16a34a' }}>Foto capturada ✓</p>
+          </div>
+          <button onClick={() => { setProofPhoto(null); setPreviewUrl(null); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Modal de Camera */}
+      {showCamera && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', zIndex: 100, padding: '1rem'
+        }}>
+          <div style={{ width: '100%', maxWidth: '400px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ color: 'white', fontSize: '1.125rem', fontWeight: 600 }}>Prova de Entrega</h3>
+              <button onClick={() => { setShowCamera(false); setPreviewUrl(null); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'white' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Preview da foto */}
+            {previewUrl ? (
+              <div style={{ marginBottom: '1rem' }}>
+                <img src={previewUrl} alt="Preview" style={{ width: '100%', borderRadius: '0.75rem', maxHeight: '60vh', objectFit: 'contain' }} />
+              </div>
+            ) : (
+              <video ref={videoRef} autoPlay playsInline style={{ width: '100%', borderRadius: '0.75rem', background: '#000' }} />
+            )}
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+            {/* Botoes */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+              {!previewUrl ? (
+                <>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ flex: 1, padding: '1rem', borderRadius: '0.5rem', border: 'none', background: '#374151', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <Image size={20} /> Galeria
+                  </button>
+                  <button onClick={takePhoto} style={{ flex: 1, padding: '1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <Camera size={20} /> Tirar Foto
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => { setPreviewUrl(null); }} style={{ flex: 1, padding: '1rem', borderRadius: '0.5rem', border: 'none', background: '#374151', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer' }}>
+                    Nova Foto
+                  </button>
+                  <button onClick={confirmPhoto} style={{ flex: 1, padding: '1rem', borderRadius: '0.5rem', border: 'none', background: '#22c55e', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <CheckCircle size={20} /> Confirmar
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Sem foto */}
+            <button onClick={skipPhoto} style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: 'none', background: 'transparent', color: '#9ca3af', fontSize: '0.8125rem', cursor: 'pointer', marginTop: '0.75rem' }}>
+              Pular foto e entregar
+            </button>
+          </div>
+
+          <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelect} />
+        </div>
       )}
 
       {/* Mensagem de espera (PREPARING) */}

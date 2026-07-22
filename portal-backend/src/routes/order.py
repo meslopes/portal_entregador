@@ -7,6 +7,8 @@ from src.models.portal_models import (
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import uuid
+import os
+import base64
 
 order_bp = Blueprint('order', __name__)
 
@@ -208,6 +210,30 @@ def update_order_status(order_id):
             
             # Atualiza estatísticas do entregador
             driver.total_deliveries += 1
+            
+            # Salva prova de entrega (foto) se fornecida
+            proof_url = None
+            proof_data = data.get('proof_of_delivery')
+            if proof_data and order.delivery:
+                try:
+                    # Cria pasta de uploads se nao existir
+                    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'proofs')
+                    os.makedirs(uploads_dir, exist_ok=True)
+                    
+                    # Decodifica base64 e salva
+                    if ',' in proof_data:
+                        proof_data = proof_data.split(',')[1]
+                    
+                    filename = f"proof_{order.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                    filepath = os.path.join(uploads_dir, filename)
+                    
+                    with open(filepath, 'wb') as f:
+                        f.write(base64.b64decode(proof_data))
+                    
+                    proof_url = f"/uploads/proofs/{filename}"
+                    order.delivery.proof_of_delivery_url = proof_url
+                except Exception as e:
+                    print(f"Erro ao salvar prova de entrega: {e}")
             
             # Cria pagamento para o entregador
             if order.delivery:

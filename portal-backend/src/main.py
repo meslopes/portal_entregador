@@ -84,6 +84,14 @@ def health_check():
     """Endpoint de verificação de saúde da API"""
     return {'status': 'healthy', 'message': 'Portal API is running'}, 200
 
+@app.route('/uploads/proofs/<path:filename>')
+def serve_proof(filename):
+    """Serve fotos de prova de entrega"""
+    uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
+    if os.path.exists(os.path.join(uploads_dir, filename)):
+        return send_from_directory(uploads_dir, filename)
+    return {'error': 'File not found'}, 404
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
