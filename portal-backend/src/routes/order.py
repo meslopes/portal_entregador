@@ -1052,6 +1052,10 @@ def rate_delivery(order_id):
                     driver.rating = round(float(avg_rating), 2)
                 driver.updated_at = datetime.utcnow()
 
+                # Alerta ao admin se avaliacao for baixa (menor que 3.0)
+                if driver.rating and float(driver.rating) < 3.0:
+                    notify_admin_low_rating(driver, rating, feedback, order)
+
         db.session.commit()
 
         return jsonify({
@@ -1063,6 +1067,47 @@ def rate_delivery(order_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+def notify_admin_low_rating(driver, rating, feedback, order):
+    """Notifica admin quando entregador recebe avaliacao baixa"""
+    try:
+        from src.models.portal_models import SystemConfig
+
+        # Notifica via WhatsApp
+        try:
+            from src.services.whatsapp import whatsapp_service
+            if whatsapp_service.is_configured():
+                admin_phone_config = SystemConfig.query.filter_by(config_key='admin_phone').first()
+                if admin_phone_config:
+                    whatsapp_service.send_message(
+                        admin_phone_config.config_value,
+                        f"⚠️ *ALERTA: Avaliação Baixa!*\n\n"
+                        f"Entregador: {driver.user.first_name} {driver.user.last_name}\n"
+                        f"Nota recebida: {rating}/5\n"
+                        f"Média atual: {driver.rating}/5\n"
+                        f"Feedback: {feedback or 'Sem comentário'}\n"
+                        f"Pedido: #{order.order_number}\n\n"
+                        f"Verifique a situação deste entregador."
+                    )
+        except Exception:
+            pass
+
+        # Notifica via sistema
+        admin_users = User.query.filter_by(user_type=UserType.ADMIN).all()
+        for admin in admin_users:
+            notification = Notification(
+                user_id=admin.id,
+                title="⚠️ Avaliação Baixa",
+                message=f"Entregador {driver.user.first_name} {driver.user.last_name} recebeu nota {rating}/5 (média: {driver.rating}). Feedback: {feedback or 'Sem comentário'}",
+                type=NotificationType.SYSTEM,
+                related_id=order.id
+            )
+            db.session.add(notification)
+
+        db.session.commit()
+    except Exception as e:
+        print(f"Erro ao notificar admin sobre avaliacao baixa: {e}")
 
 
 # ============================================
