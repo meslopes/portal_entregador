@@ -69,7 +69,7 @@ const OrdersPage = () => {
       setError('');
 
       // Toca som se habilitado e houver novos pedidos
-      if (playSound && soundEnabled && newOrders.length > prevCountRef.current && prevCountRef.current > 0) {
+      if (playSound && soundEnabled && newOrders.length > prevCountRef.current) {
         playNotificationSound();
       }
 
