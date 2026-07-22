@@ -1,263 +1,148 @@
-# PORTAL - Sistema de Controle de Entregadores
+# muv.log - Plataforma de Gestao de Entregas
 
-![PORTAL Logo](https://via.placeholder.com/200x80/4F46E5/FFFFFF?text=PORTAL)
+## Visao Geral
 
-**🚀 Sistema completo de delivery similar ao Uber Eats Driver**  
-**🇧🇷 Desenvolvido especificamente para o mercado brasileiro**  
-**⚡ Tecnologias modernas: React + Flask + PostgreSQL**
+O muv.log e uma plataforma completa de gestao de entregas de delivery, desenvolvida para administradores de logistica gerenciarem estabelecimentos, entregadores e pedidos. O sistema replica e aprimora funcionalidades de plataformas como Entregas Expressas, iFood e 99Food.
 
----
+### Arquitetura do Ecosistema
 
-## 📋 Visão Geral
-
-O PORTAL é uma plataforma completa de controle de entregadores de delivery, desenvolvida para replicar e aprimorar as funcionalidades do Uber Eats Driver. O sistema oferece uma solução robusta, escalável e adaptada às necessidades específicas do mercado brasileiro.
-
-### ✨ Principais Características
-
-- **🎯 Interface Moderna**: Design responsivo com cores modernas (azul/índigo)
-- **🔐 Segurança Avançada**: Autenticação JWT, criptografia de dados, conformidade LGPD
-- **📱 Totalmente Responsivo**: Funciona perfeitamente em desktop e mobile
-- **🌐 Pronto para Nuvem**: Configurado para deploy em produção
-- **🇧🇷 Localizado**: Interface em português, integração PIX, validação CPF
-
-### 🛠️ Tecnologias Utilizadas
-
-**Frontend:**
-- React 18.2.0
-- Tailwind CSS 3.4.0
-- React Router DOM 6.8.0
-- Axios 1.6.0
-- Shadcn/ui (componentes)
-
-**Backend:**
-- Flask 3.0.0
-- SQLAlchemy 2.0.0
-- Flask-JWT-Extended 4.6.0
-- PostgreSQL (produção) / SQLite (desenvolvimento)
-
-**Deploy:**
-- Vercel (frontend)
-- Railway (backend)
-- GitHub (repositório)
-
----
-
-## 🚀 Início Rápido
-
-### Pré-requisitos
-
-- Python 3.11+
-- Node.js 18+
-- Git
-
-### Instalação Local
-
-1. **Clone o repositório**
-```bash
-git clone https://github.com/seu-usuario/portal-delivery.git
-cd portal-delivery
+```
+Muv.log (Plataforma SaaS)
+    ├── Administrador de Logistica (nosso cliente)
+    │     ├── Estabelecimentos (clientes do admin)
+    │     └── Entregadores (contratados pelo admin)
+    └── Cliente Final (dados no pedido, sem login)
 ```
 
-2. **Configure o Backend**
+## URLs de Producao
+
+| Servico | URL |
+|---------|-----|
+| Frontend | https://portal-entregador-gamma.vercel.app |
+| Backend API | https://muvlog-api.onrender.com |
+
+## Credenciais de Teste
+
+| Perfil | Email | Senha |
+|--------|-------|-------|
+| Admin | admin@muv.log.br | admin123 |
+| Entregador | entregador@teste.com | 123456 |
+| Estabelecimento | cliente@teste.com | 123456 |
+
+## Tecnologias
+
+**Frontend:** React + Vite + Tailwind CSS + Leaflet (mapa)
+**Backend:** Flask (Python) + SQLAlchemy + Flask-JWT-Extended
+**Banco:** PostgreSQL (producao) / SQLite (desenvolvimento)
+**Deploy:** Vercel (frontend) + Render (backend)
+
+## Funcionalidades Implementadas
+
+### Gestao
+- Gestao completa de estabelecimentos (CRUD)
+- Gestao completa de entregadores (CRUD)
+- Gestao de pedidos
+- Sistema de multi-praca (multi-cidade)
+- Cadastro pelo admin
+
+### Fluxo de Pedidos
+- Atribuicao inteligente (entregador mais proximo)
+- Limite de pedidos simultaneos por entregador
+- Aceite e recusa de pedidos
+- Timeout configuravel + notificacao ao admin
+- Cancelamento de pedido
+- Prova de entrega (foto)
+- Avaliacao do entregador (1-5 estrelas)
+
+### Financeiro
+- Fluxo financeiro visual (recebido vs pago vs retencao)
+- Comissao configuravel (admin)
+- Faturas com QR Code PIX
+- Controle de pagamentos aos entregadores
+- Financeiro do estabelecimento (o que deve)
+
+### Integracoes
+- iFood (webhook)
+- WhatsApp (notificacoes + pedidos)
+- 99Food (webhook)
+- InstaDelivery (webhook)
+- SaiPos (webhook)
+
+### Notificacoes
+- Sirene automatica para novos pedidos
+- Notificacoes do navegador
+- Notificacoes via WhatsApp
+- Alerta de timeout ao admin
+
+### Relatorios (8 tipos)
+- Financeiro, Pedidos, Entregadores, Estabelecimentos
+- Cancelamentos, Avaliacoes, Horarios de Pico, Entregas Detalhadas
+
+### Configuracoes (8 modulos)
+- Empresa, Pagamento, Precos, Entregas
+- Entregadores, Estabelecimentos, Notificacoes, Integracoes
+
+### Gamificacao
+- Ranking de entregadores (top 3 podium)
+- Conquistas e progresso
+
+## Estrutura do Projeto
+
+```
+portal_entregador/
+├── portal-frontend/          # React + Vite
+│   ├── src/
+│   │   ├── pages/           # 18 paginas
+│   │   │   ├── admin/       # Admin (Dashboard, Establishments, Drivers, Orders, Finance, Reports, Settings, Squares, DriverPayments)
+│   │   │   ├── client/      # Estabelecimento (Dashboard, Orders, Financial, Invoices, NewOrder)
+│   │   │   └── (entregador) # Dashboard, Orders, Earnings, History, Ranking, ActiveDelivery
+│   │   ├── components/      # Layout, ClientLayout
+│   │   ├── contexts/        # AuthContext
+│   │   └── lib/             # api.js, notify.js
+│   └── package.json
+├── portal-backend/           # Flask
+│   ├── src/
+│   │   ├── models/          # 10 models (User, Driver, Restaurant, Customer, Address, Order, Delivery, Payment, Notification, Square, SystemConfig)
+│   │   ├── routes/          # 5 blueprints (auth, driver, order, admin, webhooks)
+│   │   ├── services/        # whatsapp.py
+│   │   └── main.py
+│   └── requirements.txt
+├── ROTEIRO_TESTES.md        # Roteiro completo de testes
+├── FLUXOGRAMA_PROJETO.md    # Fluxograma detalhado
+└── todo.md                  # Status do projeto
+```
+
+## Como Rodar Localmente
+
+**Backend:**
 ```bash
 cd portal-backend
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou
-venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 python src/main.py
 ```
 
-3. **Configure o Frontend**
+**Frontend:**
 ```bash
 cd portal-frontend
-pnpm install
-pnpm run dev
+npm install
+npm run dev
 ```
 
-4. **Acesse a aplicação**
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5000
+## Documentacao
 
-### Credenciais de Teste
+- ROTEIRO_TESTES.md - Testes completos
+- FLUXOGRAMA_PROJETO.md - Fluxograma detalhado
+- documentacao_completa.md - Documentacao tecnica
+- arquitetura_portal.md - Arquitetura do sistema
+- design_portal.md - Design e UX
+- guia_deploy.md - Guia de deploy
+- configuracoes_deploy.md - Configuracoes de deploy
+- requisitos_portal.md - Requisitos funcionais
 
-- **Email:** admin@portal.com
-- **Senha:** admin123
+## Status
 
----
-
-## 📁 Estrutura do Projeto
-
-```
-portal-delivery/
-├── portal-frontend/          # Frontend React
-│   ├── src/
-│   │   ├── components/       # Componentes reutilizáveis
-│   │   ├── pages/           # Páginas da aplicação
-│   │   ├── contexts/        # Contextos React
-│   │   ├── lib/            # Utilitários e API
-│   │   └── App.jsx         # Componente principal
-│   ├── dist/               # Build de produção
-│   └── package.json
-├── portal-backend/           # Backend Flask
-│   ├── src/
-│   │   ├── models/         # Modelos do banco de dados
-│   │   ├── routes/         # Rotas da API
-│   │   ├── config.py       # Configurações
-│   │   └── main.py         # Aplicação principal
-│   ├── requirements.txt
-│   └── Procfile           # Configuração para deploy
-├── docs/                   # Documentação
-└── README.md
-```
-
----
-
-## 🎯 Funcionalidades
-
-### Para Entregadores
-- ✅ **Dashboard Completo**: Estatísticas, ganhos, avaliações
-- ✅ **Controle Online/Offline**: Status de disponibilidade
-- ✅ **Gerenciamento de Pedidos**: Aceitar, acompanhar, finalizar
-- ✅ **Histórico de Entregas**: Registro completo de atividades
-- ✅ **Sistema de Pagamentos**: Integração PIX, transparência total
-- ✅ **Perfil Personalizado**: Dados pessoais, veículo, documentos
-
-### Para Administradores
-- ✅ **Dashboard Administrativo**: Métricas em tempo real
-- ✅ **Gestão de Entregadores**: Aprovação, suspensão, comunicação
-- ✅ **Análise de Operações**: Relatórios detalhados, insights
-- ✅ **Monitoramento**: Logs, alertas, auditoria
-- ✅ **Configurações**: Parâmetros do sistema, integrações
-
-### Recursos Técnicos
-- ✅ **API RESTful**: Endpoints completos e documentados
-- ✅ **Autenticação JWT**: Segurança robusta
-- ✅ **Banco de Dados**: Modelagem otimizada
-- ✅ **Logs e Monitoramento**: Observabilidade completa
-- ✅ **Testes**: Cobertura de funcionalidades críticas
-
----
-
-## 🌐 Deploy em Produção
-
-### Opção 1: Vercel + Railway (Recomendado)
-
-**Vantagens:**
-- ✅ Gratuito para começar
-- ✅ Deploy automático via GitHub
-- ✅ Escalabilidade automática
-- ✅ URLs profissionais
-
-**Passos:**
-1. Fazer push do código para GitHub
-2. Conectar Vercel ao repositório (frontend)
-3. Conectar Railway ao repositório (backend)
-4. Configurar variáveis de ambiente
-5. Deploy automático!
-
-### Opção 2: Heroku
-
-**Configuração:**
-- Tudo em uma plataforma
-- Mais simples, mas pago (~$7-25/mês)
-
-### Opção 3: VPS Próprio
-
-**Para usuários avançados:**
-- Controle total
-- DigitalOcean, AWS, etc.
-- Requer conhecimento técnico
-
----
-
-## 📚 Documentação
-
-### Documentos Disponíveis
-
-- 📖 **[Documentação Completa](docs/documentacao_completa.md)** - Guia técnico detalhado
-- 🚀 **[Guia de Deploy](docs/guia_deploy.md)** - Instruções de publicação
-- 🎨 **[Design e UX](docs/design_portal.md)** - Especificações visuais
-- 🏗️ **[Arquitetura](docs/arquitetura_portal.md)** - Estrutura técnica
-- 📋 **[Requisitos](docs/requisitos_portal.md)** - Especificações funcionais
-
-### API Reference
-
-A API oferece endpoints completos para todas as operações:
-
-- **Autenticação**: `/api/auth/*`
-- **Entregadores**: `/api/driver/*`
-- **Pedidos**: `/api/orders/*`
-- **Administração**: `/api/admin/*`
-
-Documentação completa com exemplos disponível em `docs/api-reference.md`
-
----
-
-## 🔒 Segurança
-
-- **🛡️ Autenticação JWT**: Tokens seguros com expiração
-- **🔐 Criptografia**: Senhas com scrypt, dados sensíveis protegidos
-- **🌐 HTTPS**: Comunicação criptografada em produção
-- **📋 LGPD**: Conformidade total com lei brasileira
-- **🔍 Auditoria**: Logs completos de todas as operações
-
----
-
-## 🤝 Contribuição
-
-### Como Contribuir
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-### Padrões de Código
-
-- **Frontend**: ESLint + Prettier
-- **Backend**: Black + Flake8
-- **Commits**: Conventional Commits
-- **Testes**: Jest (frontend) + Pytest (backend)
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para detalhes.
-
----
-
-## 📞 Suporte
-
-### Contato
-
-- **Email**: suporte@portal-delivery.com
-- **Documentação**: [docs.portal-delivery.com](https://docs.portal-delivery.com)
-- **Issues**: [GitHub Issues](https://github.com/seu-usuario/portal-delivery/issues)
-
-### Status do Projeto
-
-- ✅ **Desenvolvimento**: Completo
-- ✅ **Testes**: Aprovado
-- ✅ **Documentação**: Completa
-- 🔄 **Deploy**: Pronto (aguardando decisão)
-
----
-
-## 🎉 Agradecimentos
-
-Desenvolvido com ❤️ por **Manus AI** para revolucionar o mercado brasileiro de delivery.
-
-**Tecnologias que tornaram este projeto possível:**
-- React Team pela excelente biblioteca
-- Flask Community pelo framework robusto
-- Tailwind CSS pela flexibilidade de design
-- Vercel e Railway pela infraestrutura de nuvem
-
----
-
-**🚀 O PORTAL está pronto para transformar o delivery no Brasil!**
-
+- ✅ Backend: Funcional (Render)
+- ✅ Frontend: Funcional (Vercel)
+- ✅ Banco de dados: PostgreSQL (Render)
+- ✅ Integracoes: iFood, WhatsApp, 99Food, InstaDelivery, SaiPos
+- ✅ Deploy: Producao ativa

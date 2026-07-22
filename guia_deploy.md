@@ -1,172 +1,128 @@
-# Guia Completo de Deploy - PORTAL
+# Guia de Deploy - muv.log
 
-## O que é Deploy?
+## Arquitetura de Deploy
 
-Deploy é o processo de publicar sua aplicação na internet para que ela seja acessível por qualquer pessoa. É a diferença entre ter o sistema rodando apenas no seu computador (desenvolvimento) e tê-lo disponível online (produção).
+```
+GitHub (repositorio)
+    │
+    ├──► Vercel (frontend) - portal-entregador-gamma.vercel.app
+    │
+    └──► Render (backend) - muvlog-api.onrender.com
+              │
+              └──► PostgreSQL (banco de dados)
+```
 
-## Arquitetura do PORTAL
+## Deploy do Frontend (Vercel)
 
-O PORTAL é composto por:
-- **Frontend React**: Interface do usuário (telas, botões, etc.)
-- **Backend Flask**: Servidor com APIs e lógica de negócio
-- **Banco de dados**: Armazenamento de dados (usuários, pedidos, etc.)
+### Configuracao
+1. Conectar repositorio GitHub ao Vercel
+2. Framework: Vite
+3. Root Directory: `portal-frontend`
+4. Build Command: `pnpm build` ou `npm run build`
+5. Output Directory: `dist`
 
-## Opções de Deploy
+### Variavel de Ambiente
+```
+VITE_API_URL=https://muvlog-api.onrender.com
+```
 
-### 1. GitHub Pages ❌ (NÃO RECOMENDADO)
-**Por que não serve:**
-- Só hospeda sites estáticos (HTML, CSS, JS)
-- Não suporta backend (Flask)
-- Não suporta banco de dados
-- Nosso sistema precisa de servidor
+### Notas
+- Deploy automatico a cada push no GitHub
+- SPA rewrite configurado no vercel.json
+- Dominio: portal-entregador-gamma.vercel.app
 
-### 2. Vercel + Railway ⭐ (RECOMENDADO)
-**Configuração:**
-- **Vercel**: Frontend React
-- **Railway**: Backend Flask + PostgreSQL
-- **GitHub**: Repositório do código
+## Deploy do Backend (Render)
 
-**Vantagens:**
-- ✅ Gratuito para começar
-- ✅ Deploy automático via GitHub
-- ✅ URLs profissionais
-- ✅ Fácil configuração
-- ✅ Escalável
+### Configuracao
+1. Conectar repositorio GitHub ao Render
+2. Tipo: Web Service
+3. Runtime: Python 3.11
+4. **Root Directory: `portal-backend`** (IMPORTANTE!)
+5. Build Command: `pip install -r requirements.txt`
+6. Start Command: `gunicorn src.main_production:app`
 
-**Custos:**
-- Vercel: Gratuito até 100GB bandwidth
-- Railway: $5/mês após trial gratuito
+### Variaveis de Ambiente
+```
+FLASK_ENV=production
+SECRET_KEY=<chave-secreta>
+JWT_SECRET_KEY=<chave-jwt>
+DATABASE_URL=<url-postgresql-render>
+```
 
-### 3. Heroku (ALTERNATIVA)
-**Configuração:**
-- Tudo em uma plataforma
+### Banco de Dados PostgreSQL
+- Criado automaticamente pelo Render
+- URL configurada em DATABASE_URL
+- Migrations executadas automaticamente no startup
 
-**Vantagens:**
-- ✅ Simples de usar
-- ✅ Tudo integrado
+### Notas
+- **CRITICO**: Root Directory deve ser `portal-backend`
+- Deploy automatico a cada push no GitHub
+- Health check: https://muvlog-api.onrender.com/api/health
 
-**Desvantagens:**
-- ❌ Não tem plano gratuito
-- ❌ Mais caro (~$7-25/mês)
+## Deploy Local (Desenvolvimento)
 
-### 4. DigitalOcean/AWS (AVANÇADO)
-**Configuração:**
-- VPS próprio ou serviços cloud
-
-**Vantagens:**
-- ✅ Controle total
-- ✅ Pode ser mais barato em escala
-
-**Desvantagens:**
-- ❌ Requer conhecimento técnico
-- ❌ Mais complexo de configurar
-
-## Fluxo Recomendado (Vercel + Railway)
-
-### Passo 1: Preparar Repositório GitHub
+### Backend
 ```bash
-# Criar repositório no GitHub
-# Fazer upload do código
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/seu-usuario/portal-delivery.git
-git push -u origin main
+cd portal-backend
+pip install -r requirements.txt
+python src/main.py
+# Rota em http://localhost:5000
 ```
 
-### Passo 2: Deploy do Frontend (Vercel)
-1. Conectar GitHub à Vercel
-2. Selecionar repositório
-3. Configurar build:
-   - Build Command: `cd portal-frontend && pnpm run build`
-   - Output Directory: `portal-frontend/dist`
-4. Deploy automático
-
-### Passo 3: Deploy do Backend (Railway)
-1. Conectar GitHub à Railway
-2. Selecionar repositório
-3. Configurar variáveis de ambiente:
-   - `FLASK_ENV=production`
-   - `DATABASE_URL` (PostgreSQL automático)
-   - `SECRET_KEY` (gerar nova)
-4. Deploy automático
-
-### Passo 4: Configurar Integração
-1. Atualizar URL da API no frontend
-2. Configurar CORS no backend
-3. Testar integração
-
-## Estrutura de Arquivos para Deploy
-
-```
-portal-delivery/
-├── portal-frontend/          # Frontend React
-│   ├── src/
-│   ├── dist/                # Build de produção
-│   ├── package.json
-│   └── vercel.json          # Configuração Vercel
-├── portal-backend/           # Backend Flask
-│   ├── src/
-│   ├── requirements.txt
-│   ├── Procfile            # Configuração Railway
-│   └── .env.production
-├── docs/                   # Documentação
-└── README.md
+### Frontend
+```bash
+cd portal-frontend
+npm install
+npm run dev
+# Rota em http://localhost:5173
 ```
 
-## Configurações Necessárias
+## Variaveis de Ambiente
 
-### Frontend (Vercel)
-**vercel.json:**
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+### Backend (.env)
+```
+DATABASE_URL=sqlite:///instance/app.db
+SECRET_KEY=dev-secret-key
+JWT_SECRET_KEY=dev-jwt-secret
+FLASK_ENV=development
 ```
 
-### Backend (Railway)
-**Procfile:**
+### Frontend (.env)
 ```
-web: gunicorn src.main_production:app --bind 0.0.0.0:$PORT
+VITE_API_URL=http://localhost:5000
 ```
 
-**Variáveis de ambiente:**
-- `FLASK_ENV=production`
-- `SECRET_KEY=sua-chave-secreta-super-forte`
-- `DATABASE_URL=postgresql://...` (automático)
-- `CORS_ORIGINS=https://seu-frontend.vercel.app`
+## Pos-Deploy
 
-## URLs Finais
+### Verificacao
+1. Acessar https://muvlog-api.onrender.com/api/health
+2. Acessar https://portal-entregador-gamma.vercel.app
+3. Testar login com credenciais de teste
 
-Após o deploy, você terá:
-- **Frontend**: `https://portal-delivery.vercel.app`
-- **Backend**: `https://portal-backend.railway.app`
-- **Admin**: `https://portal-delivery.vercel.app/admin`
+### Seed de Dados
+```bash
+# Criar admin
+POST https://muvlog-api.onrender.com/api/auth/create-admin
+{"email":"admin@muv.log.br","password":"admin123"}
 
-## Vantagens do GitHub
+# Criar entregador
+POST https://muvlog-api.onrender.com/api/auth/register
+{"email":"entregador@teste.com","password":"123456",...}
 
-✅ **Versionamento**: Histórico completo de mudanças
-✅ **Backup**: Código seguro na nuvem
-✅ **Colaboração**: Facilita trabalho em equipe
-✅ **Integração**: Conecta com plataformas de deploy
-✅ **Deploy automático**: Atualiza site quando você faz push
-✅ **Gratuito**: Para repositórios públicos e privados
+# Criar estabelecimento
+POST https://muvlog-api.onrender.com/api/auth/register-client
+{"email":"cliente@teste.com","password":"123456",...}
+```
 
-## Próximos Passos
+## Troubleshooting
 
-1. **Criar conta no GitHub** (se não tiver)
-2. **Criar repositório privado** para o PORTAL
-3. **Fazer upload do código**
-4. **Configurar deploy quando estiver pronto**
+### Render: "ModuleNotFoundError: No module named 'src'"
+- Verificar Root Directory = `portal-backend`
 
-## Segurança
+### Vercel: Build falha
+- Verificar se todas as paginas estao commitadas
+- Verificar imports no App.jsx
 
-- ✅ Repositório pode ser **privado**
-- ✅ Você controla **quando fazer deploy**
-- ✅ Pode **testar antes** de publicar
-- ✅ **Fácil de remover** se necessário
-
-O GitHub é **essencial** para qualquer projeto profissional, mesmo que você não faça deploy imediatamente!
-
+### CORS error
+- Verificar se URL do Vercel esta em CORS_ORIGINS no config.py
+- Verificar se VITE_API_URL esta configurado no Vercel
