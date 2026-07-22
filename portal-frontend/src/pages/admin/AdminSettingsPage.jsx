@@ -399,10 +399,88 @@ const IntegrationSettings = ({ config, onChange }) => (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>99</div>
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#ff6600', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>99</div>
           <div>
-            <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>99Food / InstaDelivery / Outros</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Em desenvolvimento</p>
+            <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>99Food</p>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Receber pedidos automaticamente</p>
+          </div>
+        </div>
+        <select value={config.integration_99food || 'disabled'} onChange={e => onChange('integration_99food', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
+          <option value="enabled">Ativada</option>
+          <option value="disabled">Desativada</option>
+        </select>
+      </div>
+      {config.integration_99food === 'enabled' && (
+        <div style={{ padding: '0 1rem 1rem' }}>
+          <FormField label="API Key 99Food">
+            <input type="password" value={config.food99_api_key || ''} onChange={e => onChange('food99_api_key', e.target.value)} style={inputStyle} placeholder="Chave de API do 99Food" />
+          </FormField>
+          <FormField label="Webhook URL">
+            <input type="text" value={`${API_URL}/api/webhooks/99food`} readOnly style={{ ...inputStyle, background: '#f1f5f9', color: '#64748b' }} />
+          </FormField>
+        </div>
+      )}
+    </div>
+
+    <div style={{ marginTop: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#ff4500', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>ID</div>
+          <div>
+            <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>InstaDelivery</p>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Receber pedidos automaticamente</p>
+          </div>
+        </div>
+        <select value={config.integration_instadelivery || 'disabled'} onChange={e => onChange('integration_instadelivery', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
+          <option value="enabled">Ativada</option>
+          <option value="disabled">Desativada</option>
+        </select>
+      </div>
+      {config.integration_instadelivery === 'enabled' && (
+        <div style={{ padding: '0 1rem 1rem' }}>
+          <FormField label="API Key InstaDelivery">
+            <input type="password" value={config.instadelivery_api_key || ''} onChange={e => onChange('instadelivery_api_key', e.target.value)} style={inputStyle} placeholder="Chave de API do InstaDelivery" />
+          </FormField>
+          <FormField label="Webhook URL">
+            <input type="text" value={`${API_URL}/api/webhooks/instadelivery`} readOnly style={{ ...inputStyle, background: '#f1f5f9', color: '#64748b' }} />
+          </FormField>
+        </div>
+      )}
+    </div>
+
+    <div style={{ marginTop: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#00a651', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>SP</div>
+          <div>
+            <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>SaiPos</p>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Receber pedidos automaticamente</p>
+          </div>
+        </div>
+        <select value={config.integration_saipos || 'disabled'} onChange={e => onChange('integration_saipos', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
+          <option value="enabled">Ativada</option>
+          <option value="disabled">Desativada</option>
+        </select>
+      </div>
+      {config.integration_saipos === 'enabled' && (
+        <div style={{ padding: '0 1rem 1rem' }}>
+          <FormField label="API Key SaiPos">
+            <input type="password" value={config.saipos_api_key || ''} onChange={e => onChange('saipos_api_key', e.target.value)} style={inputStyle} placeholder="Chave de API do SaiPos" />
+          </FormField>
+          <FormField label="Webhook URL">
+            <input type="text" value={`${API_URL}/api/webhooks/saipos`} readOnly style={{ ...inputStyle, background: '#f1f5f9', color: '#64748b' }} />
+          </FormField>
+        </div>
+      )}
+    </div>
+
+    <div style={{ marginTop: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>+</div>
+          <div>
+            <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>Outras Plataformas</p>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>LoopFood, Goomer, etc.</p>
           </div>
         </div>
         <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#fef3c7', color: '#d97706' }}>Em breve</span>
