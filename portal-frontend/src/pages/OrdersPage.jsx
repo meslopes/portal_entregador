@@ -7,45 +7,71 @@ import {
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
 
-// Gera som de notificação usando Web Audio API (sem arquivo externo)
-const playNotificationSound = () => {
+// ============================================
+// SISTEMA DE SIRENE (Web Audio API)
+// ============================================
+
+let sirenInterval = null;
+let sirenOscillators = [];
+
+const stopSiren = () => {
+  if (sirenInterval) {
+    clearInterval(sirenInterval);
+    sirenInterval = null;
+  }
+  sirenOscillators.forEach(osc => {
+    try { osc.stop(); } catch (e) {}
+  });
+  sirenOscillators = [];
+};
+
+const startSiren = () => {
+  stopSiren(); // Para qualquer sirene anterior
+
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // Primeiro beep (agudo)
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.frequency.value = 880;
-    osc1.type = 'sine';
-    gain1.gain.value = 0.3;
-    osc1.start(ctx.currentTime);
-    osc1.stop(ctx.currentTime + 0.15);
+    const playCycle = () => {
+      try {
+        if (ctx.state === 'suspended') ctx.resume();
 
-    // Segundo beep (mais agudo)
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.frequency.value = 1100;
-    osc2.type = 'sine';
-    gain2.gain.value = 0.3;
-    osc2.start(ctx.currentTime + 0.18);
-    osc2.stop(ctx.currentTime + 0.35);
+        // Tom agudo (800Hz)
+        const oscHigh = ctx.createOscillator();
+        const gainHigh = ctx.createGain();
+        oscHigh.connect(gainHigh);
+        gainHigh.connect(ctx.destination);
+        oscHigh.frequency.value = 800;
+        oscHigh.type = 'square';
+        gainHigh.gain.value = 0.4;
+        oscHigh.start(ctx.currentTime);
+        gainHigh.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.15);
+        gainHigh.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        oscHigh.stop(ctx.currentTime + 0.25);
+        sirenOscillators.push(oscHigh);
 
-    // Terceiro beep (agudo novamente)
-    const osc3 = ctx.createOscillator();
-    const gain3 = ctx.createGain();
-    osc3.connect(gain3);
-    gain3.connect(ctx.destination);
-    osc3.frequency.value = 880;
-    osc3.type = 'sine';
-    gain3.gain.value = 0.3;
-    osc3.start(ctx.currentTime + 0.38);
-    osc3.stop(ctx.currentTime + 0.55);
+        // Tom baixo (600Hz) - 0.25s depois
+        const oscLow = ctx.createOscillator();
+        const gainLow = ctx.createGain();
+        oscLow.connect(gainLow);
+        gainLow.connect(ctx.destination);
+        oscLow.frequency.value = 600;
+        oscLow.type = 'square';
+        gainLow.gain.value = 0.4;
+        oscLow.start(ctx.currentTime + 0.25);
+        gainLow.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.4);
+        gainLow.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        oscLow.stop(ctx.currentTime + 0.5);
+        sirenOscillators.push(oscLow);
+      } catch (e) {}
+    };
+
+    // Toca imediatamente
+    playCycle();
+
+    // Repete a cada 0.5 segundos
+    sirenInterval = setInterval(playCycle, 500);
   } catch (e) {
-    console.error('Erro ao tocar som:', e);
+    console.error('Erro ao iniciar sirene:', e);
   }
 };
 
@@ -59,6 +85,16 @@ const OrdersPage = () => {
   const navigate = useNavigate();
   const prevCountRef = useRef(0);
 
+  // Para a sirene quando soundEnabled muda
+  useEffect(() => {
+    if (!soundEnabled) stopSiren();
+  }, [soundEnabled]);
+
+  // Para a sirene ao desmontar o componente
+  useEffect(() => {
+    return () => stopSiren();
+  }, []);
+
   // Função para buscar pedidos
   const loadAvailableOrders = useCallback(async (playSound = false) => {
     try {
@@ -68,9 +104,14 @@ const OrdersPage = () => {
       setOrders(newOrders);
       setError('');
 
-      // Toca som se habilitado e houver novos pedidos
-      if (playSound && soundEnabled && newOrders.length > prevCountRef.current) {
-        playNotificationSound();
+      // Inicia sirene se houver novos pedidos e som habilitado
+      if (soundEnabled && newOrders.length > 0 && playSound) {
+        startSiren();
+      }
+
+      // Para sirene se nao ha pedidos
+      if (newOrders.length === 0) {
+        stopSiren();
       }
 
       prevCountRef.current = newOrders.length;
@@ -99,6 +140,7 @@ const OrdersPage = () => {
   const handleAcceptOrder = async (orderId) => {
     try {
       setAcceptingOrder(orderId);
+      stopSiren(); // Para a sirene ao aceitar
       await orderService.acceptOrder(orderId);
       setOrders(orders.filter(order => order.id !== orderId));
       // Usa window.location para evitar conflito DOM com React Router
@@ -144,10 +186,24 @@ const OrdersPage = () => {
             {!isLoading && <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>• atualiza a cada 10s</span>}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {/* Indicador de sirene ativa */}
+          {orders.length > 0 && (
+            <span style={{
+              padding: '0.375rem 0.75rem', borderRadius: '9999px',
+              background: '#fef2f2', color: '#dc2626',
+              fontSize: '0.75rem', fontWeight: 600,
+              animation: 'pulse-siren 1s ease-in-out infinite'
+            }}>
+              🔴 SIRENE ATIVA
+            </span>
+          )}
           {/* Botão de som */}
           <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={() => {
+              setSoundEnabled(!soundEnabled);
+              if (soundEnabled) stopSiren();
+            }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: '2.5rem', height: '2.5rem',
@@ -158,13 +214,13 @@ const OrdersPage = () => {
               cursor: 'pointer',
               transition: 'all 0.15s'
             }}
-            title={soundEnabled ? 'Som ativado' : 'Som desativado'}
+            title={soundEnabled ? 'Som ativado - clique para desligar' : 'Som desativado - clique para ligar'}
           >
             {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
           {/* Botão atualizar */}
           <button
-            onClick={() => loadAvailableOrders(false)}
+            onClick={() => loadAvailableOrders(true)}
             disabled={isLoading}
             style={{
               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -256,6 +312,10 @@ const OrdersPage = () => {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-siren {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.05); }
+        }
       `}</style>
     </div>
   );
