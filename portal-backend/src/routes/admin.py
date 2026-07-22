@@ -1,8 +1,8 @@
-﻿from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Payment, Delivery,
-    UserType, UserStatus, OrderStatus, PaymentStatus, db
+    Notification, UserType, UserStatus, OrderStatus, PaymentStatus, db
 )
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
