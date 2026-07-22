@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
@@ -33,9 +34,10 @@ import './App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <Routes>
           {/* Rotas públicas */}
           <Route 
             path="/login" 
@@ -292,6 +294,7 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
