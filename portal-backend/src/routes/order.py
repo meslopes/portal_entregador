@@ -449,6 +449,14 @@ def cancel_order(order_id):
 
         # Verifica permissao
         if user.user_type == UserType.CLIENT:
+            # Estabelecimento: verifica se cancelamento esta permitido
+            from src.models.portal_models import SystemConfig
+            allow_config = SystemConfig.query.filter_by(config_key='allow_establishment_cancel').first()
+            allow_cancel = allow_config.config_value if allow_config else 'true'
+            
+            if allow_cancel != 'true':
+                return jsonify({'error': 'Cancelamento não permitido pelo administrador'}), 403
+            
             customer_profile = Customer.query.filter_by(user_id=user.id).first()
             if not customer_profile:
                 return jsonify({'error': 'Perfil não encontrado'}), 404

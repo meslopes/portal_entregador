@@ -294,6 +294,13 @@ const EstablishmentSettings = ({ config, onChange }) => (
         <option value="false">Desativada (admin aprova manualmente)</option>
       </select>
     </FormField>
+    <FormField label="Permitir Cancelamento pelo Estabelecimento">
+      <select value={config.allow_establishment_cancel || 'true'} onChange={e => onChange('allow_establishment_cancel', e.target.value)} style={inputStyle}>
+        <option value="true">Permitido (estabelecimento pode cancelar pedidos)</option>
+        <option value="false">Não permitido (apenas admin pode cancelar)</option>
+      </select>
+      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Se desativado, o estabelecimento não poderá cancelar pedidos. Apenas o admin terá essa permissão.</p>
+    </FormField>
     <FormField label="Cobrança Semanal">
       <select value={config.weekly_billing || 'true'} onChange={e => onChange('weekly_billing', e.target.value)} style={inputStyle}>
         <option value="true">Ativada (faturas geradas toda segunda-feira)</option>
