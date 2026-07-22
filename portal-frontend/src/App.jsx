@@ -10,6 +10,7 @@ import OrdersPage from '@/pages/OrdersPage';
 import EarningsPage from '@/pages/EarningsPage';
 import HistoryPage from '@/pages/HistoryPage';
 import ActiveDeliveryPage from '@/pages/ActiveDeliveryPage';
+import DriverRankingPage from '@/pages/DriverRankingPage';
 import ClientLoginPage from '@/pages/client/ClientLoginPage';
 import ClientRegisterPage from '@/pages/client/ClientRegisterPage';
 import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
@@ -99,6 +100,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <ActiveDeliveryPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ranking"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <DriverRankingPage />
                 </Layout>
               </ProtectedRoute>
             }

@@ -111,6 +111,16 @@ export const driverService = {
     });
     return response.data;
   },
+
+  getRanking: async () => {
+    const response = await api.get('/api/driver/ranking');
+    return response.data;
+  },
+
+  getAchievements: async () => {
+    const response = await api.get('/api/driver/achievements');
+    return response.data;
+  },
 };
 
 // Serviços de pedidos
