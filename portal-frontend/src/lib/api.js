@@ -316,6 +316,22 @@ export const adminService = {
     return response.data;
   },
 
+  // Aprovacao de cadastros
+  getPendingUsers: async () => {
+    const response = await api.get('/api/admin/pending-users');
+    return response.data;
+  },
+
+  approveUser: async (userId) => {
+    const response = await api.post(`/api/admin/users/${userId}/approve`);
+    return response.data;
+  },
+
+  rejectUser: async (userId) => {
+    const response = await api.post(`/api/admin/users/${userId}/reject`);
+    return response.data;
+  },
+
   // Relatórios
   getOrdersByDate: async (days = 30) => {
     const response = await api.get('/api/admin/reports/orders-by-date', { params: { days } });

@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Payment, Delivery,
-    UserType, OrderStatus, PaymentStatus, db
+    UserType, UserStatus, OrderStatus, PaymentStatus, db
 )
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
@@ -20,6 +20,118 @@ def admin_required(f):
             return jsonify({'error': 'Acesso restrito a administradores'}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+
+# ============================================
+# APROVACAO DE CADASTROS
+# ============================================
+
+@admin_bp.route('/pending-users', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_pending_users():
+    """Lista usuarios pendentes de aprovacao"""
+    try:
+        pending = User.query.filter_by(status=UserStatus.INACTIVE).all()
+        users_data = []
+        for user in pending:
+            user_dict = user.to_dict()
+            if user.user_type == UserType.DRIVER:
+                driver = Driver.query.filter_by(user_id=user.id).first()
+                if driver:
+                    user_dict['driver'] = driver.to_dict()
+            elif user.user_type == UserType.CLIENT:
+                customer = Customer.query.filter_by(user_id=user.id).first()
+                if customer:
+                    user_dict['customer'] = customer.to_dict()
+            users_data.append(user_dict)
+
+        return jsonify({'users': users_data, 'count': len(users_data)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/approve', methods=['POST'])
+@jwt_required()
+@admin_required
+def approve_user(user_id):
+    """Aprova o cadastro de um usuario"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        if user.status != UserStatus.INACTIVE:
+            return jsonify({'error': 'Usuário não está pendente'}), 400
+
+        user.status = UserStatus.ACTIVE
+        user.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        # Notifica o usuario
+        try:
+            from src.services.whatsapp import whatsapp_service
+            if whatsapp_service.is_configured() and user.phone:
+                whatsapp_service.send_message(
+                    user.phone,
+                    f"✅ *Conta Aprovada!*\n\n"
+                    f"Olá {user.first_name}, sua conta no muv.log foi aprovada!\n"
+                    f"Agora você pode fazer login e acessar o sistema."
+                )
+        except Exception:
+            pass
+
+        return jsonify({'message': 'Usuário aprovado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/reject', methods=['POST'])
+@jwt_required()
+@admin_required
+def reject_user(user_id):
+    """Rejeita o cadastro de um usuario"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        if user.status != UserStatus.INACTIVE:
+            return jsonify({'error': 'Usuário não está pendente'}), 400
+
+        # Notifica o usuario antes de excluir
+        try:
+            from src.services.whatsapp import whatsapp_service
+            if whatsapp_service.is_configured() and user.phone:
+                whatsapp_service.send_message(
+                    user.phone,
+                    f"❌ *Cadastro Rejeitado*\n\n"
+                    f"Olá {user.first_name}, seu cadastro no muv.log não foi aprovado.\n"
+                    f"Entre em contato com o suporte para mais informações."
+                )
+        except Exception:
+            pass
+
+        # Exclui o usuario
+        user_type = user.user_type
+        if user_type == UserType.DRIVER:
+            driver = Driver.query.filter_by(user_id=user.id).first()
+            if driver:
+                db.session.delete(driver)
+        elif user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                db.session.delete(customer)
+
+        db.session.delete(user)
+        db.session.commit()
+
+        return jsonify({'message': 'Usuário rejeitado e excluído'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 
 @admin_bp.route('/dashboard', methods=['GET'])
 @jwt_required()

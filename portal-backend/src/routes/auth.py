@@ -81,7 +81,7 @@ def register():
             cpf=data.get('cpf'),
             birth_date=None,
             user_type=UserType.DRIVER,
-            status=UserStatus.ACTIVE
+            status=UserStatus.INACTIVE  # Pendente de aprovacao
         )
         user.set_password(password)
 
@@ -210,6 +210,12 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if user and check_password_hash(user.password_hash, password):
+        # Verifica se o usuario esta ativo
+        if user.status == UserStatus.INACTIVE:
+            return jsonify({'error': 'Sua conta está pendente de aprovação. Aguarde o administrador liberar seu acesso.'}), 403
+        if user.status == UserStatus.SUSPENDED:
+            return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
+
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
         return jsonify(access_token=access_token, user=user_data), 200

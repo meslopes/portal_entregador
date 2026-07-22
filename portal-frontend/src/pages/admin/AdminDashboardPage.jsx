@@ -9,6 +9,7 @@ import { adminService, utils } from '@/lib/api';
 const AdminDashboardPage = () => {
   const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const mapRef = useRef(null);
@@ -18,6 +19,7 @@ const AdminDashboardPage = () => {
   useEffect(() => {
     loadDashboard();
     loadTracking();
+    loadPendingUsers();
     // Auto-refresh tracking a cada 15 segundos
     const interval = setInterval(loadTracking, 15000);
     return () => clearInterval(interval);
@@ -33,6 +35,36 @@ const AdminDashboardPage = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingUsers = async () => {
+    try {
+      const data = await adminService.getPendingUsers();
+      setPendingUsers(data.users || []);
+    } catch (err) {
+      console.error('Erro ao carregar pendentes:', err);
+    }
+  };
+
+  const handleApprove = async (userId) => {
+    try {
+      await adminService.approveUser(userId);
+      setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+      loadDashboard();
+    } catch (err) {
+      alert('Erro ao aprovar: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleReject = async (userId) => {
+    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    try {
+      await adminService.rejectUser(userId);
+      setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+      loadDashboard();
+    } catch (err) {
+      alert('Erro ao rejeitar: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -223,6 +255,37 @@ const AdminDashboardPage = () => {
         <StatCard icon={<Package size={22} />} iconBg="#f3e8ff" iconColor="#9333ea" label="Total Pedidos" value={dashboard?.total_orders || 0} />
         <StatCard icon={<DollarSign size={22} />} iconBg="#fef3c7" iconColor="#d97706" label="Receita Hoje" value={utils.formatCurrency(dashboard?.today_revenue || 0)} />
       </div>
+
+      {/* Usuarios Pendentes */}
+      {pendingUsers.length > 0 && (
+        <div style={{ background: '#fef3c7', borderRadius: '0.75rem', border: '1px solid #fcd34d', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <AlertCircle size={18} style={{ color: '#d97706' }} />
+            <span style={{ fontWeight: 600, color: '#92400e' }}>{pendingUsers.length} cadastro(s) pendente(s) de aprovação</span>
+          </div>
+          {pendingUsers.map(user => (
+            <div key={user.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '0.5rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: user.user_type === 'DRIVER' ? '#dbeafe' : '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {user.user_type === 'DRIVER' ? <Truck size={14} style={{ color: '#2563eb' }} /> : <Store size={14} style={{ color: '#0d9488' }} />}
+                </div>
+                <div>
+                  <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{user.first_name} {user.last_name}</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{user.email} • {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => handleApprove(user.id)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#22c55e', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                  ✓ Aprovar
+                </button>
+                <button onClick={() => handleReject(user.id)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#ef4444', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                  ✕ Rejeitar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Mapa + Tracking */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '1rem', marginBottom: '1.5rem' }} className="dashboard-grid">
