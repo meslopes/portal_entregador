@@ -1,31 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Navigation,
   Store, User, AlertCircle, RefreshCw, ChevronRight,
-  Phone, Bike, ShoppingCart, ArrowRight
+  Phone, Bike, ShoppingCart, ArrowRight, Volume2, VolumeX
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
+
+// Gera som de notificação usando Web Audio API (sem arquivo externo)
+const playNotificationSound = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Primeiro beep (agudo)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.frequency.value = 880;
+    osc1.type = 'sine';
+    gain1.gain.value = 0.3;
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.15);
+
+    // Segundo beep (mais agudo)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.frequency.value = 1100;
+    osc2.type = 'sine';
+    gain2.gain.value = 0.3;
+    osc2.start(ctx.currentTime + 0.18);
+    osc2.stop(ctx.currentTime + 0.35);
+
+    // Terceiro beep (agudo novamente)
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.connect(gain3);
+    gain3.connect(ctx.destination);
+    osc3.frequency.value = 880;
+    osc3.type = 'sine';
+    gain3.gain.value = 0.3;
+    osc3.start(ctx.currentTime + 0.38);
+    osc3.stop(ctx.currentTime + 0.55);
+  } catch (e) {
+    console.error('Erro ao tocar som:', e);
+  }
+};
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [acceptingOrder, setAcceptingOrder] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [lastOrderCount, setLastOrderCount] = useState(0);
   const navigate = useNavigate();
+  const prevCountRef = useRef(0);
 
-  useEffect(() => {
-    loadAvailableOrders();
-    const interval = setInterval(loadAvailableOrders, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadAvailableOrders = async () => {
+  // Função para buscar pedidos
+  const loadAvailableOrders = useCallback(async (playSound = false) => {
     try {
       setIsLoading(true);
       const response = await orderService.getAvailableOrders();
-      setOrders(response.orders || []);
+      const newOrders = response.orders || [];
+      setOrders(newOrders);
       setError('');
+
+      // Toca som se habilitado e houver novos pedidos
+      if (playSound && soundEnabled && newOrders.length > prevCountRef.current && prevCountRef.current > 0) {
+        playNotificationSound();
+      }
+
+      prevCountRef.current = newOrders.length;
+      setLastOrderCount(newOrders.length);
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
       const msg = error.response?.data?.error || error.message || 'Erro ao carregar pedidos';
@@ -33,7 +82,19 @@ const OrdersPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    // Carrega na inicialização
+    loadAvailableOrders(false);
+
+    // Polling a cada 10 segundos com som
+    const interval = setInterval(() => {
+      loadAvailableOrders(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [loadAvailableOrders]);
 
   const handleAcceptOrder = async (orderId) => {
     try {
@@ -80,27 +141,48 @@ const OrdersPage = () => {
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
             {orders.length} pedido{orders.length !== 1 ? 's' : ''} disponível{orders.length !== 1 ? 'eis' : ''} na sua região
+            {!isLoading && <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>• atualiza a cada 10s</span>}
           </p>
         </div>
-        <button
-          onClick={loadAvailableOrders}
-          disabled={isLoading}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.625rem 1.25rem',
-            borderRadius: '0.5rem',
-            border: '1px solid #e2e8f0',
-            background: 'white',
-            color: '#475569',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            cursor: 'pointer',
-            transition: 'all 0.15s'
-          }}
-        >
-          <RefreshCw size={16} style={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
-          Atualizar
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* Botão de som */}
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '2.5rem', height: '2.5rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0',
+              background: soundEnabled ? '#dcfce7' : 'white',
+              color: soundEnabled ? '#16a34a' : '#94a3b8',
+              cursor: 'pointer',
+              transition: 'all 0.15s'
+            }}
+            title={soundEnabled ? 'Som ativado' : 'Som desativado'}
+          >
+            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
+          {/* Botão atualizar */}
+          <button
+            onClick={() => loadAvailableOrders(false)}
+            disabled={isLoading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.625rem 1.25rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0',
+              background: 'white',
+              color: '#475569',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.15s'
+            }}
+          >
+            <RefreshCw size={16} style={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
+            Atualizar
+          </button>
+        </div>
       </div>
 
       {/* Erro */}
