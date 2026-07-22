@@ -189,9 +189,10 @@ def update_order_status(order_id):
         
         # Validações de transição de status
         valid_transitions = {
-            OrderStatus.ACCEPTED: [OrderStatus.PREPARING],
-            OrderStatus.PREPARING: [OrderStatus.READY],
-            OrderStatus.READY: [OrderStatus.PICKED_UP],
+            OrderStatus.PENDING: [OrderStatus.CANCELLED],
+            OrderStatus.ACCEPTED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
+            OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
+            OrderStatus.READY: [OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
             OrderStatus.PICKED_UP: [OrderStatus.DELIVERED]
         }
         
@@ -253,7 +254,8 @@ def update_order_status(order_id):
             OrderStatus.PREPARING: "Seu pedido está sendo preparado",
             OrderStatus.READY: "Seu pedido está pronto para retirada",
             OrderStatus.PICKED_UP: "Seu pedido foi coletado e está a caminho",
-            OrderStatus.DELIVERED: "Seu pedido foi entregue"
+            OrderStatus.DELIVERED: "Seu pedido foi entregue",
+            OrderStatus.CANCELLED: "Seu pedido foi cancelado"
         }
 
         if new_status_enum in status_messages:
@@ -271,7 +273,14 @@ def update_order_status(order_id):
                     related_id=order.id
                 )
                 db.session.add(notification)
-        
+
+        # Logica de cancelamento
+        if new_status_enum == OrderStatus.CANCELLED:
+            if order.driver_id:
+                order.driver_id = None
+            if order.delivery:
+                db.session.delete(order.delivery)
+
         db.session.commit()
         
         return jsonify({
@@ -279,6 +288,64 @@ def update_order_status(order_id):
             'order': order.to_dict()
         }), 200
         
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@order_bp.route('/<int:order_id>/cancel', methods=['POST'])
+@jwt_required()
+def cancel_order(order_id):
+    """Cancela um pedido (pelo estabelecimento ou admin)"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
+        # Verifica permissao
+        if user.user_type == UserType.CLIENT:
+            customer_profile = Customer.query.filter_by(user_id=user.id).first()
+            if not customer_profile:
+                return jsonify({'error': 'Perfil não encontrado'}), 404
+            restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+            if not restaurant or order.restaurant_id != restaurant.id:
+                return jsonify({'error': 'Pedido não pertence a este estabelecimento'}), 403
+        elif user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Sem permissão para cancelar'}), 403
+
+        # Verifica se pode cancelar
+        cancelable_statuses = [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]
+        if order.status not in cancelable_statuses:
+            return jsonify({'error': f'Não é possível cancelar pedido com status {order.status.value}'}), 400
+
+        # Cancela
+        order.status = OrderStatus.CANCELLED
+        order.updated_at = datetime.utcnow()
+        order.driver_id = None
+
+        if order.delivery:
+            db.session.delete(order.delivery)
+
+        # Notifica
+        if order.customer and order.customer.user_id:
+            notification = Notification(
+                user_id=order.customer.user_id,
+                title="Pedido cancelado",
+                message=f"O pedido #{order.order_number} foi cancelado",
+                type=NotificationType.ORDER_UPDATE,
+                related_id=order.id
+            )
+            db.session.add(notification)
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Pedido cancelado com sucesso',
+            'order': order.to_dict()
+        }), 200
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

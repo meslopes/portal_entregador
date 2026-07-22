@@ -180,6 +180,11 @@ export const orderService = {
     const response = await api.post(`/api/orders/${orderId}/rate`, { rating, feedback });
     return response.data;
   },
+
+  cancelOrder: async (orderId) => {
+    const response = await api.post(`/api/orders/${orderId}/cancel`);
+    return response.data;
+  },
 };
 
 // Serviços administrativos

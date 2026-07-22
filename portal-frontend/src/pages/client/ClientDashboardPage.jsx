@@ -391,6 +391,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
   } catch (e) {}
 
   const canRate = order.status === 'DELIVERED' && !order.delivery?.customer_rating;
+  const canCancel = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status);
 
   return (
     <div style={{
@@ -528,6 +529,31 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Botao cancelar */}
+          {canCancel && (
+            <button
+              onClick={async () => {
+                if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) return;
+                try {
+                  await orderService.cancelOrder(order.id);
+                  onClose();
+                  window.location.reload();
+                } catch (err) {
+                  alert(err.response?.data?.error || 'Erro ao cancelar');
+                }
+              }}
+              style={{
+                width: '100%', padding: '0.875rem', borderRadius: '0.5rem',
+                border: '2px solid #fecaca', background: '#fef2f2',
+                color: '#dc2626', fontSize: '0.9375rem', fontWeight: 600,
+                cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem'
+              }}
+            >
+              ✕ Cancelar Pedido
+            </button>
           )}
 
           {/* Botao avaliar */}
