@@ -1009,6 +1009,181 @@ def report_financial_summary():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/reports/cancellations', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_cancellations():
+    """Relatório de cancelamentos"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        # Cancelamentos por dia
+        daily_cancellations = db.session.query(
+            func.date(Order.updated_at).label('date'),
+            func.count(Order.id).label('count')
+        ).filter(
+            Order.status == OrderStatus.CANCELLED,
+            Order.updated_at >= start_date
+        ).group_by(func.date(Order.updated_at)).order_by(
+            func.date(Order.updated_at)
+        ).all()
+
+        total_cancellations = sum(c.count for c in daily_cancellations)
+        total_orders = Order.query.filter(Order.created_at >= start_date).count()
+        cancel_rate = round(total_cancellations / total_orders * 100, 1) if total_orders > 0 else 0
+
+        return jsonify({
+            'daily': [{'date': c.date.isoformat(), 'count': c.count} for c in daily_cancellations],
+            'total_cancellations': total_cancellations,
+            'total_orders': total_orders,
+            'cancel_rate': cancel_rate
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/reports/ratings', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_ratings():
+    """Relatório de avaliações dos entregadores"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        # Avaliacoes por entregador
+        ratings = db.session.query(
+            Driver.id,
+            User.first_name,
+            User.last_name,
+            func.avg(Delivery.customer_rating).label('avg_rating'),
+            func.count(Delivery.id).label('total_ratings'),
+            func.sum(func.cast(Delivery.customer_rating > 3, db.Integer)).label('positive'),
+            func.sum(func.cast(Delivery.customer_rating <= 2, db.Integer)).label('negative')
+        ).join(User).join(Delivery).filter(
+            Delivery.customer_rating.isnot(None),
+            Delivery.created_at >= start_date
+        ).group_by(Driver.id, User.first_name, User.last_name).order_by(
+            func.avg(Delivery.customer_rating).desc()
+        ).all()
+
+        # Distribuicao geral
+        dist = db.session.query(
+            Delivery.customer_rating,
+            func.count(Delivery.id).label('count')
+        ).filter(
+            Delivery.customer_rating.isnot(None),
+            Delivery.created_at >= start_date
+        ).group_by(Delivery.customer_rating).all()
+
+        return jsonify({
+            'drivers': [
+                {
+                    'id': r.id,
+                    'name': f"{r.first_name} {r.last_name}",
+                    'avg_rating': round(float(r.avg_rating), 2),
+                    'total_ratings': r.total_ratings,
+                    'positive': r.positive or 0,
+                    'negative': r.negative or 0
+                }
+                for r in ratings
+            ],
+            'distribution': {str(d.customer_rating): d.count for d in dist}
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/reports/peak-hours', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_peak_hours():
+    """Relatório de horários de pico"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        # Pedidos por hora do dia
+        hourly = db.session.query(
+            func.extract('hour', Order.created_at).label('hour'),
+            func.count(Order.id).label('count')
+        ).filter(
+            Order.created_at >= start_date
+        ).group_by(func.extract('hour', Order.created_at)).order_by(
+            func.extract('hour', Order.created_at)
+        ).all()
+
+        # Pedidos por dia da semana
+        daily = db.session.query(
+            func.extract('dow', Order.created_at).label('day'),
+            func.count(Order.id).label('count')
+        ).filter(
+            Order.created_at >= start_date
+        ).group_by(func.extract('dow', Order.created_at)).order_by(
+            func.extract('dow', Order.created_at)
+        ).all()
+
+        day_names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+        return jsonify({
+            'hourly': [{'hour': int(h.hour), 'count': h.count} for h in hourly],
+            'daily': [{'day': day_names[int(d.day)], 'count': d.count} for d in daily]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/reports/deliveries-by-driver', methods=['GET'])
+@jwt_required()
+@admin_required
+def report_deliveries_by_driver():
+    """Relatório detalhado de entregas por entregador"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.utcnow() - timedelta(days=days)
+
+        drivers = db.session.query(
+            Driver.id,
+            User.first_name,
+            User.last_name,
+            Driver.vehicle_type,
+            func.count(Order.id).label('deliveries'),
+            func.sum(Order.delivery_fee).label('total_fees'),
+            func.avg(Order.total_amount).label('avg_order'),
+            func.avg(Delivery.distance_km).label('avg_distance'),
+            func.avg(Delivery.customer_rating).label('avg_rating')
+        ).join(User).outerjoin(Order, db.and_(
+            Order.driver_id == Driver.id,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        )).outerjoin(Delivery, Delivery.order_id == Order.id).group_by(
+            Driver.id, User.first_name, User.last_name, Driver.vehicle_type
+        ).order_by(func.count(Order.id).desc()).all()
+
+        return jsonify({
+            'drivers': [
+                {
+                    'id': d.id,
+                    'name': f"{d.first_name} {d.last_name}",
+                    'vehicle': d.vehicle_type.value if d.vehicle_type else '-',
+                    'deliveries': d.deliveries or 0,
+                    'total_fees': float(d.total_fees or 0),
+                    'avg_order': round(float(d.avg_order or 0), 2),
+                    'avg_distance': round(float(d.avg_distance or 0), 2),
+                    'avg_rating': round(float(d.avg_rating), 2) if d.avg_rating else None
+                }
+                for d in drivers
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ============================================
 # CONFIGURACOES DO ADMIN
 # ============================================

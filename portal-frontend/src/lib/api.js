@@ -300,6 +300,26 @@ export const adminService = {
     const response = await api.get('/api/admin/reports/financial-summary', { params: { days } });
     return response.data;
   },
+
+  getCancellations: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/cancellations', { params: { days } });
+    return response.data;
+  },
+
+  getRatings: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/ratings', { params: { days } });
+    return response.data;
+  },
+
+  getPeakHours: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/peak-hours', { params: { days } });
+    return response.data;
+  },
+
+  getDeliveriesByDriver: async (days = 30) => {
+    const response = await api.get('/api/admin/reports/deliveries-by-driver', { params: { days } });
+    return response.data;
+  },
 };
 
 // Utilitários
