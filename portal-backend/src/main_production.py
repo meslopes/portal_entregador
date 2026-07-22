@@ -72,6 +72,9 @@ def create_app(config_name=None):
     app.register_blueprint(order_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     
+    from src.routes.webhooks import webhook_bp
+    app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
+    
     # Criar tabelas do banco de dados
     with app.app_context():
         db.create_all()

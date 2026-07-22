@@ -17,6 +17,7 @@ from src.routes.auth import auth_bp
 from src.routes.driver import driver_bp
 from src.routes.order import order_bp
 from src.routes.admin import admin_bp
+from src.routes.webhooks import webhook_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.url_map.strict_slashes = False
@@ -52,6 +53,7 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(driver_bp, url_prefix='/api/driver')
 app.register_blueprint(order_bp, url_prefix='/api/orders')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
+app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 
 # Inicializa banco de dados
 db.init_app(app)
