@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Truck, MapPin, DollarSign, Clock, Star, Package,
-  TrendingUp, AlertCircle, Navigation, Zap, ArrowRight
+  TrendingUp, AlertCircle, Navigation, Zap, ArrowRight, Bell, BellOff
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { driverService, orderService, utils } from '@/lib/api';
+import {
+  startOrderMonitor, stopOrderMonitor,
+  setSoundEnabled, getSoundEnabled,
+  requestNotificationPermission
+} from '@/lib/notify';
 
 const DashboardPage = () => {
   const { user, updateUser } = useAuth();
@@ -81,6 +86,12 @@ const DashboardPage = () => {
     if (isOnline && location) interval = setInterval(updateLocation, 30000);
     return () => { if (interval) clearInterval(interval); };
   }, [isOnline, location]);
+
+  // Monitor de pedidos (sirene + notificacao)
+  useEffect(() => {
+    startOrderMonitor(null);
+    return () => stopOrderMonitor();
+  }, []);
 
   if (isLoading) {
     return (
