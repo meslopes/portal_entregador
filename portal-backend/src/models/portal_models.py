@@ -156,6 +156,11 @@ class Restaurant(db.Model):
     longitude = db.Column(db.Numeric(11, 8), nullable=False)
     opening_hours = db.Column(db.JSON)
     is_active = db.Column(db.Boolean, default=True)
+    # Dados bancarios
+    bank_name = db.Column(db.String(100))
+    bank_agency = db.Column(db.String(20))
+    bank_account = db.Column(db.String(30))
+    bank_pix_key = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -174,6 +179,10 @@ class Restaurant(db.Model):
             'longitude': float(self.longitude) if self.longitude else None,
             'opening_hours': self.opening_hours,
             'is_active': self.is_active,
+            'bank_name': self.bank_name,
+            'bank_agency': self.bank_agency,
+            'bank_account': self.bank_account,
+            'bank_pix_key': self.bank_pix_key,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

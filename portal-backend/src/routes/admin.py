@@ -1008,3 +1008,135 @@ def report_financial_summary():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# CONFIGURACOES DO ADMIN
+# ============================================
+
+@admin_bp.route('/settings', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_settings():
+    """Obtém configurações do admin"""
+    try:
+        from src.models.portal_models import SystemConfig
+        configs = SystemConfig.query.all()
+        settings = {c.config_key: c.config_value for c in configs}
+        return jsonify(settings), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/settings', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_settings():
+    """Atualiza configurações do admin"""
+    try:
+        from src.models.portal_models import SystemConfig
+        data = request.get_json()
+
+        for key, value in data.items():
+            config = SystemConfig.query.filter_by(config_key=key).first()
+            if config:
+                config.config_value = str(value)
+                config.updated_at = datetime.utcnow()
+            else:
+                config = SystemConfig(config_key=key, config_value=str(value))
+                db.session.add(config)
+
+        db.session.commit()
+        return jsonify({'message': 'Configurações salvas com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# CONTROLE DE PAGAMENTOS AOS ENTREGADORES
+# ============================================
+
+@admin_bp.route('/driver-payments', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_driver_payments():
+    """Lista o que cada entregador deve receber"""
+    try:
+        drivers = db.session.query(
+            Driver.id,
+            User.first_name,
+            User.last_name,
+            User.email,
+            func.sum(Payment.amount).label('total_earnings'),
+            func.count(Payment.id).label('payment_count')
+        ).join(User).outerjoin(
+            Payment, db.and_(Payment.driver_id == Driver.id, Payment.status == PaymentStatus.PENDING)
+        ).group_by(Driver.id, User.first_name, User.last_name, User.email).all()
+
+        drivers_data = []
+        for d in drivers:
+            driver = Driver.query.get(d.id)
+            drivers_data.append({
+                'id': d.id,
+                'name': f"{d.first_name} {d.last_name}",
+                'email': d.email,
+                'pix_key': driver.pix_key if driver else None,
+                'bank_account': driver.bank_account if driver else None,
+                'pending_amount': float(d.total_earnings or 0),
+                'pending_payments': d.payment_count or 0,
+                'rating': float(driver.rating) if driver and driver.rating else None,
+                'total_deliveries': driver.total_deliveries if driver else 0
+            })
+
+        # Ordena por valor pendente (maior primeiro)
+        drivers_data.sort(key=lambda x: x['pending_amount'], reverse=True)
+
+        total_pending = sum(d['pending_amount'] for d in drivers_data)
+
+        return jsonify({
+            'drivers': drivers_data,
+            'total_pending': total_pending,
+            'total_drivers': len(drivers_data)
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/driver-payments/<int:driver_id>/pay', methods=['POST'])
+@jwt_required()
+@admin_required
+def pay_driver(driver_id):
+    """Registra pagamento ao entregador"""
+    try:
+        driver = Driver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        # Marca pagamentos pendentes como processados
+        pending_payments = Payment.query.filter_by(
+            driver_id=driver_id,
+            status=PaymentStatus.PENDING
+        ).all()
+
+        if not pending_payments:
+            return jsonify({'error': 'Nenhum pagamento pendente'}), 400
+
+        total = sum(float(p.amount) for p in pending_payments)
+
+        for payment in pending_payments:
+            payment.status = PaymentStatus.PROCESSED
+            payment.processed_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Pagamento de {total:.2f} registrado com sucesso',
+            'total_paid': total,
+            'payments_processed': len(pending_payments)
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+

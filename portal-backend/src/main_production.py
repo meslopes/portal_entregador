@@ -93,6 +93,16 @@ def create_app(config_name=None):
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+        # Migration: adicionar colunas bancarias na tabela restaurants
+        for col in ['bank_name', 'bank_agency', 'bank_account', 'bank_pix_key']:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = '{col}') THEN ALTER TABLE restaurants ADD COLUMN {col} VARCHAR(100); END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
     
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
