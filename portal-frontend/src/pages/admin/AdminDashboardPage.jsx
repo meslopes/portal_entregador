@@ -12,6 +12,7 @@ const AdminDashboardPage = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [mapError, setMapError] = useState(false);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -78,43 +79,53 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Inicializa o mapa
+  // Inicializa o mapa (de forma segura)
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    // Carrega Leaflet dinamicamente
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
+    let cancelled = false;
 
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => {
+    const initMap = () => {
       try {
-        if (mapRef.current && !mapInstanceRef.current && window.L) {
-          const L = window.L;
-          mapInstanceRef.current = L.map(mapRef.current, {
-            zoomControl: true,
-            scrollWheelZoom: true
-          }).setView([-29.95, -50.45], 12);
+        if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+        if (!window.L) return;
 
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-          }).addTo(mapInstanceRef.current);
-        }
+        const L = window.L;
+        mapInstanceRef.current = L.map(mapRef.current, {
+          zoomControl: true,
+          scrollWheelZoom: true
+        }).setView([-29.95, -50.45], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(mapInstanceRef.current);
       } catch (e) {
         console.error('Erro ao inicializar mapa:', e);
       }
     };
-    script.onerror = () => {
-      console.error('Erro ao carregar Leaflet');
-    };
-    document.head.appendChild(script);
+
+    // Carrega Leaflet dinamicamente
+    if (!document.querySelector('link[href*="leaflet"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+
+    if (!window.L) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = initMap;
+      script.onerror = () => { console.error('Erro ao carregar Leaflet'); setMapError(true); };
+      document.head.appendChild(script);
+    } else {
+      initMap();
+    }
 
     return () => {
+      cancelled = true;
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try { mapInstanceRef.current.remove(); } catch (e) {}
         mapInstanceRef.current = null;
       }
     };
@@ -305,7 +316,9 @@ const AdminDashboardPage = () => {
             </div>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
           </div>
-          <div ref={mapRef} style={{ height: '400px', background: '#e5e7eb' }} />
+          <div ref={mapRef} style={{ height: '400px', background: '#e5e7eb', display: mapError ? 'flex' : 'block', alignItems: mapError ? 'center' : undefined, justifyContent: mapError ? 'center' : undefined }}>
+            {mapError && <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Mapa não disponível</p>}
+          </div>
         </div>
 
         {/* Lista de entregadores online */}
