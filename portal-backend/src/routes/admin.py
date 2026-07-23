@@ -1251,6 +1251,16 @@ def create_establishment():
             db.session.add(user)
             db.session.flush()
 
+            # Cria Customer record (necessario para criar pedidos)
+            customer = Customer(
+                user_id=user.id,
+                name=data['name'],
+                phone=data.get('phone', ''),
+                email=email
+            )
+            db.session.add(customer)
+            db.session.flush()
+
         establishment = Restaurant(
             name=data['name'],
             cnpj=data.get('cnpj'),
