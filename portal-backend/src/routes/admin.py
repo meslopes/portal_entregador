@@ -1736,7 +1736,11 @@ def create_square():
             name=data['name'],
             city=data['city'],
             state=data['state'],
-            is_active=data.get('is_active', True)
+            is_active=data.get('is_active', True),
+            price_per_km=data.get('price_per_km', 2.95),
+            min_delivery_fee=data.get('min_delivery_fee', 5.00),
+            max_delivery_fee=data.get('max_delivery_fee', 50.00),
+            driver_km_bonus=data.get('driver_km_bonus', 0.50)
         )
         db.session.add(square)
         db.session.commit()
@@ -1767,6 +1771,14 @@ def update_square(square_id):
             square.state = data['state']
         if 'is_active' in data:
             square.is_active = data['is_active']
+        if data.get('price_per_km') is not None:
+            square.price_per_km = data['price_per_km']
+        if data.get('min_delivery_fee') is not None:
+            square.min_delivery_fee = data['min_delivery_fee']
+        if data.get('max_delivery_fee') is not None:
+            square.max_delivery_fee = data['max_delivery_fee']
+        if data.get('driver_km_bonus') is not None:
+            square.driver_km_bonus = data['driver_km_bonus']
 
         square.updated_at = datetime.utcnow()
         db.session.commit()

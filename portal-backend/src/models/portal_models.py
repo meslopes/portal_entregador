@@ -426,6 +426,11 @@ class Square(db.Model):
     city = db.Column(db.String(100), nullable=False)
     state = db.Column(db.String(2), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    # Tabela de precos por km
+    price_per_km = db.Column(db.Numeric(10, 2), default=2.95)
+    min_delivery_fee = db.Column(db.Numeric(10, 2), default=5.00)
+    max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
+    driver_km_bonus = db.Column(db.Numeric(10, 2), default=0.50)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -440,6 +445,10 @@ class Square(db.Model):
             'city': self.city,
             'state': self.state,
             'is_active': self.is_active,
+            'price_per_km': float(self.price_per_km) if self.price_per_km else 2.95,
+            'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else 5.00,
+            'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
+            'driver_km_bonus': float(self.driver_km_bonus) if self.driver_km_bonus else 0.50,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

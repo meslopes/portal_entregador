@@ -61,8 +61,11 @@ const AdminFinancePage = () => {
   };
 
   // Calculos financeiros
-  const totalFromEstablishments = data?.revenue || 0;
+  // O que estabelecimentos pagaram (frete total)
+  const totalFromEstablishments = data?.total_delivery_fees || 0;
+  // O que entregadores devem receber (pagamentos pendentes + processados)
   const totalToDrivers = driverPayments?.total_pending || 0;
+  // Lucro do admin (frete - o que vai pros entregadores)
   const adminRetention = totalFromEstablishments - totalToDrivers;
   const retentionRate = totalFromEstablishments > 0 ? ((adminRetention / totalFromEstablishments) * 100).toFixed(1) : 0;
 
