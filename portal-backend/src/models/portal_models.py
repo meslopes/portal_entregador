@@ -59,7 +59,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20), unique=True)
+    phone = db.Column(db.String(20))
     cpf = db.Column(db.String(14), unique=True)
     birth_date = db.Column(db.Date)
     profile_picture_url = db.Column(db.String(500))

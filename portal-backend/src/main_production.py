@@ -135,6 +135,15 @@ def create_app(config_name=None):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+        # Migration: remover unique constraint do phone (permitir duplicata entre tipos)
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_phone_key') THEN ALTER TABLE users DROP CONSTRAINT users_phone_key; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
     
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
