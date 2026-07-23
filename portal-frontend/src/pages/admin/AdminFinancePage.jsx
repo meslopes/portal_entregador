@@ -60,10 +60,10 @@ const AdminFinancePage = () => {
     }
   };
 
-  // Calculos financeiros
-  // O que estabelecimentos pagaram (frete total)
+  // Calculos financeiros - baseado em FRETE (km), NAO em valor dos itens
+  // Frete total cobrado dos estabelecimentos
   const totalFromEstablishments = data?.total_delivery_fees || 0;
-  // O que entregadores devem receber (pagamentos pendentes + processados)
+  // O que entregadores devem receber
   const totalToDrivers = driverPayments?.total_pending || 0;
   // Lucro do admin (frete - o que vai pros entregadores)
   const adminRetention = totalFromEstablishments - totalToDrivers;
@@ -115,7 +115,7 @@ const AdminFinancePage = () => {
             <div style={{ background: '#f0fdf4', borderRadius: '0.75rem', padding: '1.25rem', border: '1px solid #bbf7d0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <ArrowDownRight size={18} style={{ color: '#16a34a' }} />
-                <span style={{ fontSize: '0.8125rem', color: '#16a34a', fontWeight: 500 }}>Recebido (Estabelecimentos)</span>
+                <span style={{ fontSize: '0.8125rem', color: '#16a34a', fontWeight: 500 }}>Frete Cobrado (Estabelecimentos)</span>
               </div>
               <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#166534' }}>{utils.formatCurrency(totalFromEstablishments)}</p>
               <p style={{ fontSize: '0.6875rem', color: '#16a34a', marginTop: '0.25rem' }}>Frete total cobrado</p>
