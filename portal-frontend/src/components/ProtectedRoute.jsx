@@ -18,9 +18,9 @@ const ProtectedRoute = ({ children, requireAuth = true, redirectTo = '/login' })
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
+  // Se requireAuth=false, NAO redireciona usuario logado (permite acesso a paginas publicas)
   if (!requireAuth && isAuthenticated) {
-    const defaultRoute = user?.user_type === 'ADMIN' ? '/admin' : user?.user_type === 'CLIENT' ? '/client' : '/dashboard';
-    return <Navigate to={defaultRoute} replace />;
+    // Permite acesso normalmente (login, registro, etc)
   }
 
   return children;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
@@ -9,15 +10,12 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [mapError, setMapError] = useState(false);
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markersRef = useRef([]);
 
   useEffect(() => {
     loadDashboard();
@@ -75,133 +73,16 @@ const AdminDashboardPage = () => {
     try {
       const data = await adminService.getLiveTracking();
       setTracking(data);
-      updateMapMarkers(data.drivers || []);
     } catch (err) {
       console.error('Erro ao carregar tracking:', err);
     }
   };
 
-  // Inicializa o mapa (de forma segura)
+  // Atualiza tracking a cada 15 segundos
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-
-    let cancelled = false;
-
-    const initMap = () => {
-      try {
-        if (cancelled || !mapRef.current || mapInstanceRef.current) return;
-        if (!window.L) {
-          console.error('Leaflet nao carregado');
-          setMapError(true);
-          return;
-        }
-
-        const L = window.L;
-        mapInstanceRef.current = L.map(mapRef.current, {
-          zoomControl: true,
-          scrollWheelZoom: true
-        }).setView([-29.95, -50.45], 12);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(mapInstanceRef.current);
-      } catch (e) {
-        console.error('Erro ao inicializar mapa:', e);
-        setMapError(true);
-      }
-    };
-
-    // Carrega Leaflet dinamicamente com timeout
-    if (!document.querySelector('link[href*="leaflet"]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-
-    if (!window.L) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => {
-        if (!cancelled) initMap();
-      };
-      script.onerror = () => {
-        console.error('Erro ao carregar Leaflet');
-        if (!cancelled) setMapError(true);
-      };
-      document.head.appendChild(script);
-
-      // Timeout para caso o Leaflet nao carregue
-      setTimeout(() => {
-        if (!cancelled && !window.L) {
-          console.error('Leaflet timeout');
-          setMapError(true);
-        }
-      }, 10000);
-    } else {
-      initMap();
-    }
-
-    return () => {
-      cancelled = true;
-      if (mapInstanceRef.current) {
-        try { mapInstanceRef.current.remove(); } catch (e) {}
-        mapInstanceRef.current = null;
-      }
-    };
+    const interval = setInterval(loadTracking, 15000);
+    return () => clearInterval(interval);
   }, []);
-
-  // Atualiza marcadores no mapa
-  const updateMapMarkers = (drivers) => {
-    if (!mapInstanceRef.current || !window.L) return;
-    const L = window.L;
-    const map = mapInstanceRef.current;
-
-    // Remove marcadores antigos
-    markersRef.current.forEach(m => map.removeLayer(m));
-    markersRef.current = [];
-
-    if (drivers.length === 0) return;
-
-    const bounds = [];
-
-    drivers.forEach(driver => {
-      if (!driver.latitude || !driver.longitude) return;
-
-      const icon = L.divIcon({
-        className: 'custom-marker',
-        html: `<div style="
-          width: 32px; height: 32px; border-radius: 50%;
-          background: ${driver.current_order ? '#2563eb' : '#22c55e'};
-          border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          display: flex; align-items: center; justify-content: center;
-          color: white; font-size: 12px; font-weight: bold;
-        ">🚗</div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-      });
-
-      const marker = L.marker([driver.latitude, driver.longitude], { icon })
-        .addTo(map)
-        .bindPopup(`
-          <div style="min-width: 150px">
-            <strong>${driver.name}</strong><br>
-            <small>${driver.vehicle_type}</small><br>
-            ${driver.current_order
-              ? `<span style="color: #2563eb">📦 Em entrega</span>`
-              : `<span style="color: #22c55e">✅ Disponível</span>`
-            }
-          </div>
-        `);
-
-      markersRef.current.push(marker);
-      bounds.push([driver.latitude, driver.longitude]);
-    });
-
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-    }
-  };
 
   if (loading) {
     return (
@@ -284,6 +165,24 @@ const AdminDashboardPage = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Botao Enviar Pedido */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <Package size={20} style={{ color: '#2563eb' }} />
+          <div>
+            <p style={{ fontWeight: 600, color: '#1e293b' }}>Enviar Pedido</p>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Crie um pedido para qualquer estabelecimento</p>
+          </div>
+        </div>
+        <button onClick={() => navigate('/client/new-order')} style={{
+          display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem',
+          borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white',
+          fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
+        }}>
+          <Package size={16} /> Novo Pedido
+        </button>
       </div>
 
       {/* Cards principais */}
