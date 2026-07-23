@@ -140,7 +140,7 @@ const AdminOrdersPage = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {orders.map(order => <OrderCard key={order.id} order={order} />)}
+          {orders.map(order => <OrderCard key={order.id} order={order} onEdit={openEditOrder} onDelete={handleDeleteOrder} />)}
         </div>
       )}
 
@@ -198,7 +198,7 @@ const AdminOrdersPage = () => {
   );
 };
 
-const OrderCard = ({ order }) => {
+const OrderCard = ({ order, onEdit, onDelete }) => {
   const statusColor = STATUS_COLORS[order.status] || { bg: '#f1f5f9', text: '#64748b' };
 
   return (
@@ -276,10 +276,10 @@ const OrderCard = ({ order }) => {
             <Clock size={11} /> {utils.formatDateTime(order.created_at)}
           </span>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
-            <button onClick={(e) => { e.stopPropagation(); openEditOrder(order); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
+            <button onClick={(e) => { e.stopPropagation(); onEdit(order); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
               <Edit size={14} />
             </button>
-            <button onClick={(e) => { e.stopPropagation(); handleDeleteOrder(order.id); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }} title="Excluir">
+            <button onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }} title="Excluir">
               <Trash2 size={14} />
             </button>
           </div>

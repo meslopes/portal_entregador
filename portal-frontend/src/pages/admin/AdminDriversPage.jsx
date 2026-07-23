@@ -18,7 +18,9 @@ const AdminDriversPage = () => {
 
   // Modal states
   const [showForm, setShowForm] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [showDetails, setShowDetails] = useState(null);
+  const [editData, setEditData] = useState({});
   const [formData, setFormData] = useState({
     email: '', password: '123456', first_name: '', last_name: '',
     phone: '', cpf: '', vehicle_type: 'MOTORCYCLE', vehicle_plate: '',
