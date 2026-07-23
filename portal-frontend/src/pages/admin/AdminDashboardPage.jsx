@@ -90,7 +90,11 @@ const AdminDashboardPage = () => {
     const initMap = () => {
       try {
         if (cancelled || !mapRef.current || mapInstanceRef.current) return;
-        if (!window.L) return;
+        if (!window.L) {
+          console.error('Leaflet nao carregado');
+          setMapError(true);
+          return;
+        }
 
         const L = window.L;
         mapInstanceRef.current = L.map(mapRef.current, {
@@ -103,10 +107,11 @@ const AdminDashboardPage = () => {
         }).addTo(mapInstanceRef.current);
       } catch (e) {
         console.error('Erro ao inicializar mapa:', e);
+        setMapError(true);
       }
     };
 
-    // Carrega Leaflet dinamicamente
+    // Carrega Leaflet dinamicamente com timeout
     if (!document.querySelector('link[href*="leaflet"]')) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
@@ -117,9 +122,22 @@ const AdminDashboardPage = () => {
     if (!window.L) {
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = initMap;
-      script.onerror = () => { console.error('Erro ao carregar Leaflet'); setMapError(true); };
+      script.onload = () => {
+        if (!cancelled) initMap();
+      };
+      script.onerror = () => {
+        console.error('Erro ao carregar Leaflet');
+        if (!cancelled) setMapError(true);
+      };
       document.head.appendChild(script);
+
+      // Timeout para caso o Leaflet nao carregue
+      setTimeout(() => {
+        if (!cancelled && !window.L) {
+          console.error('Leaflet timeout');
+          setMapError(true);
+        }
+      }, 10000);
     } else {
       initMap();
     }

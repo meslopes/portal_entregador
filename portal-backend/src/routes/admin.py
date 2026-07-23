@@ -440,6 +440,80 @@ def get_dashboard():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# ADMIN - EDITAR/EXCLUIR PEDIDOS
+# ============================================
+
+@admin_bp.route('/orders/<int:order_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def admin_update_order(order_id):
+    """Admin atualiza qualquer pedido (status, valores, etc)"""
+    try:
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
+        data = request.get_json()
+
+        # Atualiza status se fornecido
+        if data.get('status'):
+            try:
+                new_status = OrderStatus(data['status'])
+                order.status = new_status
+                if new_status == OrderStatus.DELIVERED:
+                    order.delivery_time = datetime.utcnow()
+                elif new_status == OrderStatus.PICKED_UP:
+                    order.pickup_time = datetime.utcnow()
+            except ValueError:
+                return jsonify({'error': 'Status inválido'}), 400
+
+        # Atualiza valores se fornecidos
+        if data.get('subtotal') is not None:
+            order.subtotal = data['subtotal']
+        if data.get('delivery_fee') is not None:
+            order.delivery_fee = data['delivery_fee']
+        if data.get('total_amount') is not None:
+            order.total_amount = data['total_amount']
+        if data.get('payment_method'):
+            try:
+                order.payment_method = PaymentMethod(data['payment_method'])
+            except ValueError:
+                pass
+
+        order.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({'message': 'Pedido atualizado com sucesso', 'order': order.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/orders/<int:order_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def admin_delete_order(order_id):
+    """Admin exclui um pedido"""
+    try:
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
+        # Remove delivery se existir
+        if order.delivery:
+            db.session.delete(order.delivery)
+
+        db.session.delete(order)
+        db.session.commit()
+
+        return jsonify({'message': 'Pedido excluído com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/drivers', methods=['GET'])
 @jwt_required()
 @admin_required

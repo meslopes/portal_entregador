@@ -316,6 +316,17 @@ export const adminService = {
     return response.data;
   },
 
+  // Pedidos admin
+  adminUpdateOrder: async (orderId, data) => {
+    const response = await api.put(`/api/admin/orders/${orderId}`, data);
+    return response.data;
+  },
+
+  adminDeleteOrder: async (orderId) => {
+    const response = await api.delete(`/api/admin/orders/${orderId}`);
+    return response.data;
+  },
+
   // Aprovacao de cadastros
   getPendingUsers: async () => {
     const response = await api.get('/api/admin/pending-users');

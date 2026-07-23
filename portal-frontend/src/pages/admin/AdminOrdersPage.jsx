@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Package, AlertCircle, Store, User, MapPin, Clock,
-  ChevronLeft, ChevronRight, Truck, Filter
+  ChevronLeft, ChevronRight, Truck, Filter, Edit, Trash2, X, Eye
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 
@@ -33,6 +33,8 @@ const AdminOrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [editData, setEditData] = useState({});
 
   useEffect(() => { loadOrders(); }, [page, statusFilter]);
 
@@ -47,6 +49,37 @@ const AdminOrdersPage = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Excluir este pedido? Esta ação não pode ser desfeita.')) return;
+    try {
+      await adminService.adminDeleteOrder(orderId);
+      loadOrders();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao excluir');
+    }
+  };
+
+  const openEditOrder = (order) => {
+    setEditingOrder(order);
+    setEditData({
+      status: order.status,
+      delivery_fee: order.delivery_fee,
+      total_amount: order.total_amount,
+      payment_method: order.payment_method
+    });
+  };
+
+  const handleEditOrder = async (e) => {
+    e.preventDefault();
+    try {
+      await adminService.adminUpdateOrder(editingOrder.id, editData);
+      setEditingOrder(null);
+      loadOrders();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao atualizar');
     }
   };
 
@@ -123,6 +156,40 @@ const AdminOrdersPage = () => {
             style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: page === totalPages ? '#f8fafc' : 'white', color: page === totalPages ? '#cbd5e1' : '#475569', fontSize: '0.875rem', cursor: page === totalPages ? 'not-allowed' : 'pointer' }}>
             Próxima <ChevronRight size={16} />
           </button>
+        </div>
+      )}
+
+      {/* Modal Editar Pedido */}
+      {editingOrder && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Pedido #{editingOrder.order_number}</h2>
+              <button onClick={() => setEditingOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleEditOrder} style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Status</label>
+                <select value={editData.status} onChange={e => setEditData(p => ({ ...p, status: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}>
+                  {STATUS_FILTERS.filter(f => f.key).map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa de Entrega (R$)</label>
+                  <input type="number" step="0.01" value={editData.delivery_fee} onChange={e => setEditData(p => ({ ...p, delivery_fee: parseFloat(e.target.value) }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Valor Total (R$)</label>
+                  <input type="number" step="0.01" value={editData.total_amount} onChange={e => setEditData(p => ({ ...p, total_amount: parseFloat(e.target.value) }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setEditingOrder(null)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>
+                <button type="submit" style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -208,6 +275,14 @@ const OrderCard = ({ order }) => {
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: '#94a3b8' }}>
             <Clock size={11} /> {utils.formatDateTime(order.created_at)}
           </span>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button onClick={(e) => { e.stopPropagation(); openEditOrder(order); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
+              <Edit size={14} />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); handleDeleteOrder(order.id); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }} title="Excluir">
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
