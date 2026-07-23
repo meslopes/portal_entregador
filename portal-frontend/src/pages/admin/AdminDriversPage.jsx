@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, AlertCircle, Truck, Phone, Mail,
-  Star, X, Edit, Eye, MapPin, User
+  Star, X, Edit, Eye, MapPin, User, Trash2
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 
@@ -42,6 +42,46 @@ const AdminDriversPage = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Excluir ${name}? Esta ação não pode ser desfeita.`)) return;
+    try {
+      await adminService.deleteUser(id);
+      loadDrivers();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao excluir');
+    }
+  };
+
+  const openEditForm = (driver) => {
+    setEditing(driver);
+    setEditData({
+      first_name: driver.user?.first_name || '',
+      last_name: driver.user?.last_name || '',
+      phone: driver.user?.phone || '',
+      email: driver.user?.email || '',
+      vehicle_type: driver.vehicle_type || 'MOTORCYCLE',
+      vehicle_plate: driver.vehicle_plate || '',
+      vehicle_model: driver.vehicle_model || '',
+      pix_key: driver.pix_key || '',
+      max_concurrent_orders: driver.max_concurrent_orders || 3
+    });
+    setShowEdit(true);
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    try {
+      setFormLoading(true);
+      await adminService.updateUser(editing.user_id, editData);
+      setShowEdit(null);
+      loadDrivers();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao atualizar');
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -184,9 +224,21 @@ const AdminDriversPage = () => {
                   {driver.rating ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><Star size={14} fill="#f59e0b" stroke="#f59e0b" /> <span style={{ fontSize: '0.8125rem' }}>{driver.rating}</span></span> : '-'}
                 </span>
                 <span style={{ textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>{driver.total_deliveries}</span>
-                <div style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => openDetails(driver)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}>
-                    <Eye size={16} />
+                <div style={{ textAlign: 'center', display: 'flex', gap: '0.25rem', justifyContent: 'center' }} onClick={e => e.stopPropagation()}>
+                  <button onClick={() => openDetails(driver)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }} title="Ver detalhes">
+                    <Eye size={14} />
+                  </button>
+                  <button onClick={() => openEditForm(driver)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
+                    <Edit size={14} />
+                  </button>
+                  <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'INACTIVE' : 'ACTIVE'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#94a3b8' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
+                    {driver.is_online ? <Truck size={14} /> : <Truck size={14} />}
+                  </button>
+                  <button onClick={async (e) => { e.stopPropagation(); if (!window.confirm('Suspender este entregador?')) return; try { await adminService.updateDriverStatus(driver.id, 'SUSPENDED'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#f59e0b' }} title="Suspender">
+                    <Clock size={14} />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(driver.id, driver.user?.first_name + ' ' + driver.user?.last_name); }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }} title="Excluir">
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -334,6 +386,41 @@ const AdminDriversPage = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Entregador */}
+      {showEdit && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Entregador</h2>
+              <button onClick={() => setShowEdit(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleEdit} style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Nome"><input type="text" value={editData.first_name} onChange={e => setEditData(p => ({ ...p, first_name: e.target.value }))} style={inputStyle} /></FormField>
+                <FormField label="Sobrenome"><input type="text" value={editData.last_name} onChange={e => setEditData(p => ({ ...p, last_name: e.target.value }))} style={inputStyle} /></FormField>
+              </div>
+              <FormField label="Telefone"><input type="text" value={editData.phone} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} /></FormField>
+              <FormField label="Email"><input type="email" value={editData.email} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} style={inputStyle} /></FormField>
+              <FormField label="Tipo de Veículo">
+                <select value={editData.vehicle_type} onChange={e => setEditData(p => ({ ...p, vehicle_type: e.target.value }))} style={inputStyle}>
+                  <option value="MOTORCYCLE">Moto</option>
+                  <option value="CAR">Carro</option>
+                  <option value="BICYCLE">Bicicleta</option>
+                  <option value="FOOT">A pé</option>
+                </select>
+              </FormField>
+              <FormField label="Placa"><input type="text" value={editData.vehicle_plate} onChange={e => setEditData(p => ({ ...p, vehicle_plate: e.target.value }))} style={inputStyle} /></FormField>
+              <FormField label="Chave PIX"><input type="text" value={editData.pix_key} onChange={e => setEditData(p => ({ ...p, pix_key: e.target.value }))} style={inputStyle} /></FormField>
+              <FormField label="Máx. Pedidos Simultâneos"><input type="number" min="1" max="10" value={editData.max_concurrent_orders} onChange={e => setEditData(p => ({ ...p, max_concurrent_orders: e.target.value }))} style={inputStyle} /></FormField>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setShowEdit(false)} style={btnSecondary}>Cancelar</button>
+                <button type="submit" disabled={formLoading} style={{ ...btnPrimary, opacity: formLoading ? 0.7 : 1 }}>{formLoading ? 'Salvando...' : 'Salvar'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
