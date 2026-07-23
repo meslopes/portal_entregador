@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, AlertCircle, Truck, Phone, Mail,
   Star, X, Edit, Eye, MapPin, User, Trash2
@@ -48,7 +48,7 @@ const AdminDriversPage = () => {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Excluir ${name}? Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(`Excluir ${name}? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return;
     try {
       await adminService.deleteUser(id);
       loadDrivers();
@@ -113,7 +113,7 @@ const AdminDriversPage = () => {
   const handleSubmitForm = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.first_name || !formData.last_name) {
-      setFormError('Email, nome e sobrenome são obrigatórios');
+      setFormError('Email, nome e sobrenome sÃ£o obrigatÃ³rios');
       return;
     }
 
@@ -208,7 +208,7 @@ const AdminDriversPage = () => {
         <>
           <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px', padding: '0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }} className="table-header">
-              <span>Entregador</span><span style={{ textAlign: 'center' }}>Veículo</span><span style={{ textAlign: 'center' }}>Status</span><span style={{ textAlign: 'center' }}>Avaliação</span><span style={{ textAlign: 'center' }}>Entregas</span><span style={{ textAlign: 'center' }}>Ações</span>
+              <span>Entregador</span><span style={{ textAlign: 'center' }}>VeÃ­culo</span><span style={{ textAlign: 'center' }}>Status</span><span style={{ textAlign: 'center' }}>AvaliaÃ§Ã£o</span><span style={{ textAlign: 'center' }}>Entregas</span><span style={{ textAlign: 'center' }}>AÃ§Ãµes</span>
             </div>
             {drivers.map(driver => (
               <div key={driver.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px', padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc', alignItems: 'center', cursor: 'pointer' }} className="table-row" onClick={() => openDetails(driver)}>
@@ -251,7 +251,7 @@ const AdminDriversPage = () => {
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={pagBtn(page === 1)}>Anterior</button>
               <span style={{ fontSize: '0.875rem', color: '#64748b' }}>{page} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={pagBtn(page === totalPages)}>Próxima</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={pagBtn(page === totalPages)}>PrÃ³xima</button>
             </div>
           )}
         </>
@@ -274,7 +274,7 @@ const AdminDriversPage = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <FormField label="Nome *">
-                  <input type="text" name="first_name" value={formData.first_name} onChange={handleFormChange} style={inputStyle} placeholder="João" />
+                  <input type="text" name="first_name" value={formData.first_name} onChange={handleFormChange} style={inputStyle} placeholder="JoÃ£o" />
                 </FormField>
                 <FormField label="Sobrenome *">
                   <input type="text" name="last_name" value={formData.last_name} onChange={handleFormChange} style={inputStyle} placeholder="Silva" />
@@ -299,9 +299,9 @@ const AdminDriversPage = () => {
                 </FormField>
               </div>
 
-              <FormField label="Praça">
+              <FormField label="PraÃ§a">
                 <select name="square_id" value={formData.square_id} onChange={handleFormChange} style={inputStyle}>
-                  <option value="">Selecione uma praça</option>
+                  <option value="">Selecione uma praÃ§a</option>
                   {squares.map(sq => (
                     <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
                   ))}
@@ -309,12 +309,12 @@ const AdminDriversPage = () => {
               </FormField>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <FormField label="Tipo de Veículo">
+                <FormField label="Tipo de VeÃ­culo">
                   <select name="vehicle_type" value={formData.vehicle_type} onChange={handleFormChange} style={inputStyle}>
                     <option value="MOTORCYCLE">Moto</option>
                     <option value="CAR">Carro</option>
                     <option value="BICYCLE">Bicicleta</option>
-                    <option value="FOOT">A pé</option>
+                    <option value="FOOT">A pÃ©</option>
                   </select>
                 </FormField>
                 <FormField label="Placa">
@@ -332,16 +332,16 @@ const AdminDriversPage = () => {
               </div>
 
               <FormField label="CNH">
-                <input type="text" name="driver_license" value={formData.driver_license} onChange={handleFormChange} style={inputStyle} placeholder="Número da CNH" />
+                <input type="text" name="driver_license" value={formData.driver_license} onChange={handleFormChange} style={inputStyle} placeholder="NÃºmero da CNH" />
               </FormField>
 
-              <FormField label="Máximo de Pedidos Simultâneos">
+              <FormField label="MÃ¡ximo de Pedidos SimultÃ¢neos">
                 <input type="number" name="max_concurrent_orders" min="1" max="10" value={formData.max_concurrent_orders} onChange={handleFormChange} style={inputStyle} />
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Quantidade máxima de pedidos que o entregador pode ter ao mesmo tempo (configurável pelo admin)</p>
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Quantidade mÃ¡xima de pedidos que o entregador pode ter ao mesmo tempo (configurÃ¡vel pelo admin)</p>
               </FormField>
 
               <FormField label="Chave PIX">
-                <input type="text" name="pix_key" value={formData.pix_key} onChange={handleFormChange} style={inputStyle} placeholder="CPF, email ou chave aleatória" />
+                <input type="text" name="pix_key" value={formData.pix_key} onChange={handleFormChange} style={inputStyle} placeholder="CPF, email ou chave aleatÃ³ria" />
               </FormField>
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
@@ -374,9 +374,9 @@ const AdminDriversPage = () => {
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <InfoBox label="Veículo" value={utils.getStatusText(showDetails.vehicle_type)} />
+                <InfoBox label="VeÃ­culo" value={utils.getStatusText(showDetails.vehicle_type)} />
                 <InfoBox label="Placa" value={showDetails.vehicle_plate || '-'} />
-                <InfoBox label="Avaliação" value={showDetails.statistics?.average_rating ? `${showDetails.statistics.average_rating} ⭐` : '-'} />
+                <InfoBox label="AvaliaÃ§Ã£o" value={showDetails.statistics?.average_rating ? `${showDetails.statistics.average_rating} â­` : '-'} />
                 <InfoBox label="Entregas" value={showDetails.total_deliveries || 0} />
                 <InfoBox label="Ganhos Totais" value={utils.formatCurrency(showDetails.statistics?.total_earnings || 0)} />
                 <InfoBox label="Status" value={showDetails.is_online ? 'Online' : 'Offline'} color={showDetails.is_online ? '#16a34a' : '#94a3b8'} />
@@ -407,17 +407,17 @@ const AdminDriversPage = () => {
               </div>
               <FormField label="Telefone"><input type="text" value={editData.phone} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} /></FormField>
               <FormField label="Email"><input type="email" value={editData.email} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} style={inputStyle} /></FormField>
-              <FormField label="Tipo de Veículo">
+              <FormField label="Tipo de VeÃ­culo">
                 <select value={editData.vehicle_type} onChange={e => setEditData(p => ({ ...p, vehicle_type: e.target.value }))} style={inputStyle}>
                   <option value="MOTORCYCLE">Moto</option>
                   <option value="CAR">Carro</option>
                   <option value="BICYCLE">Bicicleta</option>
-                  <option value="FOOT">A pé</option>
+                  <option value="FOOT">A pÃ©</option>
                 </select>
               </FormField>
               <FormField label="Placa"><input type="text" value={editData.vehicle_plate} onChange={e => setEditData(p => ({ ...p, vehicle_plate: e.target.value }))} style={inputStyle} /></FormField>
               <FormField label="Chave PIX"><input type="text" value={editData.pix_key} onChange={e => setEditData(p => ({ ...p, pix_key: e.target.value }))} style={inputStyle} /></FormField>
-              <FormField label="Máx. Pedidos Simultâneos"><input type="number" min="1" max="10" value={editData.max_concurrent_orders} onChange={e => setEditData(p => ({ ...p, max_concurrent_orders: e.target.value }))} style={inputStyle} /></FormField>
+              <FormField label="MÃ¡x. Pedidos SimultÃ¢neos"><input type="number" min="1" max="10" value={editData.max_concurrent_orders} onChange={e => setEditData(p => ({ ...p, max_concurrent_orders: e.target.value }))} style={inputStyle} /></FormField>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowEdit(false)} style={btnSecondary}>Cancelar</button>
                 <button type="submit" disabled={formLoading} style={{ ...btnPrimary, opacity: formLoading ? 0.7 : 1 }}>{formLoading ? 'Salvando...' : 'Salvar'}</button>
@@ -475,3 +475,4 @@ const pagBtn = (disabled) => ({
 });
 
 export default AdminDriversPage;
+
