@@ -204,7 +204,7 @@ const AdminFinancePage = () => {
         </div>
         <div style={{ overflowX: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '0.75rem 1.5rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', minWidth: '600px' }}>
-            <span>Estabelecimento</span><span style={{ textAlign: 'center' }}>Pedidos</span><span style={{ textAlign: 'right' }}>Receita</span><span style={{ textAlign: 'right' }}>Frete</span><span style={{ textAlign: 'right' }}>Ticket Médio</span>
+            <span>Estabelecimento</span><span style={{ textAlign: 'center' }}>Pedidos</span><span style={{ textAlign: 'right' }}>Frete Total</span><span style={{ textAlign: 'right' }}>Ticket Médio</span>
           </div>
           {estData.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Sem dados</p>
@@ -213,9 +213,9 @@ const AdminFinancePage = () => {
               <div key={est.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '0.75rem 1.5rem', borderBottom: i < estData.length - 1 ? '1px solid #f8fafc' : 'none', fontSize: '0.8125rem', minWidth: '600px' }}>
                 <span style={{ fontWeight: 500, color: '#1e293b' }}>{est.name}</span>
                 <span style={{ textAlign: 'center', color: '#64748b' }}>{est.total_orders}</span>
-                <span style={{ textAlign: 'right', color: '#16a34a', fontWeight: 500 }}>{utils.formatCurrency(est.revenue)}</span>
+                <span style={{ textAlign: 'right', color: '#16a34a', fontWeight: 500 }}>{utils.formatCurrency(est.delivery_fees || 0)}</span>
                 <span style={{ textAlign: 'right', color: '#0d9488', fontWeight: 600 }}>{utils.formatCurrency(est.delivery_fees)}</span>
-                <span style={{ textAlign: 'right', color: '#64748b' }}>{utils.formatCurrency(est.avg_order)}</span>
+                <span style={{ textAlign: 'right', color: '#64748b' }}>{utils.formatCurrency(est.delivery_fees && est.total_orders ? (est.delivery_fees / est.total_orders) : 0)}</span>
               </div>
             ))
           )}
