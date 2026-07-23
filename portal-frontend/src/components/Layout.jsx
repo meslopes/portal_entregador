@@ -164,6 +164,27 @@ const Layout = ({ children }) => {
               >
                 {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
+
+              {/* Botao Sair sempre visivel */}
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  padding: '0.375rem 0.75rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #fecaca',
+                  background: '#fef2f2',
+                  cursor: 'pointer',
+                  color: '#dc2626',
+                  fontSize: '0.75rem',
+                  fontWeight: 500
+                }}
+                title="Sair do sistema"
+              >
+                <LogOut size={14} /> Sair
+              </button>
             </div>
           </div>
         </div>
