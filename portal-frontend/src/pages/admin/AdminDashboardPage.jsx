@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
@@ -101,7 +101,7 @@ const AdminDashboardPage = () => {
             Painel Administrativo
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-            Visão geral do sistema muv.log
+            VisÃ£o geral do sistema muv.log
           </p>
         </div>
         <button onClick={() => { loadDashboard(); loadTracking(); }} style={{
@@ -131,7 +131,7 @@ const AdminDashboardPage = () => {
               <p style={{ fontSize: '0.6875rem', color: '#16a34a', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/register</p>
             </div>
             <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/register')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#dcfce7', cursor: 'pointer', color: '#16a34a' }} title="Copiar link">
-              📋
+              ðŸ“‹
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
@@ -141,7 +141,7 @@ const AdminDashboardPage = () => {
               <p style={{ fontSize: '0.6875rem', color: '#2563eb', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/client/register</p>
             </div>
             <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/client/register')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#dbeafe', cursor: 'pointer', color: '#2563eb' }} title="Copiar link">
-              📋
+              ðŸ“‹
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#fef3c7', borderRadius: '0.5rem', border: '1px solid #fcd34d' }}>
@@ -151,7 +151,7 @@ const AdminDashboardPage = () => {
               <p style={{ fontSize: '0.6875rem', color: '#d97706', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/login</p>
             </div>
             <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/login')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#fef3c7', cursor: 'pointer', color: '#d97706' }} title="Copiar link">
-              📋
+              ðŸ“‹
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
@@ -161,7 +161,7 @@ const AdminDashboardPage = () => {
               <p style={{ fontSize: '0.6875rem', color: '#0d9488', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/client/login</p>
             </div>
             <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/client/login')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#ccfbf1', cursor: 'pointer', color: '#0d9488' }} title="Copiar link">
-              📋
+              ðŸ“‹
             </button>
           </div>
         </div>
@@ -198,7 +198,7 @@ const AdminDashboardPage = () => {
         <div style={{ background: '#fef3c7', borderRadius: '0.75rem', border: '1px solid #fcd34d', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <AlertCircle size={18} style={{ color: '#d97706' }} />
-            <span style={{ fontWeight: 600, color: '#92400e' }}>{pendingUsers.length} cadastro(s) pendente(s) de aprovação</span>
+            <span style={{ fontWeight: 600, color: '#92400e' }}>{pendingUsers.length} cadastro(s) pendente(s) de aprovaÃ§Ã£o</span>
           </div>
           {pendingUsers.map(user => (
             <div key={user.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '0.5rem', marginBottom: '0.5rem' }}>
@@ -208,15 +208,15 @@ const AdminDashboardPage = () => {
                 </div>
                 <div>
                   <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{user.first_name} {user.last_name}</p>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{user.email} • {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{user.email} â€¢ {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button onClick={() => handleApprove(user.id)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#22c55e', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                  ✓ Aprovar
+                  âœ“ Aprovar
                 </button>
                 <button onClick={() => handleReject(user.id)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#ef4444', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                  ✕ Rejeitar
+                  âœ• Rejeitar
                 </button>
               </div>
             </div>
@@ -234,9 +234,6 @@ const AdminDashboardPage = () => {
               <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregadores em Tempo Real</span>
             </div>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
-          </div>
-          <div ref={mapRef} style={{ height: '400px', background: '#e5e7eb', display: mapError ? 'flex' : 'block', alignItems: mapError ? 'center' : undefined, justifyContent: mapError ? 'center' : undefined }}>
-            {mapError && <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Mapa não disponível</p>}
           </div>
         </div>
 
@@ -262,7 +259,7 @@ const AdminDashboardPage = () => {
                     background: driver.current_order ? '#dbeafe' : '#dcfce7',
                     color: driver.current_order ? '#2563eb' : '#16a34a'
                   }}>
-                    {driver.current_order ? '📦 Em entrega' : '✅ Livre'}
+                    {driver.current_order ? 'ðŸ“¦ Em entrega' : 'âœ… Livre'}
                   </span>
                 </div>
               </div>
@@ -399,3 +396,4 @@ const StatusRow = ({ status, count }) => {
 };
 
 export default AdminDashboardPage;
+
