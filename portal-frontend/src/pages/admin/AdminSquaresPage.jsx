@@ -32,14 +32,20 @@ const AdminSquaresPage = () => {
 
   const openCreateForm = () => {
     setEditing(null);
-    setFormData({ name: '', city: '', state: '' });
+    setFormData({ name: '', city: '', state: '', price_per_km: '2.95', min_delivery_fee: '5.00', max_delivery_fee: '50.00', driver_km_bonus: '0.50' });
     setFormError('');
     setShowForm(true);
   };
 
   const openEditForm = (sq) => {
     setEditing(sq);
-    setFormData({ name: sq.name, city: sq.city, state: sq.state });
+    setFormData({
+      name: sq.name, city: sq.city, state: sq.state,
+      price_per_km: sq.price_per_km || '2.95',
+      min_delivery_fee: sq.min_delivery_fee || '5.00',
+      max_delivery_fee: sq.max_delivery_fee || '50.00',
+      driver_km_bonus: sq.driver_km_bonus || '0.50'
+    });
     setFormError('');
     setShowForm(true);
   };
@@ -147,6 +153,20 @@ const AdminSquaresPage = () => {
                     <p style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Pedidos</p>
                   </div>
                 </div>
+                {/* Tabela de Precos */}
+                <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
+                  <p style={{ fontSize: '0.625rem', fontWeight: 600, color: '#0d9488', marginBottom: '0.375rem', textTransform: 'uppercase' }}>Tabela de Preços</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem', fontSize: '0.75rem' }}>
+                    <span style={{ color: '#64748b' }}>Preço/KM:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.price_per_km || '2,95'}</span>
+                    <span style={{ color: '#64748b' }}>Mín:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.min_delivery_fee || '5,00'}</span>
+                    <span style={{ color: '#64748b' }}>Máx:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.max_delivery_fee || '50,00'}</span>
+                    <span style={{ color: '#64748b' }}>Bônus/KM:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.driver_km_bonus || '0,50'}</span>
+                  </div>
+                </div>
               </div>
               <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                 <button onClick={() => openEditForm(sq)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -189,6 +209,32 @@ const AdminSquaresPage = () => {
                   <input type="text" value={formData.state} onChange={e => setFormData(p => ({ ...p, state: e.target.value.toUpperCase() }))} style={inputStyle} placeholder="RS" maxLength={2} />
                 </div>
               </div>
+
+              {/* Tabela de Precos */}
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0d9488', marginBottom: '0.75rem' }}>Tabela de Preços</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Preço por KM (R$)</label>
+                    <input type="number" step="0.01" value={formData.price_per_km || '2.95'} onChange={e => setFormData(p => ({ ...p, price_per_km: e.target.value }))} style={inputStyle} placeholder="2.95" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Bônus Entregador/KM (R$)</label>
+                    <input type="number" step="0.01" value={formData.driver_km_bonus || '0.50'} onChange={e => setFormData(p => ({ ...p, driver_km_bonus: e.target.value }))} style={inputStyle} placeholder="0.50" />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa Mínima (R$)</label>
+                    <input type="number" step="0.01" value={formData.min_delivery_fee || '5.00'} onChange={e => setFormData(p => ({ ...p, min_delivery_fee: e.target.value }))} style={inputStyle} placeholder="5.00" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa Máxima (R$)</label>
+                    <input type="number" step="0.01" value={formData.max_delivery_fee || '50.00'} onChange={e => setFormData(p => ({ ...p, max_delivery_fee: e.target.value }))} style={inputStyle} placeholder="50.00" />
+                  </div>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowForm(false)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', color: '#475569' }}>Cancelar</button>
                 <button type="submit" disabled={formLoading} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: formLoading ? 'not-allowed' : 'pointer', opacity: formLoading ? 0.7 : 1 }}>
