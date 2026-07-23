@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
@@ -1183,8 +1183,8 @@ def create_establishment():
             phone=data.get('phone'),
             email=email,
             address=data['address'],
-            latitude=data.get('latitude', -29.95),
-            longitude=data.get('longitude', -50.45),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
             opening_hours=data.get('opening_hours'),
             is_active=data.get('is_active', True),
             square_id=data.get('square_id'),
@@ -1193,6 +1193,17 @@ def create_establishment():
             bank_account=data.get('bank_account'),
             bank_pix_key=data.get('bank_pix_key')
         )
+
+        # Geocodifica endereco se nao tem coordenadas
+        if not establishment.latitude or not establishment.longitude:
+            from src.services.geocoding import geocode_address
+            geo = geocode_address(establishment.address)
+            if geo:
+                establishment.latitude = geo['latitude']
+                establishment.longitude = geo['longitude']
+            else:
+                establishment.latitude = -29.95
+                establishment.longitude = -50.45
 
         db.session.add(establishment)
         db.session.commit()

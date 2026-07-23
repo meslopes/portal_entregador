@@ -562,11 +562,27 @@ def create_order():
             # Busca ou cria restaurante para este estabelecimento
             restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
             if not restaurant:
+                # Geocodifica o endereco do estabelecimento
+                est_address = data.get('establishment_address', 'Endereço não informado')
+                lat = data.get('establishment_latitude')
+                lng = data.get('establishment_longitude')
+
+                # Se nao tem coordenadas, tenta geocodificar
+                if not lat or not lng:
+                    from src.services.geocoding import geocode_address
+                    geo = geocode_address(est_address)
+                    if geo:
+                        lat = geo['latitude']
+                        lng = geo['longitude']
+                    else:
+                        lat = -29.95
+                        lng = -50.45
+
                 restaurant = Restaurant(
                     name=customer_profile.name,
-                    address=data.get('establishment_address', 'Endereço não informado'),
-                    latitude=data.get('establishment_latitude', -29.95),
-                    longitude=data.get('establishment_longitude', -50.45),
+                    address=est_address,
+                    latitude=lat,
+                    longitude=lng,
                     phone=customer_profile.phone
                 )
                 db.session.add(restaurant)
@@ -597,6 +613,18 @@ def create_order():
             db.session.flush()
 
         # Cria endereço de entrega
+        del_lat = data.get('delivery_latitude')
+        del_lng = data.get('delivery_longitude')
+
+        # Geocodifica endereco de entrega se nao tem coordenadas
+        if not del_lat or not del_lng:
+            del_address_full = f"{data['delivery_address']}, {data.get('delivery_neighborhood', '')}, {data.get('delivery_city', 'Porto Alegre')}, {data.get('delivery_state', 'RS')}"
+            from src.services.geocoding import geocode_address
+            geo_del = geocode_address(del_address_full)
+            if geo_del:
+                del_lat = geo_del['latitude']
+                del_lng = geo_del['longitude']
+
         address = Address(
             customer_id=customer.id,
             street=data['delivery_address'],
@@ -604,8 +632,8 @@ def create_order():
             city=data.get('delivery_city', 'Porto Alegre'),
             state=data.get('delivery_state', 'RS'),
             zip_code=data.get('delivery_zip_code', '90000-000'),
-            latitude=data.get('delivery_latitude'),
-            longitude=data.get('delivery_longitude')
+            latitude=del_lat,
+            longitude=del_lng
         )
         db.session.add(address)
         db.session.flush()
