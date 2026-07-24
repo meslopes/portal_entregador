@@ -151,6 +151,7 @@ def register_client():
         first_name = data.get('first_name')
         last_name = data.get('last_name')
         phone = data.get('phone')
+        address = data.get('address')
 
         if not email or not password or not first_name or not last_name or not phone:
             return jsonify({'error': 'Email, senha, nome, sobrenome e telefone são obrigatórios'}), 400
@@ -177,6 +178,30 @@ def register_client():
             email=email
         )
         db.session.add(customer)
+
+        # Cria restaurante/estabelecimento se endereco fornecido
+        if address:
+            latitude = None
+            longitude = None
+            try:
+                from src.services.geocoding import geocode_address
+                geo = geocode_address(address)
+                if geo:
+                    latitude = geo['latitude']
+                    longitude = geo['longitude']
+            except Exception:
+                pass
+
+            restaurant = Restaurant(
+                name=f"{first_name} {last_name}",
+                address=address,
+                latitude=latitude or -29.95,
+                longitude=longitude or -50.45,
+                phone=phone,
+                email=email
+            )
+            db.session.add(restaurant)
+
         db.session.commit()
 
         access_token = create_access_token(identity=str(user.id))

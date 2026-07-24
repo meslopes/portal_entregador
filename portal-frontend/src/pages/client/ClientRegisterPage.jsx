@@ -8,6 +8,8 @@ const ClientRegisterPage = () => {
   const [formData, setFormData] = useState({
     first_name: '', last_name: '', email: '', phone: '',
     password: '', confirmPassword: '',
+    address_street: '', address_number: '', address_neighborhood: '',
+    address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -44,6 +46,12 @@ const ClientRegisterPage = () => {
         return false;
       }
     }
+    if (step === 3) {
+      if (!formData.address_street || !formData.address_number || !formData.address_neighborhood) {
+        setLocalError('Preencha rua, número e bairro');
+        return false;
+      }
+    }
     return true;
   };
 
@@ -75,6 +83,7 @@ const ClientRegisterPage = () => {
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
+          address: `${formData.address_street}, ${formData.address_number} - ${formData.address_neighborhood}, ${formData.address_city} - ${formData.address_state}, ${formData.address_zip}`,
         }),
       });
 
@@ -150,6 +159,7 @@ const ClientRegisterPage = () => {
             {[
               { num: 1, label: 'Dados Pessoais' },
               { num: 2, label: 'Acesso' },
+              { num: 3, label: 'Endereço' },
             ].map((s, i) => (
               <React.Fragment key={s.num}>
                 <div style={{ textAlign: 'center' }}>
@@ -161,7 +171,7 @@ const ClientRegisterPage = () => {
                     {s.label}
                   </span>
                 </div>
-                {i < 1 && (
+                {i < 2 && (
                   <div style={{
                     width: '2rem', height: '2px', background: step > s.num ? '#22c55e' : '#e2e8f0',
                     marginBottom: '1.25rem', transition: 'background 0.3s'
@@ -235,6 +245,54 @@ const ClientRegisterPage = () => {
                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button type="button" className="auth-btn-secondary" onClick={prevStep} style={{ flex: 1 }}>
+                      <ArrowLeft size={18} /> Voltar
+                    </button>
+                    <button type="button" className="auth-btn-primary" onClick={nextStep} style={{ flex: 2 }}>
+                      Próximo <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Etapa 3 - Endereço */}
+              {step === 3 && (
+                <div className="auth-animate-in">
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label className="auth-form-label">Rua/Avenida *</label>
+                    <input name="address_street" className="auth-form-input" placeholder="Ex: Rua das Flores"
+                      value={formData.address_street} onChange={handleChange} required />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label className="auth-form-label">Número *</label>
+                      <input name="address_number" className="auth-form-input" placeholder="123"
+                        value={formData.address_number} onChange={handleChange} required />
+                    </div>
+                    <div>
+                      <label className="auth-form-label">Bairro *</label>
+                      <input name="address_neighborhood" className="auth-form-input" placeholder="Centro"
+                        value={formData.address_neighborhood} onChange={handleChange} required />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label className="auth-form-label">Cidade</label>
+                      <input name="address_city" className="auth-form-input" placeholder="Capão da Canoa"
+                        value={formData.address_city} onChange={handleChange} />
+                    </div>
+                    <div>
+                      <label className="auth-form-label">UF</label>
+                      <input name="address_state" className="auth-form-input" placeholder="RS"
+                        value={formData.address_state} onChange={handleChange} />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label className="auth-form-label">CEP</label>
+                    <input name="address_zip" className="auth-form-input" placeholder="95555-000"
+                      value={formData.address_zip} onChange={handleChange} />
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button type="button" className="auth-btn-secondary" onClick={prevStep} style={{ flex: 1 }}>
