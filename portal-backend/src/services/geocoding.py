@@ -45,7 +45,7 @@ def geocode_address(address):
         return None
 
 
-def geocode Establishment(address, city=None, state=None):
+def geocode_establishment(address, city=None, state=None):
     """
     Geocodifica o endereco de um estabelecimento.
     Tenta primeiro com endereco completo, depois com cidade+estado.
