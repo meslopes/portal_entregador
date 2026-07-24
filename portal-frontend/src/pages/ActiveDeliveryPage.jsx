@@ -3,9 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Store, User, Phone,
   AlertCircle, Navigation, CheckCircle, ArrowRight, ChevronRight,
-  Camera, Image, X
+  Camera, Image, X, ExternalLink
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix para icones do Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const STATUS_FLOW = [
   { key: 'ACCEPTED', label: 'Aceito', icon: CheckCircle },
@@ -31,10 +41,41 @@ const ActiveDeliveryPage = () => {
   const [proofPhoto, setProofPhoto] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [showMap, setShowMap] = useState(false);
+  const [mapTarget, setMapTarget] = useState(null); // 'restaurant' or 'customer'
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
   const isMounted = useRef(true);
+
+  // Funcao para abrir navegacao externa (Google Maps/Waze)
+  const openNavigation = (lat, lng, label) => {
+    if (!lat || !lng) {
+      // Se nao tem coordenadas, abre busca por endereco
+      const address = mapTarget === 'restaurant' ? order?.restaurant?.address : order?.delivery_address?.street;
+      if (address) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
+      }
+      return;
+    }
+    // Abre Google Maps com as coordenadas
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+  };
+
+  // Funcao para calcular distancia (Haversine)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
 
   useEffect(() => {
     isMounted.current = true;
@@ -127,6 +168,71 @@ const ActiveDeliveryPage = () => {
       }
     };
   }, [showCamera, previewUrl]);
+
+  // Inicializa o mapa quando abre
+  useEffect(() => {
+    if (showMap && mapRef.current && !mapInstanceRef.current) {
+      const map = L.map(mapRef.current).setView([-29.95, -50.45], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+      mapInstanceRef.current = map;
+
+      // Aguarda um frame para o mapa renderizar
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [showMap]);
+
+  // Atualiza marcadores do mapa
+  useEffect(() => {
+    if (!mapInstanceRef.current || !order) return;
+
+    const map = mapInstanceRef.current;
+    map.eachLayer(layer => {
+      if (layer instanceof L.Marker) map.removeLayer(layer);
+    });
+
+    // Marcador do restaurante
+    if (order.restaurant?.latitude && order.restaurant?.longitude) {
+      const restaurantIcon = L.divIcon({
+        html: '<div style="background:#f59e0b;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>',
+        className: '',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker([order.restaurant.latitude, order.restaurant.longitude], { icon: restaurantIcon })
+        .addTo(map)
+        .bindPopup(`<b>${order.restaurant.name}</b><br>${order.restaurant.address}`);
+    }
+
+    // Marcador do cliente
+    if (order.delivery_address?.latitude && order.delivery_address?.longitude) {
+      const customerIcon = L.divIcon({
+        html: '<div style="background:#22c55e;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>',
+        className: '',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker([order.delivery_address.latitude, order.delivery_address.longitude], { icon: customerIcon })
+        .addTo(map)
+        .bindPopup(`<b>${order.customer?.name}</b><br>${order.delivery_address.street}`);
+    }
+
+    // Ajusta zoom para mostrar ambos
+    const bounds = [];
+    if (order.restaurant?.latitude) bounds.push([order.restaurant.latitude, order.restaurant.longitude]);
+    if (order.delivery_address?.latitude) bounds.push([order.delivery_address.latitude, order.delivery_address.longitude]);
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [showMap, order]);
 
   const takePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -460,6 +566,62 @@ const ActiveDeliveryPage = () => {
         </div>
       )}
 
+      {/* Modal de Mapa */}
+      {showMap && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
+          display: 'flex', flexDirection: 'column', zIndex: 100
+        }}>
+          <div style={{
+            padding: '1rem', display: 'flex',
+            justifyContent: 'space-between', alignItems: 'center',
+            background: 'white'
+          }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>
+              {mapTarget === 'restaurant' ? 'Restaurante' : 'Cliente'}
+            </h3>
+            <button onClick={() => { setShowMap(false); setMapTarget(null); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+              <X size={24} />
+            </button>
+          </div>
+          <div ref={mapRef} style={{ flex: 1, minHeight: '400px' }} />
+          <div style={{ padding: '1rem', background: 'white', display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={() => {
+                const lat = mapTarget === 'restaurant' ? order.restaurant?.latitude : order.delivery_address?.latitude;
+                const lng = mapTarget === 'restaurant' ? order.restaurant?.longitude : order.delivery_address?.longitude;
+                openNavigation(lat, lng);
+              }}
+              style={{
+                flex: 1, padding: '0.875rem', borderRadius: '0.5rem',
+                border: 'none', background: '#2563eb', color: 'white',
+                fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+              }}
+            >
+              <Navigation size={18} /> Navegar
+            </button>
+            <button
+              onClick={() => {
+                const lat = mapTarget === 'restaurant' ? order.restaurant?.latitude : order.delivery_address?.latitude;
+                const lng = mapTarget === 'restaurant' ? order.restaurant?.longitude : order.delivery_address?.longitude;
+                const phone = mapTarget === 'restaurant' ? order.restaurant?.phone : order.customer?.phone;
+                if (phone) window.open(`tel:${phone}`);
+              }}
+              style={{
+                flex: 1, padding: '0.875rem', borderRadius: '0.5rem',
+                border: '1.5px solid #e2e8f0', background: 'white', color: '#374151',
+                fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+              }}
+            >
+              <Phone size={18} /> Ligar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Info do Pedido */}
       <div style={{
         background: 'white',
@@ -499,14 +661,17 @@ const ActiveDeliveryPage = () => {
                 </a>
               )}
             </div>
-            <button style={{
-              padding: '0.5rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #e2e8f0',
-              background: 'white',
-              cursor: 'pointer',
-              color: '#64748b'
-            }}>
+            <button
+              onClick={() => { setMapTarget('restaurant'); setShowMap(true); }}
+              style={{
+                padding: '0.5rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #e2e8f0',
+                background: 'white',
+                cursor: 'pointer',
+                color: '#2563eb'
+              }}
+            >
               <Navigation size={16} />
             </button>
           </div>
@@ -543,14 +708,17 @@ const ActiveDeliveryPage = () => {
                 </a>
               )}
             </div>
-            <button style={{
-              padding: '0.5rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #e2e8f0',
-              background: 'white',
-              cursor: 'pointer',
-              color: '#64748b'
-            }}>
+            <button
+              onClick={() => { setMapTarget('customer'); setShowMap(true); }}
+              style={{
+                padding: '0.5rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #e2e8f0',
+                background: 'white',
+                cursor: 'pointer',
+                color: '#22c55e'
+              }}
+            >
               <Navigation size={16} />
             </button>
           </div>

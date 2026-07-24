@@ -12,6 +12,7 @@ import EarningsPage from '@/pages/EarningsPage';
 import HistoryPage from '@/pages/HistoryPage';
 import ActiveDeliveryPage from '@/pages/ActiveDeliveryPage';
 import DriverRankingPage from '@/pages/DriverRankingPage';
+import DriverProfilePage from '@/pages/DriverProfilePage';
 import ClientLoginPage from '@/pages/client/ClientLoginPage';
 import ClientRegisterPage from '@/pages/client/ClientRegisterPage';
 import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
@@ -128,6 +129,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <DriverRankingPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <DriverProfilePage />
                 </Layout>
               </ProtectedRoute>
             }

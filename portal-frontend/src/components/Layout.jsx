@@ -13,6 +13,7 @@ import {
   Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationBell from '@/components/NotificationBell';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -105,6 +106,7 @@ const Layout = ({ children }) => {
 
             {/* User Menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button style={{
@@ -132,7 +134,7 @@ const Layout = ({ children }) => {
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>{user?.first_name} {user?.last_name}</p>
                     <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{user?.email}</p>
                   </div>
-                  <DropdownMenuItem style={{ cursor: 'pointer', padding: '0.625rem 0.75rem' }}>
+                  <DropdownMenuItem onClick={() => navigate('/profile')} style={{ cursor: 'pointer', padding: '0.625rem 0.75rem' }}>
                     <User size={16} style={{ marginRight: '0.75rem', color: '#64748b' }} />
                     <span style={{ fontSize: '0.875rem' }}>Perfil</span>
                   </DropdownMenuItem>
