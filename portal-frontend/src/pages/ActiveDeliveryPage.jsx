@@ -92,7 +92,10 @@ const ActiveDeliveryPage = () => {
       if (orderId) {
         // Busca pedido especifico pelo ID
         response = await orderService.getOrderDetails(orderId);
-        if (response.order) {
+        // A API retorna o pedido diretamente (nao em response.order)
+        if (response && response.id) {
+          setOrder(response);
+        } else if (response?.order) {
           setOrder(response.order);
         } else {
           navigate('/orders');

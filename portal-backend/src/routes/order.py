@@ -570,6 +570,20 @@ def get_active_orders():
         
         orders_data = []
         for order in active_orders:
+            # Geocodifica endereco de entrega se nao tem coordenadas
+            if order.delivery_address and not order.delivery_address.latitude:
+                try:
+                    del_addr = order.delivery_address
+                    addr_str = f"{del_addr.street}, {del_addr.neighborhood}, {del_addr.city}, {del_addr.state}"
+                    from src.services.geocoding import geocode_address
+                    geo = geocode_address(addr_str)
+                    if geo:
+                        del_addr.latitude = geo['latitude']
+                        del_addr.longitude = geo['longitude']
+                        db.session.flush()
+                except Exception:
+                    pass
+
             order_dict = order.to_dict()
             order_dict['restaurant'] = order.restaurant.to_dict()
             order_dict['customer'] = order.customer.to_dict()
