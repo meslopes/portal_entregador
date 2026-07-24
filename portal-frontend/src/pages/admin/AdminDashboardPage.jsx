@@ -87,44 +87,38 @@ const AdminDashboardPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Inicializa o mapa Leaflet via CDN
-  useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+  // Callback ref: inicializa o mapa quando o container e renderizado
+  const mapCallbackRef = React.useCallback((node) => {
+    if (!node) return;
+    mapRef.current = node;
+
+    // Ja tem mapa? Nao re-inicializa
+    if (mapInstanceRef.current) return;
 
     const initMap = () => {
-      if (!mapRef.current || mapInstanceRef.current) return;
+      if (!node || mapInstanceRef.current) return;
       const L = window.L;
       if (!L) return;
-      mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
+      mapInstanceRef.current = L.map(node, { zoomControl: true, scrollWheelZoom: true })
         .setView([-29.95, -50.45], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
       }).addTo(mapInstanceRef.current);
     };
 
-    // Se L ja existe (carregado por outro componente), inicializa direto
     if (window.L) {
       initMap();
-      return;
+    } else {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = initMap;
+      document.head.appendChild(script);
     }
-
-    // Senao, carrega o Leaflet via CDN
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = initMap;
-    document.head.appendChild(script);
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
   }, []);
 
   // Atualiza marcadores quando tracking muda
@@ -315,7 +309,7 @@ const AdminDashboardPage = () => {
           </div>
           <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
         </div>
-        <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
+        <div ref={mapCallbackRef} style={{ height: '300px', background: '#e5e7eb' }} />
       </div>
 
       {/* Lista de entregadores online */}
