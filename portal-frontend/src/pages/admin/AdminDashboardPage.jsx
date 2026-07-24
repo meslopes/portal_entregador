@@ -125,7 +125,7 @@ const AdminDashboardPage = () => {
         mapInstanceRef.current = null;
       }
     };
-  }, [loading]);
+  }, []);
 
   // Atualiza marcadores quando tracking muda
   useEffect(() => {
