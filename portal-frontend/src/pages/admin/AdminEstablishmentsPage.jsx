@@ -31,7 +31,9 @@ const AdminEstablishmentsPage = () => {
   const [editing, setEditing] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', cnpj: '', phone: '', email: '', password: '123456', address: '',
+    name: '', cnpj: '', phone: '', email: '', password: '123456',
+    address_street: '', address_number: '', address_neighborhood: '',
+    address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
     latitude: '', longitude: '', square_id: ''
   });
   const [formError, setFormError] = useState('');
@@ -68,20 +70,33 @@ const AdminEstablishmentsPage = () => {
 
   const openCreateForm = () => {
     setEditing(null);
-    setFormData({ name: '', cnpj: '', phone: '', email: '', password: '123456', address: '', latitude: '', longitude: '', square_id: '' });
+    setFormData({
+      name: '', cnpj: '', phone: '', email: '', password: '123456',
+      address_street: '', address_number: '', address_neighborhood: '',
+      address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
+      latitude: '', longitude: '', square_id: ''
+    });
     setFormError('');
     setShowForm(true);
   };
 
   const openEditForm = (est) => {
     setEditing(est);
+    // Tenta separar endereco em campos
+    const addr = est.address || '';
+    const parts = addr.split(',').map(s => s.trim());
     setFormData({
       name: est.name || '',
       cnpj: est.cnpj || '',
       phone: est.phone || '',
       email: est.email || '',
       password: '',
-      address: est.address || '',
+      address_street: parts[0] || addr,
+      address_number: parts[1] || '',
+      address_neighborhood: parts[2] || '',
+      address_city: parts[3] || 'Capão da Canoa',
+      address_state: parts[4] || 'RS',
+      address_zip: parts[5] || '',
       latitude: est.latitude || '',
       longitude: est.longitude || '',
       square_id: est.square_id || ''
@@ -97,19 +112,21 @@ const AdminEstablishmentsPage = () => {
 
   const handleSubmitForm = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.address) {
-      setFormError('Nome e endereço são obrigatórios');
+    if (!formData.name || !formData.address_street || !formData.address_number || !formData.address_neighborhood) {
+      setFormError('Nome, rua, número e bairro são obrigatórios');
       return;
     }
 
     try {
       setFormLoading(true);
+      const fullAddress = `${formData.address_street}, ${formData.address_number} - ${formData.address_neighborhood}, ${formData.address_city} - ${formData.address_state}, ${formData.address_zip}`;
+
       const payload = {
         name: formData.name,
         cnpj: formData.cnpj || null,
         phone: formData.phone || null,
         email: formData.email || null,
-        address: formData.address,
+        address: fullAddress,
         latitude: formData.latitude ? parseFloat(formData.latitude) : -29.95,
         longitude: formData.longitude ? parseFloat(formData.longitude) : -50.45,
         square_id: formData.square_id || null,
@@ -454,8 +471,30 @@ const AdminEstablishmentsPage = () => {
               </select>
             </FormField>
 
-            <FormField label="Endereço *">
-              <input type="text" name="address" value={formData.address} onChange={handleFormChange} style={inputStyle} placeholder="Rua, número, bairro, cidade" />
+            <FormField label="Rua/Avenida *">
+              <input type="text" name="address_street" value={formData.address_street} onChange={handleFormChange} style={inputStyle} placeholder="Ex: Rua das Flores" />
+            </FormField>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <FormField label="Número *">
+                <input type="text" name="address_number" value={formData.address_number} onChange={handleFormChange} style={inputStyle} placeholder="123" />
+              </FormField>
+              <FormField label="Bairro *">
+                <input type="text" name="address_neighborhood" value={formData.address_neighborhood} onChange={handleFormChange} style={inputStyle} placeholder="Centro" />
+              </FormField>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <FormField label="Cidade">
+                <input type="text" name="address_city" value={formData.address_city} onChange={handleFormChange} style={inputStyle} placeholder="Capão da Canoa" />
+              </FormField>
+              <FormField label="UF">
+                <input type="text" name="address_state" value={formData.address_state} onChange={handleFormChange} style={inputStyle} placeholder="RS" />
+              </FormField>
+            </div>
+
+            <FormField label="CEP">
+              <input type="text" name="address_zip" value={formData.address_zip} onChange={handleFormChange} style={inputStyle} placeholder="95555-000" />
             </FormField>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>

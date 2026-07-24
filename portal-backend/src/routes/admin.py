@@ -1408,6 +1408,15 @@ def update_establishment(establishment_id):
             est.email = data['email']
         if data.get('address'):
             est.address = data['address']
+            # Geocodifica endereco se mudou
+            try:
+                from src.services.geocoding import geocode_address
+                geo = geocode_address(est.address)
+                if geo:
+                    est.latitude = geo['latitude']
+                    est.longitude = geo['longitude']
+            except Exception:
+                pass
         if data.get('latitude') is not None:
             est.latitude = data['latitude']
         if data.get('longitude') is not None:
