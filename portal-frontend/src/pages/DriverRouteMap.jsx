@@ -1,7 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Store, Package, ArrowLeft, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, Store, Package, ArrowLeft, ExternalLink, CheckCircle } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
+
+const STATUS_MAP = {
+  ACCEPTED: { next: 'PREPARING', actionLabel: 'Coletar', color: '#f59e0b' },
+  PREPARING: { next: 'READY', actionLabel: 'Coletar', color: '#8b5cf6' },
+  READY: { next: 'PICKED_UP', actionLabel: 'Coletar', color: '#06b6d4' },
+  PICKED_UP: { next: 'DELIVERED', actionLabel: 'Entregar', color: '#22c55e' },
+};
+
+const STATUS_TEXT = {
+  ACCEPTED: 'A coletar',
+  PREPARING: 'Preparando',
+  READY: 'Pronto para coleta',
+  PICKED_UP: 'A entregar',
+};
 
 const DriverRouteMap = () => {
   const navigate = useNavigate();
@@ -9,23 +23,27 @@ const DriverRouteMap = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [updatingOrder, setUpdatingOrder] = useState(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
-  const routeLineRef = useRef(null);
 
   useEffect(() => {
     loadActiveOrders();
   }, []);
 
-  useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+  // Callback ref para inicializar o mapa
+  const mapCallbackRef = useCallback((node) => {
+    if (!node) return;
+    mapRef.current = node;
+
+    if (mapInstanceRef.current) return;
 
     const initMap = () => {
-      if (!mapRef.current || mapInstanceRef.current) return;
+      if (!node || mapInstanceRef.current) return;
       const L = window.L;
       if (!L) return;
-      mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
+      mapInstanceRef.current = L.map(node, { zoomControl: true, scrollWheelZoom: true })
         .setView([-29.72, -50.00], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
@@ -58,18 +76,15 @@ const DriverRouteMap = () => {
     markersRef.current.forEach(marker => map.removeLayer(marker));
     markersRef.current = [];
 
-    if (routeLineRef.current) {
-      map.removeLayer(routeLineRef.current);
-      routeLineRef.current = null;
-    }
-
     const allPoints = [];
 
     activeOrders.forEach((order, index) => {
+      const statusInfo = STATUS_MAP[order.status] || STATUS_MAP.ACCEPTED;
+
       // Marcador do restaurante
       if (order.restaurant?.latitude && order.restaurant?.longitude) {
         const restIcon = L.divIcon({
-          html: `<div style="background:#f59e0b;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:11px;font-weight:bold;color:white">${index + 1}</div>`,
+          html: `<div style="background:${statusInfo.color};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-size:11px;font-weight:bold;color:white">${index + 1}</div>`,
           className: '',
           iconSize: [28, 28],
           iconAnchor: [14, 14]
@@ -77,7 +92,7 @@ const DriverRouteMap = () => {
 
         const restMarker = L.marker([order.restaurant.latitude, order.restaurant.longitude], { icon: restIcon })
           .addTo(map)
-          .bindPopup(`<b>Coletar #${index + 1}</b><br>${order.restaurant.name}<br>${order.restaurant.address || ''}`);
+          .bindPopup(`<b>${index + 1}. Coletar</b><br>${order.restaurant.name}<br>${order.restaurant.address || ''}`);
         markersRef.current.push(restMarker);
         allPoints.push([order.restaurant.latitude, order.restaurant.longitude]);
       }
@@ -93,7 +108,7 @@ const DriverRouteMap = () => {
 
         const delivMarker = L.marker([order.delivery_address.latitude, order.delivery_address.longitude], { icon: delivIcon })
           .addTo(map)
-          .bindPopup(`<b>Entregar #${index + 1}</b><br>${order.customer?.name}<br>${order.delivery_address.street || ''}`);
+          .bindPopup(`<b>${index + 1}. Entregar</b><br>${order.customer?.name}<br>${order.delivery_address.street || ''}`);
         markersRef.current.push(delivMarker);
         allPoints.push([order.delivery_address.latitude, order.delivery_address.longitude]);
       }
@@ -119,7 +134,26 @@ const DriverRouteMap = () => {
     }
   };
 
-  const openInGoogleMaps = (lat, lng, label) => {
+  const handleAdvanceStatus = async (order) => {
+    const statusInfo = STATUS_MAP[order.status];
+    if (!statusInfo) return;
+
+    try {
+      setUpdatingOrder(order.id);
+      await orderService.updateOrderStatus(order.id, statusInfo.next);
+      // Atualiza o pedido localmente
+      setActiveOrders(prev => prev.map(o =>
+        o.id === order.id ? { ...o, status: statusInfo.next } : o
+      ).filter(o => o.status !== 'DELIVERED'));
+    } catch (err) {
+      setError('Erro ao atualizar status');
+      console.error(err);
+    } finally {
+      setUpdatingOrder(null);
+    }
+  };
+
+  const openInGoogleMaps = (lat, lng) => {
     if (lat && lng) {
       window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
     }
@@ -147,7 +181,7 @@ const DriverRouteMap = () => {
             Minha Rota
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-            {activeOrders.length} pedidos • {activeOrders.length * 2} endereços no mapa
+            {activeOrders.length} pedidos ativos
           </p>
         </div>
       </div>
@@ -158,10 +192,10 @@ const DriverRouteMap = () => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '1rem', marginBottom: '1.5rem' }} className="route-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1rem', marginBottom: '1.5rem' }} className="route-grid">
         {/* Mapa */}
         <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-          <div ref={mapRef} style={{ height: '500px', background: '#e5e7eb' }} />
+          <div ref={mapCallbackRef} style={{ height: '500px', background: '#e5e7eb' }} />
         </div>
 
         {/* Lista de pedidos */}
@@ -170,98 +204,125 @@ const DriverRouteMap = () => {
             <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Pedidos da Rota</span>
           </div>
           <div style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
-            {activeOrders.map((order, index) => (
-              <div
-                key={order.id}
-                onClick={() => {
-                  setSelectedOrder(selectedOrder?.id === order.id ? null : order);
-                  if (order.restaurant?.latitude && order.restaurant?.longitude) {
-                    mapInstanceRef.current?.setView([order.restaurant.latitude, order.restaurant.longitude], 15);
-                  }
-                }}
-                style={{
-                  padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '0.5rem',
-                  background: selectedOrder?.id === order.id ? '#eff6ff' : '#f8fafc',
-                  border: `1px solid ${selectedOrder?.id === order.id ? '#bfdbfe' : 'transparent'}`,
-                  cursor: 'pointer', transition: 'all 0.15s'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <div style={{
-                    width: '1.75rem', height: '1.75rem', borderRadius: '50%',
-                    background: order.status === 'PICKED_UP' ? '#22c55e' : '#f59e0b',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.75rem', fontWeight: 700, color: 'white'
-                  }}>
-                    {index + 1}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem' }}>
-                      #{order.order_number}
-                    </p>
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
-                      {order.status === 'PICKED_UP' ? 'A entregar' : 'A coletar'}
-                    </p>
-                  </div>
-                </div>
+            {activeOrders.map((order, index) => {
+              const statusInfo = STATUS_MAP[order.status] || STATUS_MAP.ACCEPTED;
+              const statusText = STATUS_TEXT[order.status] || order.status;
+              const isUpdating = updatingOrder === order.id;
 
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.25rem' }}>
-                    <Store size={12} style={{ color: '#f59e0b' }} />
-                    <span>{order.restaurant?.name}</span>
+              return (
+                <div
+                  key={order.id}
+                  onClick={() => {
+                    setSelectedOrder(selectedOrder?.id === order.id ? null : order);
+                    if (order.restaurant?.latitude && order.restaurant?.longitude) {
+                      mapInstanceRef.current?.setView([order.restaurant.latitude, order.restaurant.longitude], 15);
+                    }
+                  }}
+                  style={{
+                    padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '0.5rem',
+                    background: selectedOrder?.id === order.id ? '#eff6ff' : '#f8fafc',
+                    border: `1px solid ${selectedOrder?.id === order.id ? '#bfdbfe' : 'transparent'}`,
+                    cursor: 'pointer', transition: 'all 0.15s'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <div style={{
+                      width: '1.5rem', height: '1.5rem', borderRadius: '50%',
+                      background: statusInfo.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.625rem', fontWeight: 700, color: 'white'
+                    }}>
+                      {index + 1}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.75rem' }}>
+                        #{order.order_number}
+                      </p>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
-                    <MapPin size={12} style={{ color: '#22c55e' }} />
-                    <span>{order.customer?.name}</span>
-                  </div>
-                </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.125rem' }}>
+                      <Store size={10} style={{ color: '#f59e0b' }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{order.restaurant?.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <MapPin size={10} style={{ color: '#22c55e' }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{order.customer?.name}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.375rem' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openInGoogleMaps(order.restaurant?.latitude, order.restaurant?.longitude);
+                      }}
+                      style={{
+                        flex: 1, padding: '0.375rem', borderRadius: '0.25rem',
+                        border: '1px solid #e2e8f0', background: 'white', color: '#f59e0b',
+                        fontSize: '0.625rem', cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', gap: '0.25rem'
+                      }}
+                    >
+                      <Navigation size={9} /> Mapa
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openInGoogleMaps(order.delivery_address?.latitude, order.delivery_address?.longitude);
+                      }}
+                      style={{
+                        flex: 1, padding: '0.375rem', borderRadius: '0.25rem',
+                        border: '1px solid #e2e8f0', background: 'white', color: '#22c55e',
+                        fontSize: '0.625rem', cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', gap: '0.25rem'
+                      }}
+                    >
+                      <Navigation size={9} /> Mapa
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/delivery/${order.id}`);
+                      }}
+                      style={{
+                        padding: '0.375rem 0.5rem', borderRadius: '0.25rem',
+                        border: '1px solid #e2e8f0', background: 'white', color: '#2563eb',
+                        fontSize: '0.625rem', cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center'
+                      }}
+                    >
+                      <ExternalLink size={9} />
+                    </button>
+                  </div>
+
+                  {/* Botao de acao principal */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      openInGoogleMaps(order.restaurant?.latitude, order.restaurant?.longitude, order.restaurant?.name);
+                      handleAdvanceStatus(order);
                     }}
+                    disabled={isUpdating}
                     style={{
-                      flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
-                      border: '1px solid #e2e8f0', background: 'white', color: '#f59e0b',
-                      fontSize: '0.6875rem', cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', gap: '0.25rem'
+                      width: '100%', marginTop: '0.5rem', padding: '0.5rem',
+                      borderRadius: '0.375rem', border: 'none',
+                      background: isUpdating ? '#94a3b8' : statusInfo.color,
+                      color: 'white', fontSize: '0.75rem', fontWeight: 600,
+                      cursor: isUpdating ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem'
                     }}
                   >
-                    <Navigation size={10} /> Coletar
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openInGoogleMaps(order.delivery_address?.latitude, order.delivery_address?.longitude, order.customer?.name);
-                    }}
-                    style={{
-                      flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
-                      border: '1px solid #e2e8f0', background: 'white', color: '#22c55e',
-                      fontSize: '0.6875rem', cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', gap: '0.25rem'
-                    }}
-                  >
-                    <Navigation size={10} /> Entregar
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/delivery/${order.id}`);
-                    }}
-                    style={{
-                      padding: '0.375rem 0.5rem', borderRadius: '0.375rem',
-                      border: '1px solid #e2e8f0', background: 'white', color: '#2563eb',
-                      fontSize: '0.6875rem', cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center'
-                    }}
-                  >
-                    <ExternalLink size={10} />
+                    {isUpdating ? 'Atualizando...' : (
+                      <>
+                        <CheckCircle size={12} />
+                        {statusInfo.actionLabel}
+                      </>
+                    )}
                   </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
