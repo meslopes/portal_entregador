@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
@@ -7,6 +7,16 @@ import {
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix para icones do Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -16,6 +26,9 @@ const AdminDashboardPage = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
 
   useEffect(() => {
     loadDashboard();
@@ -83,6 +96,72 @@ const AdminDashboardPage = () => {
     const interval = setInterval(loadTracking, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  // Inicializa o mapa Leaflet
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    const map = L.map(mapRef.current, {
+      center: [-29.95, -50.45],
+      zoom: 13,
+      zoomControl: true,
+      scrollWheelZoom: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    // Aguarda renderizacao
+    setTimeout(() => map.invalidateSize(), 200);
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Atualiza marcadores quando tracking muda
+  useEffect(() => {
+    if (!mapInstanceRef.current || !tracking?.drivers) return;
+
+    const map = mapInstanceRef.current;
+
+    // Remove marcadores antigos
+    markersRef.current.forEach(marker => map.removeLayer(marker));
+    markersRef.current = [];
+
+    // Adiciona novos marcadores
+    tracking.drivers.forEach(driver => {
+      if (driver.latitude && driver.longitude) {
+        const color = driver.current_order ? '#2563eb' : '#22c55e';
+        const icon = L.divIcon({
+          html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+          </div>`,
+          className: '',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([driver.latitude, driver.longitude], { icon })
+          .addTo(map)
+          .bindPopup(`<b>${driver.name}</b><br>${driver.vehicle_type}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
+
+        markersRef.current.push(marker);
+      }
+    });
+
+    // Ajusta zoom se houver marcadores
+    if (markersRef.current.length > 0) {
+      const group = L.featureGroup(markersRef.current);
+      map.fitBounds(group.getBounds().pad(0.1));
+    }
+  }, [tracking]);
 
   if (loading) {
     return (
@@ -235,6 +314,7 @@ const AdminDashboardPage = () => {
             </div>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
           </div>
+          <div ref={mapRef} style={{ height: '400px', width: '100%' }} />
         </div>
 
         {/* Lista de entregadores online */}
