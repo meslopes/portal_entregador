@@ -181,9 +181,7 @@ const AdminDashboardPage = () => {
           </p>
         </div>
         <button onClick={() => { loadDashboard(); loadTracking(); }} style={{
-          display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem',
-          borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white',
-          cursor: 'pointer', fontSize: '0.8125rem', color: '#475569'
+          display: 'none'
         }}>
           <RefreshCw size={14} /> Atualizar
         </button>
