@@ -33,6 +33,9 @@ import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
+import SupportPage from '@/pages/SupportPage';
+import TermsPage from '@/pages/TermsPage';
+import PrivacyPage from '@/pages/PrivacyPage';
 import './App.css';
 
 // Componente de redirecionamento inteligente baseado no tipo de usuario
@@ -56,14 +59,17 @@ function App() {
         <Router>
           <Routes>
           {/* Rotas públicas */}
-          <Route 
-            path="/login" 
+          <Route
+            path="/login"
             element={
               <ProtectedRoute requireAuth={false}>
                 <LoginPage />
               </ProtectedRoute>
-            } 
+            }
           />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route 
             path="/register" 
             element={
