@@ -7,16 +7,6 @@ import {
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix para icones do Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -97,37 +87,35 @@ const AdminDashboardPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Inicializa o mapa Leaflet
+  // Inicializa o mapa Leaflet via CDN (mesma abordagem do client)
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    // Aguarda o container ter dimensoes
-    const initMap = () => {
-      if (!mapRef.current) return;
+    // Carrega CSS do Leaflet
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
 
-      const map = L.map(mapRef.current, {
-        center: [-29.95, -50.45],
-        zoom: 13,
-        zoomControl: true,
-        scrollWheelZoom: true
-      });
+    // Carrega JS do Leaflet
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      if (mapRef.current && !mapInstanceRef.current) {
+        const L = window.L;
+        mapInstanceRef.current = L.map(mapRef.current, {
+          center: [-29.95, -50.45],
+          zoom: 13,
+          zoomControl: true,
+          scrollWheelZoom: true
+        });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-
-      mapInstanceRef.current = map;
-
-      // Forca atualizacao de tamanho
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 100);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(mapInstanceRef.current);
+      }
     };
-
-    // Aguarda um frame para garantir que o DOM esta pronto
-    requestAnimationFrame(() => {
-      setTimeout(initMap, 300);
-    });
+    document.head.appendChild(script);
 
     return () => {
       if (mapInstanceRef.current) {
@@ -139,8 +127,9 @@ const AdminDashboardPage = () => {
 
   // Atualiza marcadores quando tracking muda
   useEffect(() => {
-    if (!mapInstanceRef.current || !tracking?.drivers) return;
+    if (!mapInstanceRef.current || !window.L || !tracking?.drivers) return;
 
+    const L = window.L;
     const map = mapInstanceRef.current;
 
     // Remove marcadores antigos
