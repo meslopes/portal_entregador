@@ -55,6 +55,9 @@ app.register_blueprint(order_bp, url_prefix='/api/orders')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 
+from src.routes.user import user_bp
+app.register_blueprint(user_bp, url_prefix='/api/user')
+
 # Inicializa banco de dados
 db.init_app(app)
 with app.app_context():
