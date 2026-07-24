@@ -87,29 +87,22 @@ const AdminDashboardPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Inicializa o mapa Leaflet via CDN (mesma abordagem do client)
+  // Inicializa o mapa Leaflet via CDN (identico ao client)
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    // Carrega CSS do Leaflet
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
     document.head.appendChild(link);
 
-    // Carrega JS do Leaflet
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     script.onload = () => {
       if (mapRef.current && !mapInstanceRef.current) {
         const L = window.L;
-        mapInstanceRef.current = L.map(mapRef.current, {
-          center: [-29.95, -50.45],
-          zoom: 13,
-          zoomControl: true,
-          scrollWheelZoom: true
-        });
-
+        mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
+          .setView([-29.95, -50.45], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap'
         }).addTo(mapInstanceRef.current);
@@ -307,7 +300,7 @@ const AdminDashboardPage = () => {
       {/* Mapa + Tracking */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '1rem', marginBottom: '1.5rem' }} className="dashboard-grid">
         {/* Mapa */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <MapPin size={18} style={{ color: '#2563eb' }} />
@@ -315,16 +308,10 @@ const AdminDashboardPage = () => {
             </div>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
           </div>
-          <div ref={mapRef} id="admin-map" style={{ height: '400px', width: '100%', minHeight: '400px', background: '#e8f4f8' }} />
+          <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
           {!tracking?.drivers?.length && (
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              textAlign: 'center', color: '#94a3b8', zIndex: 1000,
-              pointerEvents: 'none'
-            }}>
-              <MapPin size={48} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-              <p style={{ fontSize: '0.875rem' }}>Nenhum entregador online</p>
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>
+              Nenhum entregador online
             </div>
           )}
         </div>
