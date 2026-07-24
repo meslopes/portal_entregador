@@ -21,6 +21,7 @@ import ClientOrdersPage from '@/pages/client/ClientOrdersPage';
 import ClientFinancialPage from '@/pages/client/ClientFinancialPage';
 import ClientInvoicePage from '@/pages/client/ClientInvoicePage';
 import ClientIntegrationsPage from '@/pages/client/ClientIntegrationsPage';
+import ClientProfilePage from '@/pages/client/ClientProfilePage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
@@ -217,6 +218,16 @@ function App() {
               <ProtectedRoute>
                 <ClientLayout>
                   <ClientIntegrationsPage />
+                </ClientLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/profile"
+            element={
+              <ProtectedRoute>
+                <ClientLayout>
+                  <ClientProfilePage />
                 </ClientLayout>
               </ProtectedRoute>
             }
