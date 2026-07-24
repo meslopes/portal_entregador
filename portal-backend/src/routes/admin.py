@@ -1425,6 +1425,8 @@ def update_establishment(establishment_id):
             est.opening_hours = data['opening_hours']
         if 'is_active' in data:
             est.is_active = data['is_active']
+        if 'square_id' in data:
+            est.square_id = data['square_id']
 
         est.updated_at = datetime.utcnow()
         db.session.commit()
@@ -1433,6 +1435,37 @@ def update_establishment(establishment_id):
             'message': 'Estabelecimento atualizado com sucesso',
             'establishment': est.to_dict()
         }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishments/<int:establishment_id>/geocode', methods=['POST'])
+@jwt_required()
+@admin_required
+def re_geocode_establishment(establishment_id):
+    """Re-geocodifica o endereco de um estabelecimento"""
+    try:
+        est = Restaurant.query.get(establishment_id)
+        if not est:
+            return jsonify({'error': 'Estabelecimento nao encontrado'}), 404
+
+        from src.services.geocoding import geocode_address
+        geo = geocode_address(est.address)
+
+        if geo:
+            est.latitude = geo['latitude']
+            est.longitude = geo['longitude']
+            est.updated_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({
+                'message': 'Geocodificacao realizada com sucesso',
+                'latitude': est.latitude,
+                'longitude': est.longitude
+            }), 200
+        else:
+            return jsonify({'error': 'Nao foi possivel geocodificar o endereco. Verifique se o endereco esta correto.'}), 400
 
     except Exception as e:
         db.session.rollback()

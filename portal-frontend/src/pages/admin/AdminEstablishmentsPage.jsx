@@ -84,19 +84,62 @@ const AdminEstablishmentsPage = () => {
     setEditing(est);
     // Tenta separar endereco em campos
     const addr = est.address || '';
+    // Formato esperado: "Rua X, 123 - Bairro, Cidade - UF, CEP"
     const parts = addr.split(',').map(s => s.trim());
+
+    // Tenta extrair rua e numero do primeiro campo
+    let street = parts[0] || addr;
+    let number = '';
+    let neighborhood = parts[1] || '';
+    let cityState = parts[2] || '';
+    let city = 'Capão da Canoa';
+    let state = 'RS';
+    let zip = '';
+
+    // Se o primeiro campo tem " - ", pode ser "Rua, Numero - Bairro"
+    if (street.includes(' - ')) {
+      const streetParts = street.split(' - ');
+      street = streetParts[0];
+      if (streetParts[1]) number = streetParts[1];
+    }
+
+    // Se o segundo campo tem " - ", pode ser "Bairro, Cidade - UF"
+    if (neighborhood.includes(' - ')) {
+      const hoodParts = neighborhood.split(' - ');
+      neighborhood = hoodParts[0];
+      if (hoodParts[1]) {
+        const csParts = hoodParts[1].split('/');
+        city = csParts[0] || city;
+        state = csParts[1] || state;
+      }
+    }
+
+    // Se o terceiro campo tem "/", pode ser "Cidade/UF, CEP"
+    if (cityState.includes('/')) {
+      const csParts = cityState.split('/');
+      city = csParts[0] || city;
+      const rest = csParts[1] || '';
+      if (rest.includes(',')) {
+        const stateZip = rest.split(',');
+        state = stateZip[0] || state;
+        zip = stateZip[1] || '';
+      } else {
+        state = rest || state;
+      }
+    }
+
     setFormData({
       name: est.name || '',
       cnpj: est.cnpj || '',
       phone: est.phone || '',
       email: est.email || '',
       password: '',
-      address_street: parts[0] || addr,
-      address_number: parts[1] || '',
-      address_neighborhood: parts[2] || '',
-      address_city: parts[3] || 'Capão da Canoa',
-      address_state: parts[4] || 'RS',
-      address_zip: parts[5] || '',
+      address_street: street,
+      address_number: number,
+      address_neighborhood: neighborhood,
+      address_city: city,
+      address_state: state,
+      address_zip: zip,
       latitude: est.latitude || '',
       longitude: est.longitude || '',
       square_id: est.square_id || ''
@@ -505,6 +548,35 @@ const AdminEstablishmentsPage = () => {
                 <input type="text" name="longitude" value={formData.longitude} onChange={handleFormChange} style={inputStyle} placeholder="-50.4500" />
               </FormField>
             </div>
+
+            {editing && (
+              <div style={{ marginBottom: '1rem' }}>
+                <button type="button" onClick={async () => {
+                  try {
+                    const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/${editing.id}/geocode`, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setFormData(prev => ({ ...prev, latitude: data.latitude, longitude: data.longitude }));
+                      setFormError('');
+                      alert('Geocodificação realizada com sucesso!');
+                    } else {
+                      alert(data.error || 'Erro na geocodificação');
+                    }
+                  } catch (e) {
+                    alert('Erro ao geocodificar');
+                  }
+                }} style={{
+                  padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                  border: '1px solid #e2e8f0', background: '#f8fafc',
+                  fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer'
+                }}>
+                  🔄 Re-geocodificar endereço
+                </button>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
               <button type="button" onClick={() => setShowForm(false)} style={btnSecondary}>Cancelar</button>
