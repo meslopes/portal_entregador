@@ -270,7 +270,40 @@ def update_user(user_id):
         user.updated_at = datetime.utcnow()
         db.session.commit()
 
-        return jsonify({'message': 'UsuÃƒÂ¡rio atualizado com sucesso'}), 200
+        return jsonify({'message': 'Usuario atualizado com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/reset-password', methods=['POST'])
+@jwt_required()
+@admin_required
+def admin_reset_password(user_id):
+    """Admin reseta a senha de um usuario"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuario nao encontrado'}), 404
+
+        data = request.get_json() or {}
+        new_password = data.get('new_password', 'admin123')
+
+        if len(new_password) < 6:
+            return jsonify({'error': 'Nova senha deve ter pelo menos 6 caracteres'}), 400
+
+        user.set_password(new_password)
+        db.session.flush()
+
+        # Verifica se a senha foi salva corretamente
+        from werkzeug.security import check_password_hash
+        if not check_password_hash(user.password_hash, new_password):
+            db.session.rollback()
+            return jsonify({'error': 'Erro ao salvar nova senha'}), 500
+
+        db.session.commit()
+
+        return jsonify({'message': 'Senha resetada com sucesso', 'email': user.email}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
