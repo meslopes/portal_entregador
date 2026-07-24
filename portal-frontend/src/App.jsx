@@ -13,6 +13,7 @@ import HistoryPage from '@/pages/HistoryPage';
 import ActiveDeliveryPage from '@/pages/ActiveDeliveryPage';
 import DriverRankingPage from '@/pages/DriverRankingPage';
 import DriverProfilePage from '@/pages/DriverProfilePage';
+import DriverRouteMap from '@/pages/DriverRouteMap';
 import ClientLoginPage from '@/pages/client/ClientLoginPage';
 import ClientRegisterPage from '@/pages/client/ClientRegisterPage';
 import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
@@ -121,7 +122,7 @@ function App() {
             }
           />
           <Route
-            path="/delivery/active"
+            path="/delivery/:orderId?"
             element={
               <ProtectedRoute>
                 <Layout>
@@ -146,6 +147,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <DriverProfilePage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/route"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <DriverRouteMap />
                 </Layout>
               </ProtectedRoute>
             }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Navigation,
   Store, User, AlertCircle, RefreshCw, ChevronRight,
-  Phone, Bike, ShoppingCart, ArrowRight, Volume2, VolumeX, Bell, BellOff
+  Phone, Bike, ShoppingCart, ArrowRight, Volume2, VolumeX, Bell, BellOff, Route
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
 import {
@@ -230,6 +230,25 @@ const OrdersPage = () => {
         </button>
       </div>
 
+      {/* Botao Ver Rota */}
+      {activeOrders.length > 0 && activeTab === 'active' && (
+        <button
+          onClick={() => navigate('/route')}
+          style={{
+            width: '100%', padding: '0.875rem 1.5rem', borderRadius: '0.75rem',
+            border: 'none', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+            color: 'white', fontSize: '0.9375rem', fontWeight: 600,
+            cursor: 'pointer', marginBottom: '1.5rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+          }}
+        >
+          <MapPin size={18} />
+          Ver Minha Rota no Mapa ({activeOrders.length * 2} endereços)
+          <Navigation size={16} />
+        </button>
+      )}
+
       {/* Erro */}
       {error && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
@@ -441,7 +460,7 @@ const ActiveOrderCard = ({ order }) => {
             {utils.formatCurrency(order.total_amount)}
           </p>
           <button
-            onClick={() => navigate('/delivery/active')}
+            onClick={() => navigate(`/delivery/${order.id}`)}
             style={{
               padding: '0.5rem 1rem', borderRadius: '0.5rem',
               border: 'none', background: config.color, color: 'white',

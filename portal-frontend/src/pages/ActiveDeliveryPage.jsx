@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Store, User, Phone,
   AlertCircle, Navigation, CheckCircle, ArrowRight, ChevronRight,
@@ -34,6 +34,7 @@ const STATUS_ACTIONS = {
 
 const ActiveDeliveryPage = () => {
   const navigate = useNavigate();
+  const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -86,12 +87,25 @@ const ActiveDeliveryPage = () => {
   const loadCurrentOrder = async () => {
     try {
       setIsLoading(true);
-      const response = await orderService.getCurrentOrder();
-      if (!isMounted.current) return;
-      if (response.order) {
-        setOrder(response.order);
+
+      let response;
+      if (orderId) {
+        // Busca pedido especifico pelo ID
+        response = await orderService.getOrderDetails(orderId);
+        if (response.order) {
+          setOrder(response.order);
+        } else {
+          navigate('/orders');
+        }
       } else {
-        navigate('/dashboard');
+        // Busca pedido atual (fallback)
+        response = await orderService.getCurrentOrder();
+        if (!isMounted.current) return;
+        if (response.order) {
+          setOrder(response.order);
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       if (!isMounted.current) return;
