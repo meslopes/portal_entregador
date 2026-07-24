@@ -297,55 +297,39 @@ const AdminDashboardPage = () => {
         </div>
       )}
 
-      {/* Mapa + Tracking */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '1rem', marginBottom: '1.5rem' }} className="dashboard-grid">
-        {/* Mapa */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MapPin size={18} style={{ color: '#2563eb' }} />
-              <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregadores em Tempo Real</span>
-            </div>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
+      {/* Mapa */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <MapPin size={18} style={{ color: '#2563eb' }} />
+            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregadores em Tempo Real</span>
           </div>
-          <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
-          {!tracking?.drivers?.length && (
-            <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>
-              Nenhum entregador online
-            </div>
-          )}
+          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
         </div>
+        <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
+      </div>
 
-        {/* Lista de entregadores online */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9' }}>
-            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregadores Online</span>
-          </div>
-          <div style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
-            {tracking?.drivers?.length > 0 ? tracking.drivers.map((driver, i) => (
-              <div key={i} style={{
-                padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '0.375rem',
-                background: driver.current_order ? '#eff6ff' : '#f0fdf4',
-                borderLeft: `3px solid ${driver.current_order ? '#2563eb' : '#22c55e'}`
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{driver.name}</p>
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{driver.vehicle_type}</p>
-                  </div>
-                  <span style={{
-                    padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600,
-                    background: driver.current_order ? '#dbeafe' : '#dcfce7',
-                    color: driver.current_order ? '#2563eb' : '#16a34a'
-                  }}>
-                    {driver.current_order ? 'ðŸ“¦ Em entrega' : 'âœ… Livre'}
-                  </span>
+      {/* Lista de entregadores online */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9' }}>
+          <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregadores Online</span>
+        </div>
+        <div style={{ padding: '0.5rem' }}>
+          {tracking?.drivers?.length > 0 ? tracking.drivers.map((driver, i) => (
+            <div key={i} style={{ padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '0.375rem', background: driver.current_order ? '#eff6ff' : '#f0fdf4', borderLeft: `3px solid ${driver.current_order ? '#2563eb' : '#22c55e'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{driver.name}</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{driver.vehicle_type}</p>
                 </div>
+                <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: driver.current_order ? '#dbeafe' : '#dcfce7', color: driver.current_order ? '#2563eb' : '#16a34a' }}>
+                  {driver.current_order ? 'Em entrega' : 'Livre'}
+                </span>
               </div>
-            )) : (
-              <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '0.8125rem' }}>Nenhum entregador online</p>
-            )}
-          </div>
+            </div>
+          )) : (
+            <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '0.8125rem' }}>Nenhum entregador online</p>
+          )}
         </div>
       </div>
 
@@ -418,8 +402,8 @@ const AdminDashboardPage = () => {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        .dashboard-grid { grid-template-columns: 1fr 350px; }
-        @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr !important; } }
+        
+        
       `}</style>
     </div>
   );
