@@ -10,17 +10,11 @@ import hmac
 
 webhook_bp = Blueprint('webhook', __name__)
 
-# Chave de seguranca para webhooks (configuravel via SystemConfig)
-WEBHOOK_SECRET = None
-
 def get_webhook_secret():
-    """Obtem a chave secreta do webhook do SystemConfig"""
-    global WEBHOOK_SECRET
-    if WEBHOOK_SECRET is None:
-        from src.models.portal_models import SystemConfig
-        config = SystemConfig.query.filter_by(config_key='webhook_secret').first()
-        WEBHOOK_SECRET = config.config_value if config else 'muvlog-webhook-default-secret'
-    return WEBHOOK_SECRET
+    """Obtem a chave secreta do webhook do SystemConfig (sempre le do banco)"""
+    from src.models.portal_models import SystemConfig
+    config = SystemConfig.query.filter_by(config_key='webhook_secret').first()
+    return config.config_value if config else 'muvlog-webhook-default-secret'
 
 
 def verify_webhook_signature(payload, signature):

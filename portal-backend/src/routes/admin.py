@@ -412,10 +412,11 @@ def get_dashboard():
             User.first_name,
             User.last_name,
             func.count(Order.id).label('deliveries')
-        ).join(User).join(Order).filter(
+        ).join(User).outerjoin(Order, and_(
+            Order.driver_id == Driver.id,
             Order.created_at >= week_ago,
             Order.status == OrderStatus.DELIVERED
-        ).group_by(Driver.id, User.first_name, User.last_name).order_by(
+        )).group_by(Driver.id, User.first_name, User.last_name).order_by(
             func.count(Order.id).desc()
         ).limit(5).all()
         

@@ -335,7 +335,15 @@ def change_password():
         if len(new_password) < 6:
             return jsonify({'error': 'Nova senha deve ter pelo menos 6 caracteres'}), 400
 
+        # Altera a senha e força a escrita no banco
         user.set_password(new_password)
+        db.session.flush()
+
+        # Verifica se a senha foi salva corretamente
+        if not check_password_hash(user.password_hash, new_password):
+            db.session.rollback()
+            return jsonify({'error': 'Erro ao salvar nova senha'}), 500
+
         db.session.commit()
 
         return jsonify({'message': 'Senha alterada com sucesso'}), 200
