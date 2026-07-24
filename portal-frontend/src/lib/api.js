@@ -150,6 +150,11 @@ export const orderService = {
     return response.data;
   },
 
+  getActiveOrders: async () => {
+    const response = await api.get('/api/orders/active');
+    return response.data;
+  },
+
   getOrderDetails: async (orderId) => {
     const response = await api.get(`/api/orders/${orderId}`);
     return response.data;

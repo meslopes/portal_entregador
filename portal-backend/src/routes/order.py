@@ -543,6 +543,49 @@ def get_current_order():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@order_bp.route('/active', methods=['GET'])
+@jwt_required()
+def get_active_orders():
+    """Obtém todos os pedidos ativos do entregador (aceitos, preparando, pronto, coletado)"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user or user.user_type != UserType.DRIVER:
+            return jsonify({'error': 'Usuário não é um entregador'}), 403
+        
+        driver = user.driver
+        
+        # Busca todos os pedidos ativos
+        active_orders = Order.query.filter(
+            Order.driver_id == driver.id,
+            Order.status.in_([
+                OrderStatus.ACCEPTED, 
+                OrderStatus.PREPARING, 
+                OrderStatus.READY, 
+                OrderStatus.PICKED_UP
+            ])
+        ).order_by(Order.created_at.desc()).all()
+        
+        orders_data = []
+        for order in active_orders:
+            order_dict = order.to_dict()
+            order_dict['restaurant'] = order.restaurant.to_dict()
+            order_dict['customer'] = order.customer.to_dict()
+            order_dict['delivery_address'] = order.delivery_address.to_dict()
+            if order.delivery:
+                order_dict['delivery'] = order.delivery.to_dict()
+            orders_data.append(order_dict)
+        
+        return jsonify({
+            'orders': orders_data,
+            'count': len(orders_data)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @order_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_order():

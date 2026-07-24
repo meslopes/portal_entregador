@@ -14,6 +14,7 @@ import {
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
+  const [activeOrders, setActiveOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [acceptingOrder, setAcceptingOrder] = useState(null);
@@ -22,10 +23,11 @@ const OrdersPage = () => {
   const [notifEnabled, setNotifEnabled] = useState(
     'Notification' in window && Notification.permission === 'granted'
   );
+  const [activeTab, setActiveTab] = useState('available'); // 'available' or 'active'
   const navigate = useNavigate();
   const prevCountRef = useRef(0);
 
-  // Carrega pedidos
+  // Carrega pedidos disponiveis
   const loadAvailableOrders = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -34,7 +36,7 @@ const OrdersPage = () => {
       setOrders(newOrders);
       setError('');
 
-      // Toca sirene se houver pedidos
+      // Toca sirene se houver novos pedidos
       if (newOrders.length > 0 && soundEnabled) {
         startSiren();
       } else if (newOrders.length === 0) {
@@ -50,6 +52,16 @@ const OrdersPage = () => {
     }
   }, [soundEnabled]);
 
+  // Carrega pedidos ativos do entregador
+  const loadActiveOrders = useCallback(async () => {
+    try {
+      const response = await orderService.getActiveOrders();
+      setActiveOrders(response.orders || []);
+    } catch (error) {
+      console.error('Erro ao carregar pedidos ativos:', error);
+    }
+  }, []);
+
   // Inicia monitor de pedidos (sirene global)
   useEffect(() => {
     startOrderMonitor((newOrders) => {
@@ -62,9 +74,13 @@ const OrdersPage = () => {
   // Atualiza a lista de pedidos periodicamente
   useEffect(() => {
     loadAvailableOrders();
-    const interval = setInterval(loadAvailableOrders, 10000);
+    loadActiveOrders();
+    const interval = setInterval(() => {
+      loadAvailableOrders();
+      loadActiveOrders();
+    }, 10000);
     return () => clearInterval(interval);
-  }, [loadAvailableOrders]);
+  }, [loadAvailableOrders, loadActiveOrders]);
 
   // Aceitar pedido
   const handleAcceptOrder = async (orderId) => {
@@ -73,7 +89,9 @@ const OrdersPage = () => {
       stopSiren();
       await orderService.acceptOrder(orderId);
       setOrders(orders.filter(order => order.id !== orderId));
-      window.location.href = '/dashboard';
+      // Carrega pedidos ativos e permanece na pagina
+      loadActiveOrders();
+      setActiveTab('active');
     } catch (error) {
       setError('Erro ao aceitar pedido');
       console.error(error);
@@ -140,16 +158,19 @@ const OrdersPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
-            Pedidos Disponíveis
+            Meus Pedidos
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-            {orders.length} pedido{orders.length !== 1 ? 's' : ''} disponível{orders.length !== 1 ? 'eis' : ''}
+            {activeTab === 'available' 
+              ? `${orders.length} pedido${orders.length !== 1 ? 's' : ''} disponível${orders.length !== 1 ? 'eis' : ''}`
+              : `${activeOrders.length} pedido${activeOrders.length !== 1 ? 's' : ''} em andamento`
+            }
             {!isLoading && <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>• atualiza a cada 10s</span>}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {/* Sirene ativa */}
-          {orders.length > 0 && (
+          {activeTab === 'available' && orders.length > 0 && (
             <span style={{
               padding: '0.375rem 0.75rem', borderRadius: '9999px',
               background: '#fef2f2', color: '#dc2626',
@@ -168,11 +189,45 @@ const OrdersPage = () => {
             {notifEnabled ? <Bell size={18} /> : <BellOff size={18} />}
           </button>
           {/* Atualizar */}
-          <button onClick={loadAvailableOrders} disabled={isLoading} style={refreshBtn}>
+          <button onClick={() => { loadAvailableOrders(); loadActiveOrders(); }} disabled={isLoading} style={refreshBtn}>
             <RefreshCw size={16} style={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
             Atualizar
           </button>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: '#f1f5f9', borderRadius: '0.75rem', padding: '0.25rem' }}>
+        <button
+          onClick={() => setActiveTab('available')}
+          style={{
+            flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: 'none',
+            background: activeTab === 'available' ? 'white' : 'transparent',
+            color: activeTab === 'available' ? '#2563eb' : '#64748b',
+            fontSize: '0.875rem', fontWeight: activeTab === 'available' ? 600 : 400,
+            cursor: 'pointer', transition: 'all 0.2s',
+            boxShadow: activeTab === 'available' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+          }}
+        >
+          <Package size={16} />
+          Disponíveis ({orders.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('active')}
+          style={{
+            flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: 'none',
+            background: activeTab === 'active' ? 'white' : 'transparent',
+            color: activeTab === 'active' ? '#2563eb' : '#64748b',
+            fontSize: '0.875rem', fontWeight: activeTab === 'active' ? 600 : 400,
+            cursor: 'pointer', transition: 'all 0.2s',
+            boxShadow: activeTab === 'active' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+          }}
+        >
+          <Clock size={16} />
+          Em Andamento ({activeOrders.length})
+        </button>
       </div>
 
       {/* Erro */}
@@ -183,25 +238,47 @@ const OrdersPage = () => {
       )}
 
       {/* Lista */}
-      {orders.length === 0 ? (
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '4rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-            <Package size={32} style={{ color: '#94a3b8' }} />
+      {activeTab === 'available' ? (
+        // Pedidos disponiveis
+        orders.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '4rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+              <Package size={32} style={{ color: '#94a3b8' }} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Nenhum pedido disponível</h3>
+            <p style={{ color: '#64748b', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
+              Não há pedidos disponíveis no momento. Você será notificado quando um novo pedido chegar.
+            </p>
+            <button onClick={loadAvailableOrders} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer' }}>
+              <RefreshCw size={16} /> Verificar Novamente
+            </button>
           </div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Nenhum pedido disponível</h3>
-          <p style={{ color: '#64748b', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
-            Não há pedidos disponíveis no momento. Você será notificado quando um novo pedido chegar.
-          </p>
-          <button onClick={loadAvailableOrders} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer' }}>
-            <RefreshCw size={16} /> Verificar Novamente
-          </button>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {orders.map((order) => (
+              <OrderCard key={order.id} order={order} onAccept={handleAcceptOrder} onReject={handleRejectOrder} isAccepting={acceptingOrder === order.id} isRejecting={rejectingOrder === order.id} calculateEarnings={calculateEarnings} />
+            ))}
+          </div>
+        )
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {orders.map((order) => (
-            <OrderCard key={order.id} order={order} onAccept={handleAcceptOrder} onReject={handleRejectOrder} isAccepting={acceptingOrder === order.id} isRejecting={rejectingOrder === order.id} calculateEarnings={calculateEarnings} />
-          ))}
-        </div>
+        // Pedidos ativos
+        activeOrders.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '4rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+              <CheckCircle size={32} style={{ color: '#22c55e' }} />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Nenhum pedido em andamento</h3>
+            <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 auto' }}>
+              Aceite pedidos disponíveis para começar a entregar.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {activeOrders.map((order) => (
+              <ActiveOrderCard key={order.id} order={order} />
+            ))}
+          </div>
+        )
       )}
 
       <style>{`
@@ -311,6 +388,68 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
           </button>
           <button onClick={() => onReject(order.id)} disabled={isAccepting || isRejecting} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem 1.5rem', borderRadius: '0.5rem', border: 'none', background: isRejecting ? '#fca5a5' : '#ef4444', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: isRejecting ? 'not-allowed' : 'pointer' }}>
             {isRejecting ? 'Recusando...' : '✕ Recusar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Card de pedido ativo
+const ActiveOrderCard = ({ order }) => {
+  const STATUS_CONFIG = {
+    ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito' },
+    PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando' },
+    READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto para Coleta' },
+    PICKED_UP: { color: '#f59e0b', bg: '#fef3c7', text: 'A Caminho' },
+  };
+
+  const config = STATUS_CONFIG[order.status] || { color: '#94a3b8', bg: '#f1f5f9', text: order.status };
+  const navigate = useNavigate();
+
+  return (
+    <div style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${config.color}` }}>
+      <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: config.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Package size={14} style={{ color: config.color }} />
+            </div>
+            <div>
+              <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>#{order.order_number}</p>
+              <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{order.restaurant?.name}</p>
+            </div>
+          </div>
+          <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: config.bg, color: config.color }}>
+            {config.text}
+          </span>
+        </div>
+      </div>
+      <div style={{ padding: '1rem 1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+          <div>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Coletar em</p>
+            <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{order.restaurant?.name}</p>
+          </div>
+          <div>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Entregar em</p>
+            <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{order.customer?.name}</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
+            {utils.formatCurrency(order.total_amount)}
+          </p>
+          <button
+            onClick={() => navigate('/delivery/active')}
+            style={{
+              padding: '0.5rem 1rem', borderRadius: '0.5rem',
+              border: 'none', background: config.color, color: 'white',
+              fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '0.375rem'
+            }}
+          >
+            Acompanhar <ChevronRight size={14} />
           </button>
         </div>
       </div>
