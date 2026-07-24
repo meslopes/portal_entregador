@@ -5,7 +5,7 @@ import {
   Bell, Globe, Users, MapPin, Package, Zap, ChevronRight, Mail
 } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+import api from '@/lib/api';
 
 const AdminSettingsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -20,16 +20,11 @@ const AdminSettingsPage = () => {
   const loadConfig = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/admin/settings`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setConfig(data);
-      }
+      const response = await api.get('/api/admin/settings');
+      setConfig(response.data);
     } catch (err) {
       console.error('Erro ao carregar config:', err);
+      setError('Erro ao carregar configurações');
     } finally {
       setLoading(false);
     }
@@ -40,21 +35,13 @@ const AdminSettingsPage = () => {
       setSaving(true);
       setError('');
       setSuccess('');
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/admin/settings`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-      });
-      if (response.ok) {
+      const response = await api.put('/api/admin/settings', config);
+      if (response.status === 200) {
         setSuccess('Configurações salvas com sucesso!');
         setTimeout(() => setSuccess(''), 3000);
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Erro ao salvar');
       }
     } catch (err) {
-      setError('Erro ao salvar configurações');
+      setError(err.response?.data?.error || 'Erro ao salvar configurações');
     } finally {
       setSaving(false);
     }
