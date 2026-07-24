@@ -113,7 +113,7 @@ const NewOrderPage = () => {
         }),
       });
       setSuccess(true);
-      setTimeout(() => navigate('/client'), 2000);
+      setTimeout(() => navigate(isAdmin ? '/admin' : '/client'), 2000);
     } catch (err) {
       console.error('Erro ao criar pedido:', err);
       const msg = err.response?.data?.error || err.message || 'Erro ao criar pedido';
