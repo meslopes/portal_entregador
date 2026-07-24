@@ -175,59 +175,6 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* Pedido em andamento */}
-      {currentOrder && (
-        <div
-          onClick={() => navigate('/delivery/active')}
-          style={{
-            background: 'white',
-            borderRadius: '0.75rem',
-            padding: '1.5rem',
-            marginBottom: '1.5rem',
-            borderLeft: '4px solid #2563eb',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            cursor: 'pointer',
-            transition: 'all 0.15s'
-          }}
-          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.15)'}
-          onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Package size={20} style={{ color: '#2563eb' }} />
-              <span style={{ fontWeight: 600, color: '#1e293b' }}>Pedido em Andamento</span>
-            </div>
-            <span style={{ fontSize: '0.8125rem', color: '#2563eb', fontWeight: 500 }}>
-              Acompanhar →
-            </span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Pedido</p>
-              <p style={{ fontWeight: 600, color: '#1e293b' }}>#{currentOrder.order_number}</p>
-            </div>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Status</p>
-              <span style={{
-                display: 'inline-block',
-                padding: '0.25rem 0.75rem',
-                borderRadius: '9999px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                background: '#dbeafe',
-                color: '#2563eb'
-              }}>
-                {utils.getStatusText(currentOrder.status)}
-              </span>
-            </div>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Valor</p>
-              <p style={{ fontWeight: 600, color: '#1e293b' }}>{utils.formatCurrency(currentOrder.total_amount)}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Cards de Estatísticas */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         <StatCard
