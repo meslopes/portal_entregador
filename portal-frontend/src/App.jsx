@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
@@ -32,6 +32,20 @@ import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import './App.css';
+
+// Componente de redirecionamento inteligente baseado no tipo de usuario
+function SmartRedirect() {
+  const { user } = useAuth();
+  const userType = user?.user_type;
+
+  if (userType === 'ADMIN') {
+    return <Navigate to="/admin" replace />;
+  } else if (userType === 'CLIENT') {
+    return <Navigate to="/client" replace />;
+  } else {
+    return <Navigate to="/dashboard" replace />;
+  }
+}
 
 function App() {
   return (
@@ -300,8 +314,16 @@ function App() {
           />
 
           {/* Redirecionamento padrão */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <SmartRedirect />
+            </ProtectedRoute>
+          } />
+          <Route path="*" element={
+            <ProtectedRoute>
+              <SmartRedirect />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

@@ -37,22 +37,13 @@ const ClientInvoicePage = () => {
 
       // Busca o restaurant_id atraves do perfil do cliente
       const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
-      const profileRes = await fetch(`${API_URL}/api/orders/my/financial`, {
+      const profileRes = await fetch(`${API_URL}/api/user/profile`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const profileData = await profileRes.json();
 
-      // Usa o primeiro restaurante encontrado (o do usuario logado)
-      const estRes = await fetch(`${API_URL}/api/admin/establishments?page=1&per_page=100`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const estData = await estRes.json();
-
-      // Encontra o estabelecimento do usuario
-      const userName = user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email;
-      const establishment = estData.establishments?.find(e =>
-        e.name === userName || e.name?.includes(userName)
-      );
+      // O restaurant_id vem do perfil do usuario logado
+      const establishment = profileData.restaurant || profileData.customer?.restaurant;
 
       if (!establishment) {
         setError('Estabelecimento não encontrado');

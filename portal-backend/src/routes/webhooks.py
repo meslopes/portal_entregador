@@ -26,7 +26,7 @@ def get_webhook_secret():
 def verify_webhook_signature(payload, signature):
     """Verifica a assinatura do webhook"""
     secret = get_webhook_secret()
-    expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    expected = hmac.HMAC(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)
 
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-const ProtectedRoute = ({ children, requireAuth = true, redirectTo = '/login' }) => {
+const ProtectedRoute = ({ children, requireAuth = true, requiredRole = null, redirectTo = '/login' }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
@@ -18,9 +18,17 @@ const ProtectedRoute = ({ children, requireAuth = true, redirectTo = '/login' })
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Se requireAuth=false, NAO redireciona usuario logado (permite acesso a paginas publicas)
-  if (!requireAuth && isAuthenticated) {
-    // Permite acesso normalmente (login, registro, etc)
+  // Verifica se o usuario tem o papel necessario
+  if (requiredRole && user?.user_type !== requiredRole) {
+    // Redireciona para a rota correta baseada no tipo de usuario
+    const userType = user?.user_type;
+    if (userType === 'ADMIN') {
+      return <Navigate to="/admin" replace />;
+    } else if (userType === 'CLIENT') {
+      return <Navigate to="/client" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return children;
