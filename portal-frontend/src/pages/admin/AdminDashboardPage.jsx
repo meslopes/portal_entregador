@@ -123,7 +123,7 @@ const AdminDashboardPage = () => {
 
   // Atualiza marcadores quando tracking muda
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.L || !tracking?.drivers) return;
+    if (!mapInstanceRef.current || !window.L || !tracking) return;
 
     const L = window.L;
     const map = mapInstanceRef.current;
@@ -132,26 +132,50 @@ const AdminDashboardPage = () => {
     markersRef.current.forEach(marker => map.removeLayer(marker));
     markersRef.current = [];
 
-    // Adiciona novos marcadores
-    tracking.drivers.forEach(driver => {
-      if (driver.latitude && driver.longitude) {
-        const color = driver.current_order ? '#2563eb' : '#22c55e';
-        const icon = L.divIcon({
-          html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-          </div>`,
-          className: '',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
-        });
+    // Adiciona marcadores de entregadores
+    if (tracking.drivers) {
+      tracking.drivers.forEach(driver => {
+        if (driver.latitude && driver.longitude) {
+          const color = driver.current_order ? '#2563eb' : '#22c55e';
+          const icon = L.divIcon({
+            html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+            </div>`,
+            className: '',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          });
 
-        const marker = L.marker([driver.latitude, driver.longitude], { icon })
-          .addTo(map)
-          .bindPopup(`<b>${driver.name}</b><br>${driver.vehicle_type}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
+          const marker = L.marker([driver.latitude, driver.longitude], { icon })
+            .addTo(map)
+            .bindPopup(`<b>${driver.name}</b><br>${driver.vehicle_type}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
 
-        markersRef.current.push(marker);
-      }
-    });
+          markersRef.current.push(marker);
+        }
+      });
+    }
+
+    // Adiciona marcadores de estabelecimentos com pedidos ativos
+    if (tracking.establishments) {
+      tracking.establishments.forEach(est => {
+        if (est.latitude && est.longitude) {
+          const icon = L.divIcon({
+            html: `<div style="background:#f59e0b;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
+            </div>`,
+            className: '',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
+          });
+
+          const marker = L.marker([est.latitude, est.longitude], { icon })
+            .addTo(map)
+            .bindPopup(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos ativos: ${est.active_orders}`);
+
+          markersRef.current.push(marker);
+        }
+      });
+    }
 
     // Ajusta zoom se houver marcadores
     if (markersRef.current.length > 0) {

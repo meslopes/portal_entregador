@@ -433,7 +433,7 @@ def get_dashboard():
         ).count()
         
         # Receita do dia
-        today_revenue = db.session.query(func.sum(Order.total_amount)).filter(
+        today_revenue = db.session.query(func.sum(Order.delivery_fee)).filter(
             func.date(Order.created_at) == today,
             Order.status == OrderStatus.DELIVERED
         ).scalar() or 0
@@ -994,19 +994,19 @@ def get_finance_dashboard():
         # Receita por estabelecimento (top 10)
         revenue_by_establishment = db.session.query(
             Restaurant.name,
-            func.sum(Order.total_amount).label('revenue'),
+            func.sum(Order.delivery_fee).label('revenue'),
             func.count(Order.id).label('order_count')
         ).join(Order).filter(
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
         ).group_by(Restaurant.name).order_by(
-            func.sum(Order.total_amount).desc()
+            func.sum(Order.delivery_fee).desc()
         ).limit(10).all()
 
         # Receita diÃƒÂ¡ria (ÃƒÂºltimos 30 dias para grÃƒÂ¡fico)
         daily_revenue = db.session.query(
             func.date(Order.created_at).label('date'),
-            func.sum(Order.total_amount).label('revenue'),
+            func.sum(Order.delivery_fee).label('revenue'),
             func.count(Order.id).label('orders')
         ).filter(
             Order.status == OrderStatus.DELIVERED,
@@ -1063,7 +1063,7 @@ def get_finance_by_establishment():
             Restaurant.id,
             Restaurant.name,
             Restaurant.phone,
-            func.sum(Order.total_amount).label('revenue'),
+            func.sum(Order.delivery_fee).label('revenue'),
             func.count(Order.id).label('total_orders'),
             func.sum(Order.delivery_fee).label('delivery_fees')
         ).outerjoin(Order, db.and_(
@@ -1071,7 +1071,7 @@ def get_finance_by_establishment():
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
         )).group_by(Restaurant.id, Restaurant.name, Restaurant.phone).order_by(
-            func.sum(Order.total_amount).desc()
+            func.sum(Order.delivery_fee).desc()
         ).all()
 
         data = []
@@ -1095,8 +1095,9 @@ def get_finance_by_establishment():
 @jwt_required()
 @admin_required
 def get_live_tracking():
-    """ObtÃƒÂ©m localizaÃƒÂ§ÃƒÂ£o em tempo real de todos os entregadores online"""
+    """Obtém localização em tempo real de entregadores online e estabelecimentos com pedidos ativos"""
     try:
+        # Entregadores online
         online_drivers = Driver.query.filter(
             Driver.is_online == True,
             Driver.current_latitude.isnot(None),
@@ -1105,7 +1106,6 @@ def get_live_tracking():
         
         tracking_data = []
         for driver in online_drivers:
-            # Busca pedido atual
             current_order = Order.query.filter(
                 Order.driver_id == driver.id,
                 Order.status.in_([
@@ -1117,6 +1117,7 @@ def get_live_tracking():
             ).first()
             
             driver_data = {
+                'type': 'driver',
                 'driver_id': driver.id,
                 'name': f"{driver.user.first_name} {driver.user.last_name}",
                 'latitude': float(driver.current_latitude),
@@ -1128,9 +1129,47 @@ def get_live_tracking():
             
             tracking_data.append(driver_data)
         
+        # Estabelecimentos com pedidos ativos
+        active_orders = Order.query.filter(
+            Order.status.in_([
+                OrderStatus.PENDING,
+                OrderStatus.ACCEPTED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY,
+                OrderStatus.PICKED_UP
+            ])
+        ).all()
+        
+        restaurant_ids_with_active = set()
+        for order in active_orders:
+            if order.restaurant_id and order.restaurant_id not in restaurant_ids_with_active:
+                restaurant_ids_with_active.add(order.restaurant_id)
+                restaurant = Restaurant.query.get(order.restaurant_id)
+                if restaurant and restaurant.latitude and restaurant.longitude:
+                    est_data = {
+                        'type': 'establishment',
+                        'restaurant_id': restaurant.id,
+                        'name': restaurant.name,
+                        'latitude': float(restaurant.latitude),
+                        'longitude': float(restaurant.longitude),
+                        'address': restaurant.address,
+                        'active_orders': Order.query.filter(
+                            Order.restaurant_id == restaurant.id,
+                            Order.status.in_([
+                                OrderStatus.PENDING,
+                                OrderStatus.ACCEPTED,
+                                OrderStatus.PREPARING,
+                                OrderStatus.READY,
+                                OrderStatus.PICKED_UP
+                            ])
+                        ).count()
+                    }
+                    tracking_data.append(est_data)
+        
         return jsonify({
-            'drivers': tracking_data,
-            'count': len(tracking_data)
+            'drivers': [d for d in tracking_data if d['type'] == 'driver'],
+            'establishments': [d for d in tracking_data if d['type'] == 'establishment'],
+            'count': len([d for d in tracking_data if d['type'] == 'driver'])
         }), 200
         
     except Exception as e:
@@ -1432,7 +1471,7 @@ def report_orders_by_date():
         results = db.session.query(
             func.date(Order.created_at).label('date'),
             func.count(Order.id).label('total'),
-            func.sum(Order.total_amount).label('revenue'),
+            func.sum(Order.delivery_fee).label('revenue'),
             func.sum(Order.delivery_fee).label('delivery_fees')
         ).filter(
             Order.created_at >= start_date
@@ -1512,15 +1551,15 @@ def report_establishments_ranking():
             Restaurant.id,
             Restaurant.name,
             func.count(Order.id).label('orders'),
-            func.sum(Order.total_amount).label('revenue'),
+            func.sum(Order.delivery_fee).label('revenue'),
             func.sum(Order.delivery_fee).label('delivery_fees'),
-            func.avg(Order.total_amount).label('avg_order')
+            func.avg(Order.delivery_fee).label('avg_order')
         ).outerjoin(Order, db.and_(
             Order.restaurant_id == Restaurant.id,
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
         )).group_by(Restaurant.id, Restaurant.name).order_by(
-            func.sum(Order.total_amount).desc()
+            func.sum(Order.delivery_fee).desc()
         ).all()
 
         return jsonify({
@@ -1551,7 +1590,7 @@ def report_financial_summary():
         start_date = datetime.utcnow() - timedelta(days=days)
 
         # Receita total
-        total_revenue = db.session.query(func.sum(Order.total_amount)).filter(
+        total_revenue = db.session.query(func.sum(Order.delivery_fee)).filter(
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
         ).scalar() or 0
@@ -1738,7 +1777,7 @@ def report_deliveries_by_driver():
             Driver.vehicle_type,
             func.count(Order.id).label('deliveries'),
             func.sum(Order.delivery_fee).label('total_fees'),
-            func.avg(Order.total_amount).label('avg_order'),
+            func.avg(Order.delivery_fee).label('avg_order'),
             func.avg(Delivery.distance_km).label('avg_distance'),
             func.avg(Delivery.customer_rating).label('avg_rating')
         ).join(User).outerjoin(Order, db.and_(

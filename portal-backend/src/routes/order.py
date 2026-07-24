@@ -835,7 +835,7 @@ def get_my_stats():
 
         total_orders = Order.query.filter_by(restaurant_id=restaurant.id).count()
 
-        total_revenue = db.session.query(func.sum(Order.total_amount)).filter_by(
+        total_revenue = db.session.query(func.sum(Order.delivery_fee)).filter_by(
             restaurant_id=restaurant.id
         ).scalar() or 0
 
