@@ -160,7 +160,7 @@ const AdminDashboardPage = () => {
       tracking.establishments.forEach(est => {
         if (est.latitude && est.longitude) {
           const icon = L.divIcon({
-            html: `<div style="background:#f59e0b;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
+            html: `<div style="background:#f59e0b;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:grab">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
             </div>`,
             className: '',
@@ -168,9 +168,33 @@ const AdminDashboardPage = () => {
             iconAnchor: [18, 18]
           });
 
-          const marker = L.marker([est.latitude, est.longitude], { icon })
+          const marker = L.marker([est.latitude, est.longitude], { icon, draggable: true })
             .addTo(map)
-            .bindPopup(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos ativos: ${est.active_orders}`);
+            .bindPopup(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos ativos: ${est.active_orders}<br><small>Arraste para corrigir posição</small>`);
+
+          // Quando o marcador e arrastado, atualiza as coordenadas
+          marker.on('dragend', async function(e) {
+            const pos = e.target.getLatLng();
+            if (confirm(`Atualizar posição de "${est.name}"?\n\nNova latitude: ${pos.lat.toFixed(6)}\nNova longitude: ${pos.lng.toFixed(6)}`)) {
+              try {
+                const token = localStorage.getItem('token');
+                await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/${est.restaurant_id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ latitude: pos.lat, longitude: pos.lng })
+                });
+                e.target.setPopupContent(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos ativos: ${est.active_orders}<br><small>Posição atualizada!</small>`);
+              } catch (err) {
+                alert('Erro ao atualizar posição');
+                e.target.setLatLng([est.latitude, est.longitude]);
+              }
+            } else {
+              e.target.setLatLng([est.latitude, est.longitude]);
+            }
+          });
 
           markersRef.current.push(marker);
         }
