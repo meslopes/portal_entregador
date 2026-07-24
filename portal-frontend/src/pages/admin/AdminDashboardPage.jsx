@@ -87,10 +87,28 @@ const AdminDashboardPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Inicializa o mapa Leaflet via CDN (identico ao client)
+  // Inicializa o mapa Leaflet via CDN
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
+    const initMap = () => {
+      if (!mapRef.current || mapInstanceRef.current) return;
+      const L = window.L;
+      if (!L) return;
+      mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
+        .setView([-29.95, -50.45], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(mapInstanceRef.current);
+    };
+
+    // Se L ja existe (carregado por outro componente), inicializa direto
+    if (window.L) {
+      initMap();
+      return;
+    }
+
+    // Senao, carrega o Leaflet via CDN
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -98,16 +116,7 @@ const AdminDashboardPage = () => {
 
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => {
-      if (mapRef.current && !mapInstanceRef.current) {
-        const L = window.L;
-        mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
-          .setView([-29.95, -50.45], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(mapInstanceRef.current);
-      }
-    };
+    script.onload = initMap;
     document.head.appendChild(script);
 
     return () => {
@@ -116,7 +125,7 @@ const AdminDashboardPage = () => {
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [loading]);
 
   // Atualiza marcadores quando tracking muda
   useEffect(() => {
