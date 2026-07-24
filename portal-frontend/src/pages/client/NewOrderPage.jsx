@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, User, Phone, MapPin, DollarSign, Package,
-  AlertCircle, CheckCircle, ShoppingCart, Truck, Info
+  AlertCircle, CheckCircle, ShoppingCart, Truck, Info, Store
 } from 'lucide-react';
-import { orderService } from '@/lib/api';
+import { orderService, adminService } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const inputStyle = {
   width: '100%', padding: '0.625rem 0.875rem',
@@ -15,11 +16,24 @@ const inputStyle = {
 
 const NewOrderPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [establishments, setEstablishments] = useState([]);
+  const isAdmin = user?.user_type === 'ADMIN';
+
+  // Carrega estabelecimentos para admin
+  useEffect(() => {
+    if (isAdmin) {
+      adminService.getEstablishments(1, 100).then(data => {
+        setEstablishments(data.establishments || []);
+      }).catch(err => console.error(err));
+    }
+  }, [isAdmin]);
 
   const [form, setForm] = useState({
+    selected_establishment: '',
     customer_name: '',
     customer_phone: '',
     delivery_address: '',
@@ -76,6 +90,7 @@ const NewOrderPage = () => {
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + (form.delivery_complement ? ' - ' + form.delivery_complement : '');
 
       await orderService.createOrder({
+        ...(isAdmin && { restaurant_id: form.selected_establishment }),
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
         delivery_address: fullAddress,
@@ -138,6 +153,19 @@ const NewOrderPage = () => {
       )}
 
       <form onSubmit={handleSubmit}>
+        {/* Seletor de Estabelecimento (apenas para admin) */}
+        {isAdmin && (
+          <Card title="Estabelecimento" icon={<Store size={16} />}>
+            <Label>Selecionar Estabelecimento *</Label>
+            <select name="selected_establishment" value={form.selected_establishment} onChange={handleChange} required style={inputStyle}>
+              <option value="">Selecione um estabelecimento</option>
+              {establishments.map(est => (
+                <option key={est.id} value={est.id}>{est.name} - {est.address}</option>
+              ))}
+            </select>
+          </Card>
+        )}
+
         {/* Dados do Cliente */}
         <Card title="Dados do Cliente" icon={<User size={16} />}>
           <Label>Nome do Cliente *</Label>

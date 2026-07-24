@@ -588,18 +588,15 @@ def create_order():
                 db.session.add(restaurant)
                 db.session.flush()
         else:
-            # Admin criando pedido (para testes)
-            restaurant = Restaurant.query.filter_by(name=data['restaurant_name']).first()
+            # Admin criando pedido - busca restaurante por ID ou nome
+            restaurant = None
+            if data.get('restaurant_id'):
+                restaurant = Restaurant.query.get(data['restaurant_id'])
+            elif data.get('restaurant_name'):
+                restaurant = Restaurant.query.filter_by(name=data['restaurant_name']).first()
+            
             if not restaurant:
-                restaurant = Restaurant(
-                    name=data['restaurant_name'],
-                    address=data['restaurant_address'],
-                    latitude=data['restaurant_latitude'],
-                    longitude=data['restaurant_longitude'],
-                    phone=data.get('restaurant_phone', '(11) 99999-9999')
-                )
-                db.session.add(restaurant)
-                db.session.flush()
+                return jsonify({'error': 'Estabelecimento não encontrado. Envie restaurant_id ou restaurant_name.'}), 400
 
         # Busca ou cria cliente final
         customer = Customer.query.filter_by(phone=data['customer_phone']).first()
