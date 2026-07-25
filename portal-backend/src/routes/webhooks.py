@@ -799,14 +799,27 @@ def process_driver_response_whatsapp(phone, action):
             next_driver = find_nearest_available_driver(pending_order, exclude_driver_ids=[driver.id])
 
             if next_driver and next_driver.user.phone:
+                # Calcula distancia
+                km_total = 0
+                driver_earnings = float(pending_order.delivery_fee) * 0.7
+                if pending_order.delivery_address and pending_order.delivery_address.latitude and pending_order.restaurant and pending_order.restaurant.latitude:
+                    lat_diff = abs(float(pending_order.delivery_address.latitude) - float(pending_order.restaurant.latitude))
+                    lng_diff = abs(float(pending_order.delivery_address.longitude) - float(pending_order.restaurant.longitude))
+                    km_total = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                    driver_earnings = float(pending_order.delivery_fee) * 0.7 + (km_total * 0.5)
+
                 whatsapp_service.send_new_order_to_driver(
                     next_driver.user.phone,
                     {
                         'order_number': pending_order.order_number,
                         'restaurant': pending_order.restaurant.name if pending_order.restaurant else 'N/A',
                         'restaurant_address': pending_order.restaurant.address if pending_order.restaurant else 'N/A',
+                        'customer_name': pending_order.customer.name if pending_order.customer else 'N/A',
+                        'delivery_address': f"{pending_order.delivery_address.street}, {pending_order.delivery_address.neighborhood}" if pending_order.delivery_address else 'N/A',
                         'total_amount': float(pending_order.total_amount),
-                        'delivery_fee': float(pending_order.delivery_fee)
+                        'delivery_fee': float(pending_order.delivery_fee),
+                        'distance_km': km_total,
+                        'driver_earnings': driver_earnings
                     }
                 )
 

@@ -192,13 +192,27 @@ def reject_order(order_id):
                 from src.services.whatsapp import whatsapp_service
                 if whatsapp_service.is_configured() and next_driver.user.phone:
                     restaurant = order.restaurant
+                    # Calcula distancia aproximada
+                    km_total = 0
+                    driver_earnings = float(order.delivery_fee) * 0.7
+                    if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
+                        lat_diff = abs(float(order.delivery_address.latitude) - float(restaurant.latitude))
+                        lng_diff = abs(float(order.delivery_address.longitude) - float(restaurant.longitude))
+                        km_total = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                        driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+
                     whatsapp_service.send_new_order_to_driver(
                         next_driver.user.phone,
                         {
                             'order_number': order.order_number,
-                            'restaurant': restaurant.name,
+                            'restaurant': restaurant.name if restaurant else 'N/A',
+                            'restaurant_address': restaurant.address if restaurant else 'N/A',
+                            'customer_name': order.customer.name if order.customer else 'N/A',
+                            'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}" if order.delivery_address else 'N/A',
                             'total_amount': float(order.total_amount),
-                            'delivery_fee': float(order.delivery_fee)
+                            'delivery_fee': float(order.delivery_fee),
+                            'distance_km': km_total,
+                            'driver_earnings': driver_earnings
                         }
                     )
             except Exception:
@@ -720,13 +734,27 @@ def create_order():
             try:
                 from src.services.whatsapp import whatsapp_service
                 if whatsapp_service.is_configured() and notified_driver.user.phone:
+                    # Calcula distancia aproximada
+                    km_total = 0
+                    driver_earnings = float(order.delivery_fee) * 0.7
+                    if address.latitude and restaurant.latitude:
+                        lat_diff = abs(float(address.latitude) - float(restaurant.latitude))
+                        lng_diff = abs(float(address.longitude) - float(restaurant.longitude))
+                        km_total = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                        driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+
                     whatsapp_service.send_new_order_to_driver(
                         notified_driver.user.phone,
                         {
                             'order_number': order.order_number,
                             'restaurant': restaurant.name,
+                            'restaurant_address': restaurant.address,
+                            'customer_name': customer.name,
+                            'delivery_address': f"{address.street}, {address.neighborhood}",
                             'total_amount': float(order.total_amount),
-                            'delivery_fee': float(order.delivery_fee)
+                            'delivery_fee': float(order.delivery_fee),
+                            'distance_km': km_total,
+                            'driver_earnings': driver_earnings
                         }
                     )
             except Exception:

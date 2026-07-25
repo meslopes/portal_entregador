@@ -82,16 +82,26 @@ class WhatsAppService:
 
     def send_new_order_to_driver(self, phone, order_data):
         """Notifica entregador sobre novo pedido disponivel"""
+        # Calcula distancia aproximada
+        km_total = order_data.get('distance_km', 0)
+        valor_rota = order_data.get('driver_earnings', 0)
+
         message = (
             f"🔔 *Novo Pedido Disponível!*\n\n"
-            f"Pedido: #{order_data.get('order_number', 'N/A')}\n"
-            f"Restaurante: {order_data.get('restaurant', 'N/A')}\n"
-            f"Endereço: {order_data.get('restaurant_address', 'N/A')}\n"
-            f"Valor: R$ {order_data.get('total_amount', 0):.2f}\n"
-            f"Frete: R$ {order_data.get('delivery_fee', 0):.2f}\n\n"
+            f"Pedido: #{order_data.get('order_number', 'N/A')}\n\n"
+            f"📍 *COLETAR:*\n"
+            f"{order_data.get('restaurant', 'N/A')}\n"
+            f"{order_data.get('restaurant_address', 'N/A')}\n\n"
+            f"📍 *ENTREGAR:*\n"
+            f"{order_data.get('customer_name', 'N/A')}\n"
+            f"{order_data.get('delivery_address', 'N/A')}\n\n"
+            f"💰 Valor do pedido: R$ {order_data.get('total_amount', 0):.2f}\n"
+            f"🚚 Frete: R$ {order_data.get('delivery_fee', 0):.2f}\n"
+            f"📏 Distância: {km_total:.1f} km\n"
+            f"💵 *Seus ganhos: R$ {valor_rota:.2f}*\n\n"
             f"📞 *Para aceitar, responda:* SIM\n"
             f"📞 *Para recusar, responda:* NAO\n\n"
-            f"Pedido expire em 2 minutos."
+            f"⏰ Pedido expira em 2 minutos."
         )
         return self.send_message(phone, message)
 
