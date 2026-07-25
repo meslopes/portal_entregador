@@ -103,8 +103,10 @@ def get_driver_stats():
         # Total de entregas
         total_deliveries = driver.total_deliveries
         
-        # Ganhos totais
-        total_earnings = db.session.query(func.sum(Payment.amount)).filter_by(driver_id=driver.id).scalar() or 0
+        # Ganhos totais (todos os pagamentos, independente do status)
+        total_earnings = db.session.query(func.sum(Payment.amount)).filter(
+            Payment.driver_id == driver.id
+        ).scalar() or 0
         
         # Ganhos do dia atual
         today = datetime.utcnow().date()
