@@ -71,14 +71,14 @@ const OrdersPage = () => {
     return () => stopOrderMonitor();
   }, []);
 
-  // Atualiza a lista de pedidos periodicamente (30 segundos para nao sobrecarregar)
+  // Atualiza a lista de pedidos periodicamente (60 segundos para economizar bateria)
   useEffect(() => {
     loadAvailableOrders();
     loadActiveOrders();
     const interval = setInterval(() => {
       loadAvailableOrders();
       loadActiveOrders();
-    }, 30000);
+    }, 60000);
     return () => clearInterval(interval);
   }, [loadAvailableOrders, loadActiveOrders]);
 
@@ -165,7 +165,7 @@ const OrdersPage = () => {
               ? `${orders.length} pedido${orders.length !== 1 ? 's' : ''} disponível${orders.length !== 1 ? 'eis' : ''}`
               : `${activeOrders.length} pedido${activeOrders.length !== 1 ? 's' : ''} em andamento`
             }
-            {!isLoading && <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>• atualiza a cada 30s</span>}
+            {!isLoading && <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>• atualiza a cada 60s</span>}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
