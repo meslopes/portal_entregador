@@ -32,7 +32,7 @@ const AdminSquaresPage = () => {
 
   const openCreateForm = () => {
     setEditing(null);
-    setFormData({ name: '', city: '', state: '', price_per_km: '2.95', min_delivery_fee: '5.00', max_delivery_fee: '50.00', driver_km_bonus: '0.50' });
+    setFormData({ name: '', city: '', state: '', price_per_km: '2.95', min_distance_km: '4.0', max_delivery_fee: '50.00', driver_percentage: '70.0' });
     setFormError('');
     setShowForm(true);
   };
@@ -42,9 +42,9 @@ const AdminSquaresPage = () => {
     setFormData({
       name: sq.name, city: sq.city, state: sq.state,
       price_per_km: sq.price_per_km || '2.95',
-      min_delivery_fee: sq.min_delivery_fee || '5.00',
+      min_distance_km: sq.min_distance_km || '4.0',
       max_delivery_fee: sq.max_delivery_fee || '50.00',
-      driver_km_bonus: sq.driver_km_bonus || '0.50'
+      driver_percentage: sq.driver_percentage || '70.0'
     });
     setFormError('');
     setShowForm(true);
@@ -159,12 +159,14 @@ const AdminSquaresPage = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem', fontSize: '0.75rem' }}>
                     <span style={{ color: '#64748b' }}>Preço/KM:</span>
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.price_per_km || '2,95'}</span>
-                    <span style={{ color: '#64748b' }}>Mín:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.min_delivery_fee || '5,00'}</span>
-                    <span style={{ color: '#64748b' }}>Máx:</span>
+                    <span style={{ color: '#64748b' }}>Dist. Mínima:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.min_distance_km || '4'} km</span>
+                    <span style={{ color: '#64748b' }}>Frete Mínimo:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.min_delivery_fee || (sq.price_per_km * 4).toFixed(2)}</span>
+                    <span style={{ color: '#64748b' }}>Frete Máximo:</span>
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.max_delivery_fee || '50,00'}</span>
-                    <span style={{ color: '#64748b' }}>Bônus/KM:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.driver_km_bonus || '0,50'}</span>
+                    <span style={{ color: '#64748b' }}>Entregador recebe:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.driver_percentage || '70'}%</span>
                   </div>
                 </div>
               </div>
@@ -219,18 +221,20 @@ const AdminSquaresPage = () => {
                     <input type="number" step="0.01" value={formData.price_per_km || '2.95'} onChange={e => setFormData(p => ({ ...p, price_per_km: e.target.value }))} style={inputStyle} placeholder="2.95" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Bônus Entregador/KM (R$)</label>
-                    <input type="number" step="0.01" value={formData.driver_km_bonus || '0.50'} onChange={e => setFormData(p => ({ ...p, driver_km_bonus: e.target.value }))} style={inputStyle} placeholder="0.50" />
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Distância Mínima (km)</label>
+                    <input type="number" step="0.5" value={formData.min_distance_km || '4.0'} onChange={e => setFormData(p => ({ ...p, min_distance_km: e.target.value }))} style={inputStyle} placeholder="4.0" />
+                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Mínimo cobrado: R$ {((parseFloat(formData.price_per_km) || 2.95) * (parseFloat(formData.min_distance_km) || 4)).toFixed(2)}</p>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa Mínima (R$)</label>
-                    <input type="number" step="0.01" value={formData.min_delivery_fee || '5.00'} onChange={e => setFormData(p => ({ ...p, min_delivery_fee: e.target.value }))} style={inputStyle} placeholder="5.00" />
-                  </div>
-                  <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa Máxima (R$)</label>
                     <input type="number" step="0.01" value={formData.max_delivery_fee || '50.00'} onChange={e => setFormData(p => ({ ...p, max_delivery_fee: e.target.value }))} style={inputStyle} placeholder="50.00" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Entregador recebe (%)</label>
+                    <input type="number" step="1" min="0" max="100" value={formData.driver_percentage || '70'} onChange={e => setFormData(p => ({ ...p, driver_percentage: e.target.value }))} style={inputStyle} placeholder="70" />
+                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Percentual do frete que vai pro entregador</p>
                   </div>
                 </div>
               </div>

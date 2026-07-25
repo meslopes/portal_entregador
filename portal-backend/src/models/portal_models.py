@@ -428,9 +428,9 @@ class Square(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     # Tabela de precos por km
     price_per_km = db.Column(db.Numeric(10, 2), default=2.95)
-    min_delivery_fee = db.Column(db.Numeric(10, 2), default=5.00)
+    min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)  # Distancia minima cobrada (4km padrao)
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
-    driver_km_bonus = db.Column(db.Numeric(10, 2), default=0.50)
+    driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)  # Percentual do entregador (70% padrao)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -446,9 +446,10 @@ class Square(db.Model):
             'state': self.state,
             'is_active': self.is_active,
             'price_per_km': float(self.price_per_km) if self.price_per_km else 2.95,
-            'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else 5.00,
+            'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
+            'min_delivery_fee': float(self.price_per_km * (self.min_distance_km or 4.0)),  # Calculado automaticamente
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
-            'driver_km_bonus': float(self.driver_km_bonus) if self.driver_km_bonus else 0.50,
+            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 70.0,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

@@ -130,10 +130,20 @@ def create_app(config_name=None):
             db.session.rollback()
 
         # Migration: adicionar colunas de preco na tabela squares
-        for col in ['price_per_km', 'min_delivery_fee', 'max_delivery_fee', 'driver_km_bonus']:
+        for col in ['price_per_km', 'max_delivery_fee', 'min_distance_km', 'driver_percentage']:
             try:
                 db.session.execute(db.text(
                     f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'squares' AND column_name = '{col}') THEN ALTER TABLE squares ADD COLUMN {col} NUMERIC(10,2); END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        # Migration: remover colunas antigas se existirem
+        for col in ['min_delivery_fee', 'driver_km_bonus']:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'squares' AND column_name = '{col}') THEN ALTER TABLE squares DROP COLUMN {col}; END IF; END $$"
                 ))
                 db.session.commit()
             except Exception:

@@ -238,9 +238,9 @@ const PricingSettings = ({ config, onChange }) => (
       <input type="number" min="0" max="50" value={config.commission_rate || '30'} onChange={e => onChange('commission_rate', e.target.value)} style={inputStyle} />
       <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Percentual retido sobre o frete de cada entrega</p>
     </FormField>
-    <FormField label="Bônus por KM (R$)">
-      <input type="number" step="0.01" value={config.driver_km_bonus || '0.50'} onChange={e => onChange('driver_km_bonus', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Valor extra pago ao entregador por km percorrido</p>
+    <FormField label="Entregador recebe (%)">
+      <input type="number" min="0" max="100" value={config.driver_percentage || '70'} onChange={e => onChange('driver_percentage', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Percentual do frete que vai para o entregador</p>
     </FormField>
   </SettingsCard>
 );
