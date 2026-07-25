@@ -1095,7 +1095,7 @@ def get_finance_by_establishment():
 @jwt_required()
 @admin_required
 def get_live_tracking():
-    """Obtém localização em tempo real de entregadores online e estabelecimentos com pedidos ativos"""
+    """Obtém localização em tempo real de entregadores, estabelecimentos e locais de entrega"""
     try:
         # Entregadores online
         online_drivers = Driver.query.filter(
@@ -1129,7 +1129,7 @@ def get_live_tracking():
             
             tracking_data.append(driver_data)
         
-        # Estabelecimentos com pedidos ativos
+        # Pedidos ativos
         active_orders = Order.query.filter(
             Order.status.in_([
                 OrderStatus.PENDING,
@@ -1141,7 +1141,10 @@ def get_live_tracking():
         ).all()
         
         restaurant_ids_with_active = set()
+        delivery_ids_added = set()
+        
         for order in active_orders:
+            # Estabelecimentos com pedidos ativos
             if order.restaurant_id and order.restaurant_id not in restaurant_ids_with_active:
                 restaurant_ids_with_active.add(order.restaurant_id)
                 restaurant = Restaurant.query.get(order.restaurant_id)
@@ -1165,10 +1168,29 @@ def get_live_tracking():
                         ).count()
                     }
                     tracking_data.append(est_data)
+            
+            # Locais de entrega
+            if order.delivery_address_id and order.delivery_address_id not in delivery_ids_added:
+                delivery_ids_added.add(order.delivery_address_id)
+                delivery_addr = Address.query.get(order.delivery_address_id)
+                if delivery_addr and delivery_addr.latitude and delivery_addr.longitude:
+                    del_data = {
+                        'type': 'delivery',
+                        'order_id': order.id,
+                        'order_number': order.order_number,
+                        'latitude': float(delivery_addr.latitude),
+                        'longitude': float(delivery_addr.longitude),
+                        'street': delivery_addr.street,
+                        'neighborhood': delivery_addr.neighborhood,
+                        'customer_name': order.customer.name if order.customer else '',
+                        'status': order.status.value
+                    }
+                    tracking_data.append(del_data)
         
         return jsonify({
             'drivers': [d for d in tracking_data if d['type'] == 'driver'],
             'establishments': [d for d in tracking_data if d['type'] == 'establishment'],
+            'deliveries': [d for d in tracking_data if d['type'] == 'delivery'],
             'count': len([d for d in tracking_data if d['type'] == 'driver'])
         }), 200
         

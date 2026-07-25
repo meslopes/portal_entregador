@@ -201,6 +201,37 @@ const AdminDashboardPage = () => {
       });
     }
 
+    // Adiciona marcadores de locais de entrega
+    if (tracking.deliveries) {
+      tracking.deliveries.forEach(del => {
+        if (del.latitude && del.longitude) {
+          const statusColors = {
+            PENDING: '#f59e0b',
+            ACCEPTED: '#2563eb',
+            PREPARING: '#8b5cf6',
+            READY: '#06b6d4',
+            PICKED_UP: '#22c55e'
+          };
+          const color = statusColors[del.status] || '#94a3b8';
+
+          const icon = L.divIcon({
+            html: `<div style="background:${color};width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>`,
+            className: '',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+          });
+
+          const marker = L.marker([del.latitude, del.longitude], { icon })
+            .addTo(map)
+            .bindPopup(`<b>Pedido #${del.order_number}</b><br>Entregar: ${del.customer_name}<br>${del.street}, ${del.neighborhood}`);
+
+          markersRef.current.push(marker);
+        }
+      });
+    }
+
     // Ajusta zoom se houver marcadores
     if (markersRef.current.length > 0) {
       const group = L.featureGroup(markersRef.current);
