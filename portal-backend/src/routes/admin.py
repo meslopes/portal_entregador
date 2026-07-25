@@ -1441,6 +1441,32 @@ def update_establishment(establishment_id):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/establishments/geocode', methods=['POST'])
+@jwt_required()
+@admin_required
+def geocode_address_only():
+    """Geocodifica um endereco sem salvar"""
+    try:
+        data = request.get_json()
+        address = data.get('address')
+        if not address:
+            return jsonify({'error': 'Endereco obrigatorio'}), 400
+
+        from src.services.geocoding import geocode_address
+        geo = geocode_address(address)
+
+        if geo:
+            return jsonify({
+                'latitude': geo['latitude'],
+                'longitude': geo['longitude']
+            }), 200
+        else:
+            return jsonify({'error': 'Nao foi possivel geocodificar o endereco'}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/establishments/<int:establishment_id>/geocode', methods=['POST'])
 @jwt_required()
 @admin_required

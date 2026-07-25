@@ -179,8 +179,8 @@ const AdminEstablishmentsPage = () => {
 
   const handleSubmitForm = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.address_street || !formData.address_number || !formData.address_neighborhood) {
-      setFormError('Nome, rua, número e bairro são obrigatórios');
+    if (!formData.name || !formData.address_street) {
+      setFormError('Nome e rua são obrigatórios');
       return;
     }
 
@@ -571,6 +571,45 @@ const AdminEstablishmentsPage = () => {
               <FormField label="Longitude">
                 <input type="text" name="longitude" value={formData.longitude} onChange={handleFormChange} style={inputStyle} placeholder="-50.4500" />
               </FormField>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <button type="button" onClick={async () => {
+                const addr = `${formData.address_street || ''}, ${formData.address_number || ''} - ${formData.address_neighborhood || ''}, ${formData.address_city || 'Capão da Canoa'} - ${formData.address_state || 'RS'}`;
+                if (!formData.address_street) {
+                  setFormError('Preencha pelo menos a rua para geocodificar');
+                  return;
+                }
+                try {
+                  const endpoint = editing
+                    ? `${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/${editing.id}/geocode`
+                    : `${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/geocode`;
+                  const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ address: addr })
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setFormData(prev => ({ ...prev, latitude: data.latitude, longitude: data.longitude }));
+                    setFormError('');
+                    alert('Geocodificação realizada com sucesso!');
+                  } else {
+                    alert('Não foi possível geocodificar o endereço. Verifique se está correto.');
+                  }
+                } catch (e) {
+                  alert('Erro ao geocodificar');
+                }
+              }} style={{
+                padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                border: '1px solid #e2e8f0', background: '#f8fafc',
+                fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer'
+              }}>
+                📍 Geolocalizar endereço
+              </button>
             </div>
 
             {editing && (
