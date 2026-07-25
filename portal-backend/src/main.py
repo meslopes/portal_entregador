@@ -58,6 +58,9 @@ app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 from src.routes.user import user_bp
 app.register_blueprint(user_bp, url_prefix='/api/user')
 
+from src.routes.bonus import bonus_bp
+app.register_blueprint(bonus_bp, url_prefix='/api/bonus')
+
 # Inicializa banco de dados
 db.init_app(app)
 with app.app_context():

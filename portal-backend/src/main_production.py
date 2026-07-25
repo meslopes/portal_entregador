@@ -77,6 +77,9 @@ def create_app(config_name=None):
     
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
+
+    from src.routes.bonus import bonus_bp
+    app.register_blueprint(bonus_bp, url_prefix='/api/bonus')
     
     # Criar tabelas do banco de dados
     with app.app_context():
@@ -157,7 +160,69 @@ def create_app(config_name=None):
             db.session.commit()
         except Exception:
             db.session.rollback()
-    
+
+        # Migration: tabelas de bonus e ranking
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS driver_scores (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER REFERENCES drivers(id),
+                    period VARCHAR(20) NOT NULL,
+                    accept_time_avg NUMERIC(5,2) DEFAULT 0,
+                    delivery_time_avg NUMERIC(5,2) DEFAULT 0,
+                    acceptance_rate NUMERIC(5,2) DEFAULT 100,
+                    avg_rating NUMERIC(3,2) DEFAULT 5.0,
+                    hours_online NUMERIC(5,2) DEFAULT 0,
+                    total_deliveries INTEGER DEFAULT 0,
+                    total_refused INTEGER DEFAULT 0,
+                    total_score NUMERIC(10,2) DEFAULT 0,
+                    ranking_position INTEGER,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS driver_bonuses (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER REFERENCES drivers(id),
+                    amount NUMERIC(10,2) NOT NULL,
+                    bonus_type VARCHAR(50) NOT NULL,
+                    criteria VARCHAR(100),
+                    period_start DATE,
+                    period_end DATE,
+                    status VARCHAR(20) DEFAULT 'PENDING',
+                    paid_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS driver_achievements (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER REFERENCES drivers(id),
+                    achievement_type VARCHAR(50) NOT NULL,
+                    achievement_name VARCHAR(100) NOT NULL,
+                    unlocked_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS dynamic_pricing (
+                    id SERIAL PRIMARY KEY,
+                    square_id INTEGER REFERENCES squares(id),
+                    rainy_day_active BOOLEAN DEFAULT FALSE,
+                    rainy_day_bonus NUMERIC(10,2) DEFAULT 3.00,
+                    high_demand_active BOOLEAN DEFAULT FALSE,
+                    high_demand_threshold INTEGER DEFAULT 5,
+                    high_demand_bonus NUMERIC(10,2) DEFAULT 2.00,
+                    holiday_active BOOLEAN DEFAULT FALSE,
+                    holiday_bonus NUMERIC(10,2) DEFAULT 5.00,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

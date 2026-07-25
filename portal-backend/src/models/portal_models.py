@@ -454,3 +454,139 @@ class Square(db.Model):
             'updated_at': self.updated_at.isoformat()
         }
 
+
+# ============================================
+# SISTEMA DE BONIFICACAO
+# ============================================
+
+class DriverScore(db.Model):
+    """Pontuacao do entregador por periodo"""
+    __tablename__ = 'driver_scores'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    period = db.Column(db.String(20), nullable=False)  # 'weekly', 'monthly'
+    accept_time_avg = db.Column(db.Numeric(5, 2), default=0)  # segundos
+    delivery_time_avg = db.Column(db.Numeric(5, 2), default=0)  # minutos
+    acceptance_rate = db.Column(db.Numeric(5, 2), default=100)  # percentual
+    avg_rating = db.Column(db.Numeric(3, 2), default=5.0)
+    hours_online = db.Column(db.Numeric(5, 2), default=0)
+    total_deliveries = db.Column(db.Integer, default=0)
+    total_refused = db.Column(db.Integer, default=0)
+    total_score = db.Column(db.Numeric(10, 2), default=0)
+    ranking_position = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='scores')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'period': self.period,
+            'accept_time_avg': float(self.accept_time_avg) if self.accept_time_avg else 0,
+            'delivery_time_avg': float(self.delivery_time_avg) if self.delivery_time_avg else 0,
+            'acceptance_rate': float(self.acceptance_rate) if self.acceptance_rate else 100,
+            'avg_rating': float(self.avg_rating) if self.avg_rating else 5.0,
+            'hours_online': float(self.hours_online) if self.hours_online else 0,
+            'total_deliveries': self.total_deliveries or 0,
+            'total_refused': self.total_refused or 0,
+            'total_score': float(self.total_score) if self.total_score else 0,
+            'ranking_position': self.ranking_position,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+
+class DriverBonus(db.Model):
+    """Bonus distribuido ao entregador"""
+    __tablename__ = 'driver_bonuses'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    bonus_type = db.Column(db.String(50), nullable=False)  # 'weekly', 'monthly', 'rainy', 'demand'
+    criteria = db.Column(db.String(100))  # criterio da premiacao
+    period_start = db.Column(db.Date)
+    period_end = db.Column(db.Date)
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, CANCELLED
+    paid_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='bonuses')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'amount': float(self.amount),
+            'bonus_type': self.bonus_type,
+            'criteria': self.criteria,
+            'period_start': self.period_start.isoformat() if self.period_start else None,
+            'period_end': self.period_end.isoformat() if self.period_end else None,
+            'status': self.status,
+            'paid_at': self.paid_at.isoformat() if self.paid_at else None,
+            'created_at': self.created_at.isoformat()
+        }
+
+
+class DriverAchievement(db.Model):
+    """Conquista desbloqueada pelo entregador"""
+    __tablename__ = 'driver_achievements'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    achievement_type = db.Column(db.String(50), nullable=False)
+    achievement_name = db.Column(db.String(100), nullable=False)
+    unlocked_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='achievements')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'achievement_type': self.achievement_type,
+            'achievement_name': self.achievement_name,
+            'unlocked_at': self.unlocked_at.isoformat()
+        }
+
+
+class DynamicPricing(db.Model):
+    """Configuracao de preco dinamico por praca"""
+    __tablename__ = 'dynamic_pricing'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=False)
+    rainy_day_active = db.Column(db.Boolean, default=False)
+    rainy_day_bonus = db.Column(db.Numeric(10, 2), default=3.00)
+    high_demand_active = db.Column(db.Boolean, default=False)
+    high_demand_threshold = db.Column(db.Integer, default=5)
+    high_demand_bonus = db.Column(db.Numeric(10, 2), default=2.00)
+    holiday_active = db.Column(db.Boolean, default=False)
+    holiday_bonus = db.Column(db.Numeric(10, 2), default=5.00)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    square = db.relationship('Square', backref='dynamic_pricing')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'square_id': self.square_id,
+            'rainy_day_active': self.rainy_day_active,
+            'rainy_day_bonus': float(self.rainy_day_bonus) if self.rainy_day_bonus else 3.00,
+            'high_demand_active': self.high_demand_active,
+            'high_demand_threshold': self.high_demand_threshold or 5,
+            'high_demand_bonus': float(self.high_demand_bonus) if self.high_demand_bonus else 2.00,
+            'holiday_active': self.holiday_active,
+            'holiday_bonus': float(self.holiday_bonus) if self.holiday_bonus else 5.00,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
