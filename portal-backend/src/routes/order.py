@@ -409,10 +409,28 @@ def update_order_status(order_id):
 
         # Logica de cancelamento
         if new_status_enum == OrderStatus.CANCELLED:
+            old_driver_id = order.driver_id
             if order.driver_id:
                 order.driver_id = None
             if order.delivery:
+                # Salva ganhos anteriores para remover depois
+                old_earnings = order.delivery.driver_earnings
                 db.session.delete(order.delivery)
+            
+            # Notifica entregador mais proximo para relancar
+            try:
+                new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
+                if new_driver:
+                    notification = Notification(
+                        user_id=new_driver.user_id,
+                        title="Novo pedido disponível",
+                        message=f"Pedido #{order.order_number} está disponível para entrega",
+                        type=NotificationType.NEW_ORDER,
+                        related_id=order.id
+                    )
+                    db.session.add(notification)
+            except Exception:
+                pass
 
         db.session.commit()
         

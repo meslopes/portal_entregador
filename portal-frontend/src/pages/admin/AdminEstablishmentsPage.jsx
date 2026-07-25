@@ -84,47 +84,71 @@ const AdminEstablishmentsPage = () => {
     setEditing(est);
     // Tenta separar endereco em campos
     const addr = est.address || '';
-    // Formato esperado: "Rua X, 123 - Bairro, Cidade - UF, CEP"
-    const parts = addr.split(',').map(s => s.trim());
-
-    // Tenta extrair rua e numero do primeiro campo
-    let street = parts[0] || addr;
+    
+    // Remove CEP se existir no final
+    let cleanAddr = addr.replace(/,\s*\d{5}-?\d{3}\s*$/, '').trim();
+    // Remove virgulas duplas
+    cleanAddr = cleanAddr.replace(/,\s*,/g, ',').trim().rstrip(',');
+    
+    // Formatos possiveis:
+    // "Rua X, 123 - Bairro, Cidade - UF"
+    // "Rua X, 123, Bairro, Cidade, UF"
+    // "Rua X, Numero, Bairro, Cidade/UF"
+    
+    let street = '';
     let number = '';
-    let neighborhood = parts[1] || '';
-    let cityState = parts[2] || '';
+    let neighborhood = '';
     let city = 'Capão da Canoa';
     let state = 'RS';
     let zip = '';
-
-    // Se o primeiro campo tem " - ", pode ser "Rua, Numero - Bairro"
-    if (street.includes(' - ')) {
-      const streetParts = street.split(' - ');
-      street = streetParts[0];
-      if (streetParts[1]) number = streetParts[1];
+    
+    // Tenta extrair numero do endereco (procura por numeros)
+    const numberMatch = cleanAddr.match(/,\s*(\d+)/);
+    if (numberMatch) {
+      number = numberMatch[1];
+      // Remove o numero do endereco para facilitar o parse
+      cleanAddr = cleanAddr.replace(/,\s*\d+/, ',');
     }
-
-    // Se o segundo campo tem " - ", pode ser "Bairro, Cidade - UF"
-    if (neighborhood.includes(' - ')) {
-      const hoodParts = neighborhood.split(' - ');
-      neighborhood = hoodParts[0];
-      if (hoodParts[1]) {
-        const csParts = hoodParts[1].split('/');
-        city = csParts[0] || city;
-        state = csParts[1] || state;
+    
+    // Divide por virgulas
+    const parts = cleanAddr.split(',').map(s => s.trim()).filter(p => p);
+    
+    if (parts.length >= 1) {
+      // Primeira parte e a rua (pode ter " - numero" no final)
+      street = parts[0].replace(/\s*-\s*\d+\s*$/, '').trim();
+    }
+    
+    if (parts.length >= 2) {
+      // Segunda parte e o bairro (pode ter " - Cidade/UF")
+      const hoodPart = parts[1];
+      if (hoodPart.includes(' - ')) {
+        const hoodParts = hoodPart.split(' - ');
+        neighborhood = hoodParts[0].trim();
+        if (hoodParts[1]) {
+          const csParts = hoodParts[1].split('/');
+          city = (csParts[0] || city).trim();
+          state = (csParts[1] || state).trim();
+        }
+      } else if (hoodPart.includes('/')) {
+        const csParts = hoodPart.split('/');
+        city = (csParts[0] || city).trim();
+        state = (csParts[1] || state).trim();
+      } else {
+        neighborhood = hoodPart.trim();
       }
     }
-
-    // Se o terceiro campo tem "/", pode ser "Cidade/UF, CEP"
-    if (cityState.includes('/')) {
-      const csParts = cityState.split('/');
-      city = csParts[0] || city;
-      const rest = csParts[1] || '';
-      if (rest.includes(',')) {
-        const stateZip = rest.split(',');
-        state = stateZip[0] || state;
-        zip = stateZip[1] || '';
+    
+    if (parts.length >= 3) {
+      // Terceira parte pode ser Cidade/UF
+      const lastPart = parts[parts.length - 1];
+      if (lastPart.includes('/')) {
+        const csParts = lastPart.split('/');
+        city = (csParts[0] || city).trim();
+        state = (csParts[1] || state).trim();
+      } else if (lastPart.length <= 2) {
+        state = lastPart.trim();
       } else {
-        state = rest || state;
+        city = lastPart.trim();
       }
     }
 
