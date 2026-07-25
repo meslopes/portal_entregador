@@ -86,9 +86,29 @@ class WhatsAppService:
             f"🔔 *Novo Pedido Disponível!*\n\n"
             f"Pedido: #{order_data.get('order_number', 'N/A')}\n"
             f"Restaurante: {order_data.get('restaurant', 'N/A')}\n"
+            f"Endereço: {order_data.get('restaurant_address', 'N/A')}\n"
             f"Valor: R$ {order_data.get('total_amount', 0):.2f}\n"
             f"Frete: R$ {order_data.get('delivery_fee', 0):.2f}\n\n"
-            f"Acesse o app para aceitar este pedido."
+            f"📞 *Para aceitar, responda:* SIM\n"
+            f"📞 *Para recusar, responda:* NAO\n\n"
+            f"Pedido expire em 2 minutos."
+        )
+        return self.send_message(phone, message)
+
+    def send_order_accepted_by_whatsapp(self, phone, order_number):
+        """Confirma aceite do pedido via WhatsApp"""
+        message = (
+            f"✅ *Pedido Aceito!*\n\n"
+            f"Pedido #{order_number} foi aceito com sucesso.\n"
+            f"Acesse o app para ver os detalhes."
+        )
+        return self.send_message(phone, message)
+
+    def send_order_rejected_by_whatsapp(self, phone, order_number):
+        """Confirma recusa do pedido via WhatsApp"""
+        message = (
+            f"❌ *Pedido Recusado*\n\n"
+            f"Pedido #{order_number} foi recusado."
         )
         return self.send_message(phone, message)
 

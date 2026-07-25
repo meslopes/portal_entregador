@@ -347,6 +347,12 @@ def process_whatsapp_message(message):
 
         text_lower = text.lower().strip()
 
+        # Comando: aceitar/recusar pedido via WhatsApp
+        if text_lower in ['sim', 's', 'aceito', 'aceitar']:
+            process_driver_response_whatsapp(phone, 'ACCEPT')
+        elif text_lower in ['nao', 'não', 'n', 'recuso', 'recusar']:
+            process_driver_response_whatsapp(phone, 'REJECT')
+
         # Comando: criar pedido
         # Formato: "pedido [restaurante] [cliente] [endereco] [valor]"
         # Ex: "pedido Padaria Central Joao Rua Principal 100 25.90"
@@ -718,3 +724,94 @@ def process_platform_cancellation(order_data, platform):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+def process_driver_response_whatsapp(phone, action):
+    """Processa resposta do entregador via WhatsApp (SIM/NAO)"""
+    try:
+        from src.services.whatsapp import whatsapp_service
+        from src.models.portal_models import User, Driver, Order, OrderStatus, Notification, NotificationType
+
+        # Busca o entregador pelo telefone
+        user = User.query.filter_by(phone=phone).first()
+        if not user or user.user_type.value != 'DRIVER':
+            return
+
+        driver = Driver.query.filter_by(user_id=user.id).first()
+        if not driver:
+            return
+
+        # Busca o pedido pendente mais recente
+        pending_order = Order.query.filter(
+            Order.status == OrderStatus.PENDING
+        ).order_by(Order.created_at.desc()).first()
+
+        if not pending_order:
+            whatsapp_service.send_message(phone, "❌ Nenhum pedido disponível no momento.")
+            return
+
+        if action == 'ACCEPT':
+            # Aceita o pedido
+            pending_order.driver_id = driver.id
+            pending_order.status = OrderStatus.ACCEPTED
+            pending_order.updated_at = datetime.utcnow()
+
+            # Cria registro de entrega
+            from src.models.portal_models import Delivery
+            delivery = Delivery(
+                order_id=pending_order.id,
+                driver_id=driver.id,
+                pickup_latitude=pending_order.restaurant.latitude,
+                pickup_longitude=pending_order.restaurant.longitude,
+                delivery_latitude=pending_order.delivery_address.latitude,
+                delivery_longitude=pending_order.delivery_address.longitude
+            )
+
+            # Calcula ganhos
+            base_earning = float(pending_order.delivery_fee) * 0.7
+            if delivery.delivery_latitude and delivery.pickup_latitude:
+                lat_diff = abs(float(delivery.delivery_latitude) - float(delivery.pickup_latitude))
+                lng_diff = abs(float(delivery.delivery_longitude) - float(delivery.pickup_longitude))
+                distance = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                delivery.distance_km = distance
+                delivery.driver_earnings = base_earning + (distance * 0.5)
+            else:
+                delivery.driver_earnings = base_earning
+
+            db.session.add(delivery)
+            db.session.commit()
+
+            # Notifica o entregador
+            whatsapp_service.send_order_accepted_by_whatsapp(phone, pending_order.order_number)
+
+            # Notifica o estabelecimento
+            if pending_order.restaurant and pending_order.restaurant.phone:
+                whatsapp_service.send_message(
+                    pending_order.restaurant.phone,
+                    f"✅ Pedido #{pending_order.order_number} foi aceito por {user.first_name} {user.last_name}"
+                )
+
+            print(f"Pedido #{pending_order.order_number} aceito via WhatsApp por {user.first_name}")
+
+        elif action == 'REJECT':
+            # Busca proximo entregador
+            from src.routes.order import find_nearest_available_driver
+            next_driver = find_nearest_available_driver(pending_order, exclude_driver_ids=[driver.id])
+
+            if next_driver and next_driver.user.phone:
+                whatsapp_service.send_new_order_to_driver(
+                    next_driver.user.phone,
+                    {
+                        'order_number': pending_order.order_number,
+                        'restaurant': pending_order.restaurant.name if pending_order.restaurant else 'N/A',
+                        'restaurant_address': pending_order.restaurant.address if pending_order.restaurant else 'N/A',
+                        'total_amount': float(pending_order.total_amount),
+                        'delivery_fee': float(pending_order.delivery_fee)
+                    }
+                )
+
+            whatsapp_service.send_order_rejected_by_whatsapp(phone, pending_order.order_number)
+            print(f"Pedido #{pending_order.order_number} recusado via WhatsApp por {user.first_name}")
+
+    except Exception as e:
+        print(f"Erro ao processar resposta WhatsApp do entregador: {e}")
