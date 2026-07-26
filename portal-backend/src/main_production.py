@@ -2,6 +2,7 @@ import os
 import sys
 # DON'T CHANGE: Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# Force redeploy: 2026-07-25
 
 from flask import Flask, jsonify
 from flask_cors import CORS
