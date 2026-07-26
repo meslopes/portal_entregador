@@ -556,7 +556,43 @@ const AdminDashboardPage = () => {
               {tracking?.drivers?.length || 0} entregadores | {tracking?.establishments?.length || 0} estabelecimentos
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              onClick={() => {
+                // Centraliza no mapa mostrando todos os pontos
+                if (tracking && mapInstanceRef.current) {
+                  const allPoints = [];
+                  if (tracking.drivers) {
+                    tracking.drivers.forEach(d => {
+                      if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
+                    });
+                  }
+                  if (tracking.establishments) {
+                    tracking.establishments.forEach(e => {
+                      if (e.latitude && e.longitude) allPoints.push([e.latitude, e.longitude]);
+                    });
+                  }
+                  if (tracking.deliveries) {
+                    tracking.deliveries.forEach(d => {
+                      if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
+                    });
+                  }
+                  if (allPoints.length > 0) {
+                    const group = L.featureGroup([]);
+                    allPoints.forEach(p => group.addLayer(L.marker(p)));
+                    mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+                  }
+                }
+              }}
+              style={{
+                padding: '0.375rem 0.75rem', border: '1px solid #e2e8f0',
+                borderRadius: '0.375rem', background: 'white', cursor: 'pointer',
+                fontSize: '0.8125rem', color: '#64748b',
+                display: 'flex', alignItems: 'center', gap: '0.25rem'
+              }}
+            >
+              <Navigation size={14} /> Centralizar
+            </button>
             <select
               value={selectedSquare}
               onChange={(e) => setSelectedSquare(e.target.value)}
