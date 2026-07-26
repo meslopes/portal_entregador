@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
-  Search, Filter, ChevronDown, ChevronRight, Store, X
+  Search, Filter, ChevronDown, ChevronRight, Store, X, Navigation
 } from 'lucide-react';
 import { adminService, orderService, utils } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
