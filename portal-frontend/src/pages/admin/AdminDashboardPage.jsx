@@ -50,9 +50,12 @@ const AdminDashboardPage = () => {
     loadSquares();
   }, []);
 
-  // Auto-refresh tracking
+  // Auto-refresh tracking e pedidos
   useEffect(() => {
-    const interval = setInterval(loadTracking, 15000);
+    const interval = setInterval(() => {
+      loadTracking();
+      loadOrders();
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 
