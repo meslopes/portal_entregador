@@ -38,6 +38,7 @@ const AdminDashboardPage = () => {
   const [selectedSquare, setSelectedSquare] = useState('');
   const [timeInterval, setTimeInterval] = useState(60); // minutos
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedOrderMenu, setSelectedOrderMenu] = useState(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -390,71 +391,116 @@ const AdminDashboardPage = () => {
                   
                   {isExpanded && count > 0 && (
                     <div style={{ padding: '0.25rem 0.5rem' }}>
-                      {getOrdersByStatus(status).slice(0, 5).map(order => {
-                        const nextStatus = {
-                          PENDING: 'ACCEPTED',
-                          ACCEPTED: 'PREPARING',
-                          PREPARING: 'READY',
-                          READY: 'PICKED_UP',
-                          PICKED_UP: 'DELIVERED'
-                        };
-                        const nextLabel = {
-                          PENDING: 'Aceitar',
-                          ACCEPTED: 'Preparar',
-                          PREPARING: 'Pronto',
-                          READY: 'Coletar',
-                          PICKED_UP: 'Entregar'
-                        };
-                        const nextColor = {
-                          PENDING: '#22c55e',
-                          ACCEPTED: '#8b5cf6',
-                          PREPARING: '#06b6d4',
-                          READY: '#3b82f6',
-                          PICKED_UP: '#22c55e'
-                        };
-
-                        return (
+                      {getOrdersByStatus(status).slice(0, 5).map(order => (
                           <div
                             key={order.id}
                             style={{
                               padding: '0.5rem', borderRadius: '0.25rem',
                               background: 'white', marginBottom: '0.25rem',
                               fontSize: '0.75rem',
-                              border: '1px solid #f1f5f9'
+                              border: '1px solid #f1f5f9',
+                              position: 'relative'
                             }}
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
-                              <span style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>{utils.formatCurrency(order.total_amount)}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <span style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>{utils.formatCurrency(order.total_amount)}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedOrderMenu(selectedOrderMenu === order.id ? null : order.id);
+                                  }}
+                                  style={{
+                                    padding: '0.125rem 0.25rem', border: 'none', background: 'transparent',
+                                    cursor: 'pointer', color: '#94a3b8', fontSize: '0.875rem', lineHeight: 1
+                                  }}
+                                >
+                                  ⋮
+                                </button>
+                              </div>
                             </div>
                             <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.6875rem' }}>
                               {order.customer?.name || 'Cliente'}
                             </div>
-                            {nextStatus[order.status] && (
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    await orderService.updateOrderStatus(order.id, nextStatus[order.status]);
-                                    loadOrders();
-                                  } catch (err) {
-                                    alert('Erro ao atualizar status');
-                                  }
-                                }}
-                                style={{
-                                  marginTop: '0.375rem', width: '100%',
-                                  padding: '0.25rem', borderRadius: '0.25rem',
-                                  border: 'none', background: nextColor[order.status],
-                                  color: 'white', fontSize: '0.625rem', fontWeight: 600,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                {nextLabel[order.status]} →
-                              </button>
+
+                            {/* Menu do pedido */}
+                            {selectedOrderMenu === order.id && (
+                              <div style={{
+                                position: 'absolute', right: 0, top: '100%', zIndex: 50,
+                                background: 'white', borderRadius: '0.5rem',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                border: '1px solid #e2e8f0', width: '220px',
+                                padding: '0.5rem'
+                              }}>
+                                {/* Detalhes do pedido */}
+                                <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '0.25rem' }}>
+                                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Detalhes</p>
+                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Rest: {order.restaurant?.name}</p>
+                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Cliente: {order.customer?.name}</p>
+                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Frete: {utils.formatCurrency(order.delivery_fee)}</p>
+                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Total: {utils.formatCurrency(order.total_amount)}</p>
+                                </div>
+
+                                {/* Opções de status */}
+                                <p style={{ fontSize: '0.625rem', color: '#94a3b8', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
+                                {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
+                                  if (s === order.status) return null;
+                                  const cfg = STATUS_CONFIG[s];
+                                  return (
+                                    <button
+                                      key={s}
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                          await orderService.updateOrderStatus(order.id, s);
+                                          setSelectedOrderMenu(null);
+                                          loadOrders();
+                                        } catch (err) {
+                                          alert('Erro ao alterar status');
+                                        }
+                                      }}
+                                      style={{
+                                        width: '100%', padding: '0.375rem 0.5rem',
+                                        border: 'none', background: 'transparent',
+                                        borderRadius: '0.25rem', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: '0.375rem',
+                                        fontSize: '0.6875rem', color: '#1e293b',
+                                        textAlign: 'left'
+                                      }}
+                                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      <span style={{ fontSize: '0.75rem' }}>{cfg.icon}</span>
+                                      {cfg.text}
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Ver no mapa */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (order.restaurant?.latitude && order.restaurant?.longitude) {
+                                      mapInstanceRef.current?.setView([order.restaurant.latitude, order.restaurant.longitude], 15);
+                                    }
+                                    setSelectedOrderMenu(null);
+                                  }}
+                                  style={{
+                                    width: '100%', padding: '0.375rem 0.5rem',
+                                    border: 'none', background: 'transparent',
+                                    borderRadius: '0.25rem', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '0.375rem',
+                                    fontSize: '0.6875rem', color: '#2563eb',
+                                    borderTop: '1px solid #f1f5f9', marginTop: '0.25rem', paddingTop: '0.5rem'
+                                  }}
+                                >
+                                  <MapPin size={12} /> Ver no Mapa
+                                </button>
+                              </div>
                             )}
                           </div>
-                        );
-                      })}
+                        ))}
                       {count > 5 && (
                         <div style={{ textAlign: 'center', padding: '0.25rem', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer' }}
                           onClick={() => navigate(`/admin/orders?status=${status}`)}>
