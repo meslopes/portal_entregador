@@ -247,17 +247,9 @@ const AdminDashboardPage = () => {
     }
   }, [tracking]);
 
-  // Filter orders by status and time interval
+  // Filter orders by status - mostra todos os pedidos com este status
   const getOrdersByStatus = (status) => {
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - timeInterval * 60 * 1000);
-    
-    return orders.filter(o => {
-      if (o.status !== status) return false;
-      // Filtra por intervalo de tempo
-      const orderDate = new Date(o.created_at);
-      return orderDate >= cutoff;
-    });
+    return orders.filter(o => o.status === status);
   };
 
   const filteredOrders = orders.filter(o => {
