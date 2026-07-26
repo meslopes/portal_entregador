@@ -5,7 +5,7 @@ import {
   AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
   Search, Filter, ChevronDown, ChevronRight, Store, X
 } from 'lucide-react';
-import { adminService, utils } from '@/lib/api';
+import { adminService, orderService, utils } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -390,26 +390,71 @@ const AdminDashboardPage = () => {
                   
                   {isExpanded && count > 0 && (
                     <div style={{ padding: '0.25rem 0.5rem' }}>
-                      {getOrdersByStatus(status).slice(0, 5).map(order => (
-                        <div
-                          key={order.id}
-                          onClick={() => navigate(`/admin/orders?highlight=${order.id}`)}
-                          style={{
-                            padding: '0.5rem', borderRadius: '0.25rem',
-                            background: 'white', marginBottom: '0.25rem',
-                            cursor: 'pointer', fontSize: '0.75rem',
-                            border: '1px solid #f1f5f9'
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
-                            <span style={{ color: '#94a3b8' }}>{utils.formatCurrency(order.total_amount)}</span>
+                      {getOrdersByStatus(status).slice(0, 5).map(order => {
+                        const nextStatus = {
+                          PENDING: 'ACCEPTED',
+                          ACCEPTED: 'PREPARING',
+                          PREPARING: 'READY',
+                          READY: 'PICKED_UP',
+                          PICKED_UP: 'DELIVERED'
+                        };
+                        const nextLabel = {
+                          PENDING: 'Aceitar',
+                          ACCEPTED: 'Preparar',
+                          PREPARING: 'Pronto',
+                          READY: 'Coletar',
+                          PICKED_UP: 'Entregar'
+                        };
+                        const nextColor = {
+                          PENDING: '#22c55e',
+                          ACCEPTED: '#8b5cf6',
+                          PREPARING: '#06b6d4',
+                          READY: '#3b82f6',
+                          PICKED_UP: '#22c55e'
+                        };
+
+                        return (
+                          <div
+                            key={order.id}
+                            style={{
+                              padding: '0.5rem', borderRadius: '0.25rem',
+                              background: 'white', marginBottom: '0.25rem',
+                              fontSize: '0.75rem',
+                              border: '1px solid #f1f5f9'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
+                              <span style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>{utils.formatCurrency(order.total_amount)}</span>
+                            </div>
+                            <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.6875rem' }}>
+                              {order.customer?.name || 'Cliente'}
+                            </div>
+                            {nextStatus[order.status] && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    await orderService.updateOrderStatus(order.id, nextStatus[order.status]);
+                                    loadOrders();
+                                  } catch (err) {
+                                    alert('Erro ao atualizar status');
+                                  }
+                                }}
+                                style={{
+                                  marginTop: '0.375rem', width: '100%',
+                                  padding: '0.25rem', borderRadius: '0.25rem',
+                                  border: 'none', background: nextColor[order.status],
+                                  color: 'white', fontSize: '0.625rem', fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {nextLabel[order.status]} →
+                              </button>
+                            )}
                           </div>
-                          <div style={{ color: '#64748b', marginTop: '0.125rem' }}>
-                            {order.customer?.name || 'Cliente'}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {count > 5 && (
                         <div style={{ textAlign: 'center', padding: '0.25rem', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer' }}
                           onClick={() => navigate(`/admin/orders?status=${status}`)}>
