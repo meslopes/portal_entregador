@@ -335,10 +335,13 @@ const AdminDashboardPage = () => {
             Status
           </button>
           <button
-            onClick={() => setShowSettings(true)}
+            onClick={() => {
+              console.log('Settings clicked, showSettings:', showSettings);
+              setShowSettings(true);
+            }}
             style={{
               padding: '0.5rem', border: 'none', background: 'transparent',
-              cursor: 'pointer', color: '#64748b'
+              cursor: 'pointer', color: '#64748b', fontSize: '1.25rem'
             }}
             title="Configurações"
           >
