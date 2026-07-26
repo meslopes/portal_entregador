@@ -528,8 +528,16 @@ const AdminDashboardPage = () => {
 
       {/* Modal de Configurações */}
       {showSettings && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
-          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+        <>
+          <div 
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999 }}
+            onClick={() => setShowSettings(false)}
+          />
+          <div style={{ 
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '400px', 
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 100000 
+          }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Configurações da Sidebar</h2>
               <button onClick={() => setShowSettings(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
@@ -578,7 +586,7 @@ const AdminDashboardPage = () => {
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       <style>{`
