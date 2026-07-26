@@ -1,21 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
-  Star, RefreshCw, Navigation, Store, User
+  Search, Filter, ChevronDown, ChevronRight, Store, X
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const STATUS_CONFIG = {
+  PENDING: { color: '#ef4444', bg: '#fee2e2', text: 'Tocando', icon: '🔴' },
+  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceitos', icon: '🔵' },
+  PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: '🟣' },
+  READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: '🟢' },
+  PICKED_UP: { color: '#f59e0b', bg: '#fef3c7', text: 'Coletados', icon: '🟡' },
+  DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregues', icon: '✅' },
+  CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelados', icon: '❌' },
+};
 
 const AdminDashboardPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('status');
+  const [expandedStatus, setExpandedStatus] = useState('PENDING');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterClient, setFilterClient] = useState('');
+  const [filterDriver, setFilterDriver] = useState('');
+  const [squares, setSquares] = useState([]);
+  const [selectedSquare, setSelectedSquare] = useState('');
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -24,7 +44,12 @@ const AdminDashboardPage = () => {
     loadDashboard();
     loadTracking();
     loadPendingUsers();
-    // Auto-refresh tracking a cada 15 segundos
+    loadOrders();
+    loadSquares();
+  }, []);
+
+  // Auto-refresh tracking
+  useEffect(() => {
     const interval = setInterval(loadTracking, 15000);
     return () => clearInterval(interval);
   }, []);
@@ -36,7 +61,6 @@ const AdminDashboardPage = () => {
       setDashboard(data);
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);
-      setError('Erro ao carregar dashboard');
     } finally {
       setLoading(false);
     }
@@ -48,6 +72,33 @@ const AdminDashboardPage = () => {
       setPendingUsers(data.users || []);
     } catch (err) {
       console.error('Erro ao carregar pendentes:', err);
+    }
+  };
+
+  const loadOrders = async () => {
+    try {
+      const data = await adminService.getOrders(1, 100);
+      setOrders(data.orders || []);
+    } catch (err) {
+      console.error('Erro ao carregar pedidos:', err);
+    }
+  };
+
+  const loadSquares = async () => {
+    try {
+      const data = await adminService.getSquares();
+      setSquares(data.squares || []);
+    } catch (err) {
+      console.error('Erro ao carregar pracas:', err);
+    }
+  };
+
+  const loadTracking = async () => {
+    try {
+      const data = await adminService.getLiveTracking();
+      setTracking(data);
+    } catch (err) {
+      console.error('Erro ao carregar tracking:', err);
     }
   };
 
@@ -72,27 +123,11 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const loadTracking = async () => {
-    try {
-      const data = await adminService.getLiveTracking();
-      setTracking(data);
-    } catch (err) {
-      console.error('Erro ao carregar tracking:', err);
-    }
-  };
-
-  // Atualiza tracking a cada 15 segundos
-  useEffect(() => {
-    const interval = setInterval(loadTracking, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Callback ref: inicializa o mapa quando o container e renderizado
-  const mapCallbackRef = React.useCallback((node) => {
+  // Initialize map
+  const mapCallbackRef = useCallback((node) => {
     if (!node) return;
     mapRef.current = node;
 
-    // Ja tem mapa? Nao re-inicializa
     if (mapInstanceRef.current) return;
 
     const initMap = () => {
@@ -100,7 +135,7 @@ const AdminDashboardPage = () => {
       const L = window.L;
       if (!L) return;
       mapInstanceRef.current = L.map(node, { zoomControl: true, scrollWheelZoom: true })
-        .setView([-29.95, -50.45], 12);
+        .setView([-29.72, -50.00], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
       }).addTo(mapInstanceRef.current);
@@ -121,18 +156,19 @@ const AdminDashboardPage = () => {
     }
   }, []);
 
-  // Atualiza marcadores quando tracking muda
+  // Update markers
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L || !tracking) return;
 
     const L = window.L;
     const map = mapInstanceRef.current;
 
-    // Remove marcadores antigos
     markersRef.current.forEach(marker => map.removeLayer(marker));
     markersRef.current = [];
 
-    // Adiciona marcadores de entregadores
+    const allPoints = [];
+
+    // Drivers
     if (tracking.drivers) {
       tracking.drivers.forEach(driver => {
         if (driver.latitude && driver.longitude) {
@@ -149,95 +185,76 @@ const AdminDashboardPage = () => {
           const marker = L.marker([driver.latitude, driver.longitude], { icon })
             .addTo(map)
             .bindPopup(`<b>${driver.name}</b><br>${driver.vehicle_type}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
-
           markersRef.current.push(marker);
+          allPoints.push([driver.latitude, driver.longitude]);
         }
       });
     }
 
-    // Adiciona marcadores de estabelecimentos com pedidos ativos
+    // Establishments
     if (tracking.establishments) {
       tracking.establishments.forEach(est => {
         if (est.latitude && est.longitude) {
           const icon = L.divIcon({
-            html: `<div style="background:#f59e0b;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:grab">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
-            </div>`,
-            className: '',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18]
-          });
-
-          const marker = L.marker([est.latitude, est.longitude], { icon, draggable: true })
-            .addTo(map)
-            .bindPopup(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos ativos: ${est.active_orders}<br><small>Arraste para corrigir posição</small>`);
-
-          // Quando o marcador e arrastado, atualiza as coordenadas
-          marker.on('dragend', async function(e) {
-            const pos = e.target.getLatLng();
-            if (confirm(`Atualizar posição de "${est.name}"?\n\nNova latitude: ${pos.lat.toFixed(6)}\nNova longitude: ${pos.lng.toFixed(6)}`)) {
-              try {
-                const token = localStorage.getItem('token');
-                await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/${est.restaurant_id}`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                  },
-                  body: JSON.stringify({ latitude: pos.lat, longitude: pos.lng })
-                });
-                e.target.setPopupContent(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos ativos: ${est.active_orders}<br><small>Posição atualizada!</small>`);
-              } catch (err) {
-                alert('Erro ao atualizar posição');
-                e.target.setLatLng([est.latitude, est.longitude]);
-              }
-            } else {
-              e.target.setLatLng([est.latitude, est.longitude]);
-            }
-          });
-
-          markersRef.current.push(marker);
-        }
-      });
-    }
-
-    // Adiciona marcadores de locais de entrega
-    if (tracking.deliveries) {
-      tracking.deliveries.forEach(del => {
-        if (del.latitude && del.longitude) {
-          const statusColors = {
-            PENDING: '#f59e0b',
-            ACCEPTED: '#2563eb',
-            PREPARING: '#8b5cf6',
-            READY: '#06b6d4',
-            PICKED_UP: '#22c55e'
-          };
-          const color = statusColors[del.status] || '#94a3b8';
-
-          const icon = L.divIcon({
-            html: `<div style="background:${color};width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            html: `<div style="background:#f59e0b;width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
             </div>`,
             className: '',
             iconSize: [28, 28],
             iconAnchor: [14, 14]
           });
 
-          const marker = L.marker([del.latitude, del.longitude], { icon })
+          const marker = L.marker([est.latitude, est.longitude], { icon })
             .addTo(map)
-            .bindPopup(`<b>Pedido #${del.order_number}</b><br>Entregar: ${del.customer_name}<br>${del.street}, ${del.neighborhood}`);
-
+            .bindPopup(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos: ${est.active_orders}`);
           markersRef.current.push(marker);
+          allPoints.push([est.latitude, est.longitude]);
         }
       });
     }
 
-    // Ajusta zoom se houver marcadores
-    if (markersRef.current.length > 0) {
+    // Delivery addresses
+    if (tracking.deliveries) {
+      tracking.deliveries.forEach(del => {
+        if (del.latitude && del.longitude) {
+          const color = del.status === 'PICKED_UP' ? '#22c55e' : '#94a3b8';
+          const icon = L.divIcon({
+            html: `<div style="background:${color};width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.2)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>`,
+            className: '',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+
+          const marker = L.marker([del.latitude, del.longitude], { icon })
+            .addTo(map)
+            .bindPopup(`<b>#${del.order_number}</b><br>${del.customer_name}<br>${del.street}`);
+          markersRef.current.push(marker);
+          allPoints.push([del.latitude, del.longitude]);
+        }
+      });
+    }
+
+    if (allPoints.length > 0) {
       const group = L.featureGroup(markersRef.current);
       map.fitBounds(group.getBounds().pad(0.1));
     }
   }, [tracking]);
+
+  // Filter orders by status
+  const getOrdersByStatus = (status) => {
+    return orders.filter(o => o.status === status);
+  };
+
+  const filteredOrders = orders.filter(o => {
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return o.order_number?.toLowerCase().includes(search) ||
+             o.customer?.name?.toLowerCase().includes(search);
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -248,295 +265,276 @@ const AdminDashboardPage = () => {
   }
 
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
-            Painel Administrativo
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-            VisÃ£o geral do sistema muv.log
-          </p>
-        </div>
-        <button onClick={() => { loadDashboard(); loadTracking(); }} style={{
-          display: 'none'
-        }}>
-          <RefreshCw size={14} /> Atualizar
-        </button>
-      </div>
-
-      {/* Erro */}
-      {error && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
-
-      {/* Links de Cadastro */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Links para Repassar</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '0.5rem', border: '1px solid #bbf7d0' }}>
-            <Truck size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#166534' }}>Cadastro de Entregadores</p>
-              <p style={{ fontSize: '0.6875rem', color: '#16a34a', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/register</p>
-            </div>
-            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/register')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#dcfce7', cursor: 'pointer', color: '#16a34a' }} title="Copiar link">
-              ðŸ“‹
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
-            <Store size={20} style={{ color: '#2563eb', flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1e40af' }}>Cadastro de Estabelecimentos</p>
-              <p style={{ fontSize: '0.6875rem', color: '#2563eb', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/client/register</p>
-            </div>
-            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/client/register')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#dbeafe', cursor: 'pointer', color: '#2563eb' }} title="Copiar link">
-              ðŸ“‹
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#fef3c7', borderRadius: '0.5rem', border: '1px solid #fcd34d' }}>
-            <User size={20} style={{ color: '#d97706', flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#92400e' }}>Acesso Entregador</p>
-              <p style={{ fontSize: '0.6875rem', color: '#d97706', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/login</p>
-            </div>
-            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/login')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#fef3c7', cursor: 'pointer', color: '#d97706' }} title="Copiar link">
-              ðŸ“‹
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
-            <Store size={20} style={{ color: '#0d9488', flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#134e4a' }}>Acesso Estabelecimento</p>
-              <p style={{ fontSize: '0.6875rem', color: '#0d9488', wordBreak: 'break-all' }}>https://portal-entregador-gamma.vercel.app/client/login</p>
-            </div>
-            <button onClick={() => navigator.clipboard.writeText('https://portal-entregador-gamma.vercel.app/client/login')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: '#ccfbf1', cursor: 'pointer', color: '#0d9488' }} title="Copiar link">
-              ðŸ“‹
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Botao Enviar Pedido */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1.25rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Package size={20} style={{ color: '#2563eb' }} />
-          <div>
-            <p style={{ fontWeight: 600, color: '#1e293b' }}>Enviar Pedido</p>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Crie um pedido para qualquer estabelecimento</p>
-          </div>
-        </div>
-        <button onClick={() => navigate('/client/new-order')} style={{
-          display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem',
-          borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white',
-          fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
-        }}>
-          <Package size={16} /> Novo Pedido
-        </button>
-      </div>
-
-      {/* Cards principais */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <StatCard icon={<Users size={22} />} iconBg="#dbeafe" iconColor="#2563eb" label="Total Entregadores" value={dashboard?.total_drivers || 0} />
-        <StatCard icon={<Truck size={22} />} iconBg="#dcfce7" iconColor="#16a34a" label="Online Agora" value={dashboard?.online_drivers || 0} pulse={dashboard?.online_drivers > 0} />
-        <StatCard icon={<Package size={22} />} iconBg="#f3e8ff" iconColor="#9333ea" label="Total Pedidos" value={dashboard?.total_orders || 0} />
-        <StatCard icon={<DollarSign size={22} />} iconBg="#fef3c7" iconColor="#d97706" label="Receita Hoje" value={utils.formatCurrency(dashboard?.today_revenue || 0)} />
-      </div>
-
-      {/* Usuarios Pendentes */}
-      {pendingUsers.length > 0 && (
-        <div style={{ background: '#fef3c7', borderRadius: '0.75rem', border: '1px solid #fcd34d', padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9' }}>
+      {/* Sidebar Esquerda */}
+      <div style={{ width: '320px', background: 'white', borderRight: '1px solid #e2e8f0', overflow: 'auto', flexShrink: 0 }}>
+        {/* Filtros */}
+        <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <AlertCircle size={18} style={{ color: '#d97706' }} />
-            <span style={{ fontWeight: 600, color: '#92400e' }}>{pendingUsers.length} cadastro(s) pendente(s) de aprovaÃ§Ã£o</span>
+            <Filter size={16} style={{ color: '#64748b' }} />
+            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>Filtros</span>
           </div>
-          {pendingUsers.map(user => (
-            <div key={user.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '0.5rem', marginBottom: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: user.user_type === 'DRIVER' ? '#dbeafe' : '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {user.user_type === 'DRIVER' ? <Truck size={14} style={{ color: '#2563eb' }} /> : <Store size={14} style={{ color: '#0d9488' }} />}
-                </div>
-                <div>
-                  <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{user.first_name} {user.last_name}</p>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{user.email} â€¢ {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}</p>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button onClick={() => handleApprove(user.id)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#22c55e', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                  âœ“ Aprovar
-                </button>
-                <button onClick={() => handleReject(user.id)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#ef4444', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                  âœ• Rejeitar
-                </button>
-              </div>
+          
+          <div style={{ marginBottom: '0.75rem' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                type="text"
+                placeholder="Buscar por ID, cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem',
+                  border: '1px solid #e2e8f0', borderRadius: '0.375rem',
+                  fontSize: '0.8125rem', outline: 'none'
+                }}
+              />
             </div>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {/* Mapa */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', overflow: 'hidden' }}>
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <select
+              value={filterClient}
+              onChange={(e) => setFilterClient(e.target.value)}
+              style={{ padding: '0.375rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.75rem', outline: 'none' }}
+            >
+              <option value="">Todos os clientes</option>
+            </select>
+            <select
+              value={filterDriver}
+              onChange={(e) => setFilterDriver(e.target.value)}
+              style={{ padding: '0.375rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.75rem', outline: 'none' }}
+            >
+              <option value="">Todos os entreg.</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Abas Status/Empresas */}
+        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
+          <button
+            onClick={() => setActiveTab('status')}
+            style={{
+              flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
+              fontWeight: activeTab === 'status' ? 600 : 400,
+              color: activeTab === 'status' ? '#2563eb' : '#64748b',
+              borderBottom: activeTab === 'status' ? '2px solid #2563eb' : '2px solid transparent',
+              cursor: 'pointer', fontSize: '0.875rem'
+            }}
+          >
+            Status
+          </button>
+          <button
+            onClick={() => setActiveTab('empresas')}
+            style={{
+              flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
+              fontWeight: activeTab === 'empresas' ? 600 : 400,
+              color: activeTab === 'empresas' ? '#2563eb' : '#64748b',
+              borderBottom: activeTab === 'empresas' ? '2px solid #2563eb' : '2px solid transparent',
+              cursor: 'pointer', fontSize: '0.875rem'
+            }}
+          >
+            Empresas
+          </button>
+        </div>
+
+        {/* Lista de Status */}
+        {activeTab === 'status' && (
+          <div style={{ padding: '0.5rem' }}>
+            {Object.entries(STATUS_CONFIG).map(([status, config]) => {
+              const count = getOrdersByStatus(status).length;
+              const isExpanded = expandedStatus === status;
+              
+              return (
+                <div key={status} style={{ marginBottom: '0.25rem' }}>
+                  <button
+                    onClick={() => setExpandedStatus(isExpanded ? null : status)}
+                    style={{
+                      width: '100%', display: 'flex', justifyContent: 'space-between',
+                      alignItems: 'center', padding: '0.75rem', border: 'none',
+                      background: isExpanded ? '#f8fafc' : 'transparent',
+                      borderRadius: '0.375rem', cursor: 'pointer',
+                      transition: 'background 0.15s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1rem' }}>{config.icon}</span>
+                      <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>
+                        Pedidos {config.text}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{
+                        padding: '0.125rem 0.5rem', borderRadius: '9999px',
+                        background: config.bg, color: config.color,
+                        fontSize: '0.75rem', fontWeight: 600
+                      }}>
+                        {count}
+                      </span>
+                      <ChevronDown
+                        size={14}
+                        style={{
+                          color: '#94a3b8',
+                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s'
+                        }}
+                      />
+                    </div>
+                  </button>
+                  
+                  {isExpanded && count > 0 && (
+                    <div style={{ padding: '0.25rem 0.5rem' }}>
+                      {getOrdersByStatus(status).slice(0, 5).map(order => (
+                        <div
+                          key={order.id}
+                          onClick={() => navigate(`/admin/orders?highlight=${order.id}`)}
+                          style={{
+                            padding: '0.5rem', borderRadius: '0.25rem',
+                            background: 'white', marginBottom: '0.25rem',
+                            cursor: 'pointer', fontSize: '0.75rem',
+                            border: '1px solid #f1f5f9'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
+                            <span style={{ color: '#94a3b8' }}>{utils.formatCurrency(order.total_amount)}</span>
+                          </div>
+                          <div style={{ color: '#64748b', marginTop: '0.125rem' }}>
+                            {order.customer?.name || 'Cliente'}
+                          </div>
+                        </div>
+                      ))}
+                      {count > 5 && (
+                        <div style={{ textAlign: 'center', padding: '0.25rem', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer' }}
+                          onClick={() => navigate(`/admin/orders?status=${status}`)}>
+                          Ver todos ({count})
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Lista de Empresas */}
+        {activeTab === 'empresas' && (
+          <div style={{ padding: '0.5rem' }}>
+            {squares.map(sq => (
+              <div
+                key={sq.id}
+                onClick={() => setSelectedSquare(selectedSquare === sq.id ? '' : sq.id)}
+                style={{
+                  padding: '0.75rem', borderRadius: '0.375rem',
+                  background: selectedSquare === sq.id ? '#eff6ff' : 'transparent',
+                  cursor: 'pointer', marginBottom: '0.25rem',
+                  border: selectedSquare === sq.id ? '1px solid #bfdbfe' : '1px solid transparent'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Store size={14} style={{ color: '#64748b' }} />
+                  <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>{sq.name}</span>
+                </div>
+                <div style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                  {sq.city}/{sq.state}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Conteudo Principal - Mapa */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header do Mapa */}
+        <div style={{ padding: '0.75rem 1rem', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MapPin size={18} style={{ color: '#2563eb' }} />
-            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregadores em Tempo Real</span>
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>Mapa em Tempo Real</span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>
+              {tracking?.drivers?.length || 0} entregadores | {tracking?.establishments?.length || 0} estabelecimentos
+            </span>
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tracking?.count || 0} online</span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <select
+              value={selectedSquare}
+              onChange={(e) => setSelectedSquare(e.target.value)}
+              style={{ padding: '0.375rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }}
+            >
+              <option value="">Todas as Praças</option>
+              {squares.map(sq => (
+                <option key={sq.id} value={sq.id}>{sq.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div ref={mapCallbackRef} style={{ height: '300px', background: '#e5e7eb' }} />
-      </div>
 
-      {/* Lista de entregadores online */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
-        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9' }}>
-          <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregadores Online</span>
-        </div>
-        <div style={{ padding: '0.5rem' }}>
-          {tracking?.drivers?.length > 0 ? tracking.drivers.map((driver, i) => (
-            <div key={i} style={{ padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '0.375rem', background: driver.current_order ? '#eff6ff' : '#f0fdf4', borderLeft: `3px solid ${driver.current_order ? '#2563eb' : '#22c55e'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{driver.name}</p>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{driver.vehicle_type}</p>
-                </div>
-                <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: driver.current_order ? '#dbeafe' : '#dcfce7', color: driver.current_order ? '#2563eb' : '#16a34a' }}>
-                  {driver.current_order ? 'Em entrega' : 'Livre'}
-                </span>
+        {/* Mapa */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          <div ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
+          
+          {/* Legenda */}
+          <div style={{
+            position: 'absolute', bottom: '1rem', left: '1rem',
+            background: 'white', borderRadius: '0.5rem', padding: '0.75rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 1000
+          }}>
+            <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Legenda</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.625rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#2563eb' }} />
+                <span>Entregador em entrega</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e' }} />
+                <span>Entregador livre</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b' }} />
+                <span>Estabelecimento</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#22c55e' }} />
+                <span>Local de entrega</span>
               </div>
             </div>
-          )) : (
-            <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '0.8125rem' }}>Nenhum entregador online</p>
-          )}
-        </div>
-      </div>
-
-      {/* Resumo + Status + Ranking */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Resumo do dia */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Clock size={18} style={{ color: '#2563eb' }} />
-            <span style={{ fontWeight: 600, color: '#1e293b' }}>Resumo do Dia</span>
-          </div>
-          <div style={{ padding: '1rem 1.25rem' }}>
-            <SummaryRow label="Pedidos Hoje" value={dashboard?.today_orders || 0} />
-            <SummaryRow label="Entregas Hoje" value={dashboard?.today_deliveries || 0} />
-            <SummaryRow label="Receita Hoje" value={utils.formatCurrency(dashboard?.today_revenue || 0)} highlight />
           </div>
         </div>
 
-        {/* Pedidos por status */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <BarChart3 size={18} style={{ color: '#9333ea' }} />
-            <span style={{ fontWeight: 600, color: '#1e293b' }}>Pedidos por Status</span>
+        {/* Footer */}
+        <div style={{ padding: '0.75rem 1rem', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
+            <span>Portal: <a href="https://portal-entregador-gamma.vercel.app/client" target="_blank" style={{ color: '#2563eb' }}>portal-entregador-gamma.vercel.app</a></span>
+            <span>© 2026 muv.log</span>
           </div>
-          <div style={{ padding: '1rem 1.25rem' }}>
-            {dashboard?.orders_by_status && Object.entries(dashboard.orders_by_status).map(([status, count]) => (
-              <StatusRow key={status} status={status} count={count} />
-            ))}
-            {(!dashboard?.orders_by_status || Object.keys(dashboard.orders_by_status).length === 0) && (
-              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '1.5rem 0', fontSize: '0.8125rem' }}>Nenhum pedido</p>
-            )}
-          </div>
-        </div>
-
-        {/* Ranking de entregadores */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <TrendingUp size={18} style={{ color: '#16a34a' }} />
-            <span style={{ fontWeight: 600, color: '#1e293b' }}>Ranking Entregadores</span>
-          </div>
-          <div style={{ padding: '0.5rem' }}>
-            {dashboard?.top_drivers?.length > 0 ? dashboard.top_drivers.map((driver, index) => (
-              <div key={driver.id} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '0.625rem 0.75rem', borderRadius: '0.375rem', marginBottom: '0.25rem',
-                background: index === 0 ? '#f0fdf4' : 'transparent'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                  <span style={{
-                    width: '1.5rem', height: '1.5rem', borderRadius: '50%',
-                    background: index === 0 ? '#22c55e' : index === 1 ? '#3b82f6' : index === 2 ? '#f59e0b' : '#e2e8f0',
-                    color: index < 3 ? 'white' : '#94a3b8',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.625rem', fontWeight: 700
-                  }}>
-                    {index + 1}
-                  </span>
-                  <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>{driver.name}</span>
-                </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#2563eb' }}>
-                  {driver.deliveries} entregas
-                </span>
-              </div>
-            )) : (
-              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '1.5rem 0', fontSize: '0.8125rem' }}>Sem dados</p>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
+            <a href="/support" style={{ color: '#64748b', textDecoration: 'none' }}>Central de Ajuda</a>
+            <a href="/terms" style={{ color: '#64748b', textDecoration: 'none' }}>Termos</a>
+            <a href="/privacy" style={{ color: '#64748b', textDecoration: 'none' }}>Privacidade</a>
+            <span style={{ color: '#94a3b8' }}>Praça:</span>
+            <select
+              value={selectedSquare}
+              onChange={(e) => setSelectedSquare(e.target.value)}
+              style={{ padding: '0.25rem 0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem', fontSize: '0.75rem', outline: 'none' }}
+            >
+              <option value="">Selecionar</option>
+              {squares.map(sq => (
+                <option key={sq.id} value={sq.id}>{sq.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        
+        @media (max-width: 900px) {
+          .dashboard-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
     </div>
   );
 };
 
-// Componentes auxiliares
-const StatCard = ({ icon, iconBg, iconColor, label, value, pulse }) => (
-  <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.15s', position: 'relative', overflow: 'hidden' }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}>
-    {pulse && <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: '#22c55e', animation: 'pulse-dot 2s infinite' }} />}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-      <div style={{ padding: '0.625rem', borderRadius: '0.5rem', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-      <div>
-        <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
-        <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
-      </div>
-    </div>
-    <style>{`@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
-  </div>
-);
-
-const SummaryRow = ({ label, value, highlight = false }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f8fafc' }}>
-    <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>{label}</span>
-    <span style={{ fontWeight: 600, color: highlight ? '#22c55e' : '#1e293b', fontSize: '0.9375rem' }}>{value}</span>
-  </div>
-);
-
-const STATUS_CONFIG = {
-  PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente' },
-  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito' },
-  PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando' },
-  READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto' },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'Coletado' },
-  DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue' },
-  CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelado' },
-};
-
-const StatusRow = ({ status, count }) => {
-  const config = STATUS_CONFIG[status] || { color: '#94a3b8', bg: '#f1f5f9', text: status };
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.375rem 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: config.color }} />
-        <span style={{ fontSize: '0.8125rem', color: '#475569' }}>{config.text}</span>
-      </div>
-      <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: config.bg, color: config.color }}>
-        {count}
-      </span>
-    </div>
-  );
-};
-
 export default AdminDashboardPage;
-
