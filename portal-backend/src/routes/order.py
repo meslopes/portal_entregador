@@ -446,6 +446,50 @@ def update_order_status(order_id):
             except Exception:
                 pass
 
+        # Logica de volta para PENDING - notifica entregador mais proximo
+        if new_status_enum == OrderStatus.PENDING:
+            old_driver_id = order.driver_id
+            if order.driver_id:
+                order.driver_id = None
+            if order.delivery:
+                db.session.delete(order.delivery)
+            
+            # Notifica entregador mais proximo
+            try:
+                new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
+                if new_driver:
+                    notification = Notification(
+                        user_id=new_driver.user_id,
+                        title="Pedido disponível (reenviado)",
+                        message=f"Pedido #{order.order_number} foi disponibilizado novamente",
+                        type=NotificationType.NEW_ORDER,
+                        related_id=order.id
+                    )
+                    db.session.add(notification)
+
+                    # Envia WhatsApp se configurado
+                    try:
+                        from src.services.whatsapp import whatsapp_service
+                        if whatsapp_service.is_configured() and new_driver.user.phone:
+                            whatsapp_service.send_new_order_to_driver(
+                                new_driver.user.phone,
+                                {
+                                    'order_number': order.order_number,
+                                    'restaurant': order.restaurant.name if order.restaurant else 'N/A',
+                                    'restaurant_address': order.restaurant.address if order.restaurant else 'N/A',
+                                    'customer_name': order.customer.name if order.customer else 'N/A',
+                                    'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}" if order.delivery_address else 'N/A',
+                                    'total_amount': float(order.total_amount),
+                                    'delivery_fee': float(order.delivery_fee),
+                                    'distance_km': 0,
+                                    'driver_earnings': float(order.delivery_fee) * 0.65
+                                }
+                            )
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
         db.session.commit()
         
         # Envia notificacao WhatsApp (se configurado)

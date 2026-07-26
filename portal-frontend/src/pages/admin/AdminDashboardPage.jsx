@@ -481,8 +481,11 @@ const AdminDashboardPage = () => {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (order.restaurant?.latitude && order.restaurant?.longitude) {
-                                      mapInstanceRef.current?.setView([order.restaurant.latitude, order.restaurant.longitude], 15);
+                                    // Centraliza no ENDERECO DE ENTREGA (prioridade)
+                                    const delLat = order.delivery_address?.latitude;
+                                    const delLng = order.delivery_address?.longitude;
+                                    if (delLat && delLng) {
+                                      mapInstanceRef.current?.setView([delLat, delLng], 15);
                                     }
                                     setSelectedOrderMenu(null);
                                   }}
@@ -495,7 +498,7 @@ const AdminDashboardPage = () => {
                                     borderTop: '1px solid #f1f5f9', marginTop: '0.25rem', paddingTop: '0.5rem'
                                   }}
                                 >
-                                  <MapPin size={12} /> Ver no Mapa
+                                  <MapPin size={12} /> Ver Entrega no Mapa
                                 </button>
                               </div>
                             )}
