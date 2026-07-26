@@ -74,7 +74,7 @@ const AdminEstablishmentsPage = () => {
       name: '', cnpj: '', phone: '', email: '', password: '123456',
       address_street: '', address_number: '', address_neighborhood: '',
       address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-      latitude: '', longitude: '', square_id: ''
+      latitude: '', longitude: '', square_id: '', preparation_minutes: '10'
     });
     setFormError('');
     setShowForm(true);
@@ -166,7 +166,8 @@ const AdminEstablishmentsPage = () => {
       address_zip: zip,
       latitude: est.latitude || '',
       longitude: est.longitude || '',
-      square_id: est.square_id || ''
+      square_id: est.square_id || '',
+      preparation_minutes: est.preparation_minutes || '10'
     });
     setFormError('');
     setShowForm(true);
@@ -197,6 +198,7 @@ const AdminEstablishmentsPage = () => {
         latitude: formData.latitude ? parseFloat(formData.latitude) : -29.95,
         longitude: formData.longitude ? parseFloat(formData.longitude) : -50.45,
         square_id: formData.square_id || null,
+        preparation_minutes: parseInt(formData.preparation_minutes) || 10,
       };
 
       if (!editing && formData.password) {
@@ -536,6 +538,13 @@ const AdminEstablishmentsPage = () => {
                   <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
                 ))}
               </select>
+            </FormField>
+
+            <FormField label="Tempo de Preparo (minutos)">
+              <input type="number" name="preparation_minutes" value={formData.preparation_minutes} onChange={handleFormChange} style={inputStyle} placeholder="10" min="1" max="120" />
+              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                Tempo estimado entre aceite e pedido pronto. O entregador é notificado após este tempo.
+              </p>
             </FormField>
 
             <FormField label="Rua/Avenida *">

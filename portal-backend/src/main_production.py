@@ -162,6 +162,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar preparation_minutes na tabela restaurants
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'preparation_minutes') THEN ALTER TABLE restaurants ADD COLUMN preparation_minutes INTEGER DEFAULT 10; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de bonus e ranking
         try:
             db.session.execute(db.text("""

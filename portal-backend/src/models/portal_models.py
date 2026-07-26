@@ -160,6 +160,8 @@ class Restaurant(db.Model):
     longitude = db.Column(db.Numeric(11, 8), nullable=False)
     opening_hours = db.Column(db.JSON)
     is_active = db.Column(db.Boolean, default=True)
+    # Tempo de preparo em minutos (configuravel por estabelecimento)
+    preparation_minutes = db.Column(db.Integer, default=10)  # Tempo padrao: 10 minutos
     # Praça
     square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
     # Dados bancarios
@@ -185,6 +187,7 @@ class Restaurant(db.Model):
             'longitude': float(self.longitude) if self.longitude else None,
             'opening_hours': self.opening_hours,
             'is_active': self.is_active,
+            'preparation_minutes': self.preparation_minutes or 10,
             'bank_name': self.bank_name,
             'bank_agency': self.bank_agency,
             'bank_account': self.bank_account,
