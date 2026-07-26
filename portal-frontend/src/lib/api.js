@@ -377,6 +377,14 @@ export const adminService = {
     return response.data;
   },
 
+  // Pedidos
+  getOrders: async (page = 1, perPage = 20, status = '') => {
+    const params = { page, per_page: perPage };
+    if (status) params.status = status;
+    const response = await api.get('/api/admin/orders', { params });
+    return response.data;
+  },
+
   // Relatórios
   getOrdersByDate: async (days = 30) => {
     const response = await api.get('/api/admin/reports/orders-by-date', { params: { days } });
