@@ -36,6 +36,8 @@ const AdminDashboardPage = () => {
   const [filterDriver, setFilterDriver] = useState('');
   const [squares, setSquares] = useState([]);
   const [selectedSquare, setSelectedSquare] = useState('');
+  const [timeInterval, setTimeInterval] = useState(60); // minutos
+  const [showSettings, setShowSettings] = useState(false);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -242,9 +244,17 @@ const AdminDashboardPage = () => {
     }
   }, [tracking]);
 
-  // Filter orders by status
+  // Filter orders by status and time interval
   const getOrdersByStatus = (status) => {
-    return orders.filter(o => o.status === status);
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - timeInterval * 60 * 1000);
+    
+    return orders.filter(o => {
+      if (o.status !== status) return false;
+      // Filtra por intervalo de tempo
+      const orderDate = new Date(o.created_at);
+      return orderDate >= cutoff;
+    });
   };
 
   const filteredOrders = orders.filter(o => {
@@ -310,31 +320,29 @@ const AdminDashboardPage = () => {
           </div>
         </div>
 
-        {/* Abas Status/Empresas */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
+        {/* Abas Status */}
+        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
           <button
             onClick={() => setActiveTab('status')}
             style={{
               flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
-              fontWeight: activeTab === 'status' ? 600 : 400,
-              color: activeTab === 'status' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'status' ? '2px solid #2563eb' : '2px solid transparent',
+              fontWeight: 600,
+              color: '#2563eb',
+              borderBottom: '2px solid #2563eb',
               cursor: 'pointer', fontSize: '0.875rem'
             }}
           >
             Status
           </button>
           <button
-            onClick={() => setActiveTab('empresas')}
+            onClick={() => setShowSettings(true)}
             style={{
-              flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
-              fontWeight: activeTab === 'empresas' ? 600 : 400,
-              color: activeTab === 'empresas' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'empresas' ? '2px solid #2563eb' : '2px solid transparent',
-              cursor: 'pointer', fontSize: '0.875rem'
+              padding: '0.5rem', border: 'none', background: 'transparent',
+              cursor: 'pointer', color: '#64748b'
             }}
+            title="Configurações"
           >
-            Empresas
+            ⚙️
           </button>
         </div>
 
@@ -504,28 +512,71 @@ const AdminDashboardPage = () => {
 
         {/* Footer */}
         <div style={{ padding: '0.75rem 1rem', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
-            <span>Portal: <a href="https://portal-entregador-gamma.vercel.app/client" target="_blank" style={{ color: '#2563eb' }}>portal-entregador-gamma.vercel.app</a></span>
-            <span>© 2026 muv.log</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+            <span>© 2026 muv.log — Controle de Entregadores</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
-            <a href="/support" style={{ color: '#64748b', textDecoration: 'none' }}>Central de Ajuda</a>
+            <a href="/support" style={{ color: '#64748b', textDecoration: 'none' }}>Suporte</a>
             <a href="/terms" style={{ color: '#64748b', textDecoration: 'none' }}>Termos</a>
             <a href="/privacy" style={{ color: '#64748b', textDecoration: 'none' }}>Privacidade</a>
-            <span style={{ color: '#94a3b8' }}>Praça:</span>
-            <select
-              value={selectedSquare}
-              onChange={(e) => setSelectedSquare(e.target.value)}
-              style={{ padding: '0.25rem 0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.25rem', fontSize: '0.75rem', outline: 'none' }}
-            >
-              <option value="">Selecionar</option>
-              {squares.map(sq => (
-                <option key={sq.id} value={sq.id}>{sq.name}</option>
-              ))}
-            </select>
           </div>
         </div>
       </div>
+
+      {/* Modal de Configurações */}
+      {showSettings && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Configurações da Sidebar</h2>
+              <button onClick={() => setShowSettings(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                  Intervalo de Tempo (minutos)
+                </label>
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+                  Mostra pedidos criados nos últimos X minutos
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {[15, 30, 60, 120, 240].map(min => (
+                    <button
+                      key={min}
+                      onClick={() => setTimeInterval(min)}
+                      style={{
+                        padding: '0.5rem 0.75rem', borderRadius: '0.375rem',
+                        border: timeInterval === min ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                        background: timeInterval === min ? '#eff6ff' : 'white',
+                        color: timeInterval === min ? '#2563eb' : '#64748b',
+                        fontSize: '0.8125rem', fontWeight: timeInterval === min ? 600 : 400,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {min}min
+                    </button>
+                  ))}
+                </div>
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+                  Atual: {timeInterval} minutos ({timeInterval >= 60 ? `${Math.floor(timeInterval/60)}h` : `${timeInterval}min`})
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSettings(false)}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                  border: 'none', background: '#2563eb', color: 'white',
+                  fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
