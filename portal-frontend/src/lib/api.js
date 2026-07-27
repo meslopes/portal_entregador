@@ -267,8 +267,10 @@ export const adminService = {
     return response.data;
   },
 
-  getLiveTracking: async () => {
-    const response = await api.get('/api/admin/live-tracking');
+  getLiveTracking: async (squareId = null) => {
+    const params = {};
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/live-tracking', { params });
     return response.data;
   },
 

@@ -7,6 +7,19 @@ from datetime import datetime
 import uuid
 import hashlib
 import hmac
+import math
+
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """Calcula distância entre dois pontos usando fórmula de Haversine (em km)"""
+    if not all([lat1, lon1, lat2, lon2]):
+        return 0
+    lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    return 6371 * c  # Raio da Terra em km
 
 webhook_bp = Blueprint('webhook', __name__)
 
@@ -767,12 +780,13 @@ def process_driver_response_whatsapp(phone, action):
                 delivery_longitude=pending_order.delivery_address.longitude
             )
 
-            # Calcula ganhos
+            # Calcula ganhos usando Haversine
             base_earning = float(pending_order.delivery_fee) * 0.7
             if delivery.delivery_latitude and delivery.pickup_latitude:
-                lat_diff = abs(float(delivery.delivery_latitude) - float(delivery.pickup_latitude))
-                lng_diff = abs(float(delivery.delivery_longitude) - float(delivery.pickup_longitude))
-                distance = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                distance = haversine_distance(
+                    delivery.pickup_latitude, delivery.pickup_longitude,
+                    delivery.delivery_latitude, delivery.delivery_longitude
+                )
                 delivery.distance_km = distance
                 delivery.driver_earnings = base_earning + (distance * 0.5)
             else:
@@ -799,13 +813,14 @@ def process_driver_response_whatsapp(phone, action):
             next_driver = find_nearest_available_driver(pending_order, exclude_driver_ids=[driver.id])
 
             if next_driver and next_driver.user.phone:
-                # Calcula distancia
+                # Calcula distancia usando Haversine
                 km_total = 0
                 driver_earnings = float(pending_order.delivery_fee) * 0.7
                 if pending_order.delivery_address and pending_order.delivery_address.latitude and pending_order.restaurant and pending_order.restaurant.latitude:
-                    lat_diff = abs(float(pending_order.delivery_address.latitude) - float(pending_order.restaurant.latitude))
-                    lng_diff = abs(float(pending_order.delivery_address.longitude) - float(pending_order.restaurant.longitude))
-                    km_total = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                    km_total = haversine_distance(
+                        pending_order.restaurant.latitude, pending_order.restaurant.longitude,
+                        pending_order.delivery_address.latitude, pending_order.delivery_address.longitude
+                    )
                     driver_earnings = float(pending_order.delivery_fee) * 0.7 + (km_total * 0.5)
 
                 whatsapp_service.send_new_order_to_driver(

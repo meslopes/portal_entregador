@@ -9,6 +9,19 @@ from datetime import datetime, timedelta
 import uuid
 import os
 import base64
+import math
+
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """Calcula distância entre dois pontos usando fórmula de Haversine (em km)"""
+    if not all([lat1, lon1, lat2, lon2]):
+        return 0
+    lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    return 6371 * c  # Raio da Terra em km
 
 order_bp = Blueprint('order', __name__)
 
@@ -37,9 +50,10 @@ def get_available_orders():
         for order in available_orders:
             # Calcula distância aproximada do entregador ao restaurante
             if driver.current_latitude and driver.current_longitude:
-                lat_diff = abs(float(order.restaurant.latitude) - float(driver.current_latitude))
-                lng_diff = abs(float(order.restaurant.longitude) - float(driver.current_longitude))
-                distance_to_restaurant = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                distance_to_restaurant = haversine_distance(
+                    driver.current_latitude, driver.current_longitude,
+                    order.restaurant.latitude, order.restaurant.longitude
+                )
                 
                 # Só mostra pedidos dentro de um raio de 200km
                 if distance_to_restaurant > 200:
@@ -55,9 +69,10 @@ def get_available_orders():
             
             # Calcula distância do restaurante ao cliente
             if order.restaurant.latitude and order.delivery_address.latitude:
-                lat_diff = abs(float(order.restaurant.latitude) - float(order.delivery_address.latitude))
-                lng_diff = abs(float(order.restaurant.longitude) - float(order.delivery_address.longitude))
-                delivery_distance = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                delivery_distance = haversine_distance(
+                    order.restaurant.latitude, order.restaurant.longitude,
+                    order.delivery_address.latitude, order.delivery_address.longitude
+                )
                 order_dict['delivery_distance_km'] = round(delivery_distance, 2)
                 
                 # Estima tempo de entrega (assumindo 30 km/h de velocidade média)
@@ -117,9 +132,10 @@ def accept_order(order_id):
         # Calcula ganhos estimados do entregador (70% da taxa de entrega + bônus por distância)
         base_earning = float(order.delivery_fee) * 0.7
         if delivery.delivery_latitude and delivery.pickup_latitude:
-            lat_diff = abs(float(delivery.delivery_latitude) - float(delivery.pickup_latitude))
-            lng_diff = abs(float(delivery.delivery_longitude) - float(delivery.pickup_longitude))
-            distance = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+            distance = haversine_distance(
+                delivery.pickup_latitude, delivery.pickup_longitude,
+                delivery.delivery_latitude, delivery.delivery_longitude
+            )
             delivery.distance_km = distance
             delivery.driver_earnings = base_earning + (distance * 0.5)  # R$ 0.50 por km
         else:
@@ -192,13 +208,14 @@ def reject_order(order_id):
                 from src.services.whatsapp import whatsapp_service
                 if whatsapp_service.is_configured() and next_driver.user.phone:
                     restaurant = order.restaurant
-                    # Calcula distancia aproximada
+                    # Calcula distancia usando Haversine
                     km_total = 0
                     driver_earnings = float(order.delivery_fee) * 0.7
                     if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
-                        lat_diff = abs(float(order.delivery_address.latitude) - float(restaurant.latitude))
-                        lng_diff = abs(float(order.delivery_address.longitude) - float(restaurant.longitude))
-                        km_total = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                        km_total = haversine_distance(
+                            restaurant.latitude, restaurant.longitude,
+                            order.delivery_address.latitude, order.delivery_address.longitude
+                        )
                         driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
 
                     whatsapp_service.send_new_order_to_driver(
@@ -778,13 +795,20 @@ def create_order():
             try:
                 from src.services.whatsapp import whatsapp_service
                 if whatsapp_service.is_configured() and notified_driver.user.phone:
-                    # Calcula distancia aproximada
+                    # Calcula distancia usando formula de Haversine
                     km_total = 0
                     driver_earnings = float(order.delivery_fee) * 0.7
                     if address.latitude and restaurant.latitude:
-                        lat_diff = abs(float(address.latitude) - float(restaurant.latitude))
-                        lng_diff = abs(float(address.longitude) - float(restaurant.longitude))
-                        km_total = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+                        import math
+                        lat1 = math.radians(float(restaurant.latitude))
+                        lon1 = math.radians(float(restaurant.longitude))
+                        lat2 = math.radians(float(address.latitude))
+                        lon2 = math.radians(float(address.longitude))
+                        dlat = lat2 - lat1
+                        dlon = lon2 - lon1
+                        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+                        c = 2 * math.asin(math.sqrt(a))
+                        km_total = 6371 * c  # Raio da Terra em km
                         driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
 
                     whatsapp_service.send_new_order_to_driver(
@@ -1322,13 +1346,11 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
             if driver.id in exclude_driver_ids:
                 continue
 
-            # Calcula distancia ate o restaurante
+            # Calcula distancia ate o restaurante usando Haversine
             driver_lat = float(driver.current_latitude)
             driver_lng = float(driver.current_longitude)
 
-            lat_diff = abs(driver_lat - rest_lat)
-            lng_diff = abs(driver_lng - rest_lng)
-            distance = ((lat_diff ** 2 + lng_diff ** 2) ** 0.5) * 111
+            distance = haversine_distance(driver_lat, driver_lng, rest_lat, rest_lng)
 
             if distance > max_radius:
                 continue

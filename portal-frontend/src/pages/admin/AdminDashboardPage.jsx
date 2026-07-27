@@ -51,6 +51,11 @@ const AdminDashboardPage = () => {
     loadSquares();
   }, []);
 
+  // Recarrega tracking quando muda a praça
+  useEffect(() => {
+    loadTracking();
+  }, [selectedSquare]);
+
   // Auto-refresh tracking e pedidos
   useEffect(() => {
     const interval = setInterval(() => {
@@ -101,7 +106,7 @@ const AdminDashboardPage = () => {
 
   const loadTracking = async () => {
     try {
-      const data = await adminService.getLiveTracking();
+      const data = await adminService.getLiveTracking(selectedSquare || null);
       setTracking(data);
     } catch (err) {
       console.error('Erro ao carregar tracking:', err);
@@ -348,7 +353,7 @@ const AdminDashboardPage = () => {
         {/* Lista de Status */}
         {activeTab === 'status' && (
           <div style={{ padding: '0.5rem' }}>
-            {Object.entries(STATUS_CONFIG).map(([status, config]) => {
+            {Object.entries(STATUS_CONFIG).filter(([status]) => !['PREPARING', 'READY'].includes(status)).map(([status, config]) => {
               const count = getOrdersByStatus(status).length;
               const isExpanded = expandedStatus === status;
               
@@ -557,42 +562,6 @@ const AdminDashboardPage = () => {
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button
-              onClick={() => {
-                // Centraliza no mapa mostrando todos os pontos
-                if (tracking && mapInstanceRef.current) {
-                  const allPoints = [];
-                  if (tracking.drivers) {
-                    tracking.drivers.forEach(d => {
-                      if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
-                    });
-                  }
-                  if (tracking.establishments) {
-                    tracking.establishments.forEach(e => {
-                      if (e.latitude && e.longitude) allPoints.push([e.latitude, e.longitude]);
-                    });
-                  }
-                  if (tracking.deliveries) {
-                    tracking.deliveries.forEach(d => {
-                      if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
-                    });
-                  }
-                  if (allPoints.length > 0) {
-                    const group = L.featureGroup([]);
-                    allPoints.forEach(p => group.addLayer(L.marker(p)));
-                    mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
-                  }
-                }
-              }}
-              style={{
-                padding: '0.375rem 0.75rem', border: '1px solid #e2e8f0',
-                borderRadius: '0.375rem', background: 'white', cursor: 'pointer',
-                fontSize: '0.8125rem', color: '#64748b',
-                display: 'flex', alignItems: 'center', gap: '0.25rem'
-              }}
-            >
-              <Navigation size={14} /> Centralizar
-            </button>
             <select
               value={selectedSquare}
               onChange={(e) => setSelectedSquare(e.target.value)}
@@ -609,6 +578,45 @@ const AdminDashboardPage = () => {
         {/* Mapa */}
         <div style={{ flex: 1, position: 'relative' }}>
           <div ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
+          
+          {/* Botão Centralizar dentro do mapa */}
+          <button
+            onClick={() => {
+              if (tracking && mapInstanceRef.current) {
+                const allPoints = [];
+                if (tracking.drivers) {
+                  tracking.drivers.forEach(d => {
+                    if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
+                  });
+                }
+                if (tracking.establishments) {
+                  tracking.establishments.forEach(e => {
+                    if (e.latitude && e.longitude) allPoints.push([e.latitude, e.longitude]);
+                  });
+                }
+                if (tracking.deliveries) {
+                  tracking.deliveries.forEach(d => {
+                    if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
+                  });
+                }
+                if (allPoints.length > 0) {
+                  const group = L.featureGroup([]);
+                  allPoints.forEach(p => group.addLayer(L.marker(p)));
+                  mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+                }
+              }
+            }}
+            style={{
+              position: 'absolute', top: '1rem', right: '1rem',
+              padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0',
+              borderRadius: '0.375rem', background: 'white', cursor: 'pointer',
+              fontSize: '0.8125rem', color: '#64748b',
+              display: 'flex', alignItems: 'center', gap: '0.375rem',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)', zIndex: 1000
+            }}
+          >
+            <Navigation size={14} /> Centralizar Mapa
+          </button>
           
           {/* Legenda */}
           <div style={{

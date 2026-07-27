@@ -60,16 +60,33 @@ const NewOrderPage = () => {
     }
   };
 
-  // Calcula distância baseada no endereço
+  // Calcula distância usando fórmula de Haversine (quando tem coordenadas)
+  const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Raio da Terra em km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Calcula distância estimada (fallback se não tiver coordenadas)
   const getDistance = () => {
     if (!form.delivery_address || !form.delivery_neighborhood) return 0;
-    const len = form.delivery_address.length + form.delivery_neighborhood.length + form.delivery_number.length;
-    return Math.max(2, (len % 15) + 3);
+    // Estimativa baseada no tamanho do endereço (mais realista que antes)
+    const addrLen = form.delivery_address.length;
+    const baseDistance = 3; // distância mínima
+    const extraKm = Math.min(addrLen / 20, 10); // até 10km extra baseado no tamanho
+    return Math.max(4, baseDistance + extraKm); // mínimo 4km
   };
 
   const DISTANCE_KM = getDistance();
   const PRICE_PER_KM = 2.95;
-  const DELIVERY_FEE = DISTANCE_KM * PRICE_PER_KM;
+  const MIN_DISTANCE_KM = 4;
+  const DELIVERY_FEE = Math.max(DISTANCE_KM, MIN_DISTANCE_KM) * PRICE_PER_KM;
   // Converte vírgula para ponto antes de parseFloat
   const PRODUCT_VALUE = parseFloat(form.product_value.replace(',', '.')) || 0;
   const TOTAL = PRODUCT_VALUE + DELIVERY_FEE;

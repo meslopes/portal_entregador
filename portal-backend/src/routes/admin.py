@@ -1097,12 +1097,17 @@ def get_finance_by_establishment():
 def get_live_tracking():
     """Obtém localização em tempo real de entregadores, estabelecimentos e locais de entrega"""
     try:
+        square_id = request.args.get('square_id', type=int)
+        
         # Entregadores online
-        online_drivers = Driver.query.filter(
+        driver_query = Driver.query.filter(
             Driver.is_online == True,
             Driver.current_latitude.isnot(None),
             Driver.current_longitude.isnot(None)
-        ).join(User).all()
+        )
+        if square_id:
+            driver_query = driver_query.filter(Driver.square_id == square_id)
+        online_drivers = driver_query.join(User).all()
         
         tracking_data = []
         for driver in online_drivers:
@@ -1130,7 +1135,7 @@ def get_live_tracking():
             tracking_data.append(driver_data)
         
         # Pedidos ativos
-        active_orders = Order.query.filter(
+        order_query = Order.query.filter(
             Order.status.in_([
                 OrderStatus.PENDING,
                 OrderStatus.ACCEPTED,
@@ -1138,7 +1143,10 @@ def get_live_tracking():
                 OrderStatus.READY,
                 OrderStatus.PICKED_UP
             ])
-        ).all()
+        )
+        if square_id:
+            order_query = order_query.join(Restaurant).filter(Restaurant.square_id == square_id)
+        active_orders = order_query.all()
         
         restaurant_ids_with_active = set()
         delivery_ids_added = set()
