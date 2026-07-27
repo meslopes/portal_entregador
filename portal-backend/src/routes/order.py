@@ -23,6 +23,59 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(math.sqrt(a))
     return 6371 * c  # Raio da Terra em km
 
+
+def process_scheduled_orders():
+    """Converte pedidos SCHEDULED para PENDING quando o tempo de preparo expirou"""
+    try:
+        now = datetime.utcnow()
+        scheduled_orders = Order.query.filter(
+            Order.status == OrderStatus.SCHEDULED,
+            Order.scheduled_at <= now
+        ).all()
+        
+        for order in scheduled_orders:
+            order.status = OrderStatus.PENDING
+            order.updated_at = now
+            
+            # Notifica o entregador mais próximo
+            notified_driver = find_nearest_available_driver(order)
+            if notified_driver:
+                try:
+                    from src.services.whatsapp import whatsapp_service
+                    if whatsapp_service.is_configured() and notified_driver.user.phone:
+                        km_total = 0
+                        driver_earnings = float(order.delivery_fee) * 0.7
+                        if order.delivery_address.latitude and order.restaurant.latitude:
+                            km_total = haversine_distance(
+                                order.restaurant.latitude, order.restaurant.longitude,
+                                order.delivery_address.latitude, order.delivery_address.longitude
+                            )
+                            driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+                        
+                        whatsapp_service.send_new_order_to_driver(
+                            notified_driver.user.phone,
+                            {
+                                'order_number': order.order_number,
+                                'restaurant': order.restaurant.name,
+                                'restaurant_address': order.restaurant.address,
+                                'customer_name': order.customer.name,
+                                'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}",
+                                'total_amount': float(order.total_amount),
+                                'delivery_fee': float(order.delivery_fee),
+                                'distance_km': km_total,
+                                'driver_earnings': driver_earnings
+                            }
+                        )
+                except Exception:
+                    pass
+        
+        if scheduled_orders:
+            db.session.commit()
+            
+    except Exception as e:
+        print(f"Erro ao processar pedidos agendados: {e}")
+
+
 order_bp = Blueprint('order', __name__)
 
 @order_bp.route('/available', methods=['GET'])
@@ -30,6 +83,9 @@ order_bp = Blueprint('order', __name__)
 def get_available_orders():
     """Obtém pedidos disponíveis para o entregador"""
     try:
+        # Primeiro processa pedidos agendados que expiraram
+        process_scheduled_orders()
+        
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
@@ -771,7 +827,10 @@ def create_order():
         db.session.add(address)
         db.session.flush()
 
-        # Cria o pedido
+        # Cria o pedido com status SCHEDULED (agendado)
+        preparation_minutes = restaurant.preparation_minutes or 10
+        scheduled_at = datetime.utcnow() + timedelta(minutes=preparation_minutes)
+        
         order = Order(
             restaurant_id=restaurant.id,
             customer_id=customer.id,
@@ -782,52 +841,17 @@ def create_order():
             delivery_fee=data.get('delivery_fee', 0),
             total_amount=data['total_amount'],
             payment_method=PaymentMethod(data['payment_method']),
+            status=OrderStatus.SCHEDULED,
+            scheduled_at=scheduled_at,
             special_instructions=data.get('special_instructions')
         )
 
         db.session.add(order)
         db.session.flush()
 
-        # Atribuicao inteligente: notifica o entregador mais proximo (NAO aceita automaticamente)
-        notified_driver = find_nearest_available_driver(order)
-        if notified_driver:
-            # Notifica o entregador selecionado (pedido continua PENDING)
-            try:
-                from src.services.whatsapp import whatsapp_service
-                if whatsapp_service.is_configured() and notified_driver.user.phone:
-                    # Calcula distancia usando formula de Haversine
-                    km_total = 0
-                    driver_earnings = float(order.delivery_fee) * 0.7
-                    if address.latitude and restaurant.latitude:
-                        import math
-                        lat1 = math.radians(float(restaurant.latitude))
-                        lon1 = math.radians(float(restaurant.longitude))
-                        lat2 = math.radians(float(address.latitude))
-                        lon2 = math.radians(float(address.longitude))
-                        dlat = lat2 - lat1
-                        dlon = lon2 - lon1
-                        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-                        c = 2 * math.asin(math.sqrt(a))
-                        km_total = 6371 * c  # Raio da Terra em km
-                        driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
-
-                    whatsapp_service.send_new_order_to_driver(
-                        notified_driver.user.phone,
-                        {
-                            'order_number': order.order_number,
-                            'restaurant': restaurant.name,
-                            'restaurant_address': restaurant.address,
-                            'customer_name': customer.name,
-                            'delivery_address': f"{address.street}, {address.neighborhood}",
-                            'total_amount': float(order.total_amount),
-                            'delivery_fee': float(order.delivery_fee),
-                            'distance_km': km_total,
-                            'driver_earnings': driver_earnings
-                        }
-                    )
-            except Exception:
-                pass
-
+        # Pedido agendado - não notifica entregador ainda
+        # Será convertido para PENDING automaticamente quando scheduled_at chegar
+        
         db.session.commit()
 
         # Envia notificacao WhatsApp ao cliente (se configurado)

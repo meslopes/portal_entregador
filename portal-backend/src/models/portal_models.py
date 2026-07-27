@@ -22,7 +22,8 @@ class VehicleType(Enum):
     FOOT = "FOOT"
 
 class OrderStatus(Enum):
-    PENDING = "PENDING"
+    SCHEDULED = "SCHEDULED"  # Pedido agendado (em preparo, visível apenas para admin)
+    PENDING = "PENDING"      # Pedido tocando (visível para entregadores)
     ACCEPTED = "ACCEPTED"
     PREPARING = "PREPARING"
     READY = "READY"
@@ -274,6 +275,7 @@ class Order(db.Model):
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_method = db.Column(db.Enum(PaymentMethod), nullable=False)
     status = db.Column(db.Enum(OrderStatus), default=OrderStatus.PENDING)
+    scheduled_at = db.Column(db.DateTime)  # Quando o pedido deve virar PENDING
     estimated_delivery_time = db.Column(db.DateTime)
     pickup_time = db.Column(db.DateTime)
     delivery_time = db.Column(db.DateTime)
@@ -298,6 +300,7 @@ class Order(db.Model):
             'total_amount': float(self.total_amount),
             'payment_method': self.payment_method.value,
             'status': self.status.value,
+            'scheduled_at': self.scheduled_at.isoformat() if self.scheduled_at else None,
             'estimated_delivery_time': self.estimated_delivery_time.isoformat() if self.estimated_delivery_time else None,
             'pickup_time': self.pickup_time.isoformat() if self.pickup_time else None,
             'delivery_time': self.delivery_time.isoformat() if self.delivery_time else None,

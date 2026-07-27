@@ -10,7 +10,7 @@ from sqlalchemy import func, and_, or_
 admin_bp = Blueprint('admin', __name__)
 
 def admin_required(f):
-    """Decorator para verificar se o usuÃƒÂ¡rio ÃƒÂ© admin"""
+    """Decorator para verificar se o usuário é admin"""
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -20,6 +20,19 @@ def admin_required(f):
             return jsonify({'error': 'Acesso restrito a administradores'}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+
+@admin_bp.route('/process-scheduled', methods=['POST'])
+@jwt_required()
+@admin_required
+def process_scheduled_orders():
+    """Processa pedidos agendados que expiraram (converte SCHEDULED para PENDING)"""
+    try:
+        from src.routes.order import process_scheduled_orders as process_orders
+        process_orders()
+        return jsonify({'message': 'Pedidos agendados processados com sucesso'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # ============================================

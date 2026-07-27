@@ -214,6 +214,11 @@ export const adminService = {
     return response.data;
   },
 
+  processScheduledOrders: async () => {
+    const response = await api.post('/api/admin/process-scheduled');
+    return response.data;
+  },
+
   getDrivers: async (page = 1, perPage = 20, search = '', status = 'all') => {
     const response = await api.get('/api/admin/drivers', {
       params: { page, per_page: perPage, search, status },

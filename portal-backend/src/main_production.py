@@ -171,6 +171,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar scheduled_at na tabela orders
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'scheduled_at') THEN ALTER TABLE orders ADD COLUMN scheduled_at TIMESTAMP; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de bonus e ranking
         try:
             db.session.execute(db.text("""

@@ -11,6 +11,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const STATUS_CONFIG = {
+  SCHEDULED: { color: '#6366f1', bg: '#e0e7ff', text: 'Agendados', icon: '⏰' },
   PENDING: { color: '#ef4444', bg: '#fee2e2', text: 'Tocando', icon: '🔴' },
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceitos', icon: '🔵' },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: '🟣' },
