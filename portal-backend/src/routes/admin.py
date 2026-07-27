@@ -819,22 +819,19 @@ def assign_order_to_driver(order_id):
     try:
         order = Order.query.get(order_id)
         if not order:
-            return jsonify({'error': 'Pedido nÃƒÂ£o encontrado'}), 404
+            return jsonify({'error': 'Pedido não encontrado'}), 404
         
-        if order.status != OrderStatus.PENDING:
-            return jsonify({'error': 'Pedido nÃƒÂ£o estÃƒÂ¡ pendente'}), 400
+        if order.status not in [OrderStatus.PENDING, OrderStatus.PREPARING]:
+            return jsonify({'error': 'Pedido não está pendente ou em preparação'}), 400
         
         data = request.get_json()
         driver_id = data.get('driver_id')
         
         driver = Driver.query.get(driver_id)
         if not driver:
-            return jsonify({'error': 'Entregador nÃƒÂ£o encontrado'}), 404
+            return jsonify({'error': 'Entregador não encontrado'}), 404
         
-        if not driver.is_online:
-            return jsonify({'error': 'Entregador nÃƒÂ£o estÃƒÂ¡ online'}), 400
-        
-        # Atribui o pedido
+        # Atribui o pedido (permite offline para atribuição manual)
         order.driver_id = driver.id
         order.status = OrderStatus.ACCEPTED
         order.updated_at = datetime.utcnow()
@@ -857,7 +854,7 @@ def assign_order_to_driver(order_id):
         db.session.commit()
         
         return jsonify({
-            'message': 'Pedido atribuÃƒÂ­do com sucesso',
+            'message': 'Pedido atribuído com sucesso',
             'order': order.to_dict()
         }), 200
         
