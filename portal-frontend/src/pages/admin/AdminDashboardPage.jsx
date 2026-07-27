@@ -365,12 +365,24 @@ const AdminDashboardPage = () => {
             style={{
               flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
               fontWeight: 600,
-              color: '#2563eb',
-              borderBottom: '2px solid #2563eb',
+              color: activeTab === 'status' ? '#2563eb' : '#64748b',
+              borderBottom: activeTab === 'status' ? '2px solid #2563eb' : '2px solid transparent',
               cursor: 'pointer', fontSize: '0.875rem'
             }}
           >
             Status
+          </button>
+          <button
+            onClick={() => setActiveTab('empresas')}
+            style={{
+              flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
+              fontWeight: 600,
+              color: activeTab === 'empresas' ? '#2563eb' : '#64748b',
+              borderBottom: activeTab === 'empresas' ? '2px solid #2563eb' : '2px solid transparent',
+              cursor: 'pointer', fontSize: '0.875rem'
+            }}
+          >
+            Praças
           </button>
           <button
             onClick={() => {
