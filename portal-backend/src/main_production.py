@@ -180,6 +180,68 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: criar tabela tenants (multi-tenant)
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS tenants (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(200) NOT NULL,
+                    slug VARCHAR(100) UNIQUE NOT NULL,
+                    logo_url VARCHAR(500),
+                    primary_color VARCHAR(7) DEFAULT '#6366f1',
+                    secondary_color VARCHAR(7) DEFAULT '#ffffff',
+                    domain VARCHAR(200),
+                    phone VARCHAR(20),
+                    email VARCHAR(255),
+                    address VARCHAR(500),
+                    cnpj VARCHAR(18),
+                    plan VARCHAR(50) DEFAULT 'free',
+                    max_deliveries_month INTEGER DEFAULT 100,
+                    max_drivers INTEGER DEFAULT 2,
+                    max_clients INTEGER DEFAULT 20,
+                    custom_domain VARCHAR(200),
+                    terms_url VARCHAR(500),
+                    privacy_url VARCHAR(500),
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: adicionar tenant_id nas tabelas principais
+        for table in ['users', 'drivers', 'restaurants', 'customers', 'orders', 'squares']:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'tenant_id') THEN ALTER TABLE {table} ADD COLUMN tenant_id INTEGER REFERENCES tenants(id); END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        # Migration: criar tenant padrão (muv.log) e migrar dados existentes
+        try:
+            result = db.session.execute(db.text("SELECT id FROM tenants WHERE slug = 'muvlog'"))
+            if not result.fetchone():
+                db.session.execute(db.text("""
+                    INSERT INTO tenants (name, slug, plan, max_deliveries_month, max_drivers, max_clients)
+                    VALUES ('muv.log', 'muvlog', 'premium', 2000, 100, 100)
+                """))
+                db.session.commit()
+                # Atualizar todos os registros existentes para o tenant padrão
+                for table in ['users', 'drivers', 'restaurants', 'customers', 'orders', 'squares']:
+                    try:
+                        db.session.execute(db.text(
+                            f"UPDATE {table} SET tenant_id = (SELECT id FROM tenants WHERE slug = 'muvlog') WHERE tenant_id IS NULL"
+                        ))
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de bonus e ranking
         try:
             db.session.execute(db.text("""

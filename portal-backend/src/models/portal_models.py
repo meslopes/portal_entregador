@@ -52,16 +52,77 @@ class NotificationType(Enum):
     PAYMENT = "PAYMENT"
     SYSTEM = "SYSTEM"
 
+
+class Tenant(db.Model):
+    """Organização/Empresa que usa a plataforma (multi-tenant)"""
+    __tablename__ = 'tenants'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(200), nullable=False)  # Nome da empresa (ex: "muvy")
+    slug = db.Column(db.String(100), unique=True, nullable=False)  # URL slug (ex: "muvy")
+    logo_url = db.Column(db.String(500))  # URL do logo
+    primary_color = db.Column(db.String(7), default='#6366f1')  # Cor primária (hex)
+    secondary_color = db.Column(db.String(7), default='#ffffff')  # Cor secundária (hex)
+    domain = db.Column(db.String(200))  # Domínio próprio (ex: "app.muvy.com.br")
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(255))
+    address = db.Column(db.String(500))
+    cnpj = db.Column(db.String(18))
+    # Configurações do plano
+    plan = db.Column(db.String(50), default='free')  # free, basic, premium, platinum
+    max_deliveries_month = db.Column(db.Integer, default=100)
+    max_drivers = db.Column(db.Integer, default=2)
+    max_clients = db.Column(db.Integer, default=20)
+    # Configurações de white-label
+    custom_domain = db.Column(db.String(200))  # Domínio personalizado
+    terms_url = db.Column(db.String(500))  # URL dos termos de uso
+    privacy_url = db.Column(db.String(500))  # URL da política de privacidade
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    users = db.relationship('User', backref='tenant', lazy='dynamic')
+    squares = db.relationship('Square', backref='tenant', lazy='dynamic')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'slug': self.slug,
+            'logo_url': self.logo_url,
+            'primary_color': self.primary_color,
+            'secondary_color': self.secondary_color,
+            'domain': self.domain,
+            'phone': self.phone,
+            'email': self.email,
+            'address': self.address,
+            'cnpj': self.cnpj,
+            'plan': self.plan,
+            'max_deliveries_month': self.max_deliveries_month,
+            'max_drivers': self.max_drivers,
+            'max_clients': self.max_clients,
+            'custom_domain': self.custom_domain,
+            'terms_url': self.terms_url,
+            'privacy_url': self.privacy_url,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+
 class User(db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # NULL = super admin (muv.log)
+    email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20))
-    cpf = db.Column(db.String(14), unique=True)
+    cpf = db.Column(db.String(14))
     birth_date = db.Column(db.Date)
     profile_picture_url = db.Column(db.String(500))
     user_type = db.Column(db.Enum(UserType), nullable=False)
@@ -82,6 +143,7 @@ class User(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'tenant_id': self.tenant_id,
             'email': self.email,
             'first_name': self.first_name,
             'last_name': self.last_name,
@@ -99,8 +161,9 @@ class Driver(db.Model):
     __tablename__ = 'drivers'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    driver_license = db.Column(db.String(20), unique=True)
+    driver_license = db.Column(db.String(20))
     license_expiry_date = db.Column(db.Date)
     vehicle_type = db.Column(db.Enum(VehicleType), nullable=False)
     vehicle_plate = db.Column(db.String(10))
@@ -128,6 +191,7 @@ class Driver(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'tenant_id': self.tenant_id,
             'user_id': self.user_id,
             'driver_license': self.driver_license,
             'license_expiry_date': self.license_expiry_date.isoformat() if self.license_expiry_date else None,
@@ -152,8 +216,9 @@ class Restaurant(db.Model):
     __tablename__ = 'restaurants'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     name = db.Column(db.String(200), nullable=False)
-    cnpj = db.Column(db.String(18), unique=True)
+    cnpj = db.Column(db.String(18))
     phone = db.Column(db.String(20))
     email = db.Column(db.String(255))
     address = db.Column(db.String(500), nullable=False)
@@ -179,6 +244,7 @@ class Restaurant(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'tenant_id': self.tenant_id,
             'name': self.name,
             'cnpj': self.cnpj,
             'phone': self.phone,
@@ -201,6 +267,7 @@ class Customer(db.Model):
     __tablename__ = 'customers'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
@@ -264,11 +331,12 @@ class Order(db.Model):
     __tablename__ = 'orders'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
     delivery_address_id = db.Column(db.Integer, db.ForeignKey('addresses.id'), nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'))
-    order_number = db.Column(db.String(50), unique=True, nullable=False)
+    order_number = db.Column(db.String(50), nullable=False)
     items = db.Column(db.JSON, nullable=False)
     subtotal = db.Column(db.Numeric(10, 2), nullable=False)
     delivery_fee = db.Column(db.Numeric(10, 2), nullable=False)
@@ -289,6 +357,7 @@ class Order(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'tenant_id': self.tenant_id,
             'restaurant_id': self.restaurant_id,
             'customer_id': self.customer_id,
             'delivery_address_id': self.delivery_address_id,
@@ -428,6 +497,7 @@ class Square(db.Model):
     __tablename__ = 'squares'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     name = db.Column(db.String(200), nullable=False)
     city = db.Column(db.String(100), nullable=False)
     state = db.Column(db.String(2), nullable=False)
