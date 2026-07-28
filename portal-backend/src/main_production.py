@@ -98,6 +98,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar SCHEDULED ao enum orderstatus no PostgreSQL
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'SCHEDULED' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'orderstatus')) THEN ALTER TYPE orderstatus ADD VALUE 'SCHEDULED'; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: adicionar coluna user_id na tabela customers
         try:
             db.session.execute(db.text(
