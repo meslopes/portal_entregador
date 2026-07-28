@@ -2133,18 +2133,28 @@ def upload_tenant_logo():
 @jwt_required()
 @admin_required
 def get_squares():
-    """Lista todas as praÃƒÂ§as"""
+    """Lista todas as praças"""
     try:
         from src.models.portal_models import Square
-        squares = Square.query.order_by(Square.name).all()
+        tenant_id = get_current_tenant_id()
+
+        query = Square.query
+        if tenant_id:
+            query = query.filter(Square.tenant_id == tenant_id)
+        squares = query.order_by(Square.name).all()
 
         squares_data = []
         for sq in squares:
-            sq_dict = sq.to_dict()
-            sq_dict['restaurants_count'] = Restaurant.query.filter_by(square_id=sq.id).count()
-            sq_dict['drivers_count'] = Driver.query.filter_by(square_id=sq.id).count()
-            sq_dict['orders_count'] = Order.query.join(Restaurant).filter(Restaurant.square_id == sq.id).count()
-            squares_data.append(sq_dict)
+            try:
+                sq_dict = sq.to_dict()
+                sq_dict['restaurants_count'] = Restaurant.query.filter_by(square_id=sq.id).count()
+                sq_dict['drivers_count'] = Driver.query.filter_by(square_id=sq.id).count()
+                sq_dict['orders_count'] = Order.query.join(Restaurant).filter(Restaurant.square_id == sq.id).count()
+                squares_data.append(sq_dict)
+            except Exception as e:
+                # Se falhar ao processar uma praça, pula
+                print(f"Erro ao processar praça {sq.id}: {e}")
+                continue
 
         return jsonify({'squares': squares_data}), 200
     except Exception as e:
