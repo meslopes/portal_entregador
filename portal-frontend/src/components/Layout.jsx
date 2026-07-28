@@ -124,7 +124,7 @@ const Layout = ({ children }) => {
             </nav>
 
             {/* User Menu */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, position: 'relative', zIndex: 110 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, position: 'relative', zIndex: 100001 }}>
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -145,7 +145,7 @@ const Layout = ({ children }) => {
                     <ChevronDown size={14} style={{ color: '#94a3b8' }} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" style={{ width: '220px', zIndex: 200 }}>
+                <DropdownMenuContent align="end" style={{ width: '220px', zIndex: 100002 }}>
                   <div style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>{user?.first_name} {user?.last_name}</p>
                     <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{user?.email}</p>
