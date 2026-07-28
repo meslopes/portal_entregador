@@ -280,6 +280,44 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: criar tabela delivery_routes (multi-parada)
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS delivery_routes (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    driver_id INTEGER REFERENCES drivers(id),
+                    route_number VARCHAR(50) UNIQUE NOT NULL,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    total_stops INTEGER DEFAULT 0,
+                    completed_stops INTEGER DEFAULT 0,
+                    total_distance_km NUMERIC(8,2),
+                    estimated_duration_minutes INTEGER,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: adicionar route_id e stop_number na tabela orders
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'route_id') THEN ALTER TABLE orders ADD COLUMN route_id INTEGER REFERENCES delivery_routes(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'stop_number') THEN ALTER TABLE orders ADD COLUMN stop_number INTEGER; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de bonus e ranking
         try:
             db.session.execute(db.text("""

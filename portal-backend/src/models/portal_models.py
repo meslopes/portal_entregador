@@ -343,6 +343,8 @@ class Order(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
     delivery_address_id = db.Column(db.Integer, db.ForeignKey('addresses.id'), nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'))
+    route_id = db.Column(db.Integer, db.ForeignKey('delivery_routes.id'), nullable=True)  # Rota multi-parada
+    stop_number = db.Column(db.Integer)  # Número da parada na rota (1, 2, 3...)
     order_number = db.Column(db.String(50), nullable=False)
     tracking_token = db.Column(db.String(36), unique=True)  # UUID para rastreio público
     items = db.Column(db.JSON, nullable=False)
@@ -371,6 +373,8 @@ class Order(db.Model):
             'customer_id': self.customer_id,
             'delivery_address_id': self.delivery_address_id,
             'driver_id': self.driver_id,
+            'route_id': self.route_id,
+            'stop_number': self.stop_number,
             'order_number': self.order_number,
             'tracking_token': self.tracking_token,
             'items': self.items,
@@ -388,6 +392,42 @@ class Order(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+
+
+class DeliveryRoute(db.Model):
+    """Rota de entrega com múltiplas paradas"""
+    __tablename__ = 'delivery_routes'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=True)
+    route_number = db.Column(db.String(50), unique=True, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, active, completed, cancelled
+    total_stops = db.Column(db.Integer, default=0)
+    completed_stops = db.Column(db.Integer, default=0)
+    total_distance_km = db.Column(db.Numeric(8, 2))
+    estimated_duration_minutes = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    orders = db.relationship('Order', backref='route', lazy='dynamic')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'driver_id': self.driver_id,
+            'route_number': self.route_number,
+            'status': self.status,
+            'total_stops': self.total_stops,
+            'completed_stops': self.completed_stops,
+            'total_distance_km': float(self.total_distance_km) if self.total_distance_km else None,
+            'estimated_duration_minutes': self.estimated_duration_minutes,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
 
 class Delivery(db.Model):
     __tablename__ = 'deliveries'
