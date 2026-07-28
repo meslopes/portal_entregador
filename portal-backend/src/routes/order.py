@@ -1740,3 +1740,103 @@ def reorder_route(route_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@order_bp.route('/group-pending', methods=['POST'])
+@jwt_required()
+def group_pending_orders():
+    """Agrupa pedidos pendentes próximos automaticamente"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Acesso restrito a administradores'}), 403
+
+        data = request.get_json() or {}
+        radius_km = data.get('radius_km', 1.0)  # Raio de agrupamento em km (padrão 1km)
+        tenant_id = get_current_tenant_id()
+
+        # Busca pedidos pendentes sem rota
+        query = Order.query.filter(
+            Order.status == OrderStatus.PENDING,
+            Order.route_id.is_(None),
+            Order.driver_id.is_(None)
+        )
+        if tenant_id:
+            query = query.filter(Order.tenant_id == tenant_id)
+
+        pending_orders = query.all()
+
+        if len(pending_orders) < 2:
+            return jsonify({
+                'message': 'Menos de 2 pedidos pendentes disponíveis',
+                'groups': 0
+            }), 200
+
+        # Agrupa pedidos por proximidade
+        groups = []
+        used_orders = set()
+
+        for order in pending_orders:
+            if order.id in used_orders:
+                continue
+
+            # Inicia um grupo com este pedido
+            group = [order]
+            used_orders.add(order.id)
+
+            if not order.restaurant.latitude or not order.restaurant.longitude:
+                continue
+
+            # Busca outros pedidos próximos
+            for other_order in pending_orders:
+                if other_order.id in used_orders:
+                    continue
+                if not other_order.restaurant.latitude or not other_order.restaurant.longitude:
+                    continue
+
+                # Calcula distância entre restaurantes
+                distance = haversine_distance(
+                    order.restaurant.latitude, order.restaurant.longitude,
+                    other_order.restaurant.latitude, other_order.restaurant.longitude
+                )
+
+                if distance <= radius_km:
+                    group.append(other_order)
+                    used_orders.add(other_order.id)
+
+            if len(group) >= 2:
+                groups.append(group)
+
+        # Cria rotas para cada grupo
+        routes_created = []
+        from src.models.portal_models import DeliveryRoute
+
+        for group in groups:
+            route = DeliveryRoute(
+                tenant_id=tenant_id,
+                route_number=f"ROT{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}",
+                status='pending',
+                total_stops=len(group)
+            )
+            db.session.add(route)
+            db.session.flush()
+
+            # Associa pedidos à rota
+            for i, order in enumerate(group, 1):
+                order.route_id = route.id
+                order.stop_number = i
+
+            routes_created.append(route.to_dict())
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'{len(routes_created)} rotas criadas com {sum(len(g) for g in groups)} pedidos',
+            'routes': routes_created
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
