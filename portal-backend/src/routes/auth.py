@@ -17,11 +17,15 @@ def _build_user_response(user):
     customer = Customer.query.filter_by(user_id=user.id).first()
     if customer:
         user_data['customer'] = customer.to_dict()
-    # Incluir dados do tenant
+    # Incluir dados do tenant (com tratamento de erro)
     if user.tenant_id:
-        tenant = Tenant.query.get(user.tenant_id)
-        if tenant:
-            user_data['tenant'] = tenant.to_dict()
+        try:
+            tenant = Tenant.query.get(user.tenant_id)
+            if tenant:
+                user_data['tenant'] = tenant.to_dict()
+        except Exception:
+            # Tabela tenants pode não existir ainda
+            pass
     return user_data
 
 
@@ -305,20 +309,19 @@ def login():
     if not email or not password:
         return jsonify({'error': 'Email e senha são obrigatórios'}), 400
 
-    # Buscar tenant se fornecido
+    # Buscar tenant se fornecido (com tratamento de erro)
     tenant = None
     if tenant_slug:
-        tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
-        if not tenant:
-            return jsonify({'error': 'Organização não encontrada'}), 404
+        try:
+            tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
+            if not tenant:
+                return jsonify({'error': 'Organização não encontrada'}), 404
+        except Exception:
+            # Tabela tenants pode não existir ainda
+            pass
 
-    # Buscar usuário
-    if tenant:
-        # Buscar usuário específico do tenant
-        user = User.query.filter_by(email=email, tenant_id=tenant.id).first()
-    else:
-        # Buscar usuário globalmente (backward compatibility)
-        user = User.query.filter_by(email=email).first()
+    # Buscar usuário (backward compatibility)
+    user = User.query.filter_by(email=email).first()
 
     if user and check_password_hash(user.password_hash, password):
         # Verifica se o usuario esta ativo
@@ -328,7 +331,7 @@ def login():
             return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
 
         # Verificar se o usuário pertence ao tenant correto
-        if tenant and user.tenant_id != tenant.id:
+        if tenant and user.tenant_id and user.tenant_id != tenant.id:
             return jsonify({'error': 'Credenciais inválidas'}), 401
 
         access_token = create_access_token(identity=str(user.id))
