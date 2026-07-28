@@ -123,7 +123,6 @@ def platform_dashboard():
 def list_all_tenants():
     """Lista todos os tenants com estatísticas"""
     try:
-
         tenants = Tenant.query.order_by(Tenant.created_at.desc()).all()
 
         tenants_data = []
@@ -149,7 +148,7 @@ def list_all_tenants():
         return jsonify({'tenants': tenants_data}), 200
     except Exception as e:
         # Se tabela não existir, retorna lista vazia
-        return jsonify({'tenants': []}), 200
+        return jsonify({'tenants': [], 'error': str(e)}), 200
 
 
 @platform_bp.route('/tenants/<int:tenant_id>', methods=['GET'])
