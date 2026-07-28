@@ -547,6 +547,46 @@ def admin_update_order(order_id):
                 order.payment_method = PaymentMethod(data['payment_method'])
             except ValueError:
                 pass
+        if data.get('special_instructions') is not None:
+            order.special_instructions = data['special_instructions']
+        if data.get('distribution_method'):
+            order.distribution_method = data['distribution_method']
+
+        # Atualiza dados do cliente se fornecidos
+        if data.get('customer_name') or data.get('customer_phone'):
+            customer = order.customer
+            if customer:
+                if data.get('customer_name'):
+                    customer.name = data['customer_name']
+                if data.get('customer_phone'):
+                    customer.phone = data['customer_phone']
+                customer.updated_at = datetime.utcnow()
+
+        # Atualiza endereço de entrega se fornecido
+        if data.get('delivery_address') or data.get('delivery_neighborhood'):
+            address = order.delivery_address
+            if address:
+                if data.get('delivery_address'):
+                    address.street = data['delivery_address']
+                if data.get('delivery_neighborhood'):
+                    address.neighborhood = data['delivery_neighborhood']
+                if data.get('delivery_city'):
+                    address.city = data['delivery_city']
+                if data.get('delivery_state'):
+                    address.state = data['delivery_state']
+                if data.get('delivery_zip_code'):
+                    address.zip_code = data['delivery_zip_code']
+                if data.get('delivery_complement'):
+                    address.complement = data['delivery_complement']
+                # Geocodifica se endereço mudou
+                if data.get('delivery_address'):
+                    from src.services.geocoding import geocode_address
+                    full_addr = f"{address.street}, {address.neighborhood}, {address.city}, {address.state}"
+                    geo = geocode_address(full_addr)
+                    if geo:
+                        address.latitude = geo['latitude']
+                        longitude = geo['longitude']
+                address.updated_at = datetime.utcnow()
 
         order.updated_at = datetime.utcnow()
         db.session.commit()
