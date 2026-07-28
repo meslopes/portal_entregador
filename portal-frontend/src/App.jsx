@@ -255,7 +255,7 @@ function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminDashboardPage />
                 </Layout>
@@ -265,7 +265,7 @@ function App() {
           <Route
             path="/admin/establishments"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminEstablishmentsPage />
                 </Layout>
@@ -275,7 +275,7 @@ function App() {
           <Route
             path="/admin/drivers"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminDriversPage />
                 </Layout>
@@ -285,7 +285,7 @@ function App() {
           <Route
             path="/admin/orders"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminOrdersPage />
                 </Layout>
@@ -295,7 +295,7 @@ function App() {
           <Route
             path="/admin/finance"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminFinancePage />
                 </Layout>
@@ -305,7 +305,7 @@ function App() {
           <Route
             path="/admin/reports"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminReportsPage />
                 </Layout>
@@ -315,7 +315,7 @@ function App() {
           <Route
             path="/admin/driver-payments"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminDriverPaymentsPage />
                 </Layout>
@@ -325,7 +325,7 @@ function App() {
           <Route
             path="/admin/squares"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminSquaresPage />
                 </Layout>
@@ -335,7 +335,7 @@ function App() {
           <Route
             path="/admin/settings"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminSettingsPage />
                 </Layout>
@@ -345,7 +345,7 @@ function App() {
           <Route
             path="/admin/white-label"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminWhiteLabelPage />
                 </Layout>
@@ -355,7 +355,7 @@ function App() {
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminUsersPage />
                 </Layout>
