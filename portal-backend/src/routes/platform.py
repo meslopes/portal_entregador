@@ -5,7 +5,7 @@ Acesso restrito a usuários sem tenant_id (nível plataforma)
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
-    User, Driver, Order, Restaurant, Customer,
+    User, Driver, Order, Restaurant, Customer, Tenant,
     UserType, UserStatus, OrderStatus, db
 )
 from src.utils.tenant import get_current_user
@@ -34,7 +34,7 @@ def platform_admin_required(f):
 def get_tenants_safe():
     """Busca tenants com tratamento de erro se tabela não existir"""
     try:
-        from src.models.portal_models import Tenant
+
         return Tenant.query, Tenant
     except Exception:
         return None, None
@@ -71,7 +71,7 @@ def platform_dashboard():
         top_tenants = []
         recent_tenants = []
         try:
-            from src.models.portal_models import Tenant
+    
             total_tenants = Tenant.query.filter_by(is_active=True).count()
             top_tenants_raw = db.session.query(
                 Tenant.id,
@@ -123,7 +123,7 @@ def platform_dashboard():
 def list_all_tenants():
     """Lista todos os tenants com estatísticas"""
     try:
-        from src.models.portal_models import Tenant
+
         tenants = Tenant.query.order_by(Tenant.created_at.desc()).all()
 
         tenants_data = []
@@ -158,7 +158,7 @@ def list_all_tenants():
 def get_tenant_details(tenant_id):
     """Obtém detalhes de um tenant específico"""
     try:
-        from src.models.portal_models import Tenant
+
         tenant = Tenant.query.get(tenant_id)
         if not tenant:
             return jsonify({'error': 'Tenant não encontrado'}), 404
@@ -190,7 +190,7 @@ def get_tenant_details(tenant_id):
 def update_tenant(tenant_id):
     """Atualiza um tenant"""
     try:
-        from src.models.portal_models import Tenant
+
         tenant = Tenant.query.get(tenant_id)
         if not tenant:
             return jsonify({'error': 'Tenant não encontrado'}), 404
@@ -232,7 +232,7 @@ def update_tenant(tenant_id):
 def toggle_tenant(tenant_id):
     """Ativa/desativa um tenant"""
     try:
-        from src.models.portal_models import Tenant
+
         tenant = Tenant.query.get(tenant_id)
         if not tenant:
             return jsonify({'error': 'Tenant não encontrado'}), 404
@@ -279,7 +279,7 @@ def list_all_users():
             # Adicionar nome do tenant
             if user.tenant_id:
                 try:
-                    from src.models.portal_models import Tenant
+            
                     tenant = Tenant.query.get(user.tenant_id)
                     u_dict['tenant_name'] = tenant.name if tenant else 'Desconhecido'
                 except Exception:
@@ -304,7 +304,7 @@ def list_all_users():
 def create_tenant():
     """Cria um novo tenant (organização)"""
     try:
-        from src.models.portal_models import Tenant
+
         data = request.get_json()
 
         name = data.get('name')
