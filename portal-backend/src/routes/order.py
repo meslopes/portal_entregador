@@ -226,6 +226,13 @@ def get_available_orders():
         )
         if driver.tenant_id:
             query = query.filter(Order.tenant_id == driver.tenant_id)
+
+        # Exclui pedidos que este entregador já recusou
+        reject_log = f"REJECTED_BY_{user_id}"
+        query = query.filter(
+            ~Order.special_instructions.contains(reject_log)
+        )
+
         available_orders = query.join(Restaurant).all()
         
         orders_data = []
@@ -543,6 +550,7 @@ def update_order_status(order_id):
         
         # Validações de transição de status
         valid_transitions = {
+            OrderStatus.SCHEDULED: [OrderStatus.PENDING, OrderStatus.CANCELLED],
             OrderStatus.PENDING: [OrderStatus.CANCELLED],
             OrderStatus.ACCEPTED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
             OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
