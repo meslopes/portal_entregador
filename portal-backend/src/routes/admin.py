@@ -2144,6 +2144,65 @@ def upload_tenant_logo():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/tenants', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_tenant():
+    """Cria um novo tenant (organização)"""
+    try:
+        data = request.get_json()
+
+        name = data.get('name')
+        slug = data.get('slug')
+
+        if not name or not slug:
+            return jsonify({'error': 'Nome e slug são obrigatórios'}), 400
+
+        # Verificar se slug já existe
+        existing = Tenant.query.filter_by(slug=slug).first()
+        if existing:
+            return jsonify({'error': 'Slug já existe'}), 400
+
+        tenant = Tenant(
+            name=name,
+            slug=slug,
+            primary_color=data.get('primary_color', '#6366f1'),
+            secondary_color=data.get('secondary_color', '#ffffff'),
+            phone=data.get('phone'),
+            email=data.get('email'),
+            address=data.get('address'),
+            cnpj=data.get('cnpj'),
+            plan=data.get('plan', 'free'),
+            max_deliveries_month=data.get('max_deliveries_month', 100),
+            max_drivers=data.get('max_drivers', 2),
+            max_clients=data.get('max_clients', 20),
+            is_active=True
+        )
+
+        db.session.add(tenant)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Tenant criado com sucesso',
+            'tenant': tenant.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/tenants', methods=['GET'])
+@jwt_required()
+@admin_required
+def list_tenants():
+    """Lista todos os tenants"""
+    try:
+        tenants = Tenant.query.order_by(Tenant.name).all()
+        return jsonify({'tenants': [t.to_dict() for t in tenants]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ============================================
 # GESTAO DE PRACAS (MULTI-CIDADE)
 # ============================================
