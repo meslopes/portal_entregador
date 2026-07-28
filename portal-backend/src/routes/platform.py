@@ -5,7 +5,7 @@ Acesso restrito a usuários sem tenant_id (nível plataforma)
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
-    User, Driver, Order, Restaurant, Customer, Tenant, 
+    User, Driver, Order, Restaurant, Customer,
     UserType, UserStatus, OrderStatus, db
 )
 from src.utils.tenant import get_current_user
@@ -31,14 +31,22 @@ def platform_admin_required(f):
     return decorated_function
 
 
+def get_tenants_safe():
+    """Busca tenants com tratamento de erro se tabela não existir"""
+    try:
+        from src.models.portal_models import Tenant
+        return Tenant.query, Tenant
+    except Exception:
+        return None, None
+
+
 @platform_bp.route('/dashboard', methods=['GET'])
 @jwt_required()
 @platform_admin_required
 def platform_dashboard():
     """Dashboard geral da plataforma"""
     try:
-        # Estatísticas gerais
-        total_tenants = Tenant.query.filter_by(is_active=True).count()
+        # Estatísticas gerais (sem Tenant)
         total_users = User.query.count()
         total_drivers = Driver.query.count()
         total_orders = Order.query.count()
@@ -58,23 +66,38 @@ def platform_dashboard():
             func.sum(Order.delivery_fee)
         ).filter(Order.status == OrderStatus.DELIVERED).scalar() or 0
 
-        # Top tenants por pedidos
-        top_tenants = db.session.query(
-            Tenant.id,
-            Tenant.name,
-            Tenant.slug,
-            Tenant.plan,
-            func.count(Order.id).label('order_count')
-        ).outerjoin(User, User.tenant_id == Tenant.id)\
-         .outerjoin(Order, Order.tenant_id == Tenant.id)\
-         .group_by(Tenant.id, Tenant.name, Tenant.slug, Tenant.plan)\
-         .order_by(func.count(Order.id).desc())\
-         .limit(5).all()
-
-        # Tenants recentes
-        recent_tenants = Tenant.query.order_by(
-            Tenant.created_at.desc()
-        ).limit(5).all()
+        # Tenants (com tratamento de erro se tabela não existir)
+        total_tenants = 0
+        top_tenants = []
+        recent_tenants = []
+        try:
+            from src.models.portal_models import Tenant
+            total_tenants = Tenant.query.filter_by(is_active=True).count()
+            top_tenants_raw = db.session.query(
+                Tenant.id,
+                Tenant.name,
+                Tenant.slug,
+                Tenant.plan,
+                func.count(Order.id).label('order_count')
+            ).outerjoin(User, User.tenant_id == Tenant.id)\
+             .outerjoin(Order, Order.tenant_id == Tenant.id)\
+             .group_by(Tenant.id, Tenant.name, Tenant.slug, Tenant.plan)\
+             .order_by(func.count(Order.id).desc())\
+             .limit(5).all()
+            top_tenants = [
+                {
+                    'id': t.id,
+                    'name': t.name,
+                    'slug': t.slug,
+                    'plan': t.plan,
+                    'order_count': t.order_count or 0
+                }
+                for t in top_tenants_raw
+            ]
+            recent_tenants = [t.to_dict() for t in Tenant.query.order_by(Tenant.created_at.desc()).limit(5).all()]
+        except Exception:
+            # Tabela tenants pode não existir
+            pass
 
         return jsonify({
             'stats': {
@@ -87,17 +110,8 @@ def platform_dashboard():
                 'total_revenue': float(total_revenue)
             },
             'orders_by_status': {s.value: c for s, c in orders_by_status},
-            'top_tenants': [
-                {
-                    'id': t.id,
-                    'name': t.name,
-                    'slug': t.slug,
-                    'plan': t.plan,
-                    'order_count': t.order_count or 0
-                }
-                for t in top_tenants
-            ],
-            'recent_tenants': [t.to_dict() for t in recent_tenants]
+            'top_tenants': top_tenants,
+            'recent_tenants': recent_tenants
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -109,6 +123,7 @@ def platform_dashboard():
 def list_all_tenants():
     """Lista todos os tenants com estatísticas"""
     try:
+        from src.models.portal_models import Tenant
         tenants = Tenant.query.order_by(Tenant.created_at.desc()).all()
 
         tenants_data = []
@@ -133,7 +148,8 @@ def list_all_tenants():
 
         return jsonify({'tenants': tenants_data}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Se tabela não existir, retorna lista vazia
+        return jsonify({'tenants': []}), 200
 
 
 @platform_bp.route('/tenants/<int:tenant_id>', methods=['GET'])
@@ -142,6 +158,7 @@ def list_all_tenants():
 def get_tenant_details(tenant_id):
     """Obtém detalhes de um tenant específico"""
     try:
+        from src.models.portal_models import Tenant
         tenant = Tenant.query.get(tenant_id)
         if not tenant:
             return jsonify({'error': 'Tenant não encontrado'}), 404
@@ -173,6 +190,7 @@ def get_tenant_details(tenant_id):
 def update_tenant(tenant_id):
     """Atualiza um tenant"""
     try:
+        from src.models.portal_models import Tenant
         tenant = Tenant.query.get(tenant_id)
         if not tenant:
             return jsonify({'error': 'Tenant não encontrado'}), 404
@@ -214,6 +232,7 @@ def update_tenant(tenant_id):
 def toggle_tenant(tenant_id):
     """Ativa/desativa um tenant"""
     try:
+        from src.models.portal_models import Tenant
         tenant = Tenant.query.get(tenant_id)
         if not tenant:
             return jsonify({'error': 'Tenant não encontrado'}), 404
@@ -259,8 +278,12 @@ def list_all_users():
             u_dict = user.to_dict()
             # Adicionar nome do tenant
             if user.tenant_id:
-                tenant = Tenant.query.get(user.tenant_id)
-                u_dict['tenant_name'] = tenant.name if tenant else 'Desconhecido'
+                try:
+                    from src.models.portal_models import Tenant
+                    tenant = Tenant.query.get(user.tenant_id)
+                    u_dict['tenant_name'] = tenant.name if tenant else 'Desconhecido'
+                except Exception:
+                    u_dict['tenant_name'] = 'Desconhecido'
             else:
                 u_dict['tenant_name'] = 'Plataforma'
             users_data.append(u_dict)
@@ -272,4 +295,52 @@ def list_all_users():
             'current_page': page
         }), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants', methods=['POST'])
+@jwt_required()
+@platform_admin_required
+def create_tenant():
+    """Cria um novo tenant (organização)"""
+    try:
+        from src.models.portal_models import Tenant
+        data = request.get_json()
+
+        name = data.get('name')
+        slug = data.get('slug')
+
+        if not name or not slug:
+            return jsonify({'error': 'Nome e slug são obrigatórios'}), 400
+
+        # Verificar se slug já existe
+        existing = Tenant.query.filter_by(slug=slug).first()
+        if existing:
+            return jsonify({'error': 'Slug já existe'}), 400
+
+        tenant = Tenant(
+            name=name,
+            slug=slug,
+            primary_color=data.get('primary_color', '#6366f1'),
+            secondary_color=data.get('secondary_color', '#ffffff'),
+            phone=data.get('phone'),
+            email=data.get('email'),
+            address=data.get('address'),
+            cnpj=data.get('cnpj'),
+            plan=data.get('plan', 'free'),
+            max_deliveries_month=data.get('max_deliveries_month', 100),
+            max_drivers=data.get('max_drivers', 2),
+            max_clients=data.get('max_clients', 20),
+            is_active=True
+        )
+
+        db.session.add(tenant)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Tenant criado com sucesso',
+            'tenant': tenant.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
