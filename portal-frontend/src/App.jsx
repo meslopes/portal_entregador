@@ -34,6 +34,7 @@ import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
+import AdminWhiteLabelPage from '@/pages/admin/AdminWhiteLabelPage';
 import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
@@ -337,6 +338,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <AdminSettingsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/white-label"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminWhiteLabelPage />
                 </Layout>
               </ProtectedRoute>
             }

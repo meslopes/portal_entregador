@@ -1975,7 +1975,7 @@ def get_settings():
 @jwt_required()
 @admin_required
 def update_settings():
-    """Atualiza configuraÃƒÂ§ÃƒÂµes do admin"""
+    """Atualiza configurações do admin"""
     try:
         from src.models.portal_models import SystemConfig
         data = request.get_json()
@@ -1990,7 +1990,136 @@ def update_settings():
                 db.session.add(config)
 
         db.session.commit()
-        return jsonify({'message': 'ConfiguraÃƒÂ§ÃƒÂµes salvas com sucesso'}), 200
+        return jsonify({'message': 'Configurações salvas com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# CONFIGURAÇÕES DE WHITE-LABEL (TENANT)
+# ============================================
+
+@admin_bp.route('/tenant/settings', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_tenant_settings():
+    """Obtém configurações de white-label do tenant atual"""
+    try:
+        from src.models.portal_models import Tenant
+        user = get_current_user()
+        if not user or not user.tenant_id:
+            return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 400
+
+        tenant = Tenant.query.get(user.tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Organização não encontrada'}), 404
+
+        return jsonify({'tenant': tenant.to_dict()}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/tenant/settings', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_tenant_settings():
+    """Atualiza configurações de white-label do tenant atual"""
+    try:
+        from src.models.portal_models import Tenant
+        user = get_current_user()
+        if not user or not user.tenant_id:
+            return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 400
+
+        tenant = Tenant.query.get(user.tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Organização não encontrada'}), 404
+
+        data = request.get_json()
+
+        # Atualizar campos permitidos
+        if 'name' in data:
+            tenant.name = data['name']
+        if 'logo_url' in data:
+            tenant.logo_url = data['logo_url']
+        if 'primary_color' in data:
+            tenant.primary_color = data['primary_color']
+        if 'secondary_color' in data:
+            tenant.secondary_color = data['secondary_color']
+        if 'phone' in data:
+            tenant.phone = data['phone']
+        if 'email' in data:
+            tenant.email = data['email']
+        if 'address' in data:
+            tenant.address = data['address']
+        if 'cnpj' in data:
+            tenant.cnpj = data['cnpj']
+        if 'terms_url' in data:
+            tenant.terms_url = data['terms_url']
+        if 'privacy_url' in data:
+            tenant.privacy_url = data['privacy_url']
+        if 'custom_domain' in data:
+            tenant.custom_domain = data['custom_domain']
+
+        tenant.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Configurações atualizadas com sucesso',
+            'tenant': tenant.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/tenant/logo', methods=['POST'])
+@jwt_required()
+@admin_required
+def upload_tenant_logo():
+    """Faz upload do logo do tenant"""
+    try:
+        from src.models.portal_models import Tenant
+        import base64
+        import os
+
+        user = get_current_user()
+        if not user or not user.tenant_id:
+            return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 400
+
+        tenant = Tenant.query.get(user.tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Organização não encontrada'}), 404
+
+        data = request.get_json()
+        logo_data = data.get('logo_data')  # Base64 encoded image
+        filename = data.get('filename', 'logo.png')
+
+        if not logo_data:
+            return jsonify({'error': 'Dados do logo são obrigatórios'}), 400
+
+        # Criar diretório de uploads se não existir
+        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'logos')
+        os.makedirs(uploads_dir, exist_ok=True)
+
+        # Salvar arquivo
+        if ',' in logo_data:
+            logo_data = logo_data.split(',')[1]
+
+        filepath = os.path.join(uploads_dir, f"tenant_{tenant.id}_{filename}")
+        with open(filepath, 'wb') as f:
+            f.write(base64.b64decode(logo_data))
+
+        # Atualizar URL do logo no tenant
+        logo_url = f"/uploads/logos/tenant_{tenant.id}_{filename}"
+        tenant.logo_url = logo_url
+        tenant.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Logo atualizado com sucesso',
+            'logo_url': logo_url
+        }), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

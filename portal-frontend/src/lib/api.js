@@ -434,6 +434,25 @@ export const adminService = {
     const response = await api.get('/api/admin/reports/deliveries-by-driver', { params: { days } });
     return response.data;
   },
+
+  // Tenant/White-label settings
+  getTenantSettings: async () => {
+    const response = await api.get('/api/admin/tenant/settings');
+    return response.data;
+  },
+
+  updateTenantSettings: async (settings) => {
+    const response = await api.put('/api/admin/tenant/settings', settings);
+    return response.data;
+  },
+
+  uploadTenantLogo: async (logoData, filename = 'logo.png') => {
+    const response = await api.post('/api/admin/tenant/logo', {
+      logo_data: logoData,
+      filename: filename
+    });
+    return response.data;
+  },
 };
 
 // Utilitários

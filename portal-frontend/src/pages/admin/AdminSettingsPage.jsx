@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Settings, Save, AlertCircle, CheckCircle, CreditCard,
   Building2, Truck, Store, DollarSign, Clock, Shield,
-  Bell, Globe, Users, MapPin, Package, Zap, ChevronRight, Mail
+  Bell, Globe, Users, MapPin, Package, Zap, ChevronRight, Mail, Palette
 } from 'lucide-react';
 
 import api from '@/lib/api';
 
 const AdminSettingsPage = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -63,6 +65,7 @@ const AdminSettingsPage = () => {
     { key: 'establishments', label: 'Estabelecimentos', icon: Store, color: '#06b6d4' },
     { key: 'notifications', label: 'Notificações', icon: Bell, color: '#f59e0b' },
     { key: 'integrations', label: 'Integrações', icon: Globe, color: '#ec4899' },
+    { key: 'white-label', label: 'White-Label', icon: Palette, color: '#6366f1', link: '/admin/white-label' },
   ];
 
   if (loading) {
@@ -109,7 +112,7 @@ const AdminSettingsPage = () => {
             const Icon = mod.icon;
             const active = activeModule === mod.key;
             return (
-              <button key={mod.key} onClick={() => setActiveModule(mod.key)} style={{
+              <button key={mod.key} onClick={() => mod.link ? navigate(mod.link) : setActiveModule(mod.key)} style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.75rem 1rem', borderRadius: '0.5rem', border: 'none',
                 background: active ? `${mod.color}10` : 'transparent',
