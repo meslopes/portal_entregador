@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
-    Notification, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    Notification, Tenant, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -2006,7 +2006,7 @@ def update_settings():
 def get_tenant_settings():
     """Obtém configurações de white-label do tenant atual"""
     try:
-        from src.models.portal_models import Tenant
+
         user = get_current_user()
         if not user or not user.tenant_id:
             return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 400
@@ -2026,7 +2026,7 @@ def get_tenant_settings():
 def update_tenant_settings():
     """Atualiza configurações de white-label do tenant atual"""
     try:
-        from src.models.portal_models import Tenant
+
         user = get_current_user()
         if not user or not user.tenant_id:
             return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 400
@@ -2079,7 +2079,7 @@ def update_tenant_settings():
 def upload_tenant_logo():
     """Faz upload do logo do tenant"""
     try:
-        from src.models.portal_models import Tenant
+
         import base64
         import os
 
