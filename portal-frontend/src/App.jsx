@@ -36,6 +36,7 @@ import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminWhiteLabelPage from '@/pages/admin/AdminWhiteLabelPage';
 import PlatformDashboardPage from '@/pages/admin/PlatformDashboardPage';
+import TrackPage from '@/pages/TrackPage';
 import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
@@ -78,6 +79,7 @@ function App() {
           <Route path="/support" element={<SupportPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/track/:token" element={<TrackPage />} />
           <Route 
             path="/register" 
             element={

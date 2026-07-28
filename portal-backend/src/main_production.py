@@ -245,6 +245,23 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar tracking_token e distribution_method na tabela orders
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'tracking_token') THEN ALTER TABLE orders ADD COLUMN tracking_token VARCHAR(36) UNIQUE; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'distribution_method') THEN ALTER TABLE orders ADD COLUMN distribution_method VARCHAR(20) DEFAULT 'nearest'; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de bonus e ranking
         try:
             db.session.execute(db.text("""

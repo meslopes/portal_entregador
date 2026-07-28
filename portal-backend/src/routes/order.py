@@ -38,43 +38,77 @@ def process_scheduled_orders():
             order.status = OrderStatus.PENDING
             order.updated_at = now
             
-            # Notifica o entregador mais próximo
-            notified_driver = find_nearest_available_driver(order)
-            if notified_driver:
-                try:
-                    from src.services.whatsapp import whatsapp_service
-                    if whatsapp_service.is_configured() and notified_driver.user.phone:
-                        km_total = 0
-                        driver_earnings = float(order.delivery_fee) * 0.7
-                        if order.delivery_address.latitude and order.restaurant.latitude:
-                            km_total = haversine_distance(
-                                order.restaurant.latitude, order.restaurant.longitude,
-                                order.delivery_address.latitude, order.delivery_address.longitude
+            # Calcula distância e ganhos
+            km_total = 0
+            driver_earnings = float(order.delivery_fee) * 0.7
+            if order.delivery_address.latitude and order.restaurant.latitude:
+                km_total = haversine_distance(
+                    order.restaurant.latitude, order.restaurant.longitude,
+                    order.delivery_address.latitude, order.delivery_address.longitude
+                )
+                driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+            
+            order_info = {
+                'order_number': order.order_number,
+                'restaurant': order.restaurant.name,
+                'restaurant_address': order.restaurant.address,
+                'customer_name': order.customer.name,
+                'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}",
+                'total_amount': float(order.total_amount),
+                'delivery_fee': float(order.delivery_fee),
+                'distance_km': km_total,
+                'driver_earnings': driver_earnings
+            }
+            
+            # Distribuição baseada no método configurado
+            if order.distribution_method == 'broadcast':
+                # Broadcast: notifica TODOS os drivers online
+                notify_all_drivers(order, order_info)
+            else:
+                # Padrão: notifica o mais próximo
+                notified_driver = find_nearest_available_driver(order)
+                if notified_driver:
+                    try:
+                        from src.services.whatsapp import whatsapp_service
+                        if whatsapp_service.is_configured() and notified_driver.user.phone:
+                            whatsapp_service.send_new_order_to_driver(
+                                notified_driver.user.phone, order_info
                             )
-                            driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
-                        
-                        whatsapp_service.send_new_order_to_driver(
-                            notified_driver.user.phone,
-                            {
-                                'order_number': order.order_number,
-                                'restaurant': order.restaurant.name,
-                                'restaurant_address': order.restaurant.address,
-                                'customer_name': order.customer.name,
-                                'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}",
-                                'total_amount': float(order.total_amount),
-                                'delivery_fee': float(order.delivery_fee),
-                                'distance_km': km_total,
-                                'driver_earnings': driver_earnings
-                            }
-                        )
-                except Exception:
-                    pass
+                    except Exception:
+                        pass
         
         if scheduled_orders:
             db.session.commit()
             
     except Exception as e:
         print(f"Erro ao processar pedidos agendados: {e}")
+
+
+def notify_all_drivers(order, order_info):
+    """Notifica todos os drivers online sobre um novo pedido (broadcast)"""
+    try:
+        from src.services.whatsapp import whatsapp_service
+        
+        # Busca todos os drivers online do tenant
+        query = Driver.query.filter(
+            Driver.is_online == True,
+            Driver.current_latitude.isnot(None)
+        )
+        if order.tenant_id:
+            query = query.filter(Driver.tenant_id == order.tenant_id)
+        
+        online_drivers = query.join(User).all()
+        
+        for driver in online_drivers:
+            try:
+                if whatsapp_service.is_configured() and driver.user.phone:
+                    whatsapp_service.send_new_order_to_driver(
+                        driver.user.phone, order_info
+                    )
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"Erro ao notificar drivers (broadcast): {e}")
 
 
 order_bp = Blueprint('order', __name__)
@@ -838,18 +872,23 @@ def create_order():
         # Obter tenant_id do usuário atual
         tenant_id = get_current_tenant_id()
 
+        # Gerar tracking_token único
+        tracking_token = str(uuid.uuid4())
+
         order = Order(
             tenant_id=tenant_id,
             restaurant_id=restaurant.id,
             customer_id=customer.id,
             delivery_address_id=address.id,
             order_number=f"PED{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}",
+            tracking_token=tracking_token,
             items=data['items'],
             subtotal=data['subtotal'],
             delivery_fee=data.get('delivery_fee', 0),
             total_amount=data['total_amount'],
             payment_method=PaymentMethod(data['payment_method']),
             status=OrderStatus.SCHEDULED,
+            distribution_method=data.get('distribution_method', 'nearest'),
             scheduled_at=scheduled_at,
             special_instructions=data.get('special_instructions')
         )
@@ -917,6 +956,66 @@ def get_order_details(order_id):
             }
         
         return jsonify(order_dict), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@order_bp.route('/track/<string:tracking_token>', methods=['GET'])
+def track_order(tracking_token):
+    """Endpoint público para rastreamento de pedido (sem autenticação)"""
+    try:
+        order = Order.query.filter_by(tracking_token=tracking_token).first()
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+        
+        # Dados básicos do pedido (sem informações sensíveis)
+        tracking_data = {
+            'order_number': order.order_number,
+            'status': order.status.value,
+            'created_at': order.created_at.isoformat(),
+            'restaurant_name': order.restaurant.name if order.restaurant else 'N/A',
+            'neighborhood': order.delivery_address.neighborhood if order.delivery_address else 'N/A',
+        }
+        
+        # Status timeline
+        status_timeline = []
+        if order.created_at:
+            status_timeline.append({'status': 'SCHEDULED', 'time': order.created_at.isoformat(), 'label': 'Pedido criado'})
+        if order.status in [OrderStatus.PENDING, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+            status_timeline.append({'status': 'PENDING', 'time': order.updated_at.isoformat(), 'label': 'Aguardando entregador'})
+        if order.status in [OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+            status_timeline.append({'status': 'ACCEPTED', 'time': order.updated_at.isoformat(), 'label': 'Aceito por entregador'})
+        if order.status in [OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+            status_timeline.append({'status': 'PREPARING', 'time': order.updated_at.isoformat(), 'label': 'Em preparo'})
+        if order.status in [OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+            status_timeline.append({'status': 'READY', 'time': order.updated_at.isoformat(), 'label': 'Pronto para coleta'})
+        if order.status in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+            status_timeline.append({'status': 'PICKED_UP', 'time': order.pickup_time.isoformat() if order.pickup_time else order.updated_at.isoformat(), 'label': 'Coletado'})
+        if order.status == OrderStatus.DELIVERED:
+            status_timeline.append({'status': 'DELIVERED', 'time': order.delivery_time.isoformat() if order.delivery_time else order.updated_at.isoformat(), 'label': 'Entregue'})
+        
+        tracking_data['timeline'] = status_timeline
+        
+        # Localização do entregador (se disponível e pedido foi aceito)
+        if order.driver and order.driver.current_latitude and order.driver.current_longitude:
+            if order.status in [OrderStatus.PICKED_UP, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]:
+                tracking_data['driver_location'] = {
+                    'latitude': float(order.driver.current_latitude),
+                    'longitude': float(order.driver.current_longitude),
+                    'name': f"{order.driver.user.first_name} {order.driver.user.last_name[0]}.",
+                    'vehicle_type': order.driver.vehicle_type.value
+                }
+        
+        # Endereço de entrega (sem coordenadas exatas por privacidade)
+        if order.delivery_address:
+            tracking_data['delivery_neighborhood'] = order.delivery_address.neighborhood
+        
+        # Estimativa de tempo (se disponível)
+        if order.estimated_delivery_time:
+            tracking_data['estimated_delivery_time'] = order.estimated_delivery_time.isoformat()
+        
+        return jsonify(tracking_data), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

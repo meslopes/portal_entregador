@@ -337,12 +337,14 @@ class Order(db.Model):
     delivery_address_id = db.Column(db.Integer, db.ForeignKey('addresses.id'), nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'))
     order_number = db.Column(db.String(50), nullable=False)
+    tracking_token = db.Column(db.String(36), unique=True)  # UUID para rastreio público
     items = db.Column(db.JSON, nullable=False)
     subtotal = db.Column(db.Numeric(10, 2), nullable=False)
     delivery_fee = db.Column(db.Numeric(10, 2), nullable=False)
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_method = db.Column(db.Enum(PaymentMethod), nullable=False)
     status = db.Column(db.Enum(OrderStatus), default=OrderStatus.PENDING)
+    distribution_method = db.Column(db.String(20), default='nearest')  # nearest, broadcast, queue, manual
     scheduled_at = db.Column(db.DateTime)  # Quando o pedido deve virar PENDING
     estimated_delivery_time = db.Column(db.DateTime)
     pickup_time = db.Column(db.DateTime)
@@ -363,12 +365,14 @@ class Order(db.Model):
             'delivery_address_id': self.delivery_address_id,
             'driver_id': self.driver_id,
             'order_number': self.order_number,
+            'tracking_token': self.tracking_token,
             'items': self.items,
             'subtotal': float(self.subtotal),
             'delivery_fee': float(self.delivery_fee),
             'total_amount': float(self.total_amount),
             'payment_method': self.payment_method.value,
             'status': self.status.value,
+            'distribution_method': self.distribution_method,
             'scheduled_at': self.scheduled_at.isoformat() if self.scheduled_at else None,
             'estimated_delivery_time': self.estimated_delivery_time.isoformat() if self.estimated_delivery_time else None,
             'pickup_time': self.pickup_time.isoformat() if self.pickup_time else None,
