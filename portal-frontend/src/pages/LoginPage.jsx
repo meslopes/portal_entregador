@@ -24,7 +24,21 @@ const LoginPage = () => {
     try {
       const response = await login(formData.email, formData.password);
       const userType = response?.user?.user_type;
-      const target = userType === 'ADMIN' ? '/admin' : userType === 'CLIENT' ? '/client' : from;
+      const tenantId = response?.user?.tenant_id;
+      const userEmail = response?.user?.email;
+      const superAdminEmails = ['plataform@muv.log.br', 'muvy.log@gmail.com'];
+      const isSuperAdmin = !tenantId || superAdminEmails.includes(userEmail);
+
+      let target;
+      if (userType === 'ADMIN' && isSuperAdmin) {
+        target = '/platform';
+      } else if (userType === 'ADMIN') {
+        target = '/admin';
+      } else if (userType === 'CLIENT') {
+        target = '/client';
+      } else {
+        target = from;
+      }
       navigate(target, { replace: true });
     } catch (err) {
       // erro tratado no contexto
