@@ -221,20 +221,20 @@ def create_app(config_name=None):
             except Exception:
                 db.session.rollback()
 
-        # Migration: criar tenant padrão (muv.log) e migrar dados existentes
+        # Migration: criar tenant padrão (muvy.log) e migrar dados existentes
         try:
-            result = db.session.execute(db.text("SELECT id FROM tenants WHERE slug = 'muvlog'"))
+            result = db.session.execute(db.text("SELECT id FROM tenants WHERE slug = 'muvylog'"))
             if not result.fetchone():
                 db.session.execute(db.text("""
                     INSERT INTO tenants (name, slug, plan, max_deliveries_month, max_drivers, max_clients)
-                    VALUES ('muv.log', 'muvlog', 'premium', 2000, 100, 100)
+                    VALUES ('muvy.log', 'muvylog', 'premium', 2000, 100, 100)
                 """))
                 db.session.commit()
                 # Atualizar todos os registros existentes para o tenant padrão
                 for table in ['users', 'drivers', 'restaurants', 'customers', 'orders', 'squares']:
                     try:
                         db.session.execute(db.text(
-                            f"UPDATE {table} SET tenant_id = (SELECT id FROM tenants WHERE slug = 'muvlog') WHERE tenant_id IS NULL"
+                            f"UPDATE {table} SET tenant_id = (SELECT id FROM tenants WHERE slug = 'muvylog') WHERE tenant_id IS NULL"
                         ))
                         db.session.commit()
                     except Exception:

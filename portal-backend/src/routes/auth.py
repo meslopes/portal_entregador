@@ -2,7 +2,7 @@
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask import request, jsonify
-from src.models.portal_models import db, User, Driver, Customer, Restaurant, UserType, UserStatus, VehicleType
+from src.models.portal_models import db, User, Driver, Customer, Restaurant, Tenant, UserType, UserStatus, VehicleType
 from flask import Blueprint
 from datetime import datetime
 
@@ -10,13 +10,18 @@ auth_bp = Blueprint('auth', __name__)
 
 
 def _build_user_response(user):
-    """Monta a resposta completa do usuário com dados do driver/customer se aplicável."""
+    """Monta a resposta completa do usuário com dados do driver/customer/tenant se aplicável."""
     user_data = user.to_dict()
     if user.driver:
         user_data['driver'] = user.driver.to_dict()
     customer = Customer.query.filter_by(user_id=user.id).first()
     if customer:
         user_data['customer'] = customer.to_dict()
+    # Incluir dados do tenant
+    if user.tenant_id:
+        tenant = Tenant.query.get(user.tenant_id)
+        if tenant:
+            user_data['tenant'] = tenant.to_dict()
     return user_data
 
 
@@ -64,15 +69,29 @@ def register():
         first_name = data.get('first_name')
         last_name = data.get('last_name')
         phone = data.get('phone')
+        tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
 
         if not email or not password or not first_name or not last_name:
             return jsonify({'error': 'Email, senha, nome e sobrenome são obrigatórios'}), 400
 
-        if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email já cadastrado'}), 400
+        # Buscar tenant se fornecido
+        tenant_id = None
+        if tenant_slug:
+            tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
+            if tenant:
+                tenant_id = tenant.id
+
+        # Verificar se email já existe no tenant
+        if tenant_id:
+            if User.query.filter_by(email=email, tenant_id=tenant_id).first():
+                return jsonify({'error': 'Email já cadastrado nesta organização'}), 400
+        else:
+            if User.query.filter_by(email=email).first():
+                return jsonify({'error': 'Email já cadastrado'}), 400
 
         user = User(
             email=email,
+            tenant_id=tenant_id,
             first_name=first_name,
             last_name=last_name,
             phone=phone,
@@ -152,15 +171,29 @@ def register_client():
         last_name = data.get('last_name')
         phone = data.get('phone')
         address = data.get('address')
+        tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
 
         if not email or not password or not first_name or not last_name or not phone:
             return jsonify({'error': 'Email, senha, nome, sobrenome e telefone são obrigatórios'}), 400
 
-        if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email já cadastrado'}), 400
+        # Buscar tenant se fornecido
+        tenant_id = None
+        if tenant_slug:
+            tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
+            if tenant:
+                tenant_id = tenant.id
+
+        # Verificar se email já existe no tenant
+        if tenant_id:
+            if User.query.filter_by(email=email, tenant_id=tenant_id).first():
+                return jsonify({'error': 'Email já cadastrado nesta organização'}), 400
+        else:
+            if User.query.filter_by(email=email).first():
+                return jsonify({'error': 'Email já cadastrado'}), 400
 
         user = User(
             email=email,
+            tenant_id=tenant_id,
             first_name=first_name,
             last_name=last_name,
             phone=phone,
@@ -173,6 +206,7 @@ def register_client():
 
         customer = Customer(
             user_id=user.id,
+            tenant_id=tenant_id,
             name=f"{first_name} {last_name}",
             phone=phone,
             email=email
@@ -266,11 +300,25 @@ def login():
     data = request.get_json() or {}
     email = data.get('email')
     password = data.get('password')
+    tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
 
     if not email or not password:
         return jsonify({'error': 'Email e senha são obrigatórios'}), 400
 
-    user = User.query.filter_by(email=email).first()
+    # Buscar tenant se fornecido
+    tenant = None
+    if tenant_slug:
+        tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
+        if not tenant:
+            return jsonify({'error': 'Organização não encontrada'}), 404
+
+    # Buscar usuário
+    if tenant:
+        # Buscar usuário específico do tenant
+        user = User.query.filter_by(email=email, tenant_id=tenant.id).first()
+    else:
+        # Buscar usuário globalmente (backward compatibility)
+        user = User.query.filter_by(email=email).first()
 
     if user and check_password_hash(user.password_hash, password):
         # Verifica se o usuario esta ativo
@@ -278,6 +326,10 @@ def login():
             return jsonify({'error': 'Sua conta está pendente de aprovação. Aguarde o administrador liberar seu acesso.'}), 403
         if user.status == UserStatus.SUSPENDED:
             return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
+
+        # Verificar se o usuário pertence ao tenant correto
+        if tenant and user.tenant_id != tenant.id:
+            return jsonify({'error': 'Credenciais inválidas'}), 401
 
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)

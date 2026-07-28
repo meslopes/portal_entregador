@@ -41,9 +41,11 @@ api.interceptors.response.use(
 
 // Serviços de autenticação
 export const authService = {
-  login: async (email, password) => {
+  login: async (email, password, tenantSlug = null) => {
     // Corrigido para usar o endpoint correto do backend
-    const response = await api.post('/api/auth/login', { email, password });
+    const payload = { email, password };
+    if (tenantSlug) payload.tenant_slug = tenantSlug;
+    const response = await api.post('/api/auth/login', payload);
     return response.data;
   },
 
