@@ -45,9 +45,10 @@ import './App.css';
 function SmartRedirect() {
   const { user } = useAuth();
   const userType = user?.user_type;
+  const isSuperAdmin = !user?.tenant_id || ['admin@muv.log.br', 'muvy.log@gmail.com'].includes(user?.email);
 
-  // Super admin (sem tenant_id) vai para /platform
-  if (userType === 'ADMIN' && !user?.tenant_id) {
+  // Super admin vai para /platform
+  if (userType === 'ADMIN' && isSuperAdmin) {
     return <Navigate to="/platform" replace />;
   } else if (userType === 'ADMIN') {
     return <Navigate to="/admin" replace />;
