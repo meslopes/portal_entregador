@@ -35,6 +35,7 @@ import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminWhiteLabelPage from '@/pages/admin/AdminWhiteLabelPage';
+import PlatformDashboardPage from '@/pages/admin/PlatformDashboardPage';
 import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
@@ -45,7 +46,10 @@ function SmartRedirect() {
   const { user } = useAuth();
   const userType = user?.user_type;
 
-  if (userType === 'ADMIN') {
+  // Super admin (sem tenant_id) vai para /platform
+  if (userType === 'ADMIN' && !user?.tenant_id) {
+    return <Navigate to="/platform" replace />;
+  } else if (userType === 'ADMIN') {
     return <Navigate to="/admin" replace />;
   } else if (userType === 'CLIENT') {
     return <Navigate to="/client" replace />;
@@ -247,6 +251,18 @@ function App() {
                 <ClientLayout>
                   <ClientProfilePage />
                 </ClientLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas do super admin (plataforma) */}
+          <Route
+            path="/platform"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <PlatformDashboardPage />
+                </Layout>
               </ProtectedRoute>
             }
           />

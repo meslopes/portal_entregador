@@ -81,7 +81,10 @@ def create_app(config_name=None):
 
     from src.routes.bonus import bonus_bp
     app.register_blueprint(bonus_bp, url_prefix='/api/bonus')
-    
+
+    from src.routes.platform import platform_bp
+    app.register_blueprint(platform_bp, url_prefix='/api/platform')
+
     # Criar tabelas do banco de dados
     with app.app_context():
         db.create_all()
