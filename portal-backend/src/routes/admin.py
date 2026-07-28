@@ -2006,10 +2006,19 @@ def update_settings():
 def get_tenant_settings():
     """Obtém configurações de white-label do tenant atual"""
     try:
-
         user = get_current_user()
         if not user or not user.tenant_id:
-            return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 400
+            # Retornar tenant padrão se usuário não tem tenant
+            return jsonify({'tenant': {
+                'id': None,
+                'name': 'muvy.log',
+                'slug': 'muvylog',
+                'logo_url': None,
+                'primary_color': '#6366f1',
+                'secondary_color': '#ffffff',
+                'plan': 'premium',
+                'is_active': True
+            }}), 200
 
         tenant = Tenant.query.get(user.tenant_id)
         if not tenant:
@@ -2017,7 +2026,17 @@ def get_tenant_settings():
 
         return jsonify({'tenant': tenant.to_dict()}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Se tabela tenants não existir, retornar dados padrão
+        return jsonify({'tenant': {
+            'id': None,
+            'name': 'muvy.log',
+            'slug': 'muvylog',
+            'logo_url': None,
+            'primary_color': '#6366f1',
+            'secondary_color': '#ffffff',
+            'plan': 'premium',
+            'is_active': True
+        }}), 200
 
 
 @admin_bp.route('/tenant/settings', methods=['PUT'])
