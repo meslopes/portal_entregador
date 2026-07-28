@@ -903,8 +903,8 @@ def assign_order_to_driver(order_id):
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
         
-        if order.status not in [OrderStatus.PENDING, OrderStatus.PREPARING]:
-            return jsonify({'error': 'Pedido não está pendente ou em preparação'}), 400
+        if order.status not in [OrderStatus.SCHEDULED, OrderStatus.PENDING, OrderStatus.PREPARING]:
+            return jsonify({'error': 'Pedido não está agendado, pendente ou em preparação'}), 400
         
         data = request.get_json()
         driver_id = data.get('driver_id')
