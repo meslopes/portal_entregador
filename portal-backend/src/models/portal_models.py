@@ -107,8 +107,8 @@ class Tenant(db.Model):
             'terms_url': self.terms_url,
             'privacy_url': self.privacy_url,
             'is_active': self.is_active,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 
