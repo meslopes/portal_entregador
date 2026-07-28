@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
-    Order, Restaurant, Customer, Address, Driver, User, UserType, 
+    Order, Restaurant, Customer, Address, Driver, User, UserType,
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
 )
+from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import uuid
@@ -85,22 +86,25 @@ def get_available_orders():
     try:
         # Primeiro processa pedidos agendados que expiraram
         process_scheduled_orders()
-        
+
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
         if not driver or not driver.is_online:
             return jsonify({'error': 'Entregador deve estar online'}), 400
-        
-        # Busca pedidos pendentes próximos ao entregador
-        available_orders = Order.query.filter(
+
+        # Busca pedidos pendentes próximos ao entregador (filtrados por tenant)
+        query = Order.query.filter(
             Order.status == OrderStatus.PENDING,
             Order.driver_id.is_(None)
-        ).join(Restaurant).all()
+        )
+        if driver.tenant_id:
+            query = query.filter(Order.tenant_id == driver.tenant_id)
+        available_orders = query.join(Restaurant).all()
         
         orders_data = []
         for order in available_orders:
@@ -830,8 +834,12 @@ def create_order():
         # Cria o pedido com status SCHEDULED (agendado)
         preparation_minutes = restaurant.preparation_minutes or 10
         scheduled_at = datetime.utcnow() + timedelta(minutes=preparation_minutes)
-        
+
+        # Obter tenant_id do usuário atual
+        tenant_id = get_current_tenant_id()
+
         order = Order(
+            tenant_id=tenant_id,
             restaurant_id=restaurant.id,
             customer_id=customer.id,
             delivery_address_id=address.id,

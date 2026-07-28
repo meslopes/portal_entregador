@@ -4,6 +4,7 @@ from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
     Notification, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
+from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 
@@ -425,35 +426,50 @@ def create_admin_user():
 @jwt_required()
 @admin_required
 def get_dashboard():
-    """ObtÃƒÂ©m dados do dashboard administrativo"""
+    """Obtém dados do dashboard administrativo"""
     try:
-        # EstatÃƒÂ­sticas gerais
-        total_drivers = Driver.query.count()
-        online_drivers = Driver.query.filter_by(is_online=True).count()
-        total_orders = Order.query.count()
-        
-        # Pedidos por status
-        orders_by_status = db.session.query(
+        tenant_id = get_current_tenant_id()
+
+        # Estatísticas gerais (filtradas por tenant)
+        total_drivers = Driver.query.filter_by(tenant_id=tenant_id).count() if tenant_id else Driver.query.count()
+        online_drivers = Driver.query.filter_by(is_online=True, tenant_id=tenant_id).count() if tenant_id else Driver.query.filter_by(is_online=True).count()
+        total_orders = Order.query.filter_by(tenant_id=tenant_id).count() if tenant_id else Order.query.count()
+
+        # Pedidos por status (filtrados por tenant)
+        orders_by_status_query = db.session.query(
             Order.status, func.count(Order.id)
-        ).group_by(Order.status).all()
-        
-        # EstatÃƒÂ­sticas do dia atual
+        )
+        if tenant_id:
+            orders_by_status_query = orders_by_status_query.filter(Order.tenant_id == tenant_id)
+        orders_by_status = orders_by_status_query.group_by(Order.status).all()
+
+        # Estatísticas do dia atual (filtradas por tenant)
         today = datetime.utcnow().date()
-        today_orders = Order.query.filter(func.date(Order.created_at) == today).count()
-        today_deliveries = Order.query.filter(
+        today_orders_query = Order.query.filter(func.date(Order.created_at) == today)
+        if tenant_id:
+            today_orders_query = today_orders_query.filter(Order.tenant_id == tenant_id)
+        today_orders = today_orders_query.count()
+
+        today_deliveries_query = Order.query.filter(
             func.date(Order.delivery_time) == today,
             Order.status == OrderStatus.DELIVERED
-        ).count()
-        
-        # Receita do dia
-        today_revenue = db.session.query(func.sum(Order.delivery_fee)).filter(
+        )
+        if tenant_id:
+            today_deliveries_query = today_deliveries_query.filter(Order.tenant_id == tenant_id)
+        today_deliveries = today_deliveries_query.count()
+
+        # Receita do dia (filtrada por tenant)
+        today_revenue_query = db.session.query(func.sum(Order.delivery_fee)).filter(
             func.date(Order.created_at) == today,
             Order.status == OrderStatus.DELIVERED
-        ).scalar() or 0
-        
-        # Entregadores mais ativos (ÃƒÂºltimos 7 dias)
+        )
+        if tenant_id:
+            today_revenue_query = today_revenue_query.filter(Order.tenant_id == tenant_id)
+        today_revenue = today_revenue_query.scalar() or 0
+
+        # Entregadores mais ativos (últimos 7 dias, filtrados por tenant)
         week_ago = datetime.utcnow() - timedelta(days=7)
-        top_drivers = db.session.query(
+        top_drivers_query = db.session.query(
             Driver.id,
             User.first_name,
             User.last_name,
@@ -462,7 +478,10 @@ def get_dashboard():
             Order.driver_id == Driver.id,
             Order.created_at >= week_ago,
             Order.status == OrderStatus.DELIVERED
-        )).group_by(Driver.id, User.first_name, User.last_name).order_by(
+        ))
+        if tenant_id:
+            top_drivers_query = top_drivers_query.filter(Driver.tenant_id == tenant_id)
+        top_drivers = top_drivers_query.group_by(Driver.id, User.first_name, User.last_name).order_by(
             func.count(Order.id).desc()
         ).limit(5).all()
         
@@ -571,9 +590,14 @@ def get_drivers():
         per_page = request.args.get('per_page', 20, type=int)
         search = request.args.get('search', '')
         status_filter = request.args.get('status')  # online, offline, all
-        
+        tenant_id = get_current_tenant_id()
+
         query = Driver.query.join(User)
-        
+
+        # Filtrar por tenant
+        if tenant_id:
+            query = query.filter(Driver.tenant_id == tenant_id)
+
         # Filtro de busca
         if search:
             query = query.filter(or_(
@@ -582,13 +606,13 @@ def get_drivers():
                 User.email.ilike(f'%{search}%'),
                 User.phone.ilike(f'%{search}%')
             ))
-        
+
         # Filtro de status
         if status_filter == 'online':
             query = query.filter(Driver.is_online == True)
         elif status_filter == 'offline':
             query = query.filter(Driver.is_online == False)
-        
+
         drivers = query.order_by(User.first_name).paginate(
             page=page, per_page=per_page, error_out=False
         )
@@ -776,9 +800,14 @@ def get_all_orders():
         status_filter = request.args.get('status')
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
-        
+        tenant_id = get_current_tenant_id()
+
         query = Order.query
-        
+
+        # Filtrar por tenant
+        if tenant_id:
+            query = query.filter(Order.tenant_id == tenant_id)
+
         # Filtros
         if status_filter:
             try:
@@ -786,13 +815,13 @@ def get_all_orders():
                 query = query.filter(Order.status == status_enum)
             except ValueError:
                 pass
-        
+
         if date_from:
             query = query.filter(Order.created_at >= datetime.strptime(date_from, '%Y-%m-%d'))
-        
+
         if date_to:
             query = query.filter(Order.created_at <= datetime.strptime(date_to, '%Y-%m-%d'))
-        
+
         orders = query.order_by(Order.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
@@ -1108,13 +1137,16 @@ def get_live_tracking():
     """Obtém localização em tempo real de entregadores, estabelecimentos e locais de entrega"""
     try:
         square_id = request.args.get('square_id', type=int)
-        
-        # Entregadores online
+        tenant_id = get_current_tenant_id()
+
+        # Entregadores online (filtrados por tenant)
         driver_query = Driver.query.filter(
             Driver.is_online == True,
             Driver.current_latitude.isnot(None),
             Driver.current_longitude.isnot(None)
         )
+        if tenant_id:
+            driver_query = driver_query.filter(Driver.tenant_id == tenant_id)
         if square_id:
             driver_query = driver_query.filter(Driver.square_id == square_id)
         online_drivers = driver_query.join(User).all()
@@ -1229,8 +1261,13 @@ def get_establishments():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         search = request.args.get('search', '')
+        tenant_id = get_current_tenant_id()
 
         query = Restaurant.query
+
+        # Filtrar por tenant
+        if tenant_id:
+            query = query.filter(Restaurant.tenant_id == tenant_id)
 
         if search:
             query = query.filter(or_(
