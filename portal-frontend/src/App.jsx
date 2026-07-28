@@ -45,7 +45,8 @@ import './App.css';
 function SmartRedirect() {
   const { user } = useAuth();
   const userType = user?.user_type;
-  const isSuperAdmin = !user?.tenant_id || ['admin@muv.log.br', 'muvy.log@gmail.com'].includes(user?.email);
+  const superAdminEmails = ['plataform@muv.log.br', 'muvy.log@gmail.com'];
+  const isSuperAdmin = !user?.tenant_id || superAdminEmails.includes(user?.email);
 
   // Super admin vai para /platform
   if (userType === 'ADMIN' && isSuperAdmin) {

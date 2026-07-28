@@ -24,7 +24,8 @@ def platform_admin_required(f):
         if not user:
             return jsonify({'error': 'Usuário não autenticado'}), 401
         # Super admin: sem tenant_id ou email específico da plataforma
-        if user.tenant_id is not None and user.email not in ['admin@muv.log.br', 'muvy.log@gmail.com']:
+        super_admin_emails = ['plataform@muv.log.br', 'muvy.log@gmail.com']
+        if user.tenant_id is not None and user.email not in super_admin_emails:
             return jsonify({'error': 'Acesso restrito ao administrador da plataforma'}), 403
         return f(*args, **kwargs)
     return decorated_function
