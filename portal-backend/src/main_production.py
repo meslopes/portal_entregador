@@ -262,6 +262,24 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar campos de fila na tabela drivers
+        for col in ['queue_position', 'total_orders_today']:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = '{col}') THEN ALTER TABLE drivers ADD COLUMN {col} INTEGER DEFAULT 0; END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'last_order_at') THEN ALTER TABLE drivers ADD COLUMN last_order_at TIMESTAMP; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de bonus e ranking
         try:
             db.session.execute(db.text("""

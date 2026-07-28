@@ -180,6 +180,10 @@ class Driver(db.Model):
     max_concurrent_orders = db.Column(db.Integer, default=3)
     # Praça
     square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
+    # Fila ordenada
+    queue_position = db.Column(db.Integer, default=0)  # Posição na fila (menor = maior prioridade)
+    last_order_at = db.Column(db.DateTime)  # Quando aceitou/rejeitou o último pedido
+    total_orders_today = db.Column(db.Integer, default=0)  # Pedidos completados hoje
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -208,6 +212,9 @@ class Driver(db.Model):
             'rating': float(self.rating) if self.rating else None,
             'total_deliveries': self.total_deliveries,
             'max_concurrent_orders': self.max_concurrent_orders,
+            'queue_position': self.queue_position,
+            'last_order_at': self.last_order_at.isoformat() if self.last_order_at else None,
+            'total_orders_today': self.total_orders_today,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

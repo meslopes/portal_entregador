@@ -64,6 +64,18 @@ def process_scheduled_orders():
             if order.distribution_method == 'broadcast':
                 # Broadcast: notifica TODOS os drivers online
                 notify_all_drivers(order, order_info)
+            elif order.distribution_method == 'queue':
+                # Fila ordenada: próximo da fila
+                next_driver = find_next_in_queue(order)
+                if next_driver:
+                    try:
+                        from src.services.whatsapp import whatsapp_service
+                        if whatsapp_service.is_configured() and next_driver.user.phone:
+                            whatsapp_service.send_new_order_to_driver(
+                                next_driver.user.phone, order_info
+                            )
+                    except Exception:
+                        pass
             else:
                 # Padrão: notifica o mais próximo
                 notified_driver = find_nearest_available_driver(order)
@@ -109,6 +121,82 @@ def notify_all_drivers(order, order_info):
                 continue
     except Exception as e:
         print(f"Erro ao notificar drivers (broadcast): {e}")
+
+
+def find_next_in_queue(order):
+    """Encontra o próximo driver na fila ordenada"""
+    try:
+        # Busca drivers online do tenant
+        query = Driver.query.filter(
+            Driver.is_online == True,
+            Driver.current_latitude.isnot(None)
+        )
+        if order.tenant_id:
+            query = query.filter(Driver.tenant_id == order.tenant_id)
+        
+        # Filtra por capacidade (não excedeu max_concurrent_orders)
+        all_drivers = query.join(User).all()
+        available_drivers = []
+        
+        for driver in all_drivers:
+            # Conta pedidos ativos
+            active_orders = Order.query.filter(
+                Order.driver_id == driver.id,
+                Order.status.in_([
+                    OrderStatus.ACCEPTED,
+                    OrderStatus.PREPARING,
+                    OrderStatus.READY,
+                    OrderStatus.PICKED_UP
+                ])
+            ).count()
+            
+            max_concurrent = driver.max_concurrent_orders or 3
+            if active_orders < max_concurrent:
+                available_drivers.append({
+                    'driver': driver,
+                    'queue_position': driver.queue_position or 0,
+                    'last_order_at': driver.last_order_at,
+                    'total_orders_today': driver.total_orders_today or 0
+                })
+        
+        if not available_drivers:
+            return None
+        
+        # Ordena por: queue_position (menor = maior prioridade), depois por last_order_at
+        available_drivers.sort(key=lambda x: (
+            x['queue_position'],
+            x['last_order_at'] or datetime.min
+        ))
+        
+        return available_drivers[0]['driver']
+        
+    except Exception as e:
+        print(f"Erro na fila ordenada: {e}")
+        return None
+
+
+def update_driver_queue(driver, action):
+    """Atualiza a posição do driver na fila após aceitar/rejeitar"""
+    try:
+        if action == 'accept':
+            # Driver aceitou - vai para o final da fila
+            max_position = db.session.query(func.max(Driver.queue_position)).filter(
+                Driver.tenant_id == driver.tenant_id
+            ).scalar() or 0
+            driver.queue_position = max_position + 1
+            driver.last_order_at = datetime.utcnow()
+            driver.total_orders_today = (driver.total_orders_today or 0) + 1
+        elif action == 'reject':
+            # Driver rejeitou - vai para o final, mas com penalização
+            max_position = db.session.query(func.max(Driver.queue_position)).filter(
+                Driver.tenant_id == driver.tenant_id
+            ).scalar() or 0
+            driver.queue_position = max_position + 2  # Penalização: vai 2 posições atrás
+            driver.last_order_at = datetime.utcnow()
+        
+        db.session.commit()
+    except Exception as e:
+        print(f"Erro ao atualizar fila: {e}")
 
 
 order_bp = Blueprint('order', __name__)
@@ -249,6 +337,10 @@ def accept_order(order_id):
             )
             db.session.add(notification)
 
+        # Atualiza posição na fila (se modo fila)
+        if order.distribution_method == 'queue':
+            update_driver_queue(driver, 'accept')
+
         db.session.commit()
         
         order_dict = order.to_dict()
@@ -328,6 +420,10 @@ def reject_order(order_id):
                     )
             except Exception:
                 pass
+            
+            # Atualiza posição na fila (se modo fila)
+            if order.distribution_method == 'queue':
+                update_driver_queue(driver, 'reject')
             
             db.session.commit()
             return jsonify({
