@@ -77,9 +77,10 @@ def process_scheduled_orders():
                     except Exception:
                         pass
             else:
-                # Padrão: notifica o mais próximo
+                # Padrão: notifica o mais próximo e oferta somente a ele
                 notified_driver = find_nearest_available_driver(order)
                 if notified_driver:
+                    order.offered_to_driver_id = notified_driver.id
                     try:
                         from src.services.whatsapp import whatsapp_service
                         if whatsapp_service.is_configured() and notified_driver.user.phone:
@@ -231,6 +232,13 @@ def get_available_orders():
         reject_log = f"REJECTED_BY_{user_id}"
         query = query.filter(
             ~Order.special_instructions.contains(reject_log)
+        )
+
+        # Para distribuição 'nearest': só mostra pedidos oferecidos a este entregador ou sem oferta definida
+        query = query.filter(
+            (Order.distribution_method != 'nearest') | 
+            (Order.offered_to_driver_id.is_(None)) | 
+            (Order.offered_to_driver_id == driver.id)
         )
 
         available_orders = query.join(Restaurant).all()
@@ -396,6 +404,9 @@ def reject_order(order_id):
         next_driver = find_nearest_available_driver(order, exclude_driver_ids=[user_id])
         
         if next_driver:
+            # Atualiza oferta para o próximo entregador
+            order.offered_to_driver_id = next_driver.id
+            
             # Notifica o proximo entregador
             try:
                 from src.services.whatsapp import whatsapp_service
@@ -566,8 +577,8 @@ def update_order_status(order_id):
         valid_transitions = {
             OrderStatus.SCHEDULED: [OrderStatus.PENDING, OrderStatus.CANCELLED],
             OrderStatus.PENDING: [OrderStatus.CANCELLED],
-            OrderStatus.ACCEPTED: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
-            OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.CANCELLED],
+            OrderStatus.ACCEPTED: [OrderStatus.PICKED_UP, OrderStatus.PREPARING, OrderStatus.CANCELLED],
+            OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
             OrderStatus.READY: [OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
             OrderStatus.PICKED_UP: [OrderStatus.DELIVERED]
         }
@@ -686,6 +697,7 @@ def update_order_status(order_id):
             try:
                 new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
                 if new_driver:
+                    order.offered_to_driver_id = new_driver.id
                     notification = Notification(
                         user_id=new_driver.user_id,
                         title="Pedido disponível (reenviado)",

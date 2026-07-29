@@ -327,6 +327,14 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'offered_to_driver_id') THEN ALTER TABLE orders ADD COLUMN offered_to_driver_id INTEGER REFERENCES drivers(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de bonus e ranking
         try:
             db.session.execute(db.text("""

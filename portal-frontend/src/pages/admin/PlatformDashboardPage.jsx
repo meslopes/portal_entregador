@@ -22,6 +22,7 @@ const PlatformDashboardPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [selectedTenantFilter, setSelectedTenantFilter] = useState('');
 
   useEffect(() => {
     loadDashboard();
@@ -32,7 +33,7 @@ const PlatformDashboardPage = () => {
     if (activeTab === 'users') {
       loadUsers();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedTenantFilter]);
 
   const loadDashboard = async () => {
     try {
@@ -57,7 +58,11 @@ const PlatformDashboardPage = () => {
   const loadUsers = async () => {
     try {
       setUsersLoading(true);
-      const response = await api.get('/api/platform/users');
+      let url = '/api/platform/users';
+      if (selectedTenantFilter) {
+        url += `?tenant_id=${selectedTenantFilter}`;
+      }
+      const response = await api.get(url);
       setUsers(response.data.users || []);
     } catch (err) {
       console.error('Erro ao carregar usuários:', err);
@@ -350,21 +355,37 @@ const PlatformDashboardPage = () => {
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>
-              Todos os Usuários
+              Usuários por Tenant
             </h2>
-            <button
-              onClick={loadUsers}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
-                border: '1px solid #e2e8f0', background: 'white',
-                cursor: 'pointer', fontSize: '0.75rem', color: '#64748b'
-              }}
-            >
-              <RefreshCw size={14} /> Atualizar
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <select
+                value={selectedTenantFilter}
+                onChange={(e) => setSelectedTenantFilter(e.target.value)}
+                style={{
+                  padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                  border: '1px solid #e2e8f0', fontSize: '0.75rem',
+                  outline: 'none', background: 'white'
+                }}
+              >
+                <option value="">Todos os Tenants</option>
+                {tenants.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={loadUsers}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                  border: '1px solid #e2e8f0', background: 'white',
+                  cursor: 'pointer', fontSize: '0.75rem', color: '#64748b'
+                }}
+              >
+                <RefreshCw size={14} /> Atualizar
+              </button>
+            </div>
           </div>
 
           {usersLoading ? (

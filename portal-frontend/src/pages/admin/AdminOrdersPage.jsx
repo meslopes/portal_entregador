@@ -7,10 +7,9 @@ import { adminService, utils } from '@/lib/api';
 
 const STATUS_FILTERS = [
   { key: '', label: 'Todos', color: '#64748b' },
+  { key: 'SCHEDULED', label: 'Agendado', color: '#6366f1' },
   { key: 'PENDING', label: 'Pendente', color: '#f59e0b' },
   { key: 'ACCEPTED', label: 'Aceito', color: '#2563eb' },
-  { key: 'PREPARING', label: 'Preparando', color: '#8b5cf6' },
-  { key: 'READY', label: 'Pronto', color: '#06b6d4' },
   { key: 'PICKED_UP', label: 'Coletado', color: '#3b82f6' },
   { key: 'DELIVERED', label: 'Entregue', color: '#22c55e' },
   { key: 'CANCELLED', label: 'Cancelado', color: '#ef4444' },

@@ -57,8 +57,14 @@ const AdminDashboardPage = () => {
     loadOrders();
     loadSquares();
     loadAllDrivers();
-    loadAllEstablishments();
   }, []);
+
+  // Atualiza establishments quando tracking muda
+  useEffect(() => {
+    if (tracking && tracking.establishments) {
+      setAllEstablishments(tracking.establishments);
+    }
+  }, [tracking]);
 
   // Recarrega tracking quando muda a praça
   useEffect(() => {
@@ -133,17 +139,20 @@ const AdminDashboardPage = () => {
 
   const loadAllDrivers = async () => {
     try {
-      const data = await adminService.getDrivers(1, 100);
+      // Carrega apenas entregadores online (com pedidos ativos ou não)
+      const data = await adminService.getDrivers(1, 100, '', 'online');
       setAllDrivers(data.drivers || []);
     } catch (err) {
-      console.error('Erro ao carregar todos os entregadores:', err);
+      console.error('Erro ao carregar entregadores:', err);
     }
   };
 
   const loadAllEstablishments = async () => {
     try {
-      const data = await adminService.getEstablishments(1, 100);
-      setAllEstablishments(data.establishments || []);
+      // Usa establishments do tracking (que já têm pedidos ativos)
+      if (tracking && tracking.establishments) {
+        setAllEstablishments(tracking.establishments);
+      }
     } catch (err) {
       console.error('Erro ao carregar estabelecimentos:', err);
     }
@@ -624,7 +633,7 @@ const AdminDashboardPage = () => {
 
                                 {/* Opções de status */}
                                 <p style={{ fontSize: '0.625rem', color: '#94a3b8', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
-                                {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
+                                {['PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
                                   if (s === order.status) return null;
                                   const cfg = STATUS_CONFIG[s];
                                   return (
@@ -745,21 +754,30 @@ const AdminDashboardPage = () => {
           <div style={{ padding: '0.5rem' }}>
             {allEstablishments.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8', fontSize: '0.75rem' }}>
-                Nenhum estabelecimento encontrado
+                Nenhum estabelecimento com pedidos ativos
               </div>
             ) : (
               allEstablishments.map(est => (
                 <div
-                  key={est.id}
+                  key={est.restaurant_id || est.id}
                   style={{
                     padding: '0.5rem', borderRadius: '0.375rem',
                     background: 'white', marginBottom: '0.25rem',
                     fontSize: '0.75rem', border: '1px solid #f1f5f9'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                    <Store size={12} style={{ color: '#f59e0b' }} />
-                    <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.75rem' }}>{est.name}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <Store size={12} style={{ color: '#f59e0b' }} />
+                      <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.75rem' }}>{est.name}</span>
+                    </div>
+                    <span style={{
+                      padding: '0.125rem 0.375rem', borderRadius: '9999px',
+                      background: '#fee2e2', color: '#dc2626',
+                      fontSize: '0.625rem', fontWeight: 600
+                    }}>
+                      {est.active_orders || 0} pedidos
+                    </span>
                   </div>
                   <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.625rem' }}>
                     {est.address || 'Sem endereço'}
