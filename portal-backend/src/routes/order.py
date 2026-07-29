@@ -1605,12 +1605,15 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         if not rest_lat or not rest_lng:
             return None
 
-        # Busca entregadores online
-        online_drivers = Driver.query.filter(
+        # Busca entregadores online (filtrados por tenant do pedido)
+        driver_query = Driver.query.filter(
             Driver.is_online == True,
             Driver.current_latitude.isnot(None),
             Driver.current_longitude.isnot(None)
-        ).all()
+        )
+        if order.tenant_id:
+            driver_query = driver_query.filter(Driver.tenant_id == order.tenant_id)
+        online_drivers = driver_query.all()
 
         available_drivers = []
 
