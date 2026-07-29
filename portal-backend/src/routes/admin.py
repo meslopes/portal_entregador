@@ -46,7 +46,15 @@ def process_scheduled_orders():
 def get_pending_users():
     """Lista usuarios pendentes de aprovacao"""
     try:
-        pending = User.query.filter_by(status=UserStatus.INACTIVE).all()
+        tenant_id = get_current_tenant_id()
+        
+        query = User.query.filter_by(status=UserStatus.INACTIVE)
+        
+        # Filtrar por tenant
+        if tenant_id:
+            query = query.filter(User.tenant_id == tenant_id)
+        
+        pending = query.all()
         users_data = []
         for user in pending:
             user_dict = user.to_dict()
