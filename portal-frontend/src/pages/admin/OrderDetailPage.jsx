@@ -21,11 +21,13 @@ const OrderDetailPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
+  const [drivers, setDrivers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     loadOrder();
+    loadDrivers();
     const interval = setInterval(loadOrder, 10000); // Atualiza a cada 10s
     return () => clearInterval(interval);
   }, [orderId]);
@@ -40,6 +42,19 @@ const OrderDetailPage = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDrivers = async () => {
+    try {
+      const response = await adminService.getDrivers(1, 100);
+      const driversMap = {};
+      (response.drivers || []).forEach(d => {
+        driversMap[d.id] = d.user ? `${d.user.first_name} ${d.user.last_name}` : `Entregador #${d.id}`;
+      });
+      setDrivers(driversMap);
+    } catch (err) {
+      console.error('Erro ao carregar entregadores:', err);
     }
   };
 
@@ -125,10 +140,11 @@ const OrderDetailPage = () => {
     // Rejeições
     if (si.rejections && si.rejections.length > 0) {
       si.rejections.forEach((driverId, idx) => {
+        const driverName = drivers[driverId] || `Entregador #${driverId}`;
         timeline.push({
           status: 'REJECTED',
           time: null,
-          label: `Entregador #${driverId} recusou`,
+          label: `${driverName} recusou`,
           detail: `Pedido repassado para próximo entregador`,
           icon: '❌',
           color: '#ef4444'
@@ -138,10 +154,11 @@ const OrderDetailPage = () => {
     
     // Oferta atual
     if (si.current_offer && order.status === 'PENDING') {
+      const driverName = drivers[si.current_offer] || `Entregador #${si.current_offer}`;
       timeline.push({
         status: 'OFFERED',
         time: null,
-        label: `Oferecido ao entregador #${si.current_offer}`,
+        label: `Oferecido para ${driverName}`,
         detail: 'Aguardando aceite',
         icon: '📱',
         color: '#f59e0b'
@@ -157,7 +174,8 @@ const OrderDetailPage = () => {
         return `Será lançado automaticamente`;
       case 'PENDING':
         if (si.current_offer) {
-          return `Oferecido ao entregador #${si.current_offer}`;
+          const driverName = drivers[si.current_offer] || `Entregador #${si.current_offer}`;
+          return `Oferecido para ${driverName}`;
         }
         return 'Aguardando entregador aceitar';
       case 'ACCEPTED':

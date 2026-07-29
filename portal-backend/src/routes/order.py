@@ -102,6 +102,124 @@ def process_scheduled_orders():
         print(f"Erro ao processar pedidos agendados: {e}")
 
 
+def process_expired_offers():
+    """Processa ofertas expiradas - move pedidos para próximo entregador após timeout"""
+    try:
+        from src.models.portal_models import SystemConfig
+        
+        # Busca configuração de timeout (default 60 segundos)
+        timeout_config = SystemConfig.query.filter_by(config_key='driver_offer_timeout_seconds').first()
+        timeout_seconds = int(timeout_config.config_value) if timeout_config else 60
+        
+        # Busca pedidos PENDING com oferta ativa
+        pending_orders = Order.query.filter(
+            Order.status == OrderStatus.PENDING,
+            Order.driver_id.is_(None),
+            Order.special_instructions.contains('OFFERED_TO_')
+        ).all()
+        
+        now = datetime.utcnow()
+        
+        for order in pending_orders:
+            # Verifica se a oferta expirou
+            # Usamos updated_at como referência da última oferta
+            if order.updated_at:
+                elapsed = (now - order.updated_at).total_seconds()
+                
+                if elapsed >= timeout_seconds:
+                    # Oferta expirou - marca como timeout e move para próximo
+                    offer_match = re.search(r'OFFERED_TO_(\d+)', order.special_instructions or '')
+                    if offer_match:
+                        expired_driver_id = int(offer_match.group(1))
+                        
+                        # Adiciona TIMEOUT como recusa para ranking
+                        timeout_tag = f"TIMEOUT_BY_{expired_driver_id}"
+                        current_si = order.special_instructions or ''
+                        if timeout_tag not in current_si:
+                            order.special_instructions = f"{current_si}|{timeout_tag}" if current_si else timeout_tag
+                        
+                        # Coleta todos os IDs que já recusaram/timeout
+                        rejected_ids = []
+                        if order.special_instructions:
+                            for match in re.finditer(r'REJECTED_BY_(\d+)', order.special_instructions):
+                                rejected_ids.append(int(match.group(1)))
+                            for match in re.finditer(r'TIMEOUT_BY_(\d+)', order.special_instructions):
+                                rid = int(match.group(1))
+                                if rid not in rejected_ids:
+                                    rejected_ids.append(rid)
+                        
+                        # Remove ofertas antigas
+                        si = order.special_instructions or ''
+                        si = re.sub(r'\|?OFFERED_TO_\d+', '', si).strip('|')
+                        order.special_instructions = si
+                        
+                        # Busca próximo entregador
+                        next_driver = find_nearest_available_driver(order, exclude_driver_ids=rejected_ids)
+                        
+                        if next_driver:
+                            # Oferece ao próximo
+                            offer_tag = f"OFFERED_TO_{next_driver.id}"
+                            current_si = order.special_instructions or ''
+                            if offer_tag not in current_si:
+                                order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
+                            
+                            # Notifica no app
+                            try:
+                                notification = Notification(
+                                    user_id=next_driver.user_id,
+                                    title="Novo pedido disponível",
+                                    message=f"Pedido #{order.order_number} está disponível para entrega",
+                                    type=NotificationType.NEW_ORDER,
+                                    related_id=order.id
+                                )
+                                db.session.add(notification)
+                            except Exception:
+                                pass
+                            
+                            # WhatsApp
+                            try:
+                                from src.services.whatsapp import whatsapp_service
+                                if whatsapp_service.is_configured() and next_driver.user.phone:
+                                    restaurant = order.restaurant
+                                    km_total = 0
+                                    driver_earnings = float(order.delivery_fee) * 0.7
+                                    if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
+                                        km_total = haversine_distance(
+                                            restaurant.latitude, restaurant.longitude,
+                                            order.delivery_address.latitude, order.delivery_address.longitude
+                                        )
+                                        driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+                                    
+                                    whatsapp_service.send_new_order_to_driver(
+                                        next_driver.user.phone,
+                                        {
+                                            'order_number': order.order_number,
+                                            'restaurant': restaurant.name if restaurant else 'N/A',
+                                            'restaurant_address': restaurant.address if restaurant else 'N/A',
+                                            'customer_name': order.customer.name if order.customer else 'N/A',
+                                            'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}" if order.delivery_address else 'N/A',
+                                            'total_amount': float(order.total_amount),
+                                            'delivery_fee': float(order.delivery_fee),
+                                            'distance_km': km_total,
+                                            'driver_earnings': driver_earnings
+                                        }
+                                    )
+                            except Exception:
+                                pass
+                        else:
+                            # Nenhum entregador disponível - notifica admin
+                            notify_admin_no_drivers(order)
+                        
+                        # Reseta timestamp para nova oferta
+                        order.updated_at = now
+        
+        db.session.commit()
+        
+    except Exception as e:
+        print(f"Erro ao processar ofertas expiradas: {e}")
+        db.session.rollback()
+
+
 def notify_all_drivers(order, order_info):
     """Notifica todos os drivers online sobre um novo pedido (broadcast)"""
     try:
@@ -214,6 +332,9 @@ def get_available_orders():
     try:
         # Primeiro processa pedidos agendados que expiraram
         process_scheduled_orders()
+        
+        # Processa ofertas expiradas (timeout)
+        process_expired_offers()
 
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
@@ -1095,6 +1216,9 @@ def create_order():
 def get_order_details(order_id):
     """Obtém detalhes de um pedido específico"""
     try:
+        # Processa ofertas expiradas antes de retornar detalhes
+        process_expired_offers()
+        
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
