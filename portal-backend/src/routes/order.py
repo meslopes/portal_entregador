@@ -520,22 +520,36 @@ def notify_admin_no_drivers(order):
 @order_bp.route('/<int:order_id>/status', methods=['PUT'])
 @jwt_required()
 def update_order_status(order_id):
-    """Atualiza o status do pedido"""
+    """Atualiza o status do pedido (entregador ou admin)"""
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
-        if not user or user.user_type != UserType.DRIVER:
-            return jsonify({'error': 'Usuário não é um entregador'}), 403
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
         
-        driver = user.driver
+        is_admin = user.user_type == UserType.ADMIN
+        driver = None
+        
+        if not is_admin:
+            if user.user_type != UserType.DRIVER:
+                return jsonify({'error': 'Usuário não é um entregador'}), 403
+            driver = user.driver
+        
         order = Order.query.get(order_id)
         
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
         
-        if order.driver_id != driver.id:
-            return jsonify({'error': 'Pedido não pertence a este entregador'}), 403
+        # Verificar tenant para admin
+        if is_admin:
+            from src.utils.tenant import get_current_tenant_id
+            tenant_id = get_current_tenant_id()
+            if tenant_id and order.tenant_id != tenant_id:
+                return jsonify({'error': 'Pedido não encontrado'}), 404
+        else:
+            if order.driver_id != driver.id:
+                return jsonify({'error': 'Pedido não pertence a este entregador'}), 403
         
         data = request.get_json()
         new_status = data.get('status')
@@ -571,45 +585,44 @@ def update_order_status(order_id):
         elif new_status_enum == OrderStatus.DELIVERED:
             order.delivery_time = datetime.utcnow()
             
-            # Atualiza estatísticas do entregador
-            driver.total_deliveries += 1
-            
-            # Salva prova de entrega (foto) se fornecida
-            proof_url = None
-            proof_data = data.get('proof_of_delivery')
-            if proof_data and order.delivery:
-                try:
-                    # Cria pasta de uploads se nao existir
-                    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'proofs')
-                    os.makedirs(uploads_dir, exist_ok=True)
-                    
-                    # Decodifica base64 e salva
-                    if ',' in proof_data:
-                        proof_data = proof_data.split(',')[1]
-                    
-                    filename = f"proof_{order.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                    filepath = os.path.join(uploads_dir, filename)
-                    
-                    with open(filepath, 'wb') as f:
-                        f.write(base64.b64decode(proof_data))
-                    
-                    proof_url = f"/uploads/proofs/{filename}"
-                    order.delivery.proof_of_delivery_url = proof_url
-                except Exception as e:
-                    print(f"Erro ao salvar prova de entrega: {e}")
-            
-            # Cria pagamento para o entregador
-            if order.delivery:
-                from src.models.portal_models import Payment, PaymentType, PaymentStatus
-                payment = Payment(
-                    driver_id=driver.id,
-                    amount=order.delivery.driver_earnings,
-                    payment_type=PaymentType.DELIVERY_EARNING,
-                    reference_id=order.delivery.id,
-                    payment_method=PaymentMethod.PIX,
-                    status=PaymentStatus.PENDING
-                )
-                db.session.add(payment)
+            # Lógica específica do entregador (só quando entregador muda status)
+            if driver:
+                driver.total_deliveries += 1
+                
+                # Salva prova de entrega (foto) se fornecida
+                proof_url = None
+                proof_data = data.get('proof_of_delivery')
+                if proof_data and order.delivery:
+                    try:
+                        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'proofs')
+                        os.makedirs(uploads_dir, exist_ok=True)
+                        
+                        if ',' in proof_data:
+                            proof_data = proof_data.split(',')[1]
+                        
+                        filename = f"proof_{order.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                        filepath = os.path.join(uploads_dir, filename)
+                        
+                        with open(filepath, 'wb') as f:
+                            f.write(base64.b64decode(proof_data))
+                        
+                        proof_url = f"/uploads/proofs/{filename}"
+                        order.delivery.proof_of_delivery_url = proof_url
+                    except Exception as e:
+                        print(f"Erro ao salvar prova de entrega: {e}")
+                
+                # Cria pagamento para o entregador
+                if order.delivery:
+                    from src.models.portal_models import Payment, PaymentType, PaymentStatus
+                    payment = Payment(
+                        driver_id=driver.id,
+                        amount=order.delivery.driver_earnings,
+                        payment_type=PaymentType.DELIVERY_EARNING,
+                        reference_id=order.delivery.id,
+                        payment_method=PaymentMethod.PIX,
+                        status=PaymentStatus.PENDING
+                    )
+                    db.session.add(payment)
         
         # Cria notificação
         status_messages = {

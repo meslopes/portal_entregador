@@ -89,7 +89,8 @@ const NewOrderPage = () => {
   const DELIVERY_FEE = Math.max(DISTANCE_KM, MIN_DISTANCE_KM) * PRICE_PER_KM;
   // Converte vírgula para ponto antes de parseFloat
   const PRODUCT_VALUE = parseFloat(form.product_value.replace(',', '.')) || 0;
-  const TOTAL = PRODUCT_VALUE + DELIVERY_FEE;
+  // Total = apenas frete (valor dos itens é info para entregador, não entra no cálculo)
+  const TOTAL = DELIVERY_FEE;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,7 +101,8 @@ const NewOrderPage = () => {
     if (!form.delivery_address.trim()) { setError('Endereço é obrigatório'); return; }
     if (!form.delivery_number.trim()) { setError('Número é obrigatório'); return; }
     if (!form.delivery_neighborhood.trim()) { setError('Bairro é obrigatório'); return; }
-    if (!form.product_value) { setError('Valor dos itens é obrigatório'); return; }
+    // Valor dos itens só é obrigatório quando cobrança na entrega
+    if (form.product_payment_type === 'DELIVERY' && !form.product_value) { setError('Valor dos itens é obrigatório para cobrança na entrega'); return; }
 
     try {
       setIsLoading(true);
@@ -116,12 +118,13 @@ const NewOrderPage = () => {
         delivery_state: form.delivery_state,
         delivery_zip_code: form.delivery_zip_code,
         items: [{ name: 'Entrega', quantity: 1, price: DELIVERY_FEE }],
-        subtotal: TOTAL,
+        subtotal: DELIVERY_FEE,
         delivery_fee: DELIVERY_FEE,
-        total_amount: TOTAL,
+        total_amount: DELIVERY_FEE,
         payment_method: form.product_payment_method,
         special_instructions: JSON.stringify({
-          product_value: PRODUCT_VALUE,
+          // Valor dos itens só é incluído quando cobrança na entrega
+          ...(form.product_payment_type === 'DELIVERY' && { product_value: PRODUCT_VALUE }),
           product_payment_type: form.product_payment_type,
           product_payment_method: form.product_payment_method,
           change_for: form.change_for || null,
@@ -228,17 +231,17 @@ const NewOrderPage = () => {
 
         {/* Pagamento */}
         <Card title="Pagamento do Cliente" icon={<ShoppingCart size={16} />}>
-          <Label>Valor dos Itens/Produtos (R$) *</Label>
-          <input type="text" inputMode="decimal" name="product_value" value={form.product_value} onChange={handleChange} placeholder="Ex: 45,00" required style={inputStyle} />
-
           <Label>Como o cliente vai pagar?</Label>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <PayBtn active={form.product_payment_type === 'ESTABLISHMENT'} onClick={() => setForm(p => ({ ...p, product_payment_type: 'ESTABLISHMENT' }))} label="No Estabelecimento" desc="Cliente já pagou no local" />
+            <PayBtn active={form.product_payment_type === 'ESTABLISHMENT'} onClick={() => setForm(p => ({ ...p, product_payment_type: 'ESTABLISHMENT', product_value: '' }))} label="No Estabelecimento" desc="Cliente já pagou no local" />
             <PayBtn active={form.product_payment_type === 'DELIVERY'} onClick={() => setForm(p => ({ ...p, product_payment_type: 'DELIVERY' }))} label="Na Entrega" desc="Cliente paga ao entregador" />
           </div>
 
           {form.product_payment_type === 'DELIVERY' && (
             <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+              <Label>Valor dos Itens/Produtos (R$) *</Label>
+              <input type="text" inputMode="decimal" name="product_value" value={form.product_value} onChange={handleChange} placeholder="Ex: 45,00" required style={inputStyle} />
+
               <Label>Forma de pagamento:</Label>
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {[{k:'CASH',l:'Dinheiro'},{k:'CARD',l:'Cartão'},{k:'PIX',l:'PIX'}].map(pm => (
@@ -270,12 +273,14 @@ const NewOrderPage = () => {
           <Row label="Cliente" value={form.customer_name || '—'} />
           <Row label="Endereço" value={form.delivery_address ? form.delivery_address + ', ' + (form.delivery_number || 's/n') : '—'} />
           <Row label="Pagamento" value={form.product_payment_type === 'ESTABLISHMENT' ? 'No estabelecimento' : 'Na entrega (' + (form.product_payment_method === 'CASH' ? 'Dinheiro' : form.product_payment_method === 'CARD' ? 'Cartão' : 'PIX') + ')'} />
+          {form.product_payment_type === 'DELIVERY' && PRODUCT_VALUE > 0 && (
+            <Row label="Valor dos Itens (cobrar do cliente)" value={'R$ ' + PRODUCT_VALUE.toFixed(2).replace('.', ',')} />
+          )}
           <div style={{ borderTop: '1px solid #f1f5f9', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
-            <Row label="Valor dos Itens" value={'R$ ' + PRODUCT_VALUE.toFixed(2).replace('.', ',')} bold />
-            <Row label={'Valor da Entrega (' + (DISTANCE_KM > 0 ? DISTANCE_KM + ' km' : '—') + ')'} value={'R$ ' + DELIVERY_FEE.toFixed(2).replace('.', ',')} bold />
+            <Row label={'Frete (' + (DISTANCE_KM > 0 ? DISTANCE_KM + ' km' : '—') + ')'} value={'R$ ' + DELIVERY_FEE.toFixed(2).replace('.', ',')} bold />
           </div>
           <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px solid #0d9488', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.25rem', color: '#0f766e' }}>
-            <span>Total a Cobrar</span>
+            <span>Valor da Entrega</span>
             <span>R$ {TOTAL.toFixed(2).replace('.', ',')}</span>
           </div>
         </div>
