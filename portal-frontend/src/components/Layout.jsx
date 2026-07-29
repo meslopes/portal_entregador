@@ -27,6 +27,7 @@ const Layout = ({ children }) => {
   };
 
   const isAdmin = user?.user_type === 'ADMIN';
+  const isSuperAdmin = !user?.tenant_id || ['plataform@muv.log.br', 'muvy.log@gmail.com'].includes(user?.email);
 
   const driverNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -46,7 +47,17 @@ const Layout = ({ children }) => {
     { name: 'Configurações', href: '/admin/settings', icon: Settings },
   ];
 
-  const navigation = isAdmin ? adminNavigation : driverNavigation;
+  const platformNavigation = [
+    { name: 'Dashboard', href: '/platform', icon: LayoutDashboard },
+    { name: 'Tenants', href: '/platform', icon: Store },
+    { name: 'Usuários', href: '/platform', icon: Users },
+  ];
+
+  const navigation = isSuperAdmin && location.pathname.startsWith('/platform') 
+    ? platformNavigation 
+    : isAdmin 
+      ? adminNavigation 
+      : driverNavigation;
   const isActive = (href) => location.pathname === href;
 
   const userInitials = user?.first_name && user?.last_name
@@ -66,9 +77,11 @@ const Layout = ({ children }) => {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '4.5rem' }}>
             {/* Logo */}
-            <Link to={isAdmin ? '/admin' : '/dashboard'} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}>
+            <Link to={isSuperAdmin && location.pathname.startsWith('/platform') ? '/platform' : isAdmin ? '/admin' : '/dashboard'} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}>
               <img src="/logo-muvy.jpg" alt="muv.log" style={{ height: '2.5rem', borderRadius: '0.5rem' }} />
-              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>muv.log</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+                {isSuperAdmin && location.pathname.startsWith('/platform') ? 'muv.log Platform' : 'muv.log'}
+              </span>
             </Link>
 
             {/* Desktop Navigation */}

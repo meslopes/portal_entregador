@@ -4,6 +4,20 @@ Converte enderecos em coordenadas geograficas (latitude/longitude).
 """
 import requests
 
+# Coordenadas de fallback para cidades conhecidas
+CITY_COORDS = {
+    'capão da canoa': {'lat': -29.7447, 'lng': -50.0111},
+    'capao da canoa': {'lat': -29.7447, 'lng': -50.0111},
+    'xangri-lá': {'lat': -29.8083, 'lng': -50.0500},
+    'xangri la': {'lat': -29.8083, 'lng': -50.0500},
+    'porto alegre': {'lat': -30.0346, 'lng': -51.2177},
+    'gramado': {'lat': -29.3787, 'lng': -50.8767},
+    'canela': {'lat': -29.3556, 'lng': -50.8119},
+    'torres': {'lat': -29.3333, 'lng': -49.7333},
+    'osório': {'lat': -29.8867, 'lng': -50.2683},
+    'tramandaí': {'lat': -29.9850, 'lng': -50.1333},
+}
+
 
 def geocode_address(address):
     """
@@ -68,8 +82,23 @@ def geocode_address(address):
             print(f"Erro na geocodificacao para '{fmt}': {e}")
             continue
 
-    print(f"Geocodificacao falhou para: '{address}'")
-    return None
+    # Fallback: tenta encontrar coordenadas da cidade
+    for city_name, coords in CITY_COORDS.items():
+        if city_name in clean.lower():
+            print(f"Geocodificacao fallback (cidade): '{city_name}' => {coords['lat']}, {coords['lng']}")
+            return {
+                'latitude': coords['lat'],
+                'longitude': coords['lng'],
+                'display_name': f"{city_name} (centro)"
+            }
+
+    # Fallback final: Capão da Canoa centro
+    print(f"Geocodificacao fallback final: Capão da Canoa centro")
+    return {
+        'latitude': -29.7447,
+        'longitude': -50.0111,
+        'display_name': 'Capão da Canoa (centro - fallback)'
+    }
 
 
 def geocode_establishment(address, city=None, state=None):

@@ -1283,19 +1283,33 @@ def get_live_tracking():
             if order.delivery_address_id and order.delivery_address_id not in delivery_ids_added:
                 delivery_ids_added.add(order.delivery_address_id)
                 delivery_addr = Address.query.get(order.delivery_address_id)
-                if delivery_addr and delivery_addr.latitude and delivery_addr.longitude:
-                    del_data = {
-                        'type': 'delivery',
-                        'order_id': order.id,
-                        'order_number': order.order_number,
-                        'latitude': float(delivery_addr.latitude),
-                        'longitude': float(delivery_addr.longitude),
-                        'street': delivery_addr.street,
-                        'neighborhood': delivery_addr.neighborhood,
-                        'customer_name': order.customer.name if order.customer else '',
-                        'status': order.status.value
-                    }
-                    tracking_data.append(del_data)
+                if delivery_addr:
+                    # Geocodifica se não tem coordenadas
+                    if not delivery_addr.latitude or not delivery_addr.longitude:
+                        try:
+                            from src.services.geocoding import geocode_address
+                            full_addr = f"{delivery_addr.street}, {delivery_addr.neighborhood or ''}, {delivery_addr.city or 'Capão da Canoa'}, {delivery_addr.state or 'RS'}"
+                            geo = geocode_address(full_addr)
+                            if geo:
+                                delivery_addr.latitude = geo['latitude']
+                                delivery_addr.longitude = geo['longitude']
+                                db.session.commit()
+                        except Exception:
+                            pass
+                    
+                    if delivery_addr.latitude and delivery_addr.longitude:
+                        del_data = {
+                            'type': 'delivery',
+                            'order_id': order.id,
+                            'order_number': order.order_number,
+                            'latitude': float(delivery_addr.latitude),
+                            'longitude': float(delivery_addr.longitude),
+                            'street': delivery_addr.street,
+                            'neighborhood': delivery_addr.neighborhood,
+                            'customer_name': order.customer.name if order.customer else '',
+                            'status': order.status.value
+                        }
+                        tracking_data.append(del_data)
         
         return jsonify({
             'drivers': [d for d in tracking_data if d['type'] == 'driver'],

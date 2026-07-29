@@ -419,23 +419,6 @@ const AdminDashboardPage = () => {
               />
             </div>
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <select
-              value={filterClient}
-              onChange={(e) => setFilterClient(e.target.value)}
-              style={{ padding: '0.375rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.75rem', outline: 'none' }}
-            >
-              <option value="">Todos os clientes</option>
-            </select>
-            <select
-              value={filterDriver}
-              onChange={(e) => setFilterDriver(e.target.value)}
-              style={{ padding: '0.375rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.75rem', outline: 'none' }}
-            >
-              <option value="">Todos os entreg.</option>
-            </select>
-          </div>
         </div>
 
         {/* Abas Status */}

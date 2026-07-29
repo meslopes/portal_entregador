@@ -82,10 +82,12 @@ def process_scheduled_orders():
                 notified_driver = find_nearest_available_driver(order)
                 if notified_driver:
                     # Oferta ao entregador mais próximo (via special_instructions)
-                    offer_tag = f"OFFERED_TO_{notified_driver.id}"
+                    offer_ts = int(datetime.utcnow().timestamp())
+                    offer_tag = f"OFFERED_TO_{notified_driver.id}_{offer_ts}"
                     current_si = order.special_instructions or ''
-                    if offer_tag not in current_si:
-                        order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
+                    # Remove ofertas antigas antes de adicionar nova
+                    current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
+                    order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
                     try:
                         from src.services.whatsapp import whatsapp_service
                         if whatsapp_service.is_configured() and notified_driver.user.phone:
@@ -119,14 +121,27 @@ def process_expired_offers():
         ).all()
         
         now = datetime.utcnow()
+        now_ts = int(now.timestamp())
         
         for order in pending_orders:
-            # Verifica se a oferta expirou
-            # Usamos updated_at como referência da última oferta
-            if order.updated_at:
-                elapsed = (now - order.updated_at).total_seconds()
-                
-                if elapsed >= timeout_seconds:
+            # Extrai timestamp da oferta (formato: OFFERED_TO_{driver_id}_{timestamp})
+            offer_match = re.search(r'OFFERED_TO_(\d+)(?:_(\d+))?', order.special_instructions or '')
+            if not offer_match:
+                continue
+            
+            expired_driver_id = int(offer_match.group(1))
+            offer_ts = int(offer_match.group(2)) if offer_match.group(2) else None
+            
+            # Se não tem timestamp, usa updated_at como fallback
+            if offer_ts is None:
+                if order.updated_at:
+                    offer_ts = int(order.updated_at.timestamp())
+                else:
+                    continue
+            
+            elapsed = now_ts - offer_ts
+            
+            if elapsed >= timeout_seconds:
                     # Oferta expirou - marca como timeout e move para próximo
                     offer_match = re.search(r'OFFERED_TO_(\d+)', order.special_instructions or '')
                     if offer_match:
@@ -158,10 +173,12 @@ def process_expired_offers():
                         
                         if next_driver:
                             # Oferece ao próximo
-                            offer_tag = f"OFFERED_TO_{next_driver.id}"
+                            offer_ts = int(datetime.utcnow().timestamp())
+                            offer_tag = f"OFFERED_TO_{next_driver.id}_{offer_ts}"
                             current_si = order.special_instructions or ''
-                            if offer_tag not in current_si:
-                                order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
+                            # Remove ofertas antigas antes de adicionar nova
+                            current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
+                            order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
                             
                             # Notifica no app
                             try:
@@ -361,11 +378,11 @@ def get_available_orders():
         )
 
         # Para distribuição 'nearest': só mostra pedidos oferecidos a este entregador ou sem oferta definida
-        offer_tag = f"OFFERED_TO_{driver.id}"
+        offer_pattern = f"OFFERED_TO_{driver.id}"
         query = query.filter(
             (Order.distribution_method != 'nearest') | 
             (~Order.special_instructions.contains('OFFERED_TO_')) | 
-            (Order.special_instructions.contains(offer_tag))
+            (Order.special_instructions.contains(offer_pattern))
         )
 
         available_orders = query.join(Restaurant).all()
@@ -547,10 +564,12 @@ def reject_order(order_id):
         
         if next_driver:
             # Atualiza oferta para o próximo entregador (via special_instructions)
-            offer_tag = f"OFFERED_TO_{next_driver.id}"
+            offer_ts = int(datetime.utcnow().timestamp())
+            offer_tag = f"OFFERED_TO_{next_driver.id}_{offer_ts}"
             current_si = order.special_instructions or ''
-            if offer_tag not in current_si:
-                order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
+            # Remove ofertas antigas antes de adicionar nova
+            current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
+            order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
             
             # Notifica o proximo entregador no app
             try:
@@ -856,10 +875,12 @@ def update_order_status(order_id):
                 new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
                 if new_driver:
                     # Oferta ao próximo entregador (via special_instructions)
-                    offer_tag = f"OFFERED_TO_{new_driver.id}"
+                    offer_ts = int(datetime.utcnow().timestamp())
+                    offer_tag = f"OFFERED_TO_{new_driver.id}_{offer_ts}"
                     current_si = order.special_instructions or ''
-                    if offer_tag not in current_si:
-                        order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
+                    # Remove ofertas antigas antes de adicionar nova
+                    current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
+                    order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
                     notification = Notification(
                         user_id=new_driver.user_id,
                         title="Pedido disponível (reenviado)",

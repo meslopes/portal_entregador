@@ -88,9 +88,18 @@ const OrderDetailPage = () => {
     }
     info.rejections = rejections;
     
-    // Parse current offer
-    const offerMatch = si.match(/OFFERED_TO_(\d+)/);
+    // Parse timeout history
+    const timeouts = [];
+    const reTimeout = /TIMEOUT_BY_(\d+)/g;
+    while ((match = reTimeout.exec(si)) !== null) {
+      timeouts.push(parseInt(match[1]));
+    }
+    info.timeouts = timeouts;
+    
+    // Parse current offer (formato: OFFERED_TO_{driver_id}_{timestamp})
+    const offerMatch = si.match(/OFFERED_TO_(\d+)(?:_(\d+))?/);
     info.current_offer = offerMatch ? parseInt(offerMatch[1]) : null;
+    info.offer_timestamp = offerMatch && offerMatch[2] ? parseInt(offerMatch[2]) : null;
     
     return info;
   };
@@ -148,6 +157,21 @@ const OrderDetailPage = () => {
           detail: `Pedido repassado para próximo entregador`,
           icon: '❌',
           color: '#ef4444'
+        });
+      });
+    }
+    
+    // Timeouts
+    if (si.timeouts && si.timeouts.length > 0) {
+      si.timeouts.forEach((driverId, idx) => {
+        const driverName = drivers[driverId] || `Entregador #${driverId}`;
+        timeline.push({
+          status: 'TIMEOUT',
+          time: null,
+          label: `${driverName} não respondeu`,
+          detail: `Timeout - pedido repassado para próximo entregador`,
+          icon: '⏰',
+          color: '#f59e0b'
         });
       });
     }
