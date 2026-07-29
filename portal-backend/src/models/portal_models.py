@@ -343,7 +343,6 @@ class Order(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
     delivery_address_id = db.Column(db.Integer, db.ForeignKey('addresses.id'), nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'))
-    offered_to_driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=True)  # Entregador que está recebendo a oferta
     route_id = db.Column(db.Integer, db.ForeignKey('delivery_routes.id'), nullable=True)  # Rota multi-parada
     stop_number = db.Column(db.Integer)  # Número da parada na rota (1, 2, 3...)
     order_number = db.Column(db.String(50), nullable=False)
