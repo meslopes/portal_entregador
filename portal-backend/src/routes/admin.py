@@ -943,6 +943,20 @@ def assign_order_to_driver(order_id):
         delivery.driver_earnings = base_earning
         
         db.session.add(delivery)
+        
+        # Notifica o entregador no app
+        try:
+            notification = Notification(
+                user_id=driver.user_id,
+                title="Novo pedido atribuído",
+                message=f"Pedido #{order.order_number} foi atribuído a você pelo administrador",
+                type=NotificationType.NEW_ORDER,
+                related_id=order.id
+            )
+            db.session.add(notification)
+        except Exception:
+            pass
+        
         db.session.commit()
         
         return jsonify({
