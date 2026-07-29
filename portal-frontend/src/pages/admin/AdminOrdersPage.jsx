@@ -4,6 +4,7 @@ import {
   ChevronLeft, ChevronRight, Truck, Filter, Edit, Trash2, X, Eye
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import { useNavigate } from 'react-router-dom';
 
 const STATUS_FILTERS = [
   { key: '', label: 'Todos', color: '#64748b' },
@@ -26,6 +27,7 @@ const STATUS_COLORS = {
 };
 
 const AdminOrdersPage = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -149,7 +151,7 @@ const AdminOrdersPage = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {orders.map(order => <OrderCard key={order.id} order={order} onEdit={openEditOrder} onDelete={handleDeleteOrder} />)}
+          {orders.map(order => <OrderCard key={order.id} order={order} onEdit={openEditOrder} onDelete={handleDeleteOrder} onViewDetail={(id) => navigate(`/admin/orders/${id}`)} />)}
         </div>
       )}
 
@@ -285,7 +287,7 @@ const AdminOrdersPage = () => {
   );
 };
 
-const OrderCard = ({ order, onEdit, onDelete }) => {
+const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
   const statusColor = STATUS_COLORS[order.status] || { bg: '#f1f5f9', text: '#64748b' };
 
   return (
@@ -363,6 +365,9 @@ const OrderCard = ({ order, onEdit, onDelete }) => {
             <Clock size={11} /> {utils.formatDateTime(order.created_at)}
           </span>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button onClick={(e) => { e.stopPropagation(); onViewDetail(order.id); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#6366f1' }} title="Ver Detalhes">
+              <Eye size={14} />
+            </button>
             <button onClick={(e) => { e.stopPropagation(); onEdit(order); }} style={{ padding: '0.25rem', borderRadius: '0.25rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
               <Edit size={14} />
             </button>

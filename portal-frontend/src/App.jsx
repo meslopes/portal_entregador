@@ -28,6 +28,7 @@ import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
 import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
+import OrderDetailPage from '@/pages/admin/OrderDetailPage';
 import AdminFinancePage from '@/pages/admin/AdminFinancePage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
@@ -308,6 +309,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminOrdersPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/orders/:orderId"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <OrderDetailPage />
                 </Layout>
               </ProtectedRoute>
             }
