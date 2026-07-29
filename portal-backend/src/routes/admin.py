@@ -923,6 +923,11 @@ def assign_order_to_driver(order_id):
         order.status = OrderStatus.ACCEPTED
         order.updated_at = datetime.utcnow()
         
+        # Limpa tags de oferta/rejeição anteriores
+        if order.special_instructions:
+            import re
+            order.special_instructions = re.sub(r'\|?(?:OFFERED_TO|REJECTED_BY|TIMEOUT_BY)_\d+(?:_\d+)?', '', order.special_instructions).strip('|')
+        
         # Cria registro de entrega
         delivery = Delivery(
             order_id=order.id,
