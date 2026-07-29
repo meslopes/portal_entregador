@@ -1470,13 +1470,16 @@ def create_establishment():
         data = request.get_json()
 
         if not data.get('name') or not data.get('address'):
-            return jsonify({'error': 'Nome e endereÃƒÂ§o sÃƒÂ£o obrigatÃƒÂ³rios'}), 400
+            return jsonify({'error': 'Nome e endereço são obrigatórios'}), 400
+
+        # Obter tenant_id do admin atual
+        tenant_id = get_current_tenant_id()
 
         # Verificar CNPJ se fornecido
         if data.get('cnpj'):
             existing = Restaurant.query.filter_by(cnpj=data['cnpj']).first()
             if existing:
-                return jsonify({'error': 'CNPJ jÃƒÂ¡ cadastrado'}), 400
+                return jsonify({'error': 'CNPJ já cadastrado'}), 400
 
         # Cria usuario CLIENT para login
         user = None
@@ -1485,7 +1488,7 @@ def create_establishment():
 
         if email:
             if User.query.filter_by(email=email).first():
-                return jsonify({'error': 'Email jÃƒÂ¡ cadastrado'}), 400
+                return jsonify({'error': 'Email já cadastrado'}), 400
 
             user = User(
                 email=email,
@@ -1493,7 +1496,8 @@ def create_establishment():
                 last_name=data.get('last_name', ''),
                 phone=data.get('phone'),
                 user_type=UserType.CLIENT,
-                status=UserStatus.ACTIVE
+                status=UserStatus.ACTIVE,
+                tenant_id=tenant_id
             )
             user.set_password(password)
             db.session.add(user)
@@ -1504,7 +1508,8 @@ def create_establishment():
                 user_id=user.id,
                 name=data['name'],
                 phone=data.get('phone', ''),
-                email=email
+                email=email,
+                tenant_id=tenant_id
             )
             db.session.add(customer)
             db.session.flush()
@@ -1523,7 +1528,8 @@ def create_establishment():
             bank_name=data.get('bank_name'),
             bank_agency=data.get('bank_agency'),
             bank_account=data.get('bank_account'),
-            bank_pix_key=data.get('bank_pix_key')
+            bank_pix_key=data.get('bank_pix_key'),
+            tenant_id=tenant_id
         )
 
         # Geocodifica endereco se nao tem coordenadas
