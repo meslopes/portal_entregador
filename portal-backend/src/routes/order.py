@@ -11,6 +11,7 @@ import uuid
 import os
 import base64
 import math
+import re
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -405,18 +406,45 @@ def reject_order(order_id):
         if reject_log not in current_log:
             order.special_instructions = f"{current_log}|{reject_log}" if current_log else reject_log
 
-        # Busca proximo entregador
-        next_driver = find_nearest_available_driver(order, exclude_driver_ids=[user_id])
+        # Limpa ofertas anteriores antes de buscar próximo
+        si = order.special_instructions or ''
+        # Remove todas as tags OFFERED_TO_ antigas
+        import re
+        si = re.sub(r'\|?OFFERED_TO_\d+', '', si).strip('|')
+        order.special_instructions = si
+
+        # Coleta todos os IDs que já recusaram
+        rejected_ids = [user_id]
+        if order.special_instructions:
+            for match in re.finditer(r'REJECTED_BY_(\d+)', order.special_instructions):
+                rid = int(match.group(1))
+                if rid not in rejected_ids:
+                    rejected_ids.append(rid)
+
+        # Busca proximo entregador (excluindo todos que recusaram)
+        next_driver = find_nearest_available_driver(order, exclude_driver_ids=rejected_ids)
         
         if next_driver:
-            # Atualiza oferta para o próximo entregador
             # Atualiza oferta para o próximo entregador (via special_instructions)
             offer_tag = f"OFFERED_TO_{next_driver.id}"
             current_si = order.special_instructions or ''
             if offer_tag not in current_si:
                 order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
             
-            # Notifica o proximo entregador
+            # Notifica o proximo entregador no app
+            try:
+                notification = Notification(
+                    user_id=next_driver.user_id,
+                    title="Novo pedido disponível",
+                    message=f"Pedido #{order.order_number} está disponível para entrega",
+                    type=NotificationType.NEW_ORDER,
+                    related_id=order.id
+                )
+                db.session.add(notification)
+            except Exception:
+                pass
+            
+            # Envia WhatsApp se configurado
             try:
                 from src.services.whatsapp import whatsapp_service
                 if whatsapp_service.is_configured() and next_driver.user.phone:
