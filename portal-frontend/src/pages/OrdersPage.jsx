@@ -71,14 +71,14 @@ const OrdersPage = () => {
     return () => stopOrderMonitor();
   }, []);
 
-  // Atualiza a lista de pedidos periodicamente (60 segundos para economizar bateria)
+  // Atualiza a lista de pedidos periodicamente (10 segundos para pegar ofertas rapidamente)
   useEffect(() => {
     loadAvailableOrders();
     loadActiveOrders();
     const interval = setInterval(() => {
       loadAvailableOrders();
       loadActiveOrders();
-    }, 60000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [loadAvailableOrders, loadActiveOrders]);
 
