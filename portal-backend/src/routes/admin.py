@@ -607,6 +607,11 @@ def admin_delete_order(order_id):
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
 
+        # Verificar tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and order.tenant_id != tenant_id:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
         # Remove delivery se existir
         if order.delivery:
             db.session.delete(order.delivery)
@@ -1216,7 +1221,7 @@ def get_live_tracking():
             
             tracking_data.append(driver_data)
         
-        # Pedidos ativos
+        # Pedidos ativos (filtrados por tenant)
         order_query = Order.query.filter(
             Order.status.in_([
                 OrderStatus.PENDING,
@@ -1226,6 +1231,8 @@ def get_live_tracking():
                 OrderStatus.PICKED_UP
             ])
         )
+        if tenant_id:
+            order_query = order_query.filter(Order.tenant_id == tenant_id)
         if square_id:
             order_query = order_query.join(Restaurant).filter(Restaurant.square_id == square_id)
         active_orders = order_query.all()
