@@ -68,7 +68,17 @@ const AdminOrdersPage = () => {
       status: order.status,
       delivery_fee: order.delivery_fee,
       total_amount: order.total_amount,
-      payment_method: order.payment_method
+      payment_method: order.payment_method,
+      customer_name: order.customer?.name || '',
+      customer_phone: order.customer?.phone || '',
+      delivery_address: order.delivery_address?.street || '',
+      delivery_neighborhood: order.delivery_address?.neighborhood || '',
+      delivery_city: order.delivery_address?.city || '',
+      delivery_state: order.delivery_address?.state || '',
+      delivery_zip_code: order.delivery_address?.zip_code || '',
+      delivery_complement: order.delivery_address?.complement || '',
+      special_instructions: order.special_instructions || '',
+      distribution_method: order.distribution_method || 'nearest'
     });
   };
 
@@ -167,23 +177,101 @@ const AdminOrdersPage = () => {
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Pedido #{editingOrder.order_number}</h2>
               <button onClick={() => setEditingOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
             </div>
-            <form onSubmit={handleEditOrder} style={{ padding: '1.5rem' }}>
+            <form onSubmit={handleEditOrder} style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
+              {/* Status */}
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Status</label>
                 <select value={editData.status} onChange={e => setEditData(p => ({ ...p, status: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}>
                   {STATUS_FILTERS.filter(f => f.key).map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa de Entrega (R$)</label>
-                  <input type="number" step="0.01" value={editData.delivery_fee} onChange={e => setEditData(p => ({ ...p, delivery_fee: parseFloat(e.target.value) }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Valor Total (R$)</label>
-                  <input type="number" step="0.01" value={editData.total_amount} onChange={e => setEditData(p => ({ ...p, total_amount: parseFloat(e.target.value) }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }} />
+
+              {/* Dados do Cliente */}
+              <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Dados do Cliente</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Nome</label>
+                    <input value={editData.customer_name} onChange={e => setEditData(p => ({ ...p, customer_name: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Telefone</label>
+                    <input value={editData.customer_phone} onChange={e => setEditData(p => ({ ...p, customer_phone: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
                 </div>
               </div>
+
+              {/* Endereço de Entrega */}
+              <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Endereço de Entrega</p>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Endereço</label>
+                  <input value={editData.delivery_address} onChange={e => setEditData(p => ({ ...p, delivery_address: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Bairro</label>
+                    <input value={editData.delivery_neighborhood} onChange={e => setEditData(p => ({ ...p, delivery_neighborhood: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Cidade</label>
+                    <input value={editData.delivery_city} onChange={e => setEditData(p => ({ ...p, delivery_city: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Estado</label>
+                    <input value={editData.delivery_state} onChange={e => setEditData(p => ({ ...p, delivery_state: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>CEP</label>
+                    <input value={editData.delivery_zip_code} onChange={e => setEditData(p => ({ ...p, delivery_zip_code: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
+                </div>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Complemento</label>
+                  <input value={editData.delivery_complement} onChange={e => setEditData(p => ({ ...p, delivery_complement: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                </div>
+              </div>
+
+              {/* Valores */}
+              <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Valores</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Taxa de Entrega (R$)</label>
+                    <input type="number" step="0.01" value={editData.delivery_fee} onChange={e => setEditData(p => ({ ...p, delivery_fee: parseFloat(e.target.value) }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Valor Total (R$)</label>
+                    <input type="number" step="0.01" value={editData.total_amount} onChange={e => setEditData(p => ({ ...p, total_amount: parseFloat(e.target.value) }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }} />
+                  </div>
+                </div>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Método de Pagamento</label>
+                  <select value={editData.payment_method} onChange={e => setEditData(p => ({ ...p, payment_method: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }}>
+                    <option value="CASH">Dinheiro</option>
+                    <option value="CARD">Cartão</option>
+                    <option value="PIX">PIX</option>
+                  </select>
+                </div>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Método de Distribuição</label>
+                  <select value={editData.distribution_method} onChange={e => setEditData(p => ({ ...p, distribution_method: e.target.value }))} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }}>
+                    <option value="nearest">Mais Próximo</option>
+                    <option value="broadcast">Broadcast</option>
+                    <option value="queue">Fila</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Observações */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Observações</label>
+                <textarea value={editData.special_instructions} onChange={e => setEditData(p => ({ ...p, special_instructions: e.target.value }))} rows={3} style={{ width: '100%', padding: '0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none', resize: 'vertical' }} />
+              </div>
+
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setEditingOrder(null)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>
                 <button type="submit" style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>Salvar</button>

@@ -1246,6 +1246,18 @@ def get_live_tracking():
                 restaurant_ids_with_active.add(order.restaurant_id)
                 restaurant = Restaurant.query.get(order.restaurant_id)
                 if restaurant and restaurant.latitude and restaurant.longitude:
+                    # Buscar pedidos ativos deste estabelecimento
+                    active_orders = Order.query.filter(
+                        Order.restaurant_id == restaurant.id,
+                        Order.status.in_([
+                            OrderStatus.PENDING,
+                            OrderStatus.ACCEPTED,
+                            OrderStatus.PREPARING,
+                            OrderStatus.READY,
+                            OrderStatus.PICKED_UP
+                        ])
+                    ).all()
+                    
                     est_data = {
                         'type': 'establishment',
                         'restaurant_id': restaurant.id,
@@ -1253,16 +1265,17 @@ def get_live_tracking():
                         'latitude': float(restaurant.latitude),
                         'longitude': float(restaurant.longitude),
                         'address': restaurant.address,
-                        'active_orders': Order.query.filter(
-                            Order.restaurant_id == restaurant.id,
-                            Order.status.in_([
-                                OrderStatus.PENDING,
-                                OrderStatus.ACCEPTED,
-                                OrderStatus.PREPARING,
-                                OrderStatus.READY,
-                                OrderStatus.PICKED_UP
-                            ])
-                        ).count()
+                        'active_orders': len(active_orders),
+                        'orders': [{
+                            'id': o.id,
+                            'order_number': o.order_number,
+                            'status': o.status.value,
+                            'customer_name': o.customer.name if o.customer else '',
+                            'delivery_fee': float(o.delivery_fee) if o.delivery_fee else 0,
+                            'total_amount': float(o.total_amount) if o.total_amount else 0,
+                            'driver_name': f"{o.driver.user.first_name} {o.driver.user.last_name}" if o.driver and o.driver.user else None,
+                            'created_at': o.created_at.isoformat() if o.created_at else None
+                        } for o in active_orders]
                     }
                     tracking_data.append(est_data)
             

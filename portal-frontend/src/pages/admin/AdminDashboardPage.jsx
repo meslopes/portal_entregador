@@ -43,6 +43,8 @@ const AdminDashboardPage = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [orderToAssign, setOrderToAssign] = useState(null);
   const [onlineDrivers, setOnlineDrivers] = useState([]);
+  const [allDrivers, setAllDrivers] = useState([]);
+  const [allEstablishments, setAllEstablishments] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -54,6 +56,8 @@ const AdminDashboardPage = () => {
     loadPendingUsers();
     loadOrders();
     loadSquares();
+    loadAllDrivers();
+    loadAllEstablishments();
   }, []);
 
   // Recarrega tracking quando muda a praça
@@ -124,6 +128,24 @@ const AdminDashboardPage = () => {
       setOnlineDrivers(data.drivers || []);
     } catch (err) {
       console.error('Erro ao carregar entregadores:', err);
+    }
+  };
+
+  const loadAllDrivers = async () => {
+    try {
+      const data = await adminService.getDrivers(1, 100);
+      setAllDrivers(data.drivers || []);
+    } catch (err) {
+      console.error('Erro ao carregar todos os entregadores:', err);
+    }
+  };
+
+  const loadAllEstablishments = async () => {
+    try {
+      const data = await adminService.getEstablishments(1, 100);
+      setAllEstablishments(data.establishments || []);
+    } catch (err) {
+      console.error('Erro ao carregar estabelecimentos:', err);
     }
   };
 
@@ -252,9 +274,43 @@ const AdminDashboardPage = () => {
             iconAnchor: [14, 14]
           });
 
+          // Construir HTML dos pedidos do estabelecimento
+          let ordersHtml = '';
+          if (est.orders && est.orders.length > 0) {
+            ordersHtml = '<div style="margin-top:8px;max-height:200px;overflow-y:auto;">';
+            est.orders.forEach(o => {
+              const statusColors = {
+                PENDING: '#ef4444', ACCEPTED: '#2563eb', PREPARING: '#8b5cf6',
+                READY: '#06b6d4', PICKED_UP: '#f59e0b'
+              };
+              const statusLabels = {
+                PENDING: 'Tocando', ACCEPTED: 'Aceito', PREPARING: 'Preparando',
+                READY: 'Pronto', PICKED_UP: 'Coletado'
+              };
+              const color = statusColors[o.status] || '#64748b';
+              const label = statusLabels[o.status] || o.status;
+              ordersHtml += `<div style="padding:4px 6px;margin:2px 0;background:#f8fafc;border-radius:4px;font-size:11px;border-left:3px solid ${color}">`;
+              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${o.order_number}</b><span style="color:${color}">${label}</span></div>`;
+              ordersHtml += `<div style="color:#64748b;">${o.customer_name || 'Cliente'}</div>`;
+              if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${o.driver_name}</div>`;
+              ordersHtml += `<div style="color:#64748b;">R$ ${o.total_amount.toFixed(2)}</div>`;
+              ordersHtml += '</div>';
+            });
+            ordersHtml += '</div>';
+          }
+
+          const popupContent = `
+            <div style="min-width:200px;">
+              <b style="font-size:13px;">${est.name}</b>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;">${est.address || ''}</div>
+              <div style="font-size:11px;color:#475569;margin-top:4px;font-weight:600;">Pedidos ativos: ${est.active_orders}</div>
+              ${ordersHtml}
+            </div>
+          `;
+
           const marker = L.marker([est.latitude, est.longitude], { icon })
             .addTo(map)
-            .bindPopup(`<b>${est.name}</b><br>${est.address || ''}<br>Pedidos: ${est.active_orders}`);
+            .bindPopup(popupContent);
           markersRef.current.push(marker);
           allPoints.push([est.latitude, est.longitude]);
         }
@@ -293,6 +349,21 @@ const AdminDashboardPage = () => {
   // Filter orders by status - mostra todos os pedidos com este status
   const getOrdersByStatus = (status) => {
     return orders.filter(o => o.status === status);
+  };
+
+  // Calcula tempo restante para pedidos agendados
+  const getTimeRemaining = (scheduledAt) => {
+    if (!scheduledAt) return null;
+    const now = new Date();
+    const scheduled = new Date(scheduledAt);
+    const diffMs = scheduled - now;
+    if (diffMs <= 0) return 'Agora';
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Menos de 1 min';
+    if (diffMins < 60) return `${diffMins} min`;
+    const diffHours = Math.floor(diffMins / 60);
+    const remainingMins = diffMins % 60;
+    return `${diffHours}h ${remainingMins}min`;
   };
 
   const filteredOrders = orders.filter(o => {
@@ -359,27 +430,51 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Abas Status */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center', overflowX: 'auto' }}>
           <button
             onClick={() => setActiveTab('status')}
             style={{
-              flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
-              fontWeight: 600,
+              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
+              fontWeight: 600, whiteSpace: 'nowrap',
               color: activeTab === 'status' ? '#2563eb' : '#64748b',
               borderBottom: activeTab === 'status' ? '2px solid #2563eb' : '2px solid transparent',
-              cursor: 'pointer', fontSize: '0.875rem'
+              cursor: 'pointer', fontSize: '0.75rem'
             }}
           >
             Status
           </button>
           <button
+            onClick={() => setActiveTab('drivers')}
+            style={{
+              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
+              fontWeight: 600, whiteSpace: 'nowrap',
+              color: activeTab === 'drivers' ? '#2563eb' : '#64748b',
+              borderBottom: activeTab === 'drivers' ? '2px solid #2563eb' : '2px solid transparent',
+              cursor: 'pointer', fontSize: '0.75rem'
+            }}
+          >
+            Entreg.
+          </button>
+          <button
+            onClick={() => setActiveTab('establishments')}
+            style={{
+              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
+              fontWeight: 600, whiteSpace: 'nowrap',
+              color: activeTab === 'establishments' ? '#2563eb' : '#64748b',
+              borderBottom: activeTab === 'establishments' ? '2px solid #2563eb' : '2px solid transparent',
+              cursor: 'pointer', fontSize: '0.75rem'
+            }}
+          >
+            Estab.
+          </button>
+          <button
             onClick={() => setActiveTab('empresas')}
             style={{
-              flex: 1, padding: '0.75rem', border: 'none', background: 'transparent',
-              fontWeight: 600,
+              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
+              fontWeight: 600, whiteSpace: 'nowrap',
               color: activeTab === 'empresas' ? '#2563eb' : '#64748b',
               borderBottom: activeTab === 'empresas' ? '2px solid #2563eb' : '2px solid transparent',
-              cursor: 'pointer', fontSize: '0.875rem'
+              cursor: 'pointer', fontSize: '0.75rem'
             }}
           >
             Praças
@@ -477,6 +572,17 @@ const AdminDashboardPage = () => {
                             <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.6875rem' }}>
                               {order.customer?.name || 'Cliente'}
                             </div>
+                            {/* Countdown para pedidos agendados */}
+                            {order.status === 'SCHEDULED' && order.scheduled_at && (
+                              <div style={{ 
+                                marginTop: '0.25rem', padding: '0.25rem 0.375rem', 
+                                background: '#e0e7ff', borderRadius: '0.25rem',
+                                fontSize: '0.625rem', color: '#4338ca', fontWeight: 500,
+                                display: 'flex', alignItems: 'center', gap: '0.25rem'
+                              }}>
+                                ⏰ Lança em {getTimeRemaining(order.scheduled_at)}
+                              </div>
+                            )}
 
                             {/* Menu do pedido */}
                             {selectedOrderMenu === order.id && (
@@ -589,6 +695,78 @@ const AdminDashboardPage = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Lista de Entregadores */}
+        {activeTab === 'drivers' && (
+          <div style={{ padding: '0.5rem' }}>
+            {allDrivers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                Nenhum entregador encontrado
+              </div>
+            ) : (
+              allDrivers.map(driver => (
+                <div
+                  key={driver.id}
+                  style={{
+                    padding: '0.5rem', borderRadius: '0.375rem',
+                    background: 'white', marginBottom: '0.25rem',
+                    fontSize: '0.75rem', border: '1px solid #f1f5f9'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <span style={{ fontSize: '0.75rem' }}>{driver.is_online ? '🟢' : '⚪'}</span>
+                      <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.75rem' }}>
+                        {driver.user?.first_name} {driver.user?.last_name}
+                      </span>
+                    </div>
+                    <span style={{
+                      padding: '0.125rem 0.375rem', borderRadius: '9999px',
+                      background: driver.is_online ? '#dcfce7' : '#f1f5f9',
+                      color: driver.is_online ? '#166534' : '#64748b',
+                      fontSize: '0.625rem', fontWeight: 500
+                    }}>
+                      {driver.is_online ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
+                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.625rem' }}>
+                    {driver.vehicle_type} • {driver.total_deliveries || 0} entregas
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Lista de Estabelecimentos */}
+        {activeTab === 'establishments' && (
+          <div style={{ padding: '0.5rem' }}>
+            {allEstablishments.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                Nenhum estabelecimento encontrado
+              </div>
+            ) : (
+              allEstablishments.map(est => (
+                <div
+                  key={est.id}
+                  style={{
+                    padding: '0.5rem', borderRadius: '0.375rem',
+                    background: 'white', marginBottom: '0.25rem',
+                    fontSize: '0.75rem', border: '1px solid #f1f5f9'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    <Store size={12} style={{ color: '#f59e0b' }} />
+                    <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.75rem' }}>{est.name}</span>
+                  </div>
+                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.625rem' }}>
+                    {est.address || 'Sem endereço'}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
