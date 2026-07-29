@@ -616,7 +616,7 @@ const AdminDashboardPage = () => {
 
                                 {/* Opções de status */}
                                 <p style={{ fontSize: '0.625rem', color: '#94a3b8', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
-                                {['PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
+                                {['SCHEDULED', 'PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
                                   if (s === order.status) return null;
                                   const cfg = STATUS_CONFIG[s];
                                   return (

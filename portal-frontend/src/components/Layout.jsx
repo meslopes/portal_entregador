@@ -113,7 +113,7 @@ const Layout = ({ children }) => {
                   </Link>
                 );
               })}
-              {isAdmin && (
+              {isAdmin && !isSuperAdmin && (
                 <Link
                   to="/client/new-order"
                   style={{

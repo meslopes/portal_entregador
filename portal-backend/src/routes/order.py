@@ -750,18 +750,20 @@ def update_order_status(order_id):
         except ValueError:
             return jsonify({'error': 'Status inválido'}), 400
         
-        # Validações de transição de status
-        valid_transitions = {
-            OrderStatus.SCHEDULED: [OrderStatus.PENDING, OrderStatus.CANCELLED],
-            OrderStatus.PENDING: [OrderStatus.CANCELLED],
-            OrderStatus.ACCEPTED: [OrderStatus.PICKED_UP, OrderStatus.PREPARING, OrderStatus.CANCELLED],
-            OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
-            OrderStatus.READY: [OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
-            OrderStatus.PICKED_UP: [OrderStatus.DELIVERED]
-        }
-        
-        if order.status not in valid_transitions or new_status_enum not in valid_transitions[order.status]:
-            return jsonify({'error': 'Transição de status inválida'}), 400
+        # Admin pode mudar de qualquer status para qualquer status
+        # Entregador segue transições válidas
+        if not is_admin:
+            valid_transitions = {
+                OrderStatus.SCHEDULED: [OrderStatus.PENDING, OrderStatus.CANCELLED],
+                OrderStatus.PENDING: [OrderStatus.CANCELLED],
+                OrderStatus.ACCEPTED: [OrderStatus.PICKED_UP, OrderStatus.PREPARING, OrderStatus.CANCELLED],
+                OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
+                OrderStatus.READY: [OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
+                OrderStatus.PICKED_UP: [OrderStatus.DELIVERED]
+            }
+            
+            if order.status not in valid_transitions or new_status_enum not in valid_transitions[order.status]:
+                return jsonify({'error': 'Transição de status inválida'}), 400
         
         # Atualiza o status
         order.status = new_status_enum
