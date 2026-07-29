@@ -259,6 +259,11 @@ def update_user(user_id):
                 user.status = UserStatus(data['status'])
             except ValueError:
                 return jsonify({'error': 'Status invÃƒÂ¡lido'}), 400
+        if data.get('user_type'):
+            try:
+                user.user_type = UserType(data['user_type'])
+            except ValueError:
+                return jsonify({'error': 'Tipo de usuÃƒÂ¡rio invÃƒÂ¡lido'}), 400
 
         # Atualiza dados especificos do tipo
         if user.user_type == UserType.DRIVER:
