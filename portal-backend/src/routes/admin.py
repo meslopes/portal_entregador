@@ -1582,7 +1582,14 @@ def create_establishment():
         # Geocodifica endereco se nao tem coordenadas
         if not establishment.latitude or not establishment.longitude:
             from src.services.geocoding import geocode_address
-            geo = geocode_address(establishment.address)
+            # Usa cidade do endereço se disponível
+            city_hint = None
+            if establishment.address:
+                # Tenta extrair cidade do endereço (formato: "Rua, Bairro, Cidade, Estado")
+                parts = establishment.address.split(',')
+                if len(parts) >= 3:
+                    city_hint = parts[-2].strip()
+            geo = geocode_address(establishment.address, city_hint=city_hint)
             if geo:
                 establishment.latitude = geo['latitude']
                 establishment.longitude = geo['longitude']

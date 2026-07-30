@@ -195,8 +195,8 @@ const AdminEstablishmentsPage = () => {
         phone: formData.phone || null,
         email: formData.email || null,
         address: fullAddress,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : -29.95,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : -50.45,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         square_id: formData.square_id || null,
         preparation_minutes: parseInt(formData.preparation_minutes) || 10,
       };
