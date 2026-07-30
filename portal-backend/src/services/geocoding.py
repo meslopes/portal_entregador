@@ -16,16 +16,45 @@ CITY_COORDS = {
     'torres': {'lat': -29.3333, 'lng': -49.7333},
     'osório': {'lat': -29.8867, 'lng': -50.2683},
     'tramandaí': {'lat': -29.9850, 'lng': -50.1333},
+    'criciúma': {'lat': -28.6775, 'lng': -49.3697},
+    'florianópolis': {'lat': -27.5954, 'lng': -48.5480},
+    'curitiba': {'lat': -25.4284, 'lng': -49.2733},
+    'são paulo': {'lat': -23.5505, 'lng': -46.6333},
+    'rio de janeiro': {'lat': -22.9068, 'lng': -43.1729},
+    'brasília': {'lat': -15.7975, 'lng': -47.8919},
+    'belo horizonte': {'lat': -19.9167, 'lng': -43.9345},
+    'salvador': {'lat': -12.9714, 'lng': -38.5124},
+    'fortaleza': {'lat': -3.7172, 'lng': -38.5433},
+    'recife': {'lat': -8.0476, 'lng': -34.8770},
+    'manaus': {'lat': -3.1190, 'lng': -60.0217},
+    'belém': {'lat': -1.4558, 'lng': -48.5024},
+    'goiânia': {'lat': -16.6869, 'lng': -49.2648},
+    'campinas': {'lat': -22.9099, 'lng': -47.0626},
+    'vitória': {'lat': -20.3155, 'lng': -40.3128},
+    'natal': {'lat': -5.7945, 'lng': -35.2110},
+    'joão pessoa': {'lat': -7.1195, 'lng': -34.8450},
+    'maceió': {'lat': -9.6658, 'lng': -35.7353},
+    'aracaju': {'lat': -10.9091, 'lng': -37.0677},
+    'teresina': {'lat': -5.0892, 'lng': -42.8019},
+    'são luís': {'lat': -2.5297, 'lng': -44.2825},
+    'campo grande': {'lat': -20.4697, 'lng': -54.6201},
+    'cuiabá': {'lat': -15.6014, 'lng': -56.0979},
+    'palmas': {'lat': -10.1689, 'lng': -48.3317},
+    'rio branco': {'lat': -9.9747, 'lng': -67.8100},
+    'macapá': {'lat': 0.0349, 'lng': -51.0694},
+    'boa vista': {'lat': 2.8195, 'lng': -60.6714},
+    'porto velho': {'lat': -8.7612, 'lng': -63.9004},
 }
 
 
-def geocode_address(address):
+def geocode_address(address, city_hint=None):
     """
     Converte um endereco em coordenadas geograficas.
     Tenta varias formatacoes para melhorar a taxa de sucesso.
     
     Args:
         address: Endereco completo (ex: "Rua Principal 100, Porto Alegre, RS")
+        city_hint: Nome da cidade para melhorar a busca (opcional)
     
     Returns:
         dict: {'latitude': float, 'longitude': float, 'display_name': str} ou None
@@ -49,10 +78,14 @@ def geocode_address(address):
     formats = [
         clean,  # Formato original limpo
         clean + ', Brasil',
-        clean + ', Capão da Canoa, RS, Brasil',
     ]
 
-    # Se o endereco nao tem cidade/estado, adiciona
+    # Se tem city_hint, usa ele primeiro
+    if city_hint:
+        formats.insert(0, f"{clean}, {city_hint}, Brasil")
+        formats.insert(1, f"{clean}, {city_hint}, RS, Brasil")
+
+    # Se o endereco nao tem cidade/estado, adiciona Capão da Canoa como fallback
     if 'capão' not in clean.lower() and 'capao' not in clean.lower():
         formats.append(f"{clean}, Capão da Canoa, Rio Grande do Sul, Brasil")
 
@@ -82,9 +115,10 @@ def geocode_address(address):
             print(f"Erro na geocodificacao para '{fmt}': {e}")
             continue
 
-    # Fallback: tenta encontrar coordenadas da cidade
+    # Fallback: tenta encontrar coordenadas da cidade no endereco ou city_hint
+    search_text = (clean + ' ' + (city_hint or '')).lower()
     for city_name, coords in CITY_COORDS.items():
-        if city_name in clean.lower():
+        if city_name in search_text:
             print(f"Geocodificacao fallback (cidade): '{city_name}' => {coords['lat']}, {coords['lng']}")
             return {
                 'latitude': coords['lat'],
@@ -105,13 +139,13 @@ def geocode_establishment(address, city=None, state=None):
     """
     Geocodifica o endereco de um estabelecimento.
     """
-    result = geocode_address(address)
+    result = geocode_address(address, city_hint=city)
     if result:
         return result
 
     if city and state:
         full_address = f"{address}, {city}, {state}, Brasil"
-        result = geocode_address(full_address)
+        result = geocode_address(full_address, city_hint=city)
         if result:
             return result
 

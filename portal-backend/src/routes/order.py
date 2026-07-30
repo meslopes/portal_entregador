@@ -1161,7 +1161,7 @@ def create_order():
         if not del_lat or not del_lng:
             del_address_full = f"{data['delivery_address']}, {data.get('delivery_neighborhood', '')}, {data.get('delivery_city', 'Porto Alegre')}, {data.get('delivery_state', 'RS')}"
             from src.services.geocoding import geocode_address
-            geo_del = geocode_address(del_address_full)
+            geo_del = geocode_address(del_address_full, city_hint=data.get('delivery_city'))
             if geo_del:
                 del_lat = geo_del['latitude']
                 del_lng = geo_del['longitude']

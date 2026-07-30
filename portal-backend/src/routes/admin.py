@@ -824,13 +824,18 @@ def update_driver_status(driver_id):
     try:
         driver = Driver.query.get(driver_id)
         if not driver:
-            return jsonify({'error': 'Entregador nÃƒÂ£o encontrado'}), 404
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        # Verificar tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and driver.tenant_id != tenant_id:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
         
         data = request.get_json()
         new_status = data.get('status')
         
         if new_status not in ['ACTIVE', 'INACTIVE', 'SUSPENDED']:
-            return jsonify({'error': 'Status invÃƒÂ¡lido'}), 400
+            return jsonify({'error': 'Status inválido'}), 400
         
         from src.models.portal_models import UserStatus
         driver.user.status = UserStatus(new_status)
@@ -1326,7 +1331,7 @@ def get_live_tracking():
                         try:
                             from src.services.geocoding import geocode_address
                             full_addr = f"{delivery_addr.street}, {delivery_addr.neighborhood or ''}, {delivery_addr.city or 'Capão da Canoa'}, {delivery_addr.state or 'RS'}"
-                            geo = geocode_address(full_addr)
+                            geo = geocode_address(full_addr, city_hint=delivery_addr.city)
                             if geo:
                                 delivery_addr.latitude = geo['latitude']
                                 delivery_addr.longitude = geo['longitude']
