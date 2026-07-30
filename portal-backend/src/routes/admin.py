@@ -2413,13 +2413,16 @@ def get_squares():
 @jwt_required()
 @admin_required
 def create_square():
-    """Cria uma nova praÃƒÂ§a"""
+    """Cria uma nova praça"""
     try:
         from src.models.portal_models import Square
         data = request.get_json()
 
         if not data.get('name') or not data.get('city') or not data.get('state'):
-            return jsonify({'error': 'Nome, cidade e estado sÃƒÂ£o obrigatÃƒÂ³rios'}), 400
+            return jsonify({'error': 'Nome, cidade e estado são obrigatórios'}), 400
+
+        # Obter tenant_id do admin atual
+        tenant_id = get_current_tenant_id()
 
         square = Square(
             name=data['name'],
@@ -2429,12 +2432,13 @@ def create_square():
             price_per_km=data.get('price_per_km', 2.95),
             min_distance_km=data.get('min_distance_km', 4.0),
             max_delivery_fee=data.get('max_delivery_fee', 50.00),
-            driver_percentage=data.get('driver_percentage', 70.0)
+            driver_percentage=data.get('driver_percentage', 70.0),
+            tenant_id=tenant_id
         )
         db.session.add(square)
         db.session.commit()
 
-        return jsonify({'message': 'PraÃƒÂ§a criada com sucesso', 'square': square.to_dict()}), 201
+        return jsonify({'message': 'Praça criada com sucesso', 'square': square.to_dict()}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
