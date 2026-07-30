@@ -1309,29 +1309,29 @@ def get_live_tracking():
                             pass
                     
                     if restaurant.latitude and restaurant.longitude:
-                    # Buscar pedidos ativos deste estabelecimento
-                    active_orders = Order.query.filter(
-                        Order.restaurant_id == restaurant.id,
-                        Order.status.in_([
-                            OrderStatus.PENDING,
-                            OrderStatus.ACCEPTED,
-                            OrderStatus.PREPARING,
-                            OrderStatus.READY,
-                            OrderStatus.PICKED_UP
-                        ])
-                    ).all()
-                    
-                    est_data = {
-                        'type': 'establishment',
-                        'restaurant_id': restaurant.id,
-                        'name': restaurant.name,
-                        'latitude': float(restaurant.latitude),
-                        'longitude': float(restaurant.longitude),
-                        'address': restaurant.address,
-                        'active_orders': len(active_orders),
-                        'orders': [{
-                            'id': o.id,
-                            'order_number': o.order_number,
+                        # Buscar pedidos ativos deste estabelecimento
+                        active_orders = Order.query.filter(
+                            Order.restaurant_id == restaurant.id,
+                            Order.status.in_([
+                                OrderStatus.PENDING,
+                                OrderStatus.ACCEPTED,
+                                OrderStatus.PREPARING,
+                                OrderStatus.READY,
+                                OrderStatus.PICKED_UP
+                            ])
+                        ).all()
+                        
+                        est_data = {
+                            'type': 'establishment',
+                            'restaurant_id': restaurant.id,
+                            'name': restaurant.name,
+                            'latitude': float(restaurant.latitude),
+                            'longitude': float(restaurant.longitude),
+                            'address': restaurant.address,
+                            'active_orders': len(active_orders),
+                            'orders': [{
+                                'id': o.id,
+                                'order_number': o.order_number,
                             'status': o.status.value,
                             'customer_name': o.customer.name if o.customer else '',
                             'delivery_fee': float(o.delivery_fee) if o.delivery_fee else 0,
