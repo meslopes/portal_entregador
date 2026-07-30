@@ -321,7 +321,7 @@ def get_ranking():
         # Ranking por entregas (ultimos 30 dias)
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
 
-        ranking = db.session.query(
+        ranking_query = db.session.query(
             Driver.id,
             User.first_name,
             User.last_name,
@@ -337,7 +337,13 @@ def get_ranking():
             Payment.driver_id == Driver.id,
             Payment.status == PaymentStatus.PROCESSED,
             Payment.created_at >= thirty_days_ago
-        )).group_by(
+        ))
+        
+        # Filtrar por tenant do entregador
+        if user.driver and user.driver.tenant_id:
+            ranking_query = ranking_query.filter(Driver.tenant_id == user.driver.tenant_id)
+        
+        ranking = ranking_query.group_by(
             Driver.id, User.first_name, User.last_name,
             Driver.rating, Driver.total_deliveries
         ).order_by(

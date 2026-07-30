@@ -1287,7 +1287,28 @@ def get_live_tracking():
             if order.restaurant_id and order.restaurant_id not in restaurant_ids_with_active:
                 restaurant_ids_with_active.add(order.restaurant_id)
                 restaurant = Restaurant.query.get(order.restaurant_id)
-                if restaurant and restaurant.latitude and restaurant.longitude:
+                if restaurant:
+                    # Geocodifica se não tem coordenadas OU se coordenadas estão em Capão da Canoa mas endereço não
+                    needs_geocode = False
+                    if not restaurant.latitude or not restaurant.longitude:
+                        needs_geocode = True
+                    elif restaurant.address and 'capão' not in restaurant.address.lower() and 'capao' not in restaurant.address.lower():
+                        # Verifica se coordenadas estão próximas de Capão da Canoa (fallback antigo)
+                        if restaurant.latitude and abs(float(restaurant.latitude) - (-29.7447)) < 0.1 and abs(float(restaurant.longitude) - (-50.0111)) < 0.1:
+                            needs_geocode = True
+                    
+                    if needs_geocode:
+                        try:
+                            from src.services.geocoding import geocode_address
+                            geo = geocode_address(restaurant.address)
+                            if geo:
+                                restaurant.latitude = geo['latitude']
+                                restaurant.longitude = geo['longitude']
+                                db.session.commit()
+                        except Exception:
+                            pass
+                    
+                    if restaurant.latitude and restaurant.longitude:
                     # Buscar pedidos ativos deste estabelecimento
                     active_orders = Order.query.filter(
                         Order.restaurant_id == restaurant.id,
@@ -1326,8 +1347,16 @@ def get_live_tracking():
                 delivery_ids_added.add(order.delivery_address_id)
                 delivery_addr = Address.query.get(order.delivery_address_id)
                 if delivery_addr:
-                    # Geocodifica se não tem coordenadas
+                    # Geocodifica se não tem coordenadas OU se coordenadas estão em Capão da Canoa mas endereço não
+                    needs_geocode = False
                     if not delivery_addr.latitude or not delivery_addr.longitude:
+                        needs_geocode = True
+                    elif delivery_addr.city and 'capão' not in delivery_addr.city.lower() and 'capao' not in delivery_addr.city.lower():
+                        # Verifica se coordenadas estão próximas de Capão da Canoa (fallback antigo)
+                        if delivery_addr.latitude and abs(float(delivery_addr.latitude) - (-29.7447)) < 0.1 and abs(float(delivery_addr.longitude) - (-50.0111)) < 0.1:
+                            needs_geocode = True
+                    
+                    if needs_geocode:
                         try:
                             from src.services.geocoding import geocode_address
                             full_addr = f"{delivery_addr.street}, {delivery_addr.neighborhood or ''}, {delivery_addr.city or 'Capão da Canoa'}, {delivery_addr.state or 'RS'}"

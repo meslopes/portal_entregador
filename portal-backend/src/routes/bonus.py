@@ -46,7 +46,13 @@ def get_ranking():
             start_date = today - timedelta(days=30)
 
         # Busca entregadores com suas metricas
-        drivers = Driver.query.join(User).filter(User.status == 'ACTIVE').all()
+        from src.utils.tenant import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        
+        drivers_query = Driver.query.join(User).filter(User.status == 'ACTIVE')
+        if tenant_id:
+            drivers_query = drivers_query.filter(Driver.tenant_id == tenant_id)
+        drivers = drivers_query.all()
 
         ranking_data = []
         for driver in drivers:
