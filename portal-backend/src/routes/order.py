@@ -1159,9 +1159,17 @@ def create_order():
 
         # Geocodifica endereco de entrega se nao tem coordenadas
         if not del_lat or not del_lng:
-            del_address_full = f"{data['delivery_address']}, {data.get('delivery_neighborhood', '')}, {data.get('delivery_city', 'Porto Alegre')}, {data.get('delivery_state', 'RS')}"
+            # Tenta obter cidade da praça do restaurante
+            city_hint = data.get('delivery_city')
+            if not city_hint and restaurant and restaurant.square_id:
+                from src.models.portal_models import Square
+                square = Square.query.get(restaurant.square_id)
+                if square:
+                    city_hint = square.city
+            
+            del_address_full = f"{data['delivery_address']}, {data.get('delivery_neighborhood', '')}, {data.get('delivery_city', '')}, {data.get('delivery_state', 'RS')}"
             from src.services.geocoding import geocode_address
-            geo_del = geocode_address(del_address_full, city_hint=data.get('delivery_city'))
+            geo_del = geocode_address(del_address_full, city_hint=city_hint)
             if geo_del:
                 del_lat = geo_del['latitude']
                 del_lng = geo_del['longitude']

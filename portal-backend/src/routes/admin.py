@@ -1359,20 +1359,34 @@ def get_live_tracking():
                 delivery_ids_added.add(order.delivery_address_id)
                 delivery_addr = Address.query.get(order.delivery_address_id)
                 if delivery_addr:
-                    # Geocodifica se não tem coordenadas OU se coordenadas estão em Capão da Canoa mas endereço não
+                    # Geocodifica se não tem coordenadas OU se coordenadas são fallback
                     needs_geocode = False
                     if not delivery_addr.latitude or not delivery_addr.longitude:
                         needs_geocode = True
-                    elif delivery_addr.city and 'capão' not in delivery_addr.city.lower() and 'capao' not in delivery_addr.city.lower():
-                        # Verifica se coordenadas estão próximas de Capão da Canoa (fallback antigo)
-                        if delivery_addr.latitude and abs(float(delivery_addr.latitude) - (-29.7447)) < 0.1 and abs(float(delivery_addr.longitude) - (-50.0111)) < 0.1:
+                    else:
+                        lat = float(delivery_addr.latitude)
+                        lng = float(delivery_addr.longitude)
+                        # Coordenadas de Capão da Canoa (-29.7447, -50.0111)
+                        if abs(lat - (-29.7447)) < 0.1 and abs(lng - (-50.0111)) < 0.1:
+                            if delivery_addr.city and 'capão' not in delivery_addr.city.lower() and 'capao' not in delivery_addr.city.lower():
+                                needs_geocode = True
+                        # Coordenadas de fallback (-29.95, -50.45)
+                        elif abs(lat - (-29.95)) < 0.01 and abs(lng - (-50.45)) < 0.01:
                             needs_geocode = True
                     
                     if needs_geocode:
                         try:
                             from src.services.geocoding import geocode_address
-                            full_addr = f"{delivery_addr.street}, {delivery_addr.neighborhood or ''}, {delivery_addr.city or 'Capão da Canoa'}, {delivery_addr.state or 'RS'}"
-                            geo = geocode_address(full_addr, city_hint=delivery_addr.city)
+                            # Tenta obter cidade da praça do restaurante
+                            city_hint = delivery_addr.city
+                            if not city_hint and order.restaurant and order.restaurant.square_id:
+                                from src.models.portal_models import Square
+                                square = Square.query.get(order.restaurant.square_id)
+                                if square:
+                                    city_hint = square.city
+                            
+                            full_addr = f"{delivery_addr.street}, {delivery_addr.neighborhood or ''}, {delivery_addr.city or ''}, {delivery_addr.state or 'RS'}"
+                            geo = geocode_address(full_addr, city_hint=city_hint)
                             if geo:
                                 delivery_addr.latitude = geo['latitude']
                                 delivery_addr.longitude = geo['longitude']
