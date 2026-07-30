@@ -786,15 +786,15 @@ def create_driver():
 
         driver = Driver(
             user_id=user.id,
-            driver_license=data.get('driver_license'),
+            driver_license=data.get('driver_license') or None,
             vehicle_type=vehicle_type,
-            vehicle_plate=data.get('vehicle_plate'),
-            vehicle_model=data.get('vehicle_model'),
-            vehicle_year=data.get('vehicle_year'),
-            bank_account=data.get('bank_account'),
-            pix_key=data.get('pix_key'),
-            square_id=data.get('square_id'),
-            max_concurrent_orders=data.get('max_concurrent_orders', 3),
+            vehicle_plate=data.get('vehicle_plate') or None,
+            vehicle_model=data.get('vehicle_model') or None,
+            vehicle_year=data.get('vehicle_year') or None,
+            bank_account=data.get('bank_account') or None,
+            pix_key=data.get('pix_key') or None,
+            square_id=data.get('square_id') or None,
+            max_concurrent_orders=int(data.get('max_concurrent_orders', 3)),
             tenant_id=tenant_id
         )
 
@@ -1537,11 +1537,11 @@ def create_establishment():
             longitude=data.get('longitude'),
             opening_hours=data.get('opening_hours'),
             is_active=data.get('is_active', True),
-            square_id=data.get('square_id'),
-            bank_name=data.get('bank_name'),
-            bank_agency=data.get('bank_agency'),
-            bank_account=data.get('bank_account'),
-            bank_pix_key=data.get('bank_pix_key'),
+            square_id=data.get('square_id') or None,
+            bank_name=data.get('bank_name') or None,
+            bank_agency=data.get('bank_agency') or None,
+            bank_account=data.get('bank_account') or None,
+            bank_pix_key=data.get('bank_pix_key') or None,
             tenant_id=tenant_id
         )
 
