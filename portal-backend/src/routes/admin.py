@@ -1288,19 +1288,31 @@ def get_live_tracking():
                 restaurant_ids_with_active.add(order.restaurant_id)
                 restaurant = Restaurant.query.get(order.restaurant_id)
                 if restaurant:
-                    # Geocodifica se não tem coordenadas OU se coordenadas estão em Capão da Canoa mas endereço não
+                    # Geocodifica se não tem coordenadas OU se coordenadas são fallback
                     needs_geocode = False
                     if not restaurant.latitude or not restaurant.longitude:
                         needs_geocode = True
-                    elif restaurant.address and 'capão' not in restaurant.address.lower() and 'capao' not in restaurant.address.lower():
-                        # Verifica se coordenadas estão próximas de Capão da Canoa (fallback antigo)
-                        if restaurant.latitude and abs(float(restaurant.latitude) - (-29.7447)) < 0.1 and abs(float(restaurant.longitude) - (-50.0111)) < 0.1:
+                    else:
+                        lat = float(restaurant.latitude)
+                        lng = float(restaurant.longitude)
+                        # Coordenadas de Capão da Canoa (-29.7447, -50.0111)
+                        if abs(lat - (-29.7447)) < 0.1 and abs(lng - (-50.0111)) < 0.1:
+                            if restaurant.address and 'capão' not in restaurant.address.lower() and 'capao' not in restaurant.address.lower():
+                                needs_geocode = True
+                        # Coordenadas de fallback (-29.95, -50.45)
+                        elif abs(lat - (-29.95)) < 0.01 and abs(lng - (-50.45)) < 0.01:
                             needs_geocode = True
                     
                     if needs_geocode:
                         try:
                             from src.services.geocoding import geocode_address
-                            geo = geocode_address(restaurant.address)
+                            # Extrai cidade do endereço
+                            city_hint = None
+                            if restaurant.address:
+                                parts = restaurant.address.split(',')
+                                if len(parts) >= 3:
+                                    city_hint = parts[-2].strip()
+                            geo = geocode_address(restaurant.address, city_hint=city_hint)
                             if geo:
                                 restaurant.latitude = geo['latitude']
                                 restaurant.longitude = geo['longitude']
