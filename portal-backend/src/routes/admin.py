@@ -754,10 +754,13 @@ def create_driver():
         last_name = data.get('last_name')
 
         if not email or not first_name or not last_name:
-            return jsonify({'error': 'Email, nome e sobrenome sÃƒÂ£o obrigatÃƒÂ³rios'}), 400
+            return jsonify({'error': 'Email, nome e sobrenome são obrigatórios'}), 400
 
         if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email jÃƒÂ¡ cadastrado'}), 400
+            return jsonify({'error': 'Email já cadastrado'}), 400
+
+        # Obter tenant_id do admin atual
+        tenant_id = get_current_tenant_id()
 
         # Cria usuario
         user = User(
@@ -767,7 +770,8 @@ def create_driver():
             phone=data.get('phone'),
             cpf=data.get('cpf'),
             user_type=UserType.DRIVER,
-            status=UserStatus.ACTIVE
+            status=UserStatus.ACTIVE,
+            tenant_id=tenant_id
         )
         user.set_password(password)
         db.session.add(user)
@@ -790,7 +794,8 @@ def create_driver():
             bank_account=data.get('bank_account'),
             pix_key=data.get('pix_key'),
             square_id=data.get('square_id'),
-            max_concurrent_orders=data.get('max_concurrent_orders', 3)
+            max_concurrent_orders=data.get('max_concurrent_orders', 3),
+            tenant_id=tenant_id
         )
 
         db.session.add(driver)
