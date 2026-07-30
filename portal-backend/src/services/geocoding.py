@@ -126,13 +126,9 @@ def geocode_address(address, city_hint=None):
                 'display_name': f"{city_name} (centro)"
             }
 
-    # Fallback final: Capão da Canoa centro
-    print(f"Geocodificacao fallback final: Capão da Canoa centro")
-    return {
-        'latitude': -29.7447,
-        'longitude': -50.0111,
-        'display_name': 'Capão da Canoa (centro - fallback)'
-    }
+    # Sem fallback - retorna None se não conseguiu geocodificar
+    print(f"Geocodificacao falhou para: '{address}' (sem fallback)")
+    return None
 
 
 def geocode_establishment(address, city=None, state=None):
