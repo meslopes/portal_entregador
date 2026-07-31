@@ -349,7 +349,12 @@ def delete_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'UsuÃƒÂ¡rio nÃƒÂ£o encontrado'}), 404
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Verificar tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and user.tenant_id != tenant_id:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
 
         # Nao permite excluir a si mesmo
         current_user_id = int(get_jwt_identity())

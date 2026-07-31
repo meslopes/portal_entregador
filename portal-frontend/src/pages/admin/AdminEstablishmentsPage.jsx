@@ -88,7 +88,7 @@ const AdminEstablishmentsPage = () => {
     // Remove CEP se existir no final
     let cleanAddr = addr.replace(/,\s*\d{5}-?\d{3}\s*$/, '').trim();
     // Remove virgulas duplas
-    cleanAddr = cleanAddr.replace(/,\s*,/g, ',').trim().rstrip(',');
+    cleanAddr = cleanAddr.replace(/,\s*,/g, ',').trim().replace(/,+$/, '');
     
     // Formatos possiveis:
     // "Rua X, 123 - Bairro, Cidade - UF"
