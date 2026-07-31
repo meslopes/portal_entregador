@@ -867,6 +867,11 @@ def update_driver_status(driver_id):
                 driver.is_online = False
                 driver.updated_at = datetime.utcnow()
         
+        # Atualizar tenant_id se fornecido
+        if 'tenant_id' in data:
+            driver.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+            driver.user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+        
         db.session.commit()
         
         return jsonify({
