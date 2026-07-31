@@ -246,7 +246,12 @@ def update_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': 'UsuÃƒÂ¡rio nÃƒÂ£o encontrado'}), 404
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Verificar tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and user.tenant_id != tenant_id:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
 
         data = request.get_json()
 
@@ -820,7 +825,7 @@ def create_driver():
 @jwt_required()
 @admin_required
 def update_driver_status(driver_id):
-    """Atualiza o status de um entregador (ativar/desativar)"""
+    """Atualiza o status de um entregador (ativar/desativar/suspender)"""
     try:
         driver = Driver.query.get(driver_id)
         if not driver:
@@ -834,17 +839,28 @@ def update_driver_status(driver_id):
         data = request.get_json()
         new_status = data.get('status')
         
-        if new_status not in ['ACTIVE', 'INACTIVE', 'SUSPENDED']:
+        if new_status not in ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'ONLINE', 'OFFLINE']:
             return jsonify({'error': 'Status inválido'}), 400
         
         from src.models.portal_models import UserStatus
-        driver.user.status = UserStatus(new_status)
-        driver.user.updated_at = datetime.utcnow()
         
-        # Se suspender, colocar offline
-        if new_status in ['INACTIVE', 'SUSPENDED']:
-            driver.is_online = False
+        # Se for ONLINE/OFFLINE, altera o status online do entregador
+        if new_status in ['ONLINE', 'OFFLINE']:
+            driver.is_online = (new_status == 'ONLINE')
             driver.updated_at = datetime.utcnow()
+            # Se ficar online, atualiza localização se fornecida
+            if driver.is_online and data.get('latitude') and data.get('longitude'):
+                driver.current_latitude = data['latitude']
+                driver.current_longitude = data['longitude']
+                driver.last_location_update = datetime.utcnow()
+        else:
+            # Se for ACTIVE/INACTIVE/SUSPENDED, altera o status da conta
+            driver.user.status = UserStatus(new_status)
+            driver.user.updated_at = datetime.utcnow()
+            # Se suspender ou desativar, colocar offline
+            if new_status in ['INACTIVE', 'SUSPENDED']:
+                driver.is_online = False
+                driver.updated_at = datetime.utcnow()
         
         db.session.commit()
         
@@ -1688,6 +1704,8 @@ def update_establishment(establishment_id):
             est.is_active = data['is_active']
         if 'square_id' in data:
             est.square_id = data['square_id']
+        if 'preparation_minutes' in data:
+            est.preparation_minutes = int(data['preparation_minutes']) if data['preparation_minutes'] else 10
 
         est.updated_at = datetime.utcnow()
         db.session.commit()
@@ -1871,12 +1889,13 @@ def report_drivers_performance():
 @jwt_required()
 @admin_required
 def report_establishments_ranking():
-    """RelatÃƒÂ³rio de ranking dos estabelecimentos"""
+    """Relatório de ranking dos estabelecimentos"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
-        results = db.session.query(
+        query = db.session.query(
             Restaurant.id,
             Restaurant.name,
             func.count(Order.id).label('orders'),
@@ -1887,7 +1906,13 @@ def report_establishments_ranking():
             Order.restaurant_id == Restaurant.id,
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        )).group_by(Restaurant.id, Restaurant.name).order_by(
+        ))
+        
+        # Filtrar por tenant
+        if tenant_id:
+            query = query.filter(Restaurant.tenant_id == tenant_id)
+        
+        results = query.group_by(Restaurant.id, Restaurant.name).order_by(
             func.sum(Order.delivery_fee).desc()
         ).all()
 
@@ -1917,31 +1942,48 @@ def report_financial_summary():
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
         # Receita total
-        total_revenue = db.session.query(func.sum(Order.delivery_fee)).filter(
+        revenue_query = db.session.query(func.sum(Order.delivery_fee)).filter(
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        ).scalar() or 0
+        )
+        if tenant_id:
+            revenue_query = revenue_query.filter(Order.tenant_id == tenant_id)
+        total_revenue = revenue_query.scalar() or 0
 
         # Frete total
-        total_fees = db.session.query(func.sum(Order.delivery_fee)).filter(
+        fees_query = db.session.query(func.sum(Order.delivery_fee)).filter(
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        ).scalar() or 0
+        )
+        if tenant_id:
+            fees_query = fees_query.filter(Order.tenant_id == tenant_id)
+        total_fees = fees_query.scalar() or 0
 
         # Pagamentos processados aos entregadores
-        driver_payments = db.session.query(func.sum(Payment.amount)).filter(
+        payments_query = db.session.query(func.sum(Payment.amount)).filter(
             Payment.status == PaymentStatus.PROCESSED,
             Payment.created_at >= start_date
-        ).scalar() or 0
+        )
+        if tenant_id:
+            payments_query = payments_query.join(Driver).filter(Driver.tenant_id == tenant_id)
+        driver_payments = payments_query.scalar() or 0
 
         # Total de pedidos
-        total_orders = Order.query.filter(Order.created_at >= start_date).count()
-        delivered_orders = Order.query.filter(
+        orders_query = Order.query.filter(Order.created_at >= start_date)
+        if tenant_id:
+            orders_query = orders_query.filter(Order.tenant_id == tenant_id)
+        total_orders = orders_query.count()
+        
+        delivered_query = Order.query.filter(
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        ).count()
+        )
+        if tenant_id:
+            delivered_query = delivered_query.filter(Order.tenant_id == tenant_id)
+        delivered_orders = delivered_query.count()
 
         # Lucro do admin (receita - pagamentos aos entregadores)
         admin_profit = float(total_revenue) - float(driver_payments)

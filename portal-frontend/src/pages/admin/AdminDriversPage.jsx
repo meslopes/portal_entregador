@@ -233,7 +233,7 @@ const AdminDriversPage = () => {
                   <button onClick={() => openEditForm(driver)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
                     <Edit size={14} />
                   </button>
-                  <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'INACTIVE' : 'ACTIVE'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#94a3b8' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
+                  <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'OFFLINE' : 'ONLINE'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#94a3b8' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
                     {driver.is_online ? <Truck size={14} /> : <Truck size={14} />}
                   </button>
                   <button onClick={async (e) => { e.stopPropagation(); if (!window.confirm('Suspender este entregador?')) return; try { await adminService.updateDriverStatus(driver.id, 'SUSPENDED'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#f59e0b' }} title="Suspender">
@@ -475,4 +475,5 @@ const pagBtn = (disabled) => ({
 });
 
 export default AdminDriversPage;
+
 
