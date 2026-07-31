@@ -562,6 +562,11 @@ def reject_order(order_id):
         # Busca proximo entregador (excluindo todos que recusaram)
         next_driver = find_nearest_available_driver(order, exclude_driver_ids=rejected_ids)
         
+        # Se nenhum entregador disponível, limpa rejeições e tenta novamente
+        if not next_driver and len(rejected_ids) > 1:
+            order.special_instructions = re.sub(r'\|?REJECTED_BY_\d+', '', order.special_instructions or '').strip('|')
+            next_driver = find_nearest_available_driver(order)
+        
         if next_driver:
             # Atualiza oferta para o próximo entregador (via special_instructions)
             offer_ts = int(datetime.utcnow().timestamp())
