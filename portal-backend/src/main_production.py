@@ -389,6 +389,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tenant_id em system_configs
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'system_configs' AND column_name = 'tenant_id') THEN ALTER TABLE system_configs ADD COLUMN tenant_id INTEGER REFERENCES tenants(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

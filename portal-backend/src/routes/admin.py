@@ -2265,10 +2265,20 @@ def report_deliveries_by_driver():
 @jwt_required()
 @admin_required
 def get_settings():
-    """ObtÃƒÂ©m configuraÃƒÂ§ÃƒÂµes do admin"""
+    """Obtém configurações do admin"""
     try:
         from src.models.portal_models import SystemConfig
-        configs = SystemConfig.query.all()
+        tenant_id = get_current_tenant_id()
+        
+        query = SystemConfig.query
+        if tenant_id:
+            query = query.filter(
+                (SystemConfig.tenant_id == tenant_id) | (SystemConfig.tenant_id.is_(None))
+            )
+        else:
+            query = query.filter(SystemConfig.tenant_id.is_(None))
+        
+        configs = query.all()
         settings = {c.config_key: c.config_value for c in configs}
         return jsonify(settings), 200
     except Exception as e:
@@ -2282,16 +2292,19 @@ def update_settings():
     """Atualiza configurações do admin"""
     try:
         from src.models.portal_models import SystemConfig
+        tenant_id = get_current_tenant_id()
         data = request.get_json()
 
         for key, value in data.items():
-            config = SystemConfig.query.filter_by(config_key=key).first()
-            if config:
+            # Busca config existente para este tenant
+            config = SystemConfig.query.filter_by(config_key=key, tenant_id=tenant_id).first()
+            if not config:
+                # Se não existe para este tenant, cria
+                config = SystemConfig(config_key=key, config_value=str(value), tenant_id=tenant_id)
+                db.session.add(config)
+            else:
                 config.config_value = str(value)
                 config.updated_at = datetime.utcnow()
-            else:
-                config = SystemConfig(config_key=key, config_value=str(value))
-                db.session.add(config)
 
         db.session.commit()
         return jsonify({'message': 'Configurações salvas com sucesso'}), 200

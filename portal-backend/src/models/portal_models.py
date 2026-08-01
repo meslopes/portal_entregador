@@ -527,7 +527,8 @@ class SystemConfig(db.Model):
     __tablename__ = 'system_configs'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    config_key = db.Column(db.String(100), unique=True, nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    config_key = db.Column(db.String(100), nullable=False)
     config_value = db.Column(db.Text, nullable=False)
     description = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -536,6 +537,7 @@ class SystemConfig(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'tenant_id': self.tenant_id,
             'config_key': self.config_key,
             'config_value': self.config_value,
             'description': self.description,
