@@ -241,9 +241,25 @@ const NewOrderPage = () => {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#475569' }}>
-                <span>{DISTANCE_KM} km × R$ {PRICE_PER_KM.toFixed(2).replace('.', ',')}/km</span>
-                <span style={{ fontWeight: 600 }}>R$ {DELIVERY_FEE.toFixed(2).replace('.', ',')}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8125rem', color: '#475569' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Distância</span>
+                  <span>{DISTANCE_KM} km</span>
+                </div>
+                {DISTANCE_KM < MIN_DISTANCE_KM && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#d97706' }}>
+                    <span>Mínimo aplicado</span>
+                    <span>{MIN_DISTANCE_KM} km</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Preço por km</span>
+                  <span>R$ {PRICE_PER_KM.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.25rem', marginTop: '0.25rem' }}>
+                  <span>Total</span>
+                  <span>R$ {DELIVERY_FEE.toFixed(2).replace('.', ',')}</span>
+                </div>
               </div>
             </div>
           )}

@@ -29,10 +29,38 @@ const NotificationBell = () => {
   const loadNotifications = async () => {
     try {
       const response = await api.get('/api/user/notifications');
-      setNotifications(response.data.notifications || []);
-      setUnreadCount(response.data.unread_count || 0);
+      const newNotifications = response.data.notifications || [];
+      const newUnread = response.data.unread_count || 0;
+      
+      // Toca som se há novas notificações não lidas
+      if (newUnread > unreadCount && unreadCount > 0) {
+        playNotificationSound();
+      }
+      
+      setNotifications(newNotifications);
+      setUnreadCount(newUnread);
     } catch (err) {
       // Silently fail - not critical
+    }
+  };
+
+  const playNotificationSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+      setTimeout(() => ctx.close(), 500);
+    } catch (e) {
+      // Silently fail
     }
   };
 
