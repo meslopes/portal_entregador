@@ -105,7 +105,7 @@ def process_scheduled_orders():
 
 
 def process_expired_offers():
-    """Processa ofertas expiradas - move pedidos para próximo entregador após timeout"""
+    """Processa ofertas expiradas - ciclo automático de atribuição de pedidos"""
     try:
         from src.models.portal_models import SystemConfig
         
@@ -113,11 +113,10 @@ def process_expired_offers():
         timeout_config = SystemConfig.query.filter_by(config_key='driver_offer_timeout_seconds').first()
         timeout_seconds = int(timeout_config.config_value) if timeout_config else 60
         
-        # Busca pedidos PENDING com oferta ativa
+        # Busca TODOS os pedidos PENDING sem driver (não apenas os com oferta)
         pending_orders = Order.query.filter(
             Order.status == OrderStatus.PENDING,
-            Order.driver_id.is_(None),
-            Order.special_instructions.contains('OFFERED_TO_')
+            Order.driver_id.is_(None)
         ).all()
         
         now = datetime.utcnow()
@@ -126,7 +125,31 @@ def process_expired_offers():
         for order in pending_orders:
             # Extrai timestamp da oferta (formato: OFFERED_TO_{driver_id}_{timestamp})
             offer_match = re.search(r'OFFERED_TO_(\d+)(?:_(\d+))?', order.special_instructions or '')
+            
+            # Se não tem oferta, precisa oferecer a alguém
             if not offer_match:
+                # Busca próximo entregador
+                next_driver = find_nearest_available_driver(order)
+                if next_driver:
+                    offer_ts = int(now.timestamp())
+                    offer_tag = f"OFFERED_TO_{next_driver.id}_{offer_ts}"
+                    si = order.special_instructions or ''
+                    order.special_instructions = f"{si}|{offer_tag}" if si else offer_tag
+                    
+                    # Notifica no app
+                    try:
+                        notification = Notification(
+                            user_id=next_driver.user_id,
+                            title="Novo pedido disponível",
+                            message=f"Pedido #{order.order_number} está disponível para entrega",
+                            type=NotificationType.NEW_ORDER,
+                            related_id=order.id
+                        )
+                        db.session.add(notification)
+                    except Exception:
+                        pass
+                    
+                    print(f"[AUTO] Pedido #{order.order_number} oferecido a {next_driver.user.first_name}")
                 continue
             
             expired_driver_id = int(offer_match.group(1))
@@ -225,7 +248,7 @@ def process_expired_offers():
                                 pass
                         else:
                             # Nenhum entregador disponível - notifica admin
-                            notify_admin_no_drivers(order)
+                            _notify_admin_pending_order(order, total_failures, now)
                         
                         # Reseta timestamp para nova oferta
                         order.updated_at = now
@@ -235,6 +258,48 @@ def process_expired_offers():
     except Exception as e:
         print(f"Erro ao processar ofertas expiradas: {e}")
         db.session.rollback()
+
+
+def _notify_admin_pending_order(order, failure_count, now):
+    """Notifica admin sobre pedido pendente há muito tempo"""
+    try:
+        # Evita notificar repetidamente (máximo a cada 120 segundos)
+        last_notify_match = re.search(r'ADMIN_NOTIFIED_AT_(\d+)', order.special_instructions or '')
+        if last_notify_match:
+            last_notify_ts = int(last_notify_match.group(1))
+            if (int(now.timestamp()) - last_notify_ts) < 120:
+                return
+        
+        # Marca notificação
+        si = order.special_instructions or ''
+        si = re.sub(r'\|?ADMIN_NOTIFIED_AT_\d+', '', si).strip('|')
+        si = f"{si}|ADMIN_NOTIFIED_AT_{int(now.timestamp())}" if si else f"ADMIN_NOTIFIED_AT_{int(now.timestamp())}"
+        order.special_instructions = si
+        
+        # Notifica admin no app
+        from src.models.portal_models import User, UserType
+        admin_users = User.query.filter_by(
+            user_type=UserType.ADMIN,
+            tenant_id=order.tenant_id
+        ).all()
+        
+        for admin in admin_users:
+            try:
+                notification = Notification(
+                    user_id=admin.id,
+                    title="⚠️ Pedido pendente",
+                    message=f"Pedido #{order.order_number} - {failure_count} tentativas sem sucesso. Verifique o painel.",
+                    type=NotificationType.NEW_ORDER,
+                    related_id=order.id
+                )
+                db.session.add(notification)
+            except Exception:
+                pass
+        
+        print(f"[ADMIN NOTIFY] Pedido #{order.order_number} - {failure_count} falhas, admin notificado")
+        
+    except Exception as e:
+        print(f"Erro ao notificar admin: {e}")
 
 
 def notify_all_drivers(order, order_info):
