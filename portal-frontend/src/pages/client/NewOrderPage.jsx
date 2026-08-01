@@ -24,6 +24,24 @@ const NewOrderPage = () => {
   const [pricingTable, setPricingTable] = useState(null);
   const isAdmin = user?.user_type === 'ADMIN';
 
+  const [form, setForm] = useState({
+    selected_establishment: '',
+    customer_name: '',
+    customer_phone: '',
+    delivery_address: '',
+    delivery_number: '',
+    delivery_complement: '',
+    delivery_neighborhood: '',
+    delivery_city: 'Capão da Canoa',
+    delivery_state: 'RS',
+    delivery_zip_code: '',
+    product_value: '',
+    product_payment_type: 'ESTABLISHMENT',
+    product_payment_method: 'CASH',
+    change_for: '',
+    special_instructions: '',
+  });
+
   // Carrega estabelecimentos para admin
   useEffect(() => {
     if (isAdmin) {
@@ -46,24 +64,6 @@ const NewOrderPage = () => {
       }
     }
   }, [form.selected_establishment, establishments]);
-
-  const [form, setForm] = useState({
-    selected_establishment: '',
-    customer_name: '',
-    customer_phone: '',
-    delivery_address: '',
-    delivery_number: '',
-    delivery_complement: '',
-    delivery_neighborhood: '',
-    delivery_city: 'Capão da Canoa',
-    delivery_state: 'RS',
-    delivery_zip_code: '',
-    product_value: '',
-    product_payment_type: 'ESTABLISHMENT',
-    product_payment_method: 'CASH',
-    change_for: '',
-    special_instructions: '',
-  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
