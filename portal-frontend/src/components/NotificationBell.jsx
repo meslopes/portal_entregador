@@ -82,7 +82,7 @@ const NotificationBell = () => {
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative' }}>
+    <div ref={dropdownRef} style={{ position: 'relative', zIndex: 100003 }}>
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
