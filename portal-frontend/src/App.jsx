@@ -30,6 +30,7 @@ import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
 import OrderDetailPage from '@/pages/admin/OrderDetailPage';
 import AdminFinancePage from '@/pages/admin/AdminFinancePage';
+import AdminPricingPage from '@/pages/admin/AdminPricingPage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
@@ -329,6 +330,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminFinancePage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/pricing"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <AdminPricingPage />
                 </Layout>
               </ProtectedRoute>
             }

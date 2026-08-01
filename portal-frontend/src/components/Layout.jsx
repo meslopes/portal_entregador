@@ -43,6 +43,7 @@ const Layout = ({ children }) => {
     { name: 'Entregadores', href: '/admin/drivers', icon: Users },
     { name: 'Pedidos', href: '/admin/orders', icon: Package },
     { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
+    { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
     { name: 'Relatórios', href: '/admin/reports', icon: FileText },
     { name: 'Configurações', href: '/admin/settings', icon: Settings },
   ];
