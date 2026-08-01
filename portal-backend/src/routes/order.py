@@ -122,18 +122,22 @@ def process_expired_offers():
         now = datetime.utcnow()
         now_ts = int(now.timestamp())
         
+        print(f"[PROCESS_EXPIRED] Checking {len(pending_orders)} pending orders, timeout={timeout_seconds}s")
+        
         for order in pending_orders:
+            si = order.special_instructions or ''
+            
             # Extrai timestamp da oferta (formato: OFFERED_TO_{driver_id}_{timestamp})
-            offer_match = re.search(r'OFFERED_TO_(\d+)(?:_(\d+))?', order.special_instructions or '')
+            offer_match = re.search(r'OFFERED_TO_(\d+)(?:_(\d+))?', si)
             
             # Se não tem oferta, precisa oferecer a alguém
             if not offer_match:
+                print(f"[PROCESS_EXPIRED] Order #{order.order_number} has no offer, finding driver")
                 # Busca próximo entregador
                 next_driver = find_nearest_available_driver(order)
                 if next_driver:
                     offer_ts = int(now.timestamp())
                     offer_tag = f"OFFERED_TO_{next_driver.id}_{offer_ts}"
-                    si = order.special_instructions or ''
                     order.special_instructions = f"{si}|{offer_tag}" if si else offer_tag
                     
                     # Notifica no app
@@ -149,7 +153,7 @@ def process_expired_offers():
                     except Exception:
                         pass
                     
-                    print(f"[AUTO] Pedido #{order.order_number} oferecido a {next_driver.user.first_name}")
+                    print(f"[PROCESS_EXPIRED] Order #{order.order_number} offered to {next_driver.user.first_name}")
                 continue
             
             expired_driver_id = int(offer_match.group(1))
@@ -164,7 +168,10 @@ def process_expired_offers():
             
             elapsed = now_ts - offer_ts
             
+            print(f"[PROCESS_EXPIRED] Order #{order.order_number}: offered to driver {expired_driver_id}, elapsed={elapsed}s, timeout={timeout_seconds}s")
+            
             if elapsed >= timeout_seconds:
+                print(f"[PROCESS_EXPIRED] Order #{order.order_number}: TIMEOUT! elapsed={elapsed}s >= {timeout_seconds}s")
                 # Oferta expirou - marca como timeout e move para próximo
                 offer_match = re.search(r'OFFERED_TO_(\d+)', order.special_instructions or '')
                 if offer_match:
