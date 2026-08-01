@@ -1842,19 +1842,25 @@ def delete_establishment(establishment_id):
 @jwt_required()
 @admin_required
 def report_orders_by_date():
-    """RelatÃƒÂ³rio de pedidos por data"""
+    """Relatório de pedidos por data"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
-        results = db.session.query(
+        query = db.session.query(
             func.date(Order.created_at).label('date'),
             func.count(Order.id).label('total'),
             func.sum(Order.delivery_fee).label('revenue'),
             func.sum(Order.delivery_fee).label('delivery_fees')
         ).filter(
             Order.created_at >= start_date
-        ).group_by(func.date(Order.created_at)).order_by(
+        )
+        
+        if tenant_id:
+            query = query.filter(Order.tenant_id == tenant_id)
+        
+        results = query.group_by(func.date(Order.created_at)).order_by(
             func.date(Order.created_at)
         ).all()
 
@@ -1878,12 +1884,13 @@ def report_orders_by_date():
 @jwt_required()
 @admin_required
 def report_drivers_performance():
-    """RelatÃƒÂ³rio de desempenho dos entregadores"""
+    """Relatório de desempenho dos entregadores"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
-        drivers = db.session.query(
+        query = db.session.query(
             Driver.id,
             User.first_name,
             User.last_name,
@@ -1896,7 +1903,12 @@ def report_drivers_performance():
             Order.created_at >= start_date
         )).outerjoin(Delivery, Delivery.order_id == Order.id).outerjoin(
             Payment, db.and_(Payment.driver_id == Driver.id, Payment.status == PaymentStatus.PROCESSED)
-        ).group_by(Driver.id, User.first_name, User.last_name).order_by(
+        )
+        
+        if tenant_id:
+            query = query.filter(Driver.tenant_id == tenant_id)
+        
+        drivers = query.group_by(Driver.id, User.first_name, User.last_name).order_by(
             func.count(Order.id).desc()
         ).all()
 
@@ -2040,24 +2052,34 @@ def report_financial_summary():
 @jwt_required()
 @admin_required
 def report_cancellations():
-    """RelatÃƒÂ³rio de cancelamentos"""
+    """Relatório de cancelamentos"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
         # Cancelamentos por dia
-        daily_cancellations = db.session.query(
+        cancel_query = db.session.query(
             func.date(Order.updated_at).label('date'),
             func.count(Order.id).label('count')
         ).filter(
             Order.status == OrderStatus.CANCELLED,
             Order.updated_at >= start_date
-        ).group_by(func.date(Order.updated_at)).order_by(
+        )
+        if tenant_id:
+            cancel_query = cancel_query.filter(Order.tenant_id == tenant_id)
+        
+        daily_cancellations = cancel_query.group_by(func.date(Order.updated_at)).order_by(
             func.date(Order.updated_at)
         ).all()
 
         total_cancellations = sum(c.count for c in daily_cancellations)
-        total_orders = Order.query.filter(Order.created_at >= start_date).count()
+        
+        orders_query = Order.query.filter(Order.created_at >= start_date)
+        if tenant_id:
+            orders_query = orders_query.filter(Order.tenant_id == tenant_id)
+        total_orders = orders_query.count()
+        
         cancel_rate = round(total_cancellations / total_orders * 100, 1) if total_orders > 0 else 0
 
         return jsonify({
@@ -2075,13 +2097,14 @@ def report_cancellations():
 @jwt_required()
 @admin_required
 def report_ratings():
-    """RelatÃƒÂ³rio de avaliaÃƒÂ§ÃƒÂµes dos entregadores"""
+    """Relatório de avaliações dos entregadores"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
         # Avaliacoes por entregador
-        ratings = db.session.query(
+        ratings_query = db.session.query(
             Driver.id,
             User.first_name,
             User.last_name,
@@ -2092,18 +2115,26 @@ def report_ratings():
         ).join(User).join(Delivery).filter(
             Delivery.customer_rating.isnot(None),
             Delivery.created_at >= start_date
-        ).group_by(Driver.id, User.first_name, User.last_name).order_by(
+        )
+        if tenant_id:
+            ratings_query = ratings_query.filter(Driver.tenant_id == tenant_id)
+        
+        ratings = ratings_query.group_by(Driver.id, User.first_name, User.last_name).order_by(
             func.avg(Delivery.customer_rating).desc()
         ).all()
 
         # Distribuicao geral
-        dist = db.session.query(
+        dist_query = db.session.query(
             Delivery.customer_rating,
             func.count(Delivery.id).label('count')
         ).filter(
             Delivery.customer_rating.isnot(None),
             Delivery.created_at >= start_date
-        ).group_by(Delivery.customer_rating).all()
+        )
+        if tenant_id:
+            dist_query = dist_query.join(Order).filter(Order.tenant_id == tenant_id)
+        
+        dist = dist_query.group_by(Delivery.customer_rating).all()
 
         return jsonify({
             'drivers': [
@@ -2128,32 +2159,41 @@ def report_ratings():
 @jwt_required()
 @admin_required
 def report_peak_hours():
-    """RelatÃƒÂ³rio de horÃƒÂ¡rios de pico"""
+    """Relatório de horários de pico"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
         # Pedidos por hora do dia
-        hourly = db.session.query(
+        hourly_query = db.session.query(
             func.extract('hour', Order.created_at).label('hour'),
             func.count(Order.id).label('count')
         ).filter(
             Order.created_at >= start_date
-        ).group_by(func.extract('hour', Order.created_at)).order_by(
+        )
+        if tenant_id:
+            hourly_query = hourly_query.filter(Order.tenant_id == tenant_id)
+        
+        hourly = hourly_query.group_by(func.extract('hour', Order.created_at)).order_by(
             func.extract('hour', Order.created_at)
         ).all()
 
         # Pedidos por dia da semana
-        daily = db.session.query(
+        daily_query = db.session.query(
             func.extract('dow', Order.created_at).label('day'),
             func.count(Order.id).label('count')
         ).filter(
             Order.created_at >= start_date
-        ).group_by(func.extract('dow', Order.created_at)).order_by(
+        )
+        if tenant_id:
+            daily_query = daily_query.filter(Order.tenant_id == tenant_id)
+        
+        daily = daily_query.group_by(func.extract('dow', Order.created_at)).order_by(
             func.extract('dow', Order.created_at)
         ).all()
 
-        day_names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃƒÂ¡b']
+        day_names = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
         return jsonify({
             'hourly': [{'hour': int(h.hour), 'count': h.count} for h in hourly],
@@ -2168,12 +2208,13 @@ def report_peak_hours():
 @jwt_required()
 @admin_required
 def report_deliveries_by_driver():
-    """RelatÃƒÂ³rio detalhado de entregas por entregador"""
+    """Relatório detalhado de entregas por entregador"""
     try:
         days = request.args.get('days', 30, type=int)
         start_date = datetime.utcnow() - timedelta(days=days)
+        tenant_id = get_current_tenant_id()
 
-        drivers = db.session.query(
+        query = db.session.query(
             Driver.id,
             User.first_name,
             User.last_name,
@@ -2187,7 +2228,12 @@ def report_deliveries_by_driver():
             Order.driver_id == Driver.id,
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        )).outerjoin(Delivery, Delivery.order_id == Order.id).group_by(
+        )).outerjoin(Delivery, Delivery.order_id == Order.id)
+        
+        if tenant_id:
+            query = query.filter(Driver.tenant_id == tenant_id)
+        
+        drivers = query.group_by(
             Driver.id, User.first_name, User.last_name, Driver.vehicle_type
         ).order_by(func.count(Order.id).desc()).all()
 

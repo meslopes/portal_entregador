@@ -824,7 +824,7 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Mapa */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
           <div ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
           
           {/* Botão Centralizar dentro do mapa */}
