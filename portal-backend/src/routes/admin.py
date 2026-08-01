@@ -451,6 +451,11 @@ def create_admin_user():
 def get_dashboard():
     """Obtém dados do dashboard administrativo"""
     try:
+        # Processa pedidos agendados e ofertas expiradas
+        from src.routes.order import process_scheduled_orders, process_expired_offers
+        process_scheduled_orders()
+        process_expired_offers()
+        
         tenant_id = get_current_tenant_id()
 
         # Estatísticas gerais (filtradas por tenant)
