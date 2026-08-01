@@ -473,13 +473,15 @@ export const utils = {
   },
 
   formatDateTime: (date) => {
+    if (!date) return '';
+    const str = typeof date === 'string' && !date.endsWith('Z') ? date + 'Z' : date;
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(date));
+    }).format(new Date(str));
   },
 
   formatTime: (date) => {

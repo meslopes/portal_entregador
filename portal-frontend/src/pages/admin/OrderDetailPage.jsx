@@ -67,6 +67,18 @@ const OrderDetailPage = () => {
     }
   };
 
+  // Converte datetime UTC para horário local
+  const toLocalTime = (dateStr) => {
+    if (!dateStr) return null;
+    const str = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
+    return new Date(str);
+  };
+
+  const formatLocalDateTime = (dateStr) => {
+    const date = toLocalTime(dateStr);
+    return date ? date.toLocaleString('pt-BR') : '';
+  };
+
   const parseSpecialInstructions = (si) => {
     if (!si) return {};
     const info = {};
@@ -251,7 +263,7 @@ const OrderDetailPage = () => {
             Pedido #{order.order_number}
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-            Criado em {new Date(order.created_at).toLocaleString('pt-BR')}
+            Criado em {formatLocalDateTime(order.created_at)}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -329,7 +341,7 @@ const OrderDetailPage = () => {
                 </div>
                 {item.time && (
                   <span style={{ color: '#94a3b8', fontSize: '0.6875rem', whiteSpace: 'nowrap' }}>
-                    {new Date(item.time).toLocaleString('pt-BR')}
+                    {formatLocalDateTime(item.time)}
                   </span>
                 )}
               </div>

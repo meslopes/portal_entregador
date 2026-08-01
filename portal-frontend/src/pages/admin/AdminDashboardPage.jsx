@@ -364,7 +364,9 @@ const AdminDashboardPage = () => {
   const getTimeRemaining = (scheduledAt) => {
     if (!scheduledAt) return null;
     const now = new Date();
-    const scheduled = new Date(scheduledAt);
+    // Garante que o datetime seja interpretado como UTC
+    const scheduledStr = scheduledAt.endsWith('Z') ? scheduledAt : scheduledAt + 'Z';
+    const scheduled = new Date(scheduledStr);
     const diffMs = scheduled - now;
     if (diffMs <= 0) return 'Agora';
     const diffMins = Math.floor(diffMs / 60000);
