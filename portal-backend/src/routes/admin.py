@@ -889,6 +889,10 @@ def update_driver_status(driver_id):
 def get_all_orders():
     """Lista todos os pedidos"""
     try:
+        # Processa ofertas expiradas antes de listar
+        from src.routes.order import process_expired_offers
+        process_expired_offers()
+        
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         status_filter = request.args.get('status')
@@ -1271,6 +1275,10 @@ def get_finance_by_establishment():
 def get_live_tracking():
     """Obtém localização em tempo real de entregadores, estabelecimentos e locais de entrega"""
     try:
+        # Processa ofertas expiradas antes de retornar tracking
+        from src.routes.order import process_expired_offers
+        process_expired_offers()
+        
         square_id = request.args.get('square_id', type=int)
         tenant_id = get_current_tenant_id()
 
