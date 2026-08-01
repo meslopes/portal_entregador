@@ -398,6 +398,23 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: remover unique constraint antiga e criar nova composta
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'system_configs_config_key_key' AND table_name = 'system_configs') THEN ALTER TABLE system_configs DROP CONSTRAINT system_configs_config_key_key; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'system_configs_tenant_key' AND table_name = 'system_configs') THEN ALTER TABLE system_configs ADD CONSTRAINT system_configs_tenant_key UNIQUE (tenant_id, config_key); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():
