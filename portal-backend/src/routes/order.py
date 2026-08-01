@@ -229,23 +229,23 @@ def process_expired_offers():
                                         order.delivery_address.latitude, order.delivery_address.longitude
                                     )
                                     driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
-                                    
-                                    whatsapp_service.send_new_order_to_driver(
-                                        next_driver.user.phone,
-                                        {
-                                            'order_number': order.order_number,
-                                            'restaurant': restaurant.name if restaurant else 'N/A',
-                                            'restaurant_address': restaurant.address if restaurant else 'N/A',
-                                            'customer_name': order.customer.name if order.customer else 'N/A',
-                                            'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}" if order.delivery_address else 'N/A',
-                                            'total_amount': float(order.total_amount),
-                                            'delivery_fee': float(order.delivery_fee),
-                                            'distance_km': km_total,
-                                            'driver_earnings': driver_earnings
-                                        }
-                                    )
-                            except Exception:
-                                pass
+                                
+                                whatsapp_service.send_new_order_to_driver(
+                                    next_driver.user.phone,
+                                    {
+                                        'order_number': order.order_number,
+                                        'restaurant': restaurant.name if restaurant else 'N/A',
+                                        'restaurant_address': restaurant.address if restaurant else 'N/A',
+                                        'customer_name': order.customer.name if order.customer else 'N/A',
+                                        'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}" if order.delivery_address else 'N/A',
+                                        'total_amount': float(order.total_amount),
+                                        'delivery_fee': float(order.delivery_fee),
+                                        'distance_km': km_total,
+                                        'driver_earnings': driver_earnings
+                                    }
+                                )
+                        except Exception:
+                            pass
                         
                         # Notifica admin se muitas falhas (mesmo com próximo entregador disponível)
                         if total_failures >= 2:
