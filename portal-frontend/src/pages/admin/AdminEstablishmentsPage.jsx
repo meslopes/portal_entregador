@@ -34,10 +34,11 @@ const AdminEstablishmentsPage = () => {
     name: '', cnpj: '', phone: '', email: '', password: '123456',
     address_street: '', address_number: '', address_neighborhood: '',
     address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-    latitude: '', longitude: '', square_id: ''
+    latitude: '', longitude: '', square_id: '', pricing_table_id: ''
   });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
+  const [pricingTables, setPricingTables] = useState([]);
 
   useEffect(() => { loadEstablishments(); loadSquares(); }, [page, search]);
 
@@ -46,6 +47,13 @@ const AdminEstablishmentsPage = () => {
       const data = await adminService.getSquares();
       setSquares(data.squares || []);
     } catch (e) {}
+  };
+
+  const loadPricingTables = async (squareId) => {
+    try {
+      const data = await adminService.getPricingTables(squareId);
+      setPricingTables(data.pricing_tables || []);
+    } catch (e) { setPricingTables([]); }
   };
 
   const loadEstablishments = async () => {
@@ -174,8 +182,14 @@ const AdminEstablishmentsPage = () => {
   };
 
   const handleFormChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     setFormError('');
+    // Quando mudar a praça, carregar tabelas de preços
+    if (name === 'square_id') {
+      loadPricingTables(value || null);
+      setFormData(prev => ({ ...prev, pricing_table_id: '' }));
+    }
   };
 
   const handleSubmitForm = async (e) => {
@@ -198,6 +212,7 @@ const AdminEstablishmentsPage = () => {
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         square_id: formData.square_id || null,
+        pricing_table_id: formData.pricing_table_id || null,
         preparation_minutes: parseInt(formData.preparation_minutes) || 10,
       };
 
@@ -538,6 +553,18 @@ const AdminEstablishmentsPage = () => {
                   <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
                 ))}
               </select>
+            </FormField>
+
+            <FormField label="Tabela de Preços">
+              <select name="pricing_table_id" value={formData.pricing_table_id} onChange={handleFormChange} style={inputStyle}>
+                <option value="">Padrão da praça</option>
+                {pricingTables.map(pt => (
+                  <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km).toFixed(2)}/km)</option>
+                ))}
+              </select>
+              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                Selecione uma tabela específica ou deixe vazio para usar a padrão da praça
+              </p>
             </FormField>
 
             <FormField label="Tempo de Preparo (minutos)">

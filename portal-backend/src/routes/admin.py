@@ -1749,6 +1749,8 @@ def update_establishment(establishment_id):
             est.is_active = data['is_active']
         if 'square_id' in data:
             est.square_id = data['square_id']
+        if 'pricing_table_id' in data:
+            est.pricing_table_id = data['pricing_table_id'] if data['pricing_table_id'] else None
         if 'preparation_minutes' in data:
             est.preparation_minutes = int(data['preparation_minutes']) if data['preparation_minutes'] else 10
 
