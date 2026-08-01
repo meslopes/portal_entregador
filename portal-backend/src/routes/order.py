@@ -254,6 +254,11 @@ def process_expired_offers():
                         except Exception:
                             pass
                         
+                        # Conta falhas para notificação admin
+                        rejection_count = len(re.findall(r'REJECTED_BY_(\d+)', order.special_instructions or ''))
+                        timeout_count = len(re.findall(r'TIMEOUT_BY_(\d+)', order.special_instructions or ''))
+                        total_failures = rejection_count + timeout_count
+                        
                         # Notifica admin se muitas falhas (mesmo com próximo entregador disponível)
                         if total_failures >= 2:
                             _notify_admin_pending_order(order, total_failures, now)
@@ -261,6 +266,9 @@ def process_expired_offers():
                         print(f"[AUTO] Pedido #{order.order_number} oferecido a {next_driver.user.first_name} (tentativa {total_failures + 1})")
                     else:
                         # Nenhum entregador disponível - notifica admin
+                        rejection_count = len(re.findall(r'REJECTED_BY_(\d+)', order.special_instructions or ''))
+                        timeout_count = len(re.findall(r'TIMEOUT_BY_(\d+)', order.special_instructions or ''))
+                        total_failures = rejection_count + timeout_count
                         _notify_admin_pending_order(order, total_failures, now)
                     
                     # Reseta timestamp para nova oferta
