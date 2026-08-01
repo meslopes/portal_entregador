@@ -246,12 +246,18 @@ def process_expired_offers():
                                     )
                             except Exception:
                                 pass
-                        else:
-                            # Nenhum entregador disponível - notifica admin
+                        
+                        # Notifica admin se muitas falhas (mesmo com próximo entregador disponível)
+                        if total_failures >= 2:
                             _notify_admin_pending_order(order, total_failures, now)
                         
-                        # Reseta timestamp para nova oferta
-                        order.updated_at = now
+                        print(f"[AUTO] Pedido #{order.order_number} oferecido a {next_driver.user.first_name} (tentativa {total_failures + 1})")
+                    else:
+                        # Nenhum entregador disponível - notifica admin
+                        _notify_admin_pending_order(order, total_failures, now)
+                    
+                    # Reseta timestamp para nova oferta
+                    order.updated_at = now
         
         db.session.commit()
         
@@ -611,9 +617,9 @@ def reject_order(order_id):
 
         # Limpa ofertas anteriores antes de buscar próximo
         si = order.special_instructions or ''
-        # Remove todas as tags OFFERED_TO_ antigas
+        # Remove todas as tags OFFERED_TO_ antigas (com timestamp)
         import re
-        si = re.sub(r'\|?OFFERED_TO_\d+', '', si).strip('|')
+        si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', si).strip('|')
         order.special_instructions = si
 
         # Coleta todos os IDs que já recusaram
@@ -629,7 +635,15 @@ def reject_order(order_id):
         
         # Se nenhum entregador disponível, limpa rejeições e tenta novamente
         if not next_driver and len(rejected_ids) > 1:
-            order.special_instructions = re.sub(r'\|?REJECTED_BY_\d+', '', order.special_instructions or '').strip('|')
+            # Notifica admin antes de reciclar
+            rejection_count = len(re.findall(r'REJECTED_BY_(\d)+', order.special_instructions or ''))
+            timeout_count = len(re.findall(r'TIMEOUT_BY_(\d+)', order.special_instructions or ''))
+            total_failures = rejection_count + timeout_count
+            if total_failures >= 2:
+                _notify_admin_pending_order(order, total_failures, datetime.utcnow())
+            
+            # Limpa rejeições e recomeça ciclo
+            order.special_instructions = re.sub(r'\|?(REJECTED_BY|TIMEOUT_BY)_\d+', '', order.special_instructions or '').strip('|')
             next_driver = find_nearest_available_driver(order)
         
         if next_driver:
