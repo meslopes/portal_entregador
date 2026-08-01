@@ -21,6 +21,7 @@ const NewOrderPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [establishments, setEstablishments] = useState([]);
+  const [pricingTable, setPricingTable] = useState(null);
   const isAdmin = user?.user_type === 'ADMIN';
 
   // Carrega estabelecimentos para admin
@@ -31,6 +32,20 @@ const NewOrderPage = () => {
       }).catch(err => console.error(err));
     }
   }, [isAdmin]);
+
+  // Carrega tabela de preços quando estabelecimento é selecionado
+  useEffect(() => {
+    if (form.selected_establishment) {
+      const est = establishments.find(e => e.id === parseInt(form.selected_establishment));
+      if (est && est.pricing_table_id) {
+        adminService.getPricingTable(est.pricing_table_id).then(data => {
+          setPricingTable(data.pricing_table);
+        }).catch(() => setPricingTable(null));
+      } else {
+        setPricingTable(null);
+      }
+    }
+  }, [form.selected_establishment, establishments]);
 
   const [form, setForm] = useState({
     selected_establishment: '',
@@ -84,8 +99,8 @@ const NewOrderPage = () => {
   };
 
   const DISTANCE_KM = getDistance();
-  const PRICE_PER_KM = 2.95;
-  const MIN_DISTANCE_KM = 4;
+  const PRICE_PER_KM = pricingTable?.price_per_km || 2.95;
+  const MIN_DISTANCE_KM = pricingTable?.min_distance_km || 4;
   const DELIVERY_FEE = Math.max(DISTANCE_KM, MIN_DISTANCE_KM) * PRICE_PER_KM;
   // Converte vírgula para ponto antes de parseFloat
   const PRODUCT_VALUE = parseFloat(form.product_value.replace(',', '.')) || 0;
@@ -220,6 +235,11 @@ const NewOrderPage = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <Truck size={16} style={{ color: '#0d9488' }} />
                 <span style={{ fontWeight: 600, color: '#0f766e', fontSize: '0.875rem' }}>Valor da Entrega</span>
+                {pricingTable && (
+                  <span style={{ marginLeft: 'auto', padding: '0.125rem 0.5rem', background: '#dbeafe', borderRadius: '9999px', fontSize: '0.625rem', color: '#2563eb', fontWeight: 600 }}>
+                    {pricingTable.name}
+                  </span>
+                )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#475569' }}>
                 <span>{DISTANCE_KM} km × R$ {PRICE_PER_KM.toFixed(2).replace('.', ',')}/km</span>

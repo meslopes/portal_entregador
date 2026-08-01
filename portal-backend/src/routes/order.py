@@ -1292,6 +1292,53 @@ def create_order():
         # Obter tenant_id do usuário atual
         tenant_id = get_current_tenant_id()
 
+        # Calcular frete usando tabela de preços do estabelecimento
+        delivery_fee = float(data.get('delivery_fee', 0))
+        
+        # Se o estabelecimento tem tabela de preços, recalcular
+        if restaurant.pricing_table_id:
+            from src.models.portal_models import PricingTable
+            pt = PricingTable.query.get(restaurant.pricing_table_id)
+            if pt and pt.price_per_km:
+                price_per_km = float(pt.price_per_km)
+                min_km = float(pt.min_distance_km or 4.0)
+                
+                # Calcular distância real se temos coordenadas
+                km_total = min_km  # Default para distância mínima
+                if address.latitude and address.longitude and restaurant.latitude and restaurant.longitude:
+                    km_total = haversine_distance(
+                        float(restaurant.latitude), float(restaurant.longitude),
+                        float(address.latitude), float(address.longitude)
+                    )
+                    km_total = max(km_total, min_km)
+                
+                delivery_fee = round(km_total * price_per_km, 2)
+                
+                # Aplicar frete mínimo se definido
+                if pt.min_delivery_fee:
+                    delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
+                
+                # Aplicar frete máximo se definido
+                if pt.max_delivery_fee:
+                    delivery_fee = min(delivery_fee, float(pt.max_delivery_fee))
+        elif restaurant.square_id:
+            # Fallback: usar preço por km da praça
+            from src.models.portal_models import Square
+            sq = Square.query.get(restaurant.square_id)
+            if sq and sq.price_per_km:
+                price_per_km = float(sq.price_per_km)
+                min_km = float(sq.min_distance_km or 4.0)
+                
+                km_total = min_km
+                if address.latitude and address.longitude and restaurant.latitude and restaurant.longitude:
+                    km_total = haversine_distance(
+                        float(restaurant.latitude), float(restaurant.longitude),
+                        float(address.latitude), float(address.longitude)
+                    )
+                    km_total = max(km_total, min_km)
+                
+                delivery_fee = round(km_total * price_per_km, 2)
+
         # Gerar tracking_token único
         tracking_token = str(uuid.uuid4())
 
@@ -1303,9 +1350,9 @@ def create_order():
             order_number=f"PED{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}",
             tracking_token=tracking_token,
             items=data['items'],
-            subtotal=data['subtotal'],
-            delivery_fee=data.get('delivery_fee', 0),
-            total_amount=data['total_amount'],
+            subtotal=delivery_fee,
+            delivery_fee=delivery_fee,
+            total_amount=delivery_fee,
             payment_method=PaymentMethod(data['payment_method']),
             status=OrderStatus.SCHEDULED,
             distribution_method=data.get('distribution_method', 'nearest'),

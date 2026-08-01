@@ -325,6 +325,33 @@ export const adminService = {
     return response.data;
   },
 
+  // Tabelas de preços
+  getPricingTables: async (squareId = null) => {
+    const params = squareId ? `?square_id=${squareId}` : '';
+    const response = await api.get(`/api/admin/pricing-tables${params}`);
+    return response.data;
+  },
+
+  getPricingTable: async (tableId) => {
+    const response = await api.get(`/api/admin/pricing-tables/${tableId}`);
+    return response.data;
+  },
+
+  createPricingTable: async (tableData) => {
+    const response = await api.post('/api/admin/pricing-tables', tableData);
+    return response.data;
+  },
+
+  updatePricingTable: async (tableId, tableData) => {
+    const response = await api.put(`/api/admin/pricing-tables/${tableId}`, tableData);
+    return response.data;
+  },
+
+  deletePricingTable: async (tableId) => {
+    const response = await api.delete(`/api/admin/pricing-tables/${tableId}`);
+    return response.data;
+  },
+
   deleteSquare: async (squareId) => {
     const response = await api.delete(`/api/admin/squares/${squareId}`);
     return response.data;
