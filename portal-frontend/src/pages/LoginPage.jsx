@@ -36,8 +36,10 @@ const LoginPage = () => {
         target = '/admin';
       } else if (userType === 'CLIENT') {
         target = '/client';
+      } else if (userType === 'DRIVER') {
+        target = '/dashboard';
       } else {
-        target = from;
+        target = '/dashboard';
       }
       navigate(target, { replace: true });
     } catch (err) {
