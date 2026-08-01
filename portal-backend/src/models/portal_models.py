@@ -237,6 +237,8 @@ class Restaurant(db.Model):
     preparation_minutes = db.Column(db.Integer, default=10)  # Tempo padrao: 10 minutos
     # Praça
     square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
+    # Tabela de preços (se vazio, usa a padrão da praça)
+    pricing_table_id = db.Column(db.Integer, db.ForeignKey('pricing_tables.id'), nullable=True)
     # Dados bancarios
     bank_name = db.Column(db.String(100))
     bank_agency = db.Column(db.String(20))
@@ -568,6 +570,7 @@ class Square(db.Model):
     # Relacionamentos
     restaurants = db.relationship('Restaurant', backref='square')
     drivers = db.relationship('Driver', backref='square')
+    pricing_tables = db.relationship('PricingTable', backref='square', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -578,11 +581,51 @@ class Square(db.Model):
             'is_active': self.is_active,
             'price_per_km': float(self.price_per_km) if self.price_per_km else 2.95,
             'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
-            'min_delivery_fee': float(self.price_per_km * (self.min_distance_km or 4.0)),  # Calculado automaticamente
+            'min_delivery_fee': float(self.price_per_km * (self.min_distance_km or 4.0)),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
             'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 70.0,
+            'pricing_tables': [t.to_dict() for t in self.pricing_tables] if self.pricing_tables else [],
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
+        }
+
+
+class PricingTable(db.Model):
+    """Tabela de preços - pode ter várias por praça"""
+    __tablename__ = 'pricing_tables'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(500))
+    price_per_km = db.Column(db.Numeric(10, 2), nullable=False, default=2.95)
+    min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)
+    min_delivery_fee = db.Column(db.Numeric(10, 2))
+    max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
+    driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    restaurants = db.relationship('Restaurant', backref='pricing_table')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'square_id': self.square_id,
+            'name': self.name,
+            'description': self.description,
+            'price_per_km': float(self.price_per_km),
+            'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
+            'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else float(self.price_per_km) * float(self.min_distance_km or 4.0),
+            'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
+            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 70.0,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 

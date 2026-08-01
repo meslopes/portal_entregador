@@ -415,6 +415,38 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tabela de preços (pricing_tables)
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS pricing_tables (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    square_id INTEGER REFERENCES squares(id) NOT NULL,
+                    name VARCHAR(200) NOT NULL,
+                    description VARCHAR(500),
+                    price_per_km NUMERIC(10,2) NOT NULL DEFAULT 2.95,
+                    min_distance_km NUMERIC(5,2) DEFAULT 4.0,
+                    min_delivery_fee NUMERIC(10,2),
+                    max_delivery_fee NUMERIC(10,2) DEFAULT 50.00,
+                    driver_percentage NUMERIC(5,2) DEFAULT 70.0,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: pricing_table_id em restaurants
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'pricing_table_id') THEN ALTER TABLE restaurants ADD COLUMN pricing_table_id INTEGER REFERENCES pricing_tables(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():
