@@ -1079,6 +1079,7 @@ def get_finance_dashboard():
     """Dashboard financeiro completo"""
     try:
         period = request.args.get('period', 'month')  # today, week, month, year
+        tenant_id = get_current_tenant_id()
 
         # Define data de inicio baseado no periodo
         now = datetime.utcnow()
@@ -1094,43 +1095,57 @@ def get_finance_dashboard():
             start_date = now - timedelta(days=30)
 
         # Receita total (pedidos entregues no periodo)
-        revenue_result = db.session.query(
+        revenue_query = db.session.query(
             func.sum(Order.total_amount)
         ).filter(
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        ).scalar() or 0
+        )
+        if tenant_id:
+            revenue_query = revenue_query.filter(Order.tenant_id == tenant_id)
+        revenue_result = revenue_query.scalar() or 0
 
         # Total de pedidos no periodo
-        total_orders = Order.query.filter(
-            Order.created_at >= start_date
-        ).count()
+        orders_query = Order.query.filter(Order.created_at >= start_date)
+        if tenant_id:
+            orders_query = orders_query.filter(Order.tenant_id == tenant_id)
+        total_orders = orders_query.count()
 
         # Pedidos entregues no periodo
-        delivered_orders = Order.query.filter(
+        delivered_query = Order.query.filter(
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        ).count()
+        )
+        if tenant_id:
+            delivered_query = delivered_query.filter(Order.tenant_id == tenant_id)
+        delivered_orders = delivered_query.count()
 
         # Pedidos pendentes
-        pending_orders = Order.query.filter(
-            Order.status == OrderStatus.PENDING
-        ).count()
+        pending_query = Order.query.filter(Order.status == OrderStatus.PENDING)
+        if tenant_id:
+            pending_query = pending_query.filter(Order.tenant_id == tenant_id)
+        pending_orders = pending_query.count()
 
         # Ganhos dos entregadores no periodo (pagamentos processados)
-        driver_payments = db.session.query(
+        payments_query = db.session.query(
             func.sum(Payment.amount)
         ).filter(
             Payment.status == PaymentStatus.PROCESSED,
             Payment.created_at >= start_date
-        ).scalar() or 0
+        )
+        if tenant_id:
+            payments_query = payments_query.join(Driver).filter(Driver.tenant_id == tenant_id)
+        driver_payments = payments_query.scalar() or 0
 
         # Ganhos pendentes de processamento
-        pending_payments = db.session.query(
+        pending_pay_query = db.session.query(
             func.sum(Payment.amount)
         ).filter(
             Payment.status == PaymentStatus.PENDING
-        ).scalar() or 0
+        )
+        if tenant_id:
+            pending_pay_query = pending_pay_query.join(Driver).filter(Driver.tenant_id == tenant_id)
+        pending_payments = pending_pay_query.scalar() or 0
 
         # Ticket medio
         avg_order_value = float(revenue_result) / delivered_orders if delivered_orders > 0 else 0
@@ -1198,6 +1213,7 @@ def get_finance_by_establishment():
     """Financeiro por estabelecimento"""
     try:
         period = request.args.get('period', 'month')
+        tenant_id = get_current_tenant_id()
         now = datetime.utcnow()
 
         if period == 'today':
@@ -1211,7 +1227,7 @@ def get_finance_by_establishment():
         else:
             start_date = now - timedelta(days=30)
 
-        establishments = db.session.query(
+        query = db.session.query(
             Restaurant.id,
             Restaurant.name,
             Restaurant.phone,
@@ -1222,7 +1238,13 @@ def get_finance_by_establishment():
             Order.restaurant_id == Restaurant.id,
             Order.status == OrderStatus.DELIVERED,
             Order.created_at >= start_date
-        )).group_by(Restaurant.id, Restaurant.name, Restaurant.phone).order_by(
+        ))
+        
+        # Filtrar por tenant
+        if tenant_id:
+            query = query.filter(Restaurant.tenant_id == tenant_id)
+        
+        establishments = query.group_by(Restaurant.id, Restaurant.name, Restaurant.phone).order_by(
             func.sum(Order.delivery_fee).desc()
         ).all()
 
@@ -2584,7 +2606,9 @@ def delete_square(square_id):
 def get_driver_payments():
     """Lista o que cada entregador deve receber"""
     try:
-        drivers = db.session.query(
+        tenant_id = get_current_tenant_id()
+        
+        query = db.session.query(
             Driver.id,
             User.first_name,
             User.last_name,
@@ -2593,7 +2617,13 @@ def get_driver_payments():
             func.count(Payment.id).label('payment_count')
         ).join(User).outerjoin(
             Payment, db.and_(Payment.driver_id == Driver.id, Payment.status == PaymentStatus.PENDING)
-        ).group_by(Driver.id, User.first_name, User.last_name, User.email).all()
+        )
+        
+        # Filtrar por tenant
+        if tenant_id:
+            query = query.filter(Driver.tenant_id == tenant_id)
+        
+        drivers = query.group_by(Driver.id, User.first_name, User.last_name, User.email).all()
 
         drivers_data = []
         for d in drivers:
