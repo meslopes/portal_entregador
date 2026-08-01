@@ -463,11 +463,10 @@ def get_available_orders():
             ~Order.special_instructions.contains(reject_log)
         )
 
-        # Para distribuição 'nearest': só mostra pedidos oferecidos a este entregador ou sem oferta definida
+        # Para distribuição 'nearest': só mostra pedidos oferecidos a este entregador
         offer_pattern = f"OFFERED_TO_{driver.id}"
         query = query.filter(
             (Order.distribution_method != 'nearest') | 
-            (~Order.special_instructions.contains('OFFERED_TO_')) | 
             (Order.special_instructions.contains(offer_pattern))
         )
 
