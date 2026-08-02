@@ -33,6 +33,63 @@ const DashboardPage = () => {
     }
   }, [user]);
 
+  // Inicializar mapa quando localização estiver disponível
+  useEffect(() => {
+    if (location && !mapInstanceRef.current) {
+      const initMap = () => {
+        const L = window.L;
+        if (!L) return;
+        
+        const map = L.map('driver-map').setView([location.latitude, location.longitude], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Marcador do entregador
+        const driverIcon = L.divIcon({
+          html: '<div style="background:#2563eb;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/></svg></div>',
+          className: '',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker([location.latitude, location.longitude], { icon: driverIcon }).addTo(map)
+          .bindPopup('Sua localização');
+
+        // Marcador do pedido atual (se houver)
+        if (currentOrder?.delivery_address?.latitude && currentOrder?.delivery_address?.longitude) {
+          const orderIcon = L.divIcon({
+            html: '<div style="background:#ef4444;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>',
+            className: '',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+          L.marker([currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude], { icon: orderIcon }).addTo(map)
+            .bindPopup(`Pedido #${currentOrder.order_number}`);
+          
+          // Ajustar zoom para mostrar ambos os pontos
+          const bounds = L.latLngBounds([
+            [location.latitude, location.longitude],
+            [currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude]
+          ]);
+          map.fitBounds(bounds.pad(0.2));
+        }
+
+        mapInstanceRef.current = map;
+      };
+
+      if (window.L) {
+        initMap();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = initMap;
+        document.head.appendChild(script);
+      }
+    }
+  }, [location, currentOrder]);
+
+  const mapInstanceRef = { current: null };
+
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -235,6 +292,17 @@ const DashboardPage = () => {
           onClick={() => navigate('/history')}
         />
       </div>
+
+      {/* Mapa */}
+      {location && (
+        <div style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <MapPin size={16} style={{ color: '#2563eb' }} />
+            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>Minha Localização</span>
+          </div>
+          <div id="driver-map" style={{ height: '250px', width: '100%' }} />
+        </div>
+      )}
 
       {/* Localização */}
       {location && (
