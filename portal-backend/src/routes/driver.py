@@ -533,8 +533,9 @@ def request_withdrawal():
         db.session.add(withdrawal)
         
         # Bloquear valor
-        driver.balance = float(driver.balance or 0) - amount
-        driver.locked_balance = float(driver.locked_balance or 0) + amount
+        from decimal import Decimal
+        driver.balance = Decimal(str(float(driver.balance or 0))) - Decimal(str(amount))
+        driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) + Decimal(str(amount))
         driver.updated_at = datetime.utcnow()
         
         db.session.commit()

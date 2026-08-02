@@ -913,7 +913,8 @@ def update_order_status(order_id):
                     db.session.add(payment)
                     
                     # Creditar na carteira do entregador
-                    driver.balance = (driver.balance or 0) + float(order.delivery.driver_earnings)
+                    from decimal import Decimal
+                    driver.balance = (driver.balance or Decimal('0')) + Decimal(str(order.delivery.driver_earnings))
                     driver.updated_at = datetime.utcnow()
         
         # Cria notificação

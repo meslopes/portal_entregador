@@ -31,6 +31,7 @@ import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
 import OrderDetailPage from '@/pages/admin/OrderDetailPage';
 import AdminFinancePage from '@/pages/admin/AdminFinancePage';
+import AdminWithdrawalsPage from '@/pages/admin/AdminWithdrawalsPage';
 import AdminPricingPage from '@/pages/admin/AdminPricingPage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
@@ -351,6 +352,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminPricingPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/withdrawals"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <AdminWithdrawalsPage />
                 </Layout>
               </ProtectedRoute>
             }

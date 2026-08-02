@@ -3043,3 +3043,88 @@ def generate_invoice(restaurant_id):
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================
+# PROCESSAMENTO DE SAQUES
+# ============================================
+
+@admin_bp.route('/withdrawals', methods=['GET'])
+@jwt_required()
+@admin_required
+def list_withdrawals():
+    """Lista solicitações de saque pendentes"""
+    try:
+        tenant_id = get_current_tenant_id()
+        
+        query = Payment.query.filter_by(
+            payment_type='WITHDRAWAL',
+            status='PENDING'
+        ).join(Driver).join(User)
+        
+        if tenant_id:
+            query = query.filter(Driver.tenant_id == tenant_id)
+        
+        withdrawals = query.order_by(Payment.created_at.desc()).all()
+        
+        result = []
+        for w in withdrawals:
+            driver = Driver.query.get(w.driver_id)
+            result.append({
+                'id': w.id,
+                'driver_id': w.driver_id,
+                'driver_name': f"{driver.user.first_name} {driver.user.last_name}" if driver and driver.user else 'N/A',
+                'driver_email': driver.user.email if driver and driver.user else 'N/A',
+                'amount': abs(float(w.amount)),
+                'pix_key': driver.pix_key if driver else None,
+                'status': w.status.value if w.status else 'PENDING',
+                'created_at': w.created_at.isoformat() if w.created_at else None
+            })
+        
+        return jsonify({'withdrawals': result}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/withdrawals/<int:withdrawal_id>/process', methods=['POST'])
+@jwt_required()
+@admin_required
+def process_withdrawal(withdrawal_id):
+    """Processa (aprova/rejeita) uma solicitação de saque"""
+    try:
+        from decimal import Decimal
+        
+        withdrawal = Payment.query.get(withdrawal_id)
+        if not withdrawal:
+            return jsonify({'error': 'Solicitação não encontrada'}), 404
+        
+        if withdrawal.status != 'PENDING':
+            return jsonify({'error': 'Solicitação já processada'}), 400
+        
+        data = request.get_json()
+        action = data.get('action')  # 'approve' or 'reject'
+        
+        if action not in ['approve', 'reject']:
+            return jsonify({'error': 'Ação inválida'}), 400
+        
+        driver = Driver.query.get(withdrawal.driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        amount = abs(float(withdrawal.amount))
+        
+        if action == 'approve':
+            # Aprovar saque - descontar do locked_balance
+            withdrawal.status = 'PROCESSED'
+            driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) - Decimal(str(amount))
+        else:
+            # Rejeitar saque - devolver ao balance
+            withdrawal.status = 'CANCELLED'
+            driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) - Decimal(str(amount))
+            driver.balance = Decimal(str(float(driver.balance or 0))) + Decimal(str(amount))
+        
+        driver.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({'message': f'Saque {"aprovado" if action == "approve" else "rejeitado"} com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
