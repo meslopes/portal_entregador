@@ -3096,7 +3096,7 @@ def process_withdrawal(withdrawal_id):
         if not withdrawal:
             return jsonify({'error': 'Solicitação não encontrada'}), 404
         
-        if withdrawal.status != 'PENDING':
+        if withdrawal.status != PaymentStatus.PENDING:
             return jsonify({'error': 'Solicitação já processada'}), 400
         
         data = request.get_json()
@@ -3113,11 +3113,11 @@ def process_withdrawal(withdrawal_id):
         
         if action == 'approve':
             # Aprovar saque - descontar do locked_balance
-            withdrawal.status = 'PROCESSED'
+            withdrawal.status = PaymentStatus.PROCESSED
             driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) - Decimal(str(amount))
         else:
             # Rejeitar saque - devolver ao balance
-            withdrawal.status = 'CANCELLED'
+            withdrawal.status = PaymentStatus.CANCELLED
             driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) - Decimal(str(amount))
             driver.balance = Decimal(str(float(driver.balance or 0))) + Decimal(str(amount))
         
