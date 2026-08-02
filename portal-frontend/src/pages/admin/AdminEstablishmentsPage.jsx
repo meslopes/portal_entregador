@@ -175,8 +175,13 @@ const AdminEstablishmentsPage = () => {
       latitude: est.latitude || '',
       longitude: est.longitude || '',
       square_id: est.square_id || '',
+      pricing_table_id: est.pricing_table_id || '',
       preparation_minutes: est.preparation_minutes || '10'
     });
+    // Carregar tabelas de preços da praça selecionada
+    if (est.square_id) {
+      loadPricingTables(est.square_id);
+    }
     setFormError('');
     setShowForm(true);
   };
