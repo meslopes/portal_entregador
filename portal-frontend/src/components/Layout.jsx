@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -33,6 +33,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Pedidos', href: '/orders', icon: Package },
     { name: 'Ganhos', href: '/earnings', icon: DollarSign },
+    { name: 'Carteira', href: '/wallet', icon: Wallet },
     { name: 'Histórico', href: '/history', icon: Clock },
     { name: 'Ranking', href: '/ranking', icon: Trophy },
   ];

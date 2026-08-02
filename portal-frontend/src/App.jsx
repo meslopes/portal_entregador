@@ -14,6 +14,7 @@ import ActiveDeliveryPage from '@/pages/ActiveDeliveryPage';
 import DriverRankingPage from '@/pages/DriverRankingPage';
 import DriverProfilePage from '@/pages/DriverProfilePage';
 import DriverRouteMap from '@/pages/DriverRouteMap';
+import WalletPage from '@/pages/WalletPage';
 import ClientLoginPage from '@/pages/client/ClientLoginPage';
 import ClientRegisterPage from '@/pages/client/ClientRegisterPage';
 import ClientDashboardPage from '@/pages/client/ClientDashboardPage';
@@ -118,6 +119,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <EarningsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wallet"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <WalletPage />
                 </Layout>
               </ProtectedRoute>
             }
