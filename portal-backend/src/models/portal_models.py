@@ -264,6 +264,8 @@ class Restaurant(db.Model):
             'opening_hours': self.opening_hours,
             'is_active': self.is_active,
             'preparation_minutes': self.preparation_minutes or 10,
+            'square_id': self.square_id,
+            'pricing_table_id': self.pricing_table_id,
             'bank_name': self.bank_name,
             'bank_agency': self.bank_agency,
             'bank_account': self.bank_account,
