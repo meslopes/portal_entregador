@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from src.models.portal_models import Driver, User, UserType, Order, OrderStatus, Payment, PaymentStatus, db
+from src.models.portal_models import Driver, User, UserType, Order, OrderStatus, Payment, PaymentStatus, PaymentType, PaymentMethod, db
 from datetime import datetime, timedelta
 from sqlalchemy import func
 import math
@@ -454,4 +454,131 @@ def get_driver_achievements(driver_id):
         achievements.append({'id': 'week_streak', 'title': 'Sequência', 'description': f'{week_deliveries}/7 dias esta semana', 'icon': '🔥', 'unlocked': False, 'progress': week_deliveries, 'target': 7})
 
     return achievements
+
+
+# ============================================
+# CARTEIRA DO ENTREGADOR
+# ============================================
+
+@driver_bp.route('/wallet', methods=['GET'])
+@jwt_required()
+def get_wallet():
+    """Obtém dados da carteira do entregador"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user or user.user_type != UserType.DRIVER:
+            return jsonify({'error': 'Usuário não é um entregador'}), 403
+        
+        driver = user.driver
+        if not driver:
+            return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
+        
+        # Buscar transações recentes
+        recent_payments = Payment.query.filter_by(
+            driver_id=driver.id
+        ).order_by(Payment.created_at.desc()).limit(10).all()
+        
+        return jsonify({
+            'balance': float(driver.balance or 0),
+            'locked_balance': float(driver.locked_balance or 0),
+            'pix_key': driver.pix_key,
+            'total_deliveries': driver.total_deliveries or 0,
+            'recent_payments': [{
+                'id': p.id,
+                'amount': float(p.amount),
+                'type': p.payment_type.value if p.payment_type else 'DELIVERY_EARNING',
+                'status': p.status.value if p.status else 'PENDING',
+                'created_at': p.created_at.isoformat() if p.created_at else None
+            } for p in recent_payments]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@driver_bp.route('/wallet/withdraw', methods=['POST'])
+@jwt_required()
+def request_withdrawal():
+    """Solicita saque da carteira"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user or user.user_type != UserType.DRIVER:
+            return jsonify({'error': 'Usuário não é um entregador'}), 403
+        
+        driver = user.driver
+        if not driver:
+            return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
+        
+        data = request.get_json()
+        amount = float(data.get('amount', 0))
+        
+        if amount <= 0:
+            return jsonify({'error': 'Valor inválido'}), 400
+        
+        if amount > float(driver.balance or 0):
+            return jsonify({'error': 'Saldo insuficiente'}), 400
+        
+        # Criar solicitação de saque
+        from src.models.portal_models import PaymentType
+        withdrawal = Payment(
+            driver_id=driver.id,
+            amount=-amount,  # Negativo para representar saque
+            payment_type=PaymentType.WITHDRAWAL,
+            payment_method=PaymentMethod.PIX,
+            status=PaymentStatus.PENDING
+        )
+        db.session.add(withdrawal)
+        
+        # Bloquear valor
+        driver.balance = float(driver.balance or 0) - amount
+        driver.locked_balance = float(driver.locked_balance or 0) + amount
+        driver.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Solicitação de saque enviada',
+            'amount': amount,
+            'new_balance': float(driver.balance)
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@driver_bp.route('/wallet/pix-key', methods=['PUT'])
+@jwt_required()
+def update_pix_key():
+    """Atualiza a chave PIX do entregador"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user or user.user_type != UserType.DRIVER:
+            return jsonify({'error': 'Usuário não é um entregador'}), 403
+        
+        driver = user.driver
+        if not driver:
+            return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
+        
+        data = request.get_json()
+        pix_key = data.get('pix_key', '').strip()
+        
+        if not pix_key:
+            return jsonify({'error': 'Chave PIX é obrigatória'}), 400
+        
+        driver.pix_key = pix_key
+        driver.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Chave PIX atualizada',
+            'pix_key': pix_key
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 

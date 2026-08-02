@@ -184,6 +184,10 @@ class Driver(db.Model):
     queue_position = db.Column(db.Integer, default=0)  # Posição na fila (menor = maior prioridade)
     last_order_at = db.Column(db.DateTime)  # Quando aceitou/rejeitou o último pedido
     total_orders_today = db.Column(db.Integer, default=0)  # Pedidos completados hoje
+    # Carteira
+    balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo disponível para saque
+    locked_balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo bloqueado (em trânsito)
+    pix_key = db.Column(db.String(100))  # Chave PIX para saques
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -215,6 +219,8 @@ class Driver(db.Model):
             'queue_position': self.queue_position,
             'last_order_at': self.last_order_at.isoformat() if self.last_order_at else None,
             'total_orders_today': self.total_orders_today,
+            'balance': float(self.balance) if self.balance else 0,
+            'locked_balance': float(self.locked_balance) if self.locked_balance else 0,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

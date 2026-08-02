@@ -911,6 +911,10 @@ def update_order_status(order_id):
                         status=PaymentStatus.PENDING
                     )
                     db.session.add(payment)
+                    
+                    # Creditar na carteira do entregador
+                    driver.balance = (driver.balance or 0) + float(order.delivery.driver_earnings)
+                    driver.updated_at = datetime.utcnow()
         
         # Cria notificação
         status_messages = {

@@ -447,6 +447,21 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: carteira do entregador (balance, locked_balance, pix_key)
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'balance') THEN ALTER TABLE drivers ADD COLUMN balance NUMERIC(10,2) DEFAULT 0; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'locked_balance') THEN ALTER TABLE drivers ADD COLUMN locked_balance NUMERIC(10,2) DEFAULT 0; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'pix_key') THEN ALTER TABLE drivers ADD COLUMN pix_key VARCHAR(100); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():
