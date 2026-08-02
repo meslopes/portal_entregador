@@ -296,9 +296,29 @@ const DashboardPage = () => {
       {/* Mapa */}
       {location && (
         <div style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
-          <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <MapPin size={16} style={{ color: '#2563eb' }} />
-            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>Minha Localização</span>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <MapPin size={16} style={{ color: '#2563eb' }} />
+              <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>Minha Localização</span>
+            </div>
+            {currentOrder?.delivery_address?.latitude && (
+              <button
+                onClick={() => {
+                  const lat = currentOrder.delivery_address.latitude;
+                  const lng = currentOrder.delivery_address.longitude;
+                  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+                  window.open(url, '_blank');
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.375rem',
+                  padding: '0.375rem 0.75rem', borderRadius: '0.5rem',
+                  border: 'none', background: '#2563eb', color: 'white',
+                  cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
+                }}
+              >
+                <Navigation size={14} /> Navegar
+              </button>
+            )}
           </div>
           <div id="driver-map" style={{ height: '250px', width: '100%' }} />
         </div>
