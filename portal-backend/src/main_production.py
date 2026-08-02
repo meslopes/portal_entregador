@@ -462,6 +462,24 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: WITHDRAWAL em payment_type enum
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'WITHDRAWAL' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'paymenttype')) THEN ALTER TYPE paymenttype ADD VALUE 'WITHDRAWAL'; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: CANCELLED em payment_status enum
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'CANCELLED' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'paymentstatus')) THEN ALTER TYPE paymentstatus ADD VALUE 'CANCELLED'; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

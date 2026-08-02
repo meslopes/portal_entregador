@@ -40,11 +40,13 @@ class PaymentType(Enum):
     DELIVERY_EARNING = "DELIVERY_EARNING"
     BONUS = "BONUS"
     ADJUSTMENT = "ADJUSTMENT"
+    WITHDRAWAL = "WITHDRAWAL"
 
 class PaymentStatus(Enum):
     PENDING = "PENDING"
     PROCESSED = "PROCESSED"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 class NotificationType(Enum):
     ORDER_AVAILABLE = "ORDER_AVAILABLE"
