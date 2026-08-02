@@ -75,33 +75,12 @@ const NewOrderPage = () => {
     }
   };
 
-  // Calcula distância usando fórmula de Haversine (quando tem coordenadas)
-  const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Raio da Terra em km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
-
-  // Calcula distância estimada (fallback se não tiver coordenadas)
-  const getDistance = () => {
-    if (!form.delivery_address || !form.delivery_neighborhood) return 0;
-    // Estimativa baseada no tamanho do endereço (mais realista que antes)
-    const addrLen = form.delivery_address.length;
-    const baseDistance = 3; // distância mínima
-    const extraKm = Math.min(addrLen / 20, 10); // até 10km extra baseado no tamanho
-    return Math.max(4, baseDistance + extraKm); // mínimo 4km
-  };
-
-  const DISTANCE_KM = getDistance();
+  // Distância será calculada pelo backend com Haversine
+  // No frontend mostramos apenas o preço por km da tabela
+  const DISTANCE_KM = 0; // Será calculado pelo backend
   const PRICE_PER_KM = pricingTable?.price_per_km || 2.95;
   const MIN_DISTANCE_KM = pricingTable?.min_distance_km || 4;
-  const DELIVERY_FEE = Math.max(DISTANCE_KM, MIN_DISTANCE_KM) * PRICE_PER_KM;
+  const DELIVERY_FEE = 0; // Será calculado pelo backend
   // Converte vírgula para ponto antes de parseFloat
   const PRODUCT_VALUE = parseFloat(form.product_value.replace(',', '.')) || 0;
   // Total = apenas frete (valor dos itens é info para entregador, não entra no cálculo)
@@ -230,39 +209,35 @@ const NewOrderPage = () => {
             <div><Label>Estado</Label><input name="delivery_state" value={form.delivery_state} onChange={handleChange} style={inputStyle} /></div>
           </div>
 
-          {DISTANCE_KM > 0 && (
-            <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <Truck size={16} style={{ color: '#0d9488' }} />
-                <span style={{ fontWeight: 600, color: '#0f766e', fontSize: '0.875rem' }}>Valor da Entrega</span>
-                {pricingTable && (
-                  <span style={{ marginLeft: 'auto', padding: '0.125rem 0.5rem', background: '#dbeafe', borderRadius: '9999px', fontSize: '0.625rem', color: '#2563eb', fontWeight: 600 }}>
-                    {pricingTable.name}
-                  </span>
-                )}
+          <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <Truck size={16} style={{ color: '#0d9488' }} />
+              <span style={{ fontWeight: 600, color: '#0f766e', fontSize: '0.875rem' }}>Valor da Entrega</span>
+              {pricingTable && (
+                <span style={{ marginLeft: 'auto', padding: '0.125rem 0.5rem', background: '#dbeafe', borderRadius: '9999px', fontSize: '0.625rem', color: '#2563eb', fontWeight: 600 }}>
+                  {pricingTable.name}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8125rem', color: '#475569' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Preço por km</span>
+                <span>R$ {PRICE_PER_KM.toFixed(2).replace('.', ',')}/km</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8125rem', color: '#475569' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Distância</span>
-                  <span>{DISTANCE_KM} km</span>
-                </div>
-                {DISTANCE_KM < MIN_DISTANCE_KM && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#d97706' }}>
-                    <span>Mínimo aplicado</span>
-                    <span>{MIN_DISTANCE_KM} km</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Preço por km</span>
-                  <span>R$ {PRICE_PER_KM.toFixed(2).replace('.', ',')}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.25rem', marginTop: '0.25rem' }}>
-                  <span>Total</span>
-                  <span>R$ {DELIVERY_FEE.toFixed(2).replace('.', ',')}</span>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Distância mínima</span>
+                <span>{MIN_DISTANCE_KM} km</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6366f1', fontStyle: 'italic' }}>
+                <span>Distância real</span>
+                <span>Calculada automaticamente</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.25rem', marginTop: '0.25rem' }}>
+                <span>Frete</span>
+                <span>Calculado ao enviar</span>
               </div>
             </div>
-          )}
+          </div>
         </Card>
 
         {/* Pagamento */}
