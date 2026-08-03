@@ -438,6 +438,18 @@ const ActiveDeliveryPage = () => {
             +{utils.formatCurrency(order.delivery?.driver_earnings || 0)}
           </p>
           <p style={{ fontSize: '0.8125rem', color: '#16a34a', marginTop: '0.25rem' }}>ganho nesta entrega</p>
+          
+          {/* Prova de Entrega */}
+          {order.delivery?.proof_of_delivery_url && (
+            <div style={{ marginTop: '1rem', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #bbf7d0' }}>
+              <img 
+                src={`https://muvlog-api.onrender.com${order.delivery.proof_of_delivery_url}`} 
+                alt="Prova de entrega"
+                style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', background: '#f0fdf4' }}
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            </div>
+          )}
         </div>
       )}
 

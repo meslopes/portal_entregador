@@ -384,6 +384,23 @@ const OrderDetailPage = () => {
         </p>
       </div>
 
+      {/* Prova de Entrega */}
+      {order.delivery?.proof_of_delivery_url && (
+        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            📸 Prova de Entrega
+          </h3>
+          <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+            <img 
+              src={`https://muvlog-api.onrender.com${order.delivery.proof_of_delivery_url}`} 
+              alt="Prova de entrega"
+              style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#f8fafc' }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Valores */}
       <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
