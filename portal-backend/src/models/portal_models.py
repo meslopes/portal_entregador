@@ -458,6 +458,8 @@ class Delivery(db.Model):
     proof_of_delivery_url = db.Column(db.String(500))
     customer_rating = db.Column(db.Integer)
     customer_feedback = db.Column(db.Text)
+    driver_rating = db.Column(db.Integer)         # entregador avalia estabelecimento (1-5)
+    driver_feedback = db.Column(db.Text)           # comentário do entregador
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -477,6 +479,8 @@ class Delivery(db.Model):
             'proof_of_delivery_url': self.proof_of_delivery_url,
             'customer_rating': self.customer_rating,
             'customer_feedback': self.customer_feedback,
+            'driver_rating': self.driver_rating,
+            'driver_feedback': self.driver_feedback,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

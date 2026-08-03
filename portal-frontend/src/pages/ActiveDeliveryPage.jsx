@@ -44,6 +44,10 @@ const ActiveDeliveryPage = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showMap, setShowMap] = useState(false);
   const [mapTarget, setMapTarget] = useState(null); // 'restaurant' or 'customer'
+  const [showRating, setShowRating] = useState(false);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingFeedback, setRatingFeedback] = useState('');
+  const [isRating, setIsRating] = useState(false);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -295,7 +299,8 @@ const ActiveDeliveryPage = () => {
       await orderService.updateOrderStatus(order.id, action.next, { status: action.next });
       setOrder(prev => prev ? { ...prev, status: action.next } : prev);
       if (action.next === 'DELIVERED') {
-        window.location.href = '/dashboard';
+        // Mostrar modal de avaliação ao invés de redirecionar
+        setShowRating(true);
       }
     } catch (err) {
       if (!isMounted.current) return;
@@ -303,6 +308,31 @@ const ActiveDeliveryPage = () => {
     } finally {
       if (isMounted.current) setIsUpdating(false);
     }
+  };
+
+  // Função para enviar avaliação do estabelecimento
+  const submitRating = async () => {
+    if (ratingValue === 0) {
+      setError('Selecione uma avaliação');
+      return;
+    }
+    try {
+      setIsRating(true);
+      const api = (await import('@/lib/api')).default;
+      await api.post(`/api/orders/${order.id}/rate-restaurant`, {
+        rating: ratingValue,
+        feedback: ratingFeedback
+      });
+      window.location.href = '/dashboard';
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao enviar avaliação');
+    } finally {
+      setIsRating(false);
+    }
+  };
+
+  const skipRating = () => {
+    window.location.href = '/dashboard';
   };
 
   if (isLoading) {
@@ -450,6 +480,83 @@ const ActiveDeliveryPage = () => {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal de Avaliação do Estabelecimento */}
+      {showRating && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 10000, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '1rem', padding: '2rem',
+            maxWidth: '400px', width: '100%', textAlign: 'center'
+          }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>
+              Como foi a coleta?
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Avalie o estabelecimento {order?.restaurant?.name}
+            </p>
+
+            {/* Estrelas */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  onClick={() => setRatingValue(star)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: '2.5rem', color: star <= ratingValue ? '#f59e0b' : '#e2e8f0',
+                    transition: 'color 0.15s'
+                  }}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            {/* Comentário */}
+            <textarea
+              value={ratingFeedback}
+              onChange={(e) => setRatingFeedback(e.target.value)}
+              placeholder="Comentário (opcional)..."
+              style={{
+                width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                border: '1px solid #e2e8f0', fontSize: '0.875rem',
+                resize: 'vertical', minHeight: '80px', marginBottom: '1.5rem',
+                fontFamily: 'inherit'
+              }}
+            />
+
+            {/* Botões */}
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={skipRating}
+                style={{
+                  flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                  border: '1px solid #e2e8f0', background: 'white',
+                  color: '#64748b', cursor: 'pointer', fontSize: '0.875rem'
+                }}
+              >
+                Pular
+              </button>
+              <button
+                onClick={submitRating}
+                disabled={isRating || ratingValue === 0}
+                style={{
+                  flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                  border: 'none', background: ratingValue > 0 ? '#2563eb' : '#94a3b8',
+                  color: 'white', cursor: ratingValue > 0 ? 'pointer' : 'not-allowed',
+                  fontSize: '0.875rem', fontWeight: 600
+                }}
+              >
+                {isRating ? 'Enviando...' : 'Avaliar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

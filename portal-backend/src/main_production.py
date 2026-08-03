@@ -503,6 +503,18 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: driver_rating e driver_feedback na tabela deliveries
+        try:
+            db.session.execute(db.text(
+                "ALTER TABLE deliveries ADD COLUMN IF NOT EXISTS driver_rating INTEGER"
+            ))
+            db.session.execute(db.text(
+                "ALTER TABLE deliveries ADD COLUMN IF NOT EXISTS driver_feedback TEXT"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

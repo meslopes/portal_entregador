@@ -1865,6 +1865,58 @@ def rate_delivery(order_id):
         return jsonify({'error': str(e)}), 500
 
 
+@order_bp.route('/<int:order_id>/rate-restaurant', methods=['POST'])
+@jwt_required()
+def rate_restaurant(order_id):
+    """Entregador avalia o estabelecimento após a entrega"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type != UserType.DRIVER:
+            return jsonify({'error': 'Apenas entregadores podem avaliar'}), 403
+
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
+        # Verifica se o pedido pertence ao entregador
+        if not order.delivery or order.delivery.driver_id != user.driver.id:
+            return jsonify({'error': 'Pedido não pertence a este entregador'}), 403
+
+        # Verifica se ja foi avaliado
+        if order.delivery.driver_rating:
+            return jsonify({'error': 'Pedido já foi avaliado'}), 400
+
+        # Verifica se esta entregue
+        if order.status != OrderStatus.DELIVERED:
+            return jsonify({'error': 'Apenas pedidos entregues podem ser avaliados'}), 400
+
+        data = request.get_json()
+        rating = data.get('rating')
+        feedback = data.get('feedback', '')
+
+        if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
+            return jsonify({'error': 'Avaliação deve ser um número de 1 a 5'}), 400
+
+        # Atualiza a avaliacao na entrega
+        order.delivery.driver_rating = rating
+        order.delivery.driver_feedback = feedback
+        order.delivery.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Avaliação registrada com sucesso',
+            'rating': rating,
+            'feedback': feedback
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 def notify_admin_low_rating(driver, rating, feedback, order):
     """Notifica admin quando entregador recebe avaliacao baixa"""
     try:
