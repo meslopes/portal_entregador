@@ -774,3 +774,42 @@ class DynamicPricing(db.Model):
             'updated_at': self.updated_at.isoformat()
         }
 
+
+class Invoice(db.Model):
+    """Fatura semanal do estabelecimento"""
+    __tablename__ = 'invoices'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    week_start = db.Column(db.DateTime, nullable=False)
+    week_end = db.Column(db.DateTime, nullable=False)
+    total_amount = db.Column(db.Numeric(10, 2), default=0)  # total delivery fees
+    driver_earnings = db.Column(db.Numeric(10, 2), default=0)  # total to unlock
+    platform_fee = db.Column(db.Numeric(10, 2), default=0)  # muv.log fee
+    deliveries_count = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, OVERDUE
+    paid_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    restaurant = db.relationship('Restaurant', backref='invoices')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'restaurant_id': self.restaurant_id,
+            'restaurant_name': self.restaurant.name if self.restaurant else None,
+            'week_start': self.week_start.isoformat() if self.week_start else None,
+            'week_end': self.week_end.isoformat() if self.week_end else None,
+            'total_amount': float(self.total_amount) if self.total_amount else 0,
+            'driver_earnings': float(self.driver_earnings) if self.driver_earnings else 0,
+            'platform_fee': float(self.platform_fee) if self.platform_fee else 0,
+            'deliveries_count': self.deliveries_count or 0,
+            'status': self.status,
+            'paid_at': self.paid_at.isoformat() if self.paid_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+

@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
-    Notification, Tenant, PricingTable, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    Notification, Tenant, PricingTable, Invoice, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -3125,6 +3125,154 @@ def process_withdrawal(withdrawal_id):
         db.session.commit()
         
         return jsonify({'message': f'Saque {"aprovado" if action == "approve" else "rejeitado"} com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# FATURAS SEMANAIS
+# ============================================
+
+@admin_bp.route('/invoices', methods=['GET'])
+@jwt_required()
+@admin_required
+def list_invoices():
+    """Lista faturas com filtros"""
+    try:
+        tenant_id = get_current_tenant_id()
+        status = request.args.get('status')
+        
+        query = Invoice.query.join(Restaurant)
+        if tenant_id:
+            query = query.filter(Invoice.tenant_id == tenant_id)
+        if status:
+            query = query.filter(Invoice.status == status)
+        
+        invoices = query.order_by(Invoice.created_at.desc()).all()
+        return jsonify({'invoices': [i.to_dict() for i in invoices]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/invoices/generate', methods=['POST'])
+@jwt_required()
+@admin_required
+def generate_invoices():
+    """Gera faturas da semana anterior para todos os estabelecimentos"""
+    try:
+        from decimal import Decimal
+        tenant_id = get_current_tenant_id()
+        
+        # Calcular semana anterior (seg-dom)
+        today = datetime.utcnow().date()
+        days_since_monday = today.weekday()
+        week_end = datetime.combine(today - timedelta(days=days_since_monday), datetime.min.time())
+        week_start = week_end - timedelta(days=7)
+        
+        # Buscar todos os restaurantes do tenant
+        restaurant_query = Restaurant.query
+        if tenant_id:
+            restaurant_query = restaurant_query.filter(Restaurant.tenant_id == tenant_id)
+        restaurants = restaurant_query.all()
+        
+        generated = []
+        for restaurant in restaurants:
+            # Verificar se já existe fatura para esta semana
+            existing = Invoice.query.filter_by(
+                restaurant_id=restaurant.id,
+                week_start=week_start,
+                week_end=week_end
+            ).first()
+            if existing:
+                continue
+            
+            # Buscar entregas da semana
+            deliveries = db.session.query(Delivery).join(Order).filter(
+                Order.restaurant_id == restaurant.id,
+                Order.status == OrderStatus.DELIVERED,
+                Delivery.delivered_at >= week_start,
+                Delivery.delivered_at < week_end
+            ).all()
+            
+            if not deliveries:
+                continue
+            
+            total_amount = sum(float(d.delivery_fee or 0) for d in deliveries)
+            driver_earnings = sum(float(d.driver_earnings or 0) for d in deliveries)
+            platform_fee = total_amount - driver_earnings
+            
+            invoice = Invoice(
+                tenant_id=tenant_id or restaurant.tenant_id,
+                restaurant_id=restaurant.id,
+                week_start=week_start,
+                week_end=week_end,
+                total_amount=Decimal(str(total_amount)),
+                driver_earnings=Decimal(str(driver_earnings)),
+                platform_fee=Decimal(str(platform_fee)),
+                deliveries_count=len(deliveries),
+                status='PENDING'
+            )
+            db.session.add(invoice)
+            generated.append(restaurant.name)
+        
+        db.session.commit()
+        return jsonify({
+            'message': f'{len(generated)} faturas geradas',
+            'restaurants': generated
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/invoices/<int:invoice_id>/pay', methods=['POST'])
+@jwt_required()
+@admin_required
+def pay_invoice(invoice_id):
+    """Marca fatura como paga e desbloqueia saldo dos entregadores"""
+    try:
+        from decimal import Decimal
+        
+        invoice = Invoice.query.get(invoice_id)
+        if not invoice:
+            return jsonify({'error': 'Fatura não encontrada'}), 404
+        
+        if invoice.status != 'PENDING':
+            return jsonify({'error': 'Fatura já processada'}), 400
+        
+        # Buscar entregas da semana para este restaurante
+        deliveries = db.session.query(Delivery).join(Order).filter(
+            Order.restaurant_id == invoice.restaurant_id,
+            Order.status == OrderStatus.DELIVERED,
+            Delivery.delivered_at >= invoice.week_start,
+            Delivery.delivered_at < invoice.week_end
+        ).all()
+        
+        # Desbloquear saldo de cada entregador
+        drivers_unlocked = {}
+        for delivery in deliveries:
+            if delivery.driver_id and delivery.driver_earnings:
+                driver = Driver.query.get(delivery.driver_id)
+                if driver:
+                    earnings = Decimal(str(float(delivery.driver_earnings)))
+                    driver.locked_balance = (driver.locked_balance or Decimal('0')) - earnings
+                    driver.balance = (driver.balance or Decimal('0')) + earnings
+                    driver.updated_at = datetime.utcnow()
+                    drivers_unlocked[driver.id] = drivers_unlocked.get(driver.id, 0) + float(earnings)
+        
+        # Marcar fatura como paga
+        invoice.status = 'PAID'
+        invoice.paid_at = datetime.utcnow()
+        invoice.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Fatura paga e saldos desbloqueados',
+            'drivers_unlocked': len(drivers_unlocked),
+            'total_unlocked': sum(drivers_unlocked.values())
+        }), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

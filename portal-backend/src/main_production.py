@@ -480,6 +480,29 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tabela invoices
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS invoices (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    restaurant_id INTEGER NOT NULL REFERENCES restaurants(id),
+                    week_start TIMESTAMP NOT NULL,
+                    week_end TIMESTAMP NOT NULL,
+                    total_amount NUMERIC(10,2) DEFAULT 0,
+                    driver_earnings NUMERIC(10,2) DEFAULT 0,
+                    platform_fee NUMERIC(10,2) DEFAULT 0,
+                    deliveries_count INTEGER DEFAULT 0,
+                    status VARCHAR(20) DEFAULT 'PENDING',
+                    paid_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

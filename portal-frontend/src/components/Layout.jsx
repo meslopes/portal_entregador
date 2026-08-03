@@ -46,6 +46,7 @@ const Layout = ({ children }) => {
     { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
     { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
     { name: 'Saques', href: '/admin/withdrawals', icon: CreditCard },
+    { name: 'Faturas', href: '/admin/invoices', icon: FileText },
     { name: 'Relatórios', href: '/admin/reports', icon: FileText },
     { name: 'Configurações', href: '/admin/settings', icon: Settings },
   ];
