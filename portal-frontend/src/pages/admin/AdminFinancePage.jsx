@@ -13,7 +13,7 @@ const AdminFinancePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('month');
-  const [commission, setCommission] = useState(30); // % que o admin retém
+  const [commission, setCommission] = useState(70); // % que o entregador recebe
   const [savingCommission, setSavingCommission] = useState(false);
 
   useEffect(() => { loadData(); }, [period]);
@@ -63,8 +63,8 @@ const AdminFinancePage = () => {
   // Calculos financeiros - baseado em FRETE (km), NAO em valor dos itens
   // Frete total cobrado dos estabelecimentos
   const totalFromEstablishments = data?.total_delivery_fees || 0;
-  // O que entregadores devem receber
-  const totalToDrivers = driverPayments?.total_pending || 0;
+  // O que entregadores devem receber (baseado na comissão)
+  const totalToDrivers = totalFromEstablishments * (commission / 100);
   // Lucro do admin (frete - o que vai pros entregadores)
   const adminRetention = totalFromEstablishments - totalToDrivers;
   const retentionRate = totalFromEstablishments > 0 ? ((adminRetention / totalFromEstablishments) * 100).toFixed(1) : 0;
@@ -149,11 +149,11 @@ const AdminFinancePage = () => {
               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>100%</span>
             </div>
             <div style={{ height: '2rem', borderRadius: '0.5rem', overflow: 'hidden', display: 'flex' }}>
-              <div style={{ width: `${100 - commission}%`, background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>
-                Entregadores ({100 - commission}%)
+              <div style={{ width: `${commission}%`, background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>
+                Entregadores ({commission}%)
               </div>
-              <div style={{ width: `${commission}%`, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>
-                Admin ({commission}%)
+              <div style={{ width: `${100 - commission}%`, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>
+                Admin ({100 - commission}%)
               </div>
             </div>
           </div>
@@ -169,7 +169,7 @@ const AdminFinancePage = () => {
         <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Percentual retido pelo admin (%)
+              Percentual do entregador (%)
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <input
