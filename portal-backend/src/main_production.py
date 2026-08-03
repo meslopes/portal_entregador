@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # Force redeploy: 2026-07-25
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from src.models.portal_models import db
@@ -502,6 +502,14 @@ def create_app(config_name=None):
     @jwt.unauthorized_loader
     def missing_token_callback(error):
         return jsonify({'error': 'Token de acesso necessário'}), 401
+    
+    # Servir arquivos de upload (prova de entrega)
+    @app.route('/uploads/proofs/<path:filename>')
+    def serve_proof(filename):
+        uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
+        if os.path.exists(os.path.join(uploads_dir, filename)):
+            return send_from_directory(uploads_dir, filename)
+        return jsonify({'error': 'Arquivo não encontrado'}), 404
     
     return app
 
