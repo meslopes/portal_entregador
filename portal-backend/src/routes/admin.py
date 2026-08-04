@@ -3187,12 +3187,12 @@ def generate_invoices():
             if existing:
                 continue
             
-            # Buscar entregas da semana
+            # Buscar entregas da semana (usando updated_at do Order quando foi marcado como DELIVERED)
             deliveries = db.session.query(Delivery).join(Order).filter(
                 Order.restaurant_id == restaurant.id,
                 Order.status == OrderStatus.DELIVERED,
-                Delivery.delivered_at >= week_start,
-                Delivery.delivered_at < week_end
+                Order.updated_at >= week_start,
+                Order.updated_at < week_end
             ).all()
             
             if not deliveries:
