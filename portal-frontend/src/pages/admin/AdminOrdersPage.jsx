@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
+import DateRangeFilter from '@/components/DateRangeFilter';
 
 const STATUS_FILTERS = [
   { key: '', label: 'Todos', color: '#64748b' },
@@ -36,13 +37,19 @@ const AdminOrdersPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [editingOrder, setEditingOrder] = useState(null);
   const [editData, setEditData] = useState({});
+  const [dateRange, setDateRange] = useState(null);
 
-  useEffect(() => { loadOrders(); }, [page, statusFilter]);
+  useEffect(() => { loadOrders(); }, [page, statusFilter, dateRange]);
 
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getAllOrders(page, 20, statusFilter);
+      const params = { page, per_page: 20, status: statusFilter };
+      if (dateRange) {
+        params.start_date = dateRange.startDate;
+        params.end_date = dateRange.endDate;
+      }
+      const response = await adminService.getAllOrders(page, 20, statusFilter, dateRange?.startDate, dateRange?.endDate);
       setOrders(response.orders || []);
       setTotalPages(response.pages || 1);
     } catch (err) {
@@ -116,6 +123,9 @@ const AdminOrdersPage = () => {
           <AlertCircle size={16} /> {error}
         </div>
       )}
+
+      {/* Filtro de Datas */}
+      <DateRangeFilter onChange={(range) => { setDateRange(range); setPage(1); }} />
 
       {/* Filtros */}
       <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
