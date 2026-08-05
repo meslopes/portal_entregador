@@ -1,15 +1,26 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Função utilitária fora do componente
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getInitialDates = () => {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+  return { startDate: formatDate(start), endDate: formatDate(now) };
+};
+
 const DateRangeFilter = ({ onChange }) => {
-  const [startDate, setStartDate] = useState(() => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
-    return formatDate(start);
-  });
-  const [endDate, setEndDate] = useState(() => formatDate(new Date()));
+  const initial = useRef(getInitialDates());
+  const [startDate, setStartDate] = useState(initial.current.startDate);
+  const [endDate, setEndDate] = useState(initial.current.endDate);
   const [preset, setPreset] = useState('thisWeek');
   const initialSent = useRef(false);
 
@@ -17,20 +28,9 @@ const DateRangeFilter = ({ onChange }) => {
   React.useEffect(() => {
     if (!initialSent.current && onChange) {
       initialSent.current = true;
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
-      onChange({ startDate: formatDate(start), endDate: formatDate(now), preset: 'thisWeek' });
+      onChange({ startDate: initial.current.startDate, endDate: initial.current.endDate, preset: 'thisWeek' });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const formatDate = useCallback((date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }, []);
 
   const applyPreset = useCallback((presetKey) => {
     setPreset(presetKey);
@@ -84,7 +84,7 @@ const DateRangeFilter = ({ onChange }) => {
     setStartDate(startStr);
     setEndDate(endStr);
     if (onChange) onChange({ startDate: startStr, endDate: endStr, preset: presetKey });
-  }, [onChange, formatDate]);
+  }, [onChange]);
 
   const handleCustomDateChange = useCallback((newStart, newEnd) => {
     if (newStart && newEnd) {
@@ -106,7 +106,7 @@ const DateRangeFilter = ({ onChange }) => {
     setEndDate(newEnd);
     setPreset('custom');
     if (onChange) onChange({ startDate: newStart, endDate: newEnd, preset: 'custom' });
-  }, [startDate, onChange, formatDate]);
+  }, [startDate, onChange]);
 
   const presets = [
     { key: 'today', label: 'Hoje' },
@@ -126,7 +126,6 @@ const DateRangeFilter = ({ onChange }) => {
         <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>Período</span>
       </div>
 
-      {/* Presets */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
         {presets.map(p => (
           <button
@@ -140,8 +139,7 @@ const DateRangeFilter = ({ onChange }) => {
               color: preset === p.key ? '#2563eb' : '#64748b',
               cursor: 'pointer',
               fontSize: '0.75rem',
-              fontWeight: preset === p.key ? 600 : 400,
-              transition: 'all 0.15s'
+              fontWeight: preset === p.key ? 600 : 400
             }}
           >
             {p.label}
@@ -149,33 +147,16 @@ const DateRangeFilter = ({ onChange }) => {
         ))}
       </div>
 
-      {/* Custom dates */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <button
-          onClick={() => navigateWeek('prev')}
-          style={{ padding: '0.375rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
-        >
+        <button onClick={() => navigateWeek('prev')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}>
           <ChevronLeft size={16} />
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); handleCustomDateChange(e.target.value, endDate); }}
-            style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.8125rem' }}
-          />
+          <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); handleCustomDateChange(e.target.value, endDate); }} style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.8125rem' }} />
           <span style={{ color: '#64748b', fontSize: '0.8125rem' }}>até</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); handleCustomDateChange(startDate, e.target.value); }}
-            style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.8125rem' }}
-          />
+          <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); handleCustomDateChange(startDate, e.target.value); }} style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.8125rem' }} />
         </div>
-        <button
-          onClick={() => navigateWeek('next')}
-          style={{ padding: '0.375rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}
-        >
+        <button onClick={() => navigateWeek('next')} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer' }}>
           <ChevronRight size={16} />
         </button>
       </div>
