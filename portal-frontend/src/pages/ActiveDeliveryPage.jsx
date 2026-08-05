@@ -150,9 +150,9 @@ const ActiveDeliveryPage = () => {
       // Atualiza o status localmente
       setOrder(prev => prev ? { ...prev, status: action.next } : prev);
 
-      // Se entregue, redireciona para o dashboard
+      // Se entregue, mostra modal de avaliação
       if (action.next === 'DELIVERED') {
-        window.location.href = '/dashboard';
+        setShowRating(true);
       }
     } catch (err) {
       if (!isMounted.current) return;
