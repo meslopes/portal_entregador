@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, RefreshCw, CheckCircle, Clock, AlertCircle, DollarSign } from 'lucide-react';
 import api from '@/lib/api';
+import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminInvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
@@ -9,14 +10,20 @@ const AdminInvoicesPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [filter, setFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(null);
 
-  useEffect(() => { loadInvoices(); }, [filter]);
+  useEffect(() => { loadInvoices(); }, [filter, dateRange]);
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      const params = filter !== 'all' ? `?status=${filter.toUpperCase()}` : '';
-      const response = await api.get(`/api/admin/invoices${params}`);
+      const params = new URLSearchParams();
+      if (filter !== 'all') params.append('status', filter.toUpperCase());
+      if (dateRange) {
+        params.append('date_from', dateRange.startDate);
+        params.append('date_to', dateRange.endDate);
+      }
+      const response = await api.get(`/api/admin/invoices?${params.toString()}`);
       setInvoices(response.data.invoices || []);
     } catch (err) {
       setError('Erro ao carregar faturas');
@@ -92,6 +99,9 @@ const AdminInvoicesPage = () => {
 
       {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
       {success && <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem' }}>{success}</div>}
+
+      {/* Filtro de Datas */}
+      <DateRangeFilter onChange={(range) => setDateRange(range)} />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>

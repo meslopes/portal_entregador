@@ -5,6 +5,7 @@ import {
   Percent, Wallet, ArrowDownRight, CreditCard
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminFinancePage = () => {
   const [data, setData] = useState(null);
@@ -13,10 +14,11 @@ const AdminFinancePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('month');
+  const [dateRange, setDateRange] = useState(null);
   const [commission, setCommission] = useState(30); // % que o admin retém
   const [savingCommission, setSavingCommission] = useState(false);
 
-  useEffect(() => { loadData(); }, [period]);
+  useEffect(() => { loadData(); }, [period, dateRange]);
 
   const loadData = async () => {
     try {
@@ -25,8 +27,8 @@ const AdminFinancePage = () => {
       const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
 
       const [finance, establishments, payments, configRes] = await Promise.all([
-        adminService.getFinanceDashboard(period),
-        adminService.getFinanceByEstablishment(period),
+        adminService.getFinanceDashboard(period, dateRange?.startDate, dateRange?.endDate),
+        adminService.getFinanceByEstablishment(period, dateRange?.startDate, dateRange?.endDate),
         fetch(`${API_URL}/api/admin/driver-payments`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
         fetch(`${API_URL}/api/admin/settings`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
       ]);
@@ -103,6 +105,9 @@ const AdminFinancePage = () => {
           <AlertCircle size={16} /> {error}
         </div>
       )}
+
+      {/* Filtro de Datas */}
+      <DateRangeFilter onChange={(range) => setDateRange(range)} />
 
       {/* Fluxo Financeiro */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', overflow: 'hidden' }}>

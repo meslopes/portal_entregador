@@ -264,13 +264,19 @@ export const adminService = {
     return response.data;
   },
 
-  getFinanceDashboard: async (period = 'month') => {
-    const response = await api.get('/api/admin/finance', { params: { period } });
+  getFinanceDashboard: async (period = 'month', dateFrom, dateTo) => {
+    const params = { period };
+    if (dateFrom) params.date_from = dateFrom;
+    if (dateTo) params.date_to = dateTo;
+    const response = await api.get('/api/admin/finance', { params });
     return response.data;
   },
 
-  getFinanceByEstablishment: async (period = 'month') => {
-    const response = await api.get('/api/admin/finance/establishments', { params: { period } });
+  getFinanceByEstablishment: async (period = 'month', dateFrom, dateTo) => {
+    const params = { period };
+    if (dateFrom) params.date_from = dateFrom;
+    if (dateTo) params.date_to = dateTo;
+    const response = await api.get('/api/admin/finance/establishments', { params });
     return response.data;
   },
 

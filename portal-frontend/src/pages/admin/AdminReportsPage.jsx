@@ -5,6 +5,7 @@ import {
   Target, ArrowUpDown
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminReportsPage = () => {
   const [period, setPeriod] = useState(30);
@@ -18,9 +19,10 @@ const AdminReportsPage = () => {
   const [cancellations, setCancellations] = useState(null);
   const [ratings, setRatings] = useState(null);
   const [peakHours, setPeakHours] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
   const [deliveriesByDriver, setDeliveriesByDriver] = useState([]);
 
-  useEffect(() => { loadAll(); }, [period]);
+  useEffect(() => { loadAll(); }, [period, dateRange]);
 
   const loadAll = async () => {
     try {
@@ -94,6 +96,9 @@ const AdminReportsPage = () => {
           <AlertCircle size={16} /> {error}
         </div>
       )}
+
+      {/* Filtro de Datas */}
+      <DateRangeFilter onChange={(range) => setDateRange(range)} />
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.5rem', background: 'white', borderRadius: '0.75rem', padding: '0.375rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
