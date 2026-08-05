@@ -1829,21 +1829,41 @@ def re_geocode_establishment(establishment_id):
 @jwt_required()
 @admin_required
 def delete_establishment(establishment_id):
-    """Exclui um estabelecimento"""
+    """Exclui um estabelecimento (com opção de forçar exclusão mesmo com pedidos)"""
     try:
         est = Restaurant.query.get(establishment_id)
         if not est:
-            return jsonify({'error': 'Estabelecimento nÃƒÂ£o encontrado'}), 404
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
 
         # Verificar se tem pedidos
         has_orders = Order.query.filter_by(restaurant_id=establishment_id).first()
         if has_orders:
-            return jsonify({'error': 'NÃƒÂ£o ÃƒÂ© possÃƒÂ­vel excluir estabelecimento com pedidos vinculados'}), 400
+            # Verificar se é exclusão forçada
+            force = request.args.get('force', 'false').lower() == 'true'
+            if not force:
+                return jsonify({'error': 'Estabelecimento tem pedidos vinculados. Use ?force=true para excluir mesmo assim'}), 400
+            
+            # Exclusão forçada: deletar pedidos e entregas vinculados
+            orders = Order.query.filter_by(restaurant_id=establishment_id).all()
+            for order in orders:
+                # Deletar entregas vinculadas
+                Delivery.query.filter_by(order_id=order.id).delete()
+                # Deletar pagamentos vinculados
+                Payment.query.filter_by(order_id=order.id).delete()
+                # Deletar notificações vinculadas
+                Notification.query.filter_by(order_id=order.id).delete()
+            # Deletar pedidos
+            Order.query.filter_by(restaurant_id=establishment_id).delete()
+
+        # Deletar cliente vinculado (se existir)
+        customer = Customer.query.filter_by(name=est.name).first()
+        if customer:
+            db.session.delete(customer)
 
         db.session.delete(est)
         db.session.commit()
 
-        return jsonify({'message': 'Estabelecimento excluÃƒÂ­do com sucesso'}), 200
+        return jsonify({'message': 'Estabelecimento excluído com sucesso'}), 200
 
     except Exception as e:
         db.session.rollback()

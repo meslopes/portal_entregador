@@ -239,10 +239,14 @@ const AdminEstablishmentsPage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir este estabelecimento?')) return;
+  const handleDelete = async (id, hasOrders) => {
+    if (hasOrders) {
+      if (!window.confirm('Este estabelecimento tem pedidos vinculados. Deseja excluir mesmo assim? Todos os pedidos serão apagados.')) return;
+    } else {
+      if (!window.confirm('Tem certeza que deseja excluir este estabelecimento?')) return;
+    }
     try {
-      await adminService.deleteEstablishment(id);
+      await adminService.deleteEstablishment(id, hasOrders);
       loadEstablishments();
     } catch (err) {
       alert(err.response?.data?.error || 'Erro ao excluir');
@@ -461,7 +465,7 @@ const AdminEstablishmentsPage = () => {
                     <Edit size={16} />
                   </button>
                   <button
-                    onClick={() => handleDelete(est.id)}
+                    onClick={() => handleDelete(est.id, est.total_orders > 0)}
                     style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', transition: 'color 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#dc2626'}
                     onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}

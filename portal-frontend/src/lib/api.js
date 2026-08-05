@@ -304,8 +304,9 @@ export const adminService = {
     return response.data;
   },
 
-  deleteEstablishment: async (establishmentId) => {
-    const response = await api.delete(`/api/admin/establishments/${establishmentId}`);
+  deleteEstablishment: async (establishmentId, force = false) => {
+    const url = force ? `/api/admin/establishments/${establishmentId}?force=true` : `/api/admin/establishments/${establishmentId}`;
+    const response = await api.delete(url);
     return response.data;
   },
 
