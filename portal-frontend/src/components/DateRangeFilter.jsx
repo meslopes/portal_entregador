@@ -1,15 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const DateRangeFilter = ({ onChange, showWeekPresets = true }) => {
+const DateRangeFilter = ({ onChange }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [preset, setPreset] = useState('thisWeek');
+  const initialized = useRef(false);
 
-  // Inicializar com semana atual
+  // Inicializar com semana atual (sem chamar onChange)
   useEffect(() => {
-    applyPreset('thisWeek');
-  }, []);
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+    const startStr = formatDate(start);
+    const endStr = formatDate(now);
+    setStartDate(startStr);
+    setEndDate(endStr);
+    initialized.current = true;
+    // Chamar onChange uma vez na inicialização
+    onChange({ startDate: startStr, endDate: endStr, preset: 'thisWeek' });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const applyPreset = (presetKey) => {
     setPreset(presetKey);
@@ -26,9 +44,8 @@ const DateRangeFilter = ({ onChange, showWeekPresets = true }) => {
         end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
         break;
       case 'thisWeek':
-        // Segunda-feira da semana atual
         const dayOfWeek = now.getDay();
-        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Ajustar para segunda
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
         start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
         end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
         break;
@@ -66,17 +83,10 @@ const DateRangeFilter = ({ onChange, showWeekPresets = true }) => {
     onChange({ startDate: startStr, endDate: endStr, preset: presetKey });
   };
 
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const handleCustomDateChange = () => {
-    if (startDate && endDate) {
+  const handleCustomDateChange = (newStart, newEnd) => {
+    if (newStart && newEnd) {
       setPreset('custom');
-      onChange({ startDate, endDate, preset: 'custom' });
+      onChange({ startDate: newStart, endDate: newEnd, preset: 'custom' });
     }
   };
 
@@ -148,14 +158,14 @@ const DateRangeFilter = ({ onChange, showWeekPresets = true }) => {
           <input
             type="date"
             value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); handleCustomDateChange(); }}
+            onChange={(e) => { setStartDate(e.target.value); handleCustomDateChange(e.target.value, endDate); }}
             style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.8125rem' }}
           />
           <span style={{ color: '#64748b', fontSize: '0.8125rem' }}>até</span>
           <input
             type="date"
             value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); handleCustomDateChange(); }}
+            onChange={(e) => { setEndDate(e.target.value); handleCustomDateChange(startDate, e.target.value); }}
             style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.8125rem' }}
           />
         </div>
