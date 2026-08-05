@@ -1,35 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DateRangeFilter = ({ onChange }) => {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [preset, setPreset] = useState('thisWeek');
-  const initialized = useRef(false);
-
-  // Inicializar com semana atual (sem chamar onChange)
-  useEffect(() => {
+  const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     const dayOfWeek = now.getDay();
     const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
-    const startStr = formatDate(start);
-    const endStr = formatDate(now);
-    setStartDate(startStr);
-    setEndDate(endStr);
-    initialized.current = true;
-    // Chamar onChange uma vez na inicialização
-    onChange({ startDate: startStr, endDate: endStr, preset: 'thisWeek' });
+    return formatDate(start);
+  });
+  const [endDate, setEndDate] = useState(() => formatDate(new Date()));
+  const [preset, setPreset] = useState('thisWeek');
+  const initialSent = useRef(false);
+
+  // Enviar valor inicial apenas uma vez
+  React.useEffect(() => {
+    if (!initialSent.current && onChange) {
+      initialSent.current = true;
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+      onChange({ startDate: formatDate(start), endDate: formatDate(now), preset: 'thisWeek' });
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const formatDate = (date) => {
+  const formatDate = useCallback((date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
+  }, []);
 
-  const applyPreset = (presetKey) => {
+  const applyPreset = useCallback((presetKey) => {
     setPreset(presetKey);
     const now = new Date();
     let start, end;
@@ -80,17 +83,17 @@ const DateRangeFilter = ({ onChange }) => {
     const endStr = formatDate(end);
     setStartDate(startStr);
     setEndDate(endStr);
-    onChange({ startDate: startStr, endDate: endStr, preset: presetKey });
-  };
+    if (onChange) onChange({ startDate: startStr, endDate: endStr, preset: presetKey });
+  }, [onChange, formatDate]);
 
-  const handleCustomDateChange = (newStart, newEnd) => {
+  const handleCustomDateChange = useCallback((newStart, newEnd) => {
     if (newStart && newEnd) {
       setPreset('custom');
-      onChange({ startDate: newStart, endDate: newEnd, preset: 'custom' });
+      if (onChange) onChange({ startDate: newStart, endDate: newEnd, preset: 'custom' });
     }
-  };
+  }, [onChange]);
 
-  const navigateWeek = (direction) => {
+  const navigateWeek = useCallback((direction) => {
     const current = new Date(startDate);
     if (direction === 'prev') {
       current.setDate(current.getDate() - 7);
@@ -102,8 +105,8 @@ const DateRangeFilter = ({ onChange }) => {
     setStartDate(newStart);
     setEndDate(newEnd);
     setPreset('custom');
-    onChange({ startDate: newStart, endDate: newEnd, preset: 'custom' });
-  };
+    if (onChange) onChange({ startDate: newStart, endDate: newEnd, preset: 'custom' });
+  }, [startDate, onChange, formatDate]);
 
   const presets = [
     { key: 'today', label: 'Hoje' },
