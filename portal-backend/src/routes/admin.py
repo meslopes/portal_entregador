@@ -3188,18 +3188,18 @@ def generate_invoices():
                 continue
             
             # Buscar entregas da semana (usando updated_at do Order quando foi marcado como DELIVERED)
-            deliveries = db.session.query(Delivery).join(Order).filter(
+            delivered_orders = db.session.query(Order).filter(
                 Order.restaurant_id == restaurant.id,
                 Order.status == OrderStatus.DELIVERED,
                 Order.updated_at >= week_start,
                 Order.updated_at < week_end
             ).all()
             
-            if not deliveries:
+            if not delivered_orders:
                 continue
             
-            total_amount = sum(float(d.delivery_fee or 0) for d in deliveries)
-            driver_earnings = sum(float(d.driver_earnings or 0) for d in deliveries)
+            total_amount = sum(float(o.delivery_fee or 0) for o in delivered_orders)
+            driver_earnings = sum(float(o.delivery.driver_earnings or 0) for o in delivered_orders if o.delivery)
             platform_fee = total_amount - driver_earnings
             
             invoice = Invoice(
@@ -3210,7 +3210,7 @@ def generate_invoices():
                 total_amount=Decimal(str(total_amount)),
                 driver_earnings=Decimal(str(driver_earnings)),
                 platform_fee=Decimal(str(platform_fee)),
-                deliveries_count=len(deliveries),
+                deliveries_count=len(delivered_orders),
                 status='PENDING'
             )
             db.session.add(invoice)
@@ -3242,20 +3242,21 @@ def pay_invoice(invoice_id):
             return jsonify({'error': 'Fatura já processada'}), 400
         
         # Buscar entregas da semana para este restaurante
-        deliveries = db.session.query(Delivery).join(Order).filter(
+        # Buscar entregas da semana
+        delivered_orders = db.session.query(Order).filter(
             Order.restaurant_id == invoice.restaurant_id,
             Order.status == OrderStatus.DELIVERED,
-            Delivery.delivered_at >= invoice.week_start,
-            Delivery.delivered_at < invoice.week_end
+            Order.updated_at >= invoice.week_start,
+            Order.updated_at < invoice.week_end
         ).all()
         
         # Desbloquear saldo de cada entregador
         drivers_unlocked = {}
-        for delivery in deliveries:
-            if delivery.driver_id and delivery.driver_earnings:
-                driver = Driver.query.get(delivery.driver_id)
+        for order in delivered_orders:
+            if order.delivery and order.delivery.driver_id and order.delivery.driver_earnings:
+                driver = Driver.query.get(order.delivery.driver_id)
                 if driver:
-                    earnings = Decimal(str(float(delivery.driver_earnings)))
+                    earnings = Decimal(str(float(order.delivery.driver_earnings)))
                     driver.locked_balance = (driver.locked_balance or Decimal('0')) - earnings
                     driver.balance = (driver.balance or Decimal('0')) + earnings
                     driver.updated_at = datetime.utcnow()
