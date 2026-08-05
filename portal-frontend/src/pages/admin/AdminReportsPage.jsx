@@ -22,7 +22,8 @@ const AdminReportsPage = () => {
   const [dateRange, setDateRange] = useState(null);
   const [deliveriesByDriver, setDeliveriesByDriver] = useState([]);
 
-  useEffect(() => { loadAll(); }, [period, dateRange]);
+  useEffect(() => { loadAll(); }, [period]);
+  useEffect(() => { if (dateRange) loadAll(); }, [dateRange]);
 
   const loadAll = async () => {
     try {

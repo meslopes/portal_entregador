@@ -12,7 +12,8 @@ const AdminInvoicesPage = () => {
   const [filter, setFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
 
-  useEffect(() => { loadInvoices(); }, [filter, dateRange]);
+  useEffect(() => { loadInvoices(); }, [filter]);
+  useEffect(() => { if (dateRange) loadInvoices(); }, [dateRange]);
 
   const loadInvoices = async () => {
     try {

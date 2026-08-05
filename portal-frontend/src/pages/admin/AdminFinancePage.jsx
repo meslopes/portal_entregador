@@ -18,7 +18,8 @@ const AdminFinancePage = () => {
   const [commission, setCommission] = useState(30); // % que o admin retém
   const [savingCommission, setSavingCommission] = useState(false);
 
-  useEffect(() => { loadData(); }, [period, dateRange]);
+  useEffect(() => { loadData(); }, [period]);
+  useEffect(() => { if (dateRange) loadData(); }, [dateRange]);
 
   const loadData = async () => {
     try {
