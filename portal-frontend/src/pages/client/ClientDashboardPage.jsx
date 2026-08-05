@@ -546,6 +546,15 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
             </div>
           )}
 
+          {/* Avaliação do Entregador */}
+          {order.delivery?.driver_rating && (
+            <div style={{ marginBottom: '1rem' }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Avaliação do Entregador</p>
+              <p style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{'★'.repeat(order.delivery.driver_rating)}{'☆'.repeat(5 - order.delivery.driver_rating)}</p>
+              {order.delivery.driver_feedback && <p style={{ fontSize: '0.8125rem', color: '#475569', marginTop: '0.25rem' }}>"{order.delivery.driver_feedback}"</p>}
+            </div>
+          )}
+
           {/* Botao cancelar */}
           {canCancel && (
             <button

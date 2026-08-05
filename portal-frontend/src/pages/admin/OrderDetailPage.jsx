@@ -401,6 +401,29 @@ const OrderDetailPage = () => {
         </div>
       )}
 
+      {/* Avaliações */}
+      {(order.delivery?.customer_rating || order.delivery?.driver_rating) && (
+        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem' }}>
+            ⭐ Avaliações
+          </h3>
+          {order.delivery?.customer_rating && (
+            <div style={{ marginBottom: '0.75rem' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Estabelecimento → Entregador</p>
+              <p style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{'★'.repeat(order.delivery.customer_rating)}{'☆'.repeat(5 - order.delivery.customer_rating)}</p>
+              {order.delivery.customer_feedback && <p style={{ fontSize: '0.8125rem', color: '#475569', marginTop: '0.25rem' }}>"{order.delivery.customer_feedback}"</p>}
+            </div>
+          )}
+          {order.delivery?.driver_rating && (
+            <div>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Entregador → Estabelecimento</p>
+              <p style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{'★'.repeat(order.delivery.driver_rating)}{'☆'.repeat(5 - order.delivery.driver_rating)}</p>
+              {order.delivery.driver_feedback && <p style={{ fontSize: '0.8125rem', color: '#475569', marginTop: '0.25rem' }}>"{order.delivery.driver_feedback}"</p>}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Valores */}
       <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
