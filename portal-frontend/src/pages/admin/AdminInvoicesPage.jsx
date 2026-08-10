@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, RefreshCw, CheckCircle, Clock, AlertCircle, DollarSign, QrCode, ExternalLink } from 'lucide-react';
+import { FileText, RefreshCw, CheckCircle, Clock, AlertCircle, DollarSign, QrCode, ExternalLink, Bell } from 'lucide-react';
 import api from '@/lib/api';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
@@ -69,13 +69,25 @@ const AdminInvoicesPage = () => {
       const response = await api.post(`/api/admin/invoices/${id}/charge`);
       if (response.data.payment_url) {
         setPaymentLinks(prev => ({ ...prev, [id]: response.data.payment_url }));
-        setSuccess('Cobrança PIX criada! Clique no link para copiar.');
+        setSuccess('Cobrança PIX criada! Clique no link para copiar ou envie para o estabelecimento.');
       }
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao gerar cobrança. Verifique se o Asaas está configurado.');
     } finally {
       setChargingId(null);
+    }
+  };
+
+  const handleSendLink = async (id) => {
+    const url = paymentLinks[id];
+    if (!url) return;
+    try {
+      await api.post(`/api/admin/invoices/${id}/send-link`, { payment_url: url });
+      setSuccess('Link de pagamento enviado para o estabelecimento!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao enviar link.');
     }
   };
 
@@ -166,10 +178,16 @@ const AdminInvoicesPage = () => {
                   {inv.status === 'PENDING' && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       {paymentLinks[inv.id] ? (
-                        <a href={paymentLinks[inv.id]} target="_blank" rel="noopener noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none' }}>
-                          <ExternalLink size={14} /> Abrir Link de Pagamento
-                        </a>
+                        <>
+                          <a href={paymentLinks[inv.id]} target="_blank" rel="noopener noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none' }}>
+                            <ExternalLink size={14} /> Abrir Link
+                          </a>
+                          <button onClick={() => handleSendLink(inv.id)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#0ea5e9', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+                            <Bell size={14} /> Enviar Link
+                          </button>
+                        </>
                       ) : (
                         <button onClick={() => handleCharge(inv.id)} disabled={chargingId === inv.id}
                           style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: chargingId === inv.id ? 'not-allowed' : 'pointer', fontSize: '0.8125rem', fontWeight: 600, opacity: chargingId === inv.id ? 0.7 : 1 }}>

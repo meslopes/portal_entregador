@@ -1,8 +1,12 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
+import logging
+
+logger = logging.getLogger(__name__)
+
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
-    Notification, Tenant, PricingTable, DynamicPricing, Invoice, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -3628,15 +3632,85 @@ def create_invoice_charge(invoice_id):
         )
 
         if charge.get('success'):
+            payment_url = charge.get('invoice_url')
+
+            # Notificar estabelecimento no app com o link de pagamento
+            try:
+                # Buscar owner do estabelecimento (user vinculado ao customer/restaurant)
+                restaurant_user = User.query.filter_by(
+                    user_type=UserType.CLIENT
+                ).join(Customer, Customer.user_id == User.id).filter(
+                    Customer.name == restaurant.name
+                ).first()
+
+                if restaurant_user:
+                    notification = Notification(
+                        user_id=restaurant_user.id,
+                        title='Nova fatura disponível',
+                        message=f'Sua fatura da semana {invoice.week_start.date()} a {invoice.week_end.date()} no valor de R$ {float(invoice.platform_fee):.2f} está disponível. Clique para pagar via PIX.',
+                        type=NotificationType.PAYMENT,
+                        related_id=invoice.id
+                    )
+                    db.session.add(notification)
+            except Exception as notif_err:
+                logger.warning(f"Erro ao notificar estabelecimento: {notif_err}")
+
             return jsonify({
                 'message': 'Cobrança criada com sucesso',
-                'payment_url': charge.get('invoice_url'),
+                'payment_url': payment_url,
                 'payment_id': charge.get('payment_id')
             }), 200
         else:
             return jsonify({'error': charge.get('error')}), 400
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/invoices/<int:invoice_id>/send-link', methods=['POST'])
+@jwt_required()
+@admin_required
+def send_invoice_payment_link(invoice_id):
+    """Envia notificação com link de pagamento para o estabelecimento"""
+    try:
+        invoice = Invoice.query.get(invoice_id)
+        if not invoice:
+            return jsonify({'error': 'Fatura não encontrada'}), 404
+
+        restaurant = invoice.restaurant
+        if not restaurant:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        data = request.get_json() or {}
+        payment_url = data.get('payment_url', '')
+
+        if not payment_url:
+            return jsonify({'error': 'URL de pagamento não informada'}), 400
+
+        # Buscar owner do estabelecimento
+        restaurant_user = User.query.filter_by(
+            user_type=UserType.CLIENT
+        ).join(Customer, Customer.user_id == User.id).filter(
+            Customer.name == restaurant.name
+        ).first()
+
+        if not restaurant_user:
+            return jsonify({'error': 'Usuário do estabelecimento não encontrado'}), 404
+
+        notification = Notification(
+            user_id=restaurant_user.id,
+            title='Link de pagamento da fatura',
+            message=f'Sua fatura da semana {invoice.week_start.date()} a {invoice.week_end.date()} - R$ {float(invoice.platform_fee):.2f}. Acesse: {payment_url}',
+            type=NotificationType.PAYMENT,
+            related_id=invoice.id
+        )
+        db.session.add(notification)
+        db.session.commit()
+
+        return jsonify({'message': 'Link enviado com sucesso'}), 200
+
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 

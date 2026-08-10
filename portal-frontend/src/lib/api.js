@@ -411,6 +411,11 @@ export const adminService = {
     return response.data;
   },
 
+  sendInvoicePaymentLink: async (invoiceId, paymentUrl) => {
+    const response = await api.post(`/api/admin/invoices/${invoiceId}/send-link`, { payment_url: paymentUrl });
+    return response.data;
+  },
+
   processWithdrawalAuto: async (withdrawalId) => {
     const response = await api.post(`/api/admin/withdrawals/${withdrawalId}/process-auto`);
     return response.data;
