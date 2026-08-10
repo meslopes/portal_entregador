@@ -3433,3 +3433,261 @@ def pay_invoice(invoice_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# INTEGRAÇÃO ASAAS (Gateway de Pagamento)
+# ============================================
+
+@admin_bp.route('/asaas/config', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_asaas_config():
+    """Retorna configuração do Asaas (sem expor a API key)"""
+    from src.models.portal_models import SystemConfig
+    configs = SystemConfig.query.filter(
+        SystemConfig.config_key.in_(['asaas_environment', 'asaas_webhook_token'])
+    ).all()
+    config = {c.config_key: c.config_value for c in configs}
+    return jsonify({
+        'configured': bool(config.get('asaas_environment')),
+        'environment': config.get('asaas_environment', 'sandbox'),
+        'webhook_token': config.get('asaas_webhook_token', ''),
+    }), 200
+
+
+@admin_bp.route('/asaas/config', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_asaas_config():
+    """Atualiza configuração do Asaas"""
+    from src.models.portal_models import SystemConfig
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Dados não fornecidos'}), 400
+
+    fields = ['asaas_api_key', 'asaas_environment', 'asaas_webhook_token']
+    for field in fields:
+        if field in data:
+            config = SystemConfig.query.filter_by(config_key=field).first()
+            if config:
+                config.config_value = data[field]
+                config.updated_at = datetime.utcnow()
+            else:
+                config = SystemConfig(config_key=field, config_value=data[field])
+                db.session.add(config)
+
+    db.session.commit()
+    return jsonify({'message': 'Configuração Asaas atualizada'}), 200
+
+
+@admin_bp.route('/asaas/test', methods=['POST'])
+@jwt_required()
+@admin_required
+def test_asaas_connection():
+    """Testa a conexão com o Asaas"""
+    from src.services.asaas_service import is_configured, get_base_url, get_headers
+    import requests as req
+
+    if not is_configured():
+        return jsonify({'success': False, 'error': 'Asaas não configurado'}), 400
+
+    try:
+        response = req.get(f"{get_base_url()}/customers?limit=1", headers=get_headers(), timeout=10)
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Conexão com Asaas OK'}), 200
+        return jsonify({'success': False, 'error': f'Erro HTTP {response.status_code}'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@admin_bp.route('/invoices/generate-auto', methods=['POST'])
+@jwt_required()
+@admin_required
+def generate_auto_invoices():
+    """
+    Gera faturas automaticamente para todos os estabelecimentos com entregas na semana.
+    """
+    from src.services.asaas_service import create_charge, is_configured
+
+    try:
+        tenant_id = get_current_tenant_id()
+
+        # Calcular período da semana anterior
+        today = datetime.utcnow().date()
+        week_end = today - timedelta(days=today.weekday() + 1)
+        week_start = week_end - timedelta(days=6)
+
+        restaurants = Restaurant.query.filter(Restaurant.is_active == True).all()
+        if tenant_id:
+            restaurants = [r for r in restaurants if r.tenant_id == tenant_id]
+
+        generated = []
+
+        for restaurant in restaurants:
+            existing = Invoice.query.filter_by(
+                restaurant_id=restaurant.id,
+                week_start=datetime.combine(week_start, datetime.min.time()),
+                week_end=datetime.combine(week_end, datetime.min.time())
+            ).first()
+            if existing:
+                continue
+
+            deliveries = Delivery.query.join(Order).filter(
+                Order.restaurant_id == restaurant.id,
+                Order.status == OrderStatus.DELIVERED,
+                Order.delivery_time >= datetime.combine(week_start, datetime.min.time()),
+                Order.delivery_time <= datetime.combine(week_end, datetime.max.time())
+            ).all()
+
+            if not deliveries:
+                continue
+
+            total_amount = sum(float(d.order.delivery_fee) for d in deliveries)
+            driver_earnings = sum(float(d.driver_earnings or 0) for d in deliveries)
+            platform_fee = total_amount - driver_earnings
+
+            invoice = Invoice(
+                tenant_id=tenant_id,
+                restaurant_id=restaurant.id,
+                week_start=datetime.combine(week_start, datetime.min.time()),
+                week_end=datetime.combine(week_end, datetime.min.time()),
+                total_amount=total_amount,
+                driver_earnings=driver_earnings,
+                platform_fee=platform_fee,
+                deliveries_count=len(deliveries),
+                status='PENDING'
+            )
+            db.session.add(invoice)
+            db.session.flush()
+
+            generated.append({
+                'invoice_id': invoice.id,
+                'restaurant': restaurant.name,
+                'total': total_amount,
+                'platform_fee': platform_fee,
+                'deliveries': len(deliveries)
+            })
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'{len(generated)} faturas geradas',
+            'invoices': generated,
+            'period': {'start': week_start.isoformat(), 'end': week_end.isoformat()}
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/invoices/<int:invoice_id>/charge', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_invoice_charge(invoice_id):
+    """Cria cobrança no Asaas para uma fatura específica"""
+    from src.services.asaas_service import create_charge, is_configured, create_customer
+
+    try:
+        invoice = Invoice.query.get(invoice_id)
+        if not invoice:
+            return jsonify({'error': 'Fatura não encontrada'}), 404
+
+        if invoice.status == 'PAID':
+            return jsonify({'error': 'Fatura já está paga'}), 400
+
+        restaurant = invoice.restaurant
+        if not restaurant:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        if not is_configured():
+            return jsonify({'error': 'Asaas não configurado'}), 400
+
+        # Criar cliente no Asaas se não tiver
+        if not restaurant.asaas_customer_id:
+            customer = create_customer(
+                name=restaurant.name,
+                cpf_cnpj=restaurant.cnpj or restaurant.cpf or '00000000000',
+                email=restaurant.email,
+                phone=restaurant.phone
+            )
+            if customer.get('success'):
+                restaurant.asaas_customer_id = customer.get('customer_id')
+                db.session.flush()
+            else:
+                return jsonify({'error': f'Erro ao criar cliente Asaas: {customer.get("error")}'}), 400
+
+        charge = create_charge(
+            customer_id=restaurant.asaas_customer_id,
+            value=float(invoice.platform_fee),
+            billing_type='PIX',
+            due_date=(datetime.utcnow().date() + timedelta(days=3)).isoformat(),
+            description=f'Fatura muv.log - Semana {invoice.week_start.date()} a {invoice.week_end.date()}',
+            external_reference=f'INV-{invoice.id}'
+        )
+
+        if charge.get('success'):
+            return jsonify({
+                'message': 'Cobrança criada com sucesso',
+                'payment_url': charge.get('invoice_url'),
+                'payment_id': charge.get('payment_id')
+            }), 200
+        else:
+            return jsonify({'error': charge.get('error')}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/withdrawals/<int:withdrawal_id>/process-auto', methods=['POST'])
+@jwt_required()
+@admin_required
+def process_withdrawal_auto(withdrawal_id):
+    """Processa saque automaticamente via Asaas PIX"""
+    from src.services.asaas_service import transfer_pix, is_configured, detect_pix_key_type
+
+    try:
+        withdrawal = Payment.query.get(withdrawal_id)
+        if not withdrawal:
+            return jsonify({'error': 'Saque não encontrado'}), 404
+
+        if withdrawal.status != PaymentStatus.PENDING:
+            return jsonify({'error': 'Saque não está pendente'}), 400
+
+        driver = Driver.query.get(withdrawal.driver_id)
+        if not driver or not driver.user:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        if not driver.pix_key:
+            return jsonify({'error': 'Entregador não possui chave PIX configurada'}), 400
+
+        if not is_configured():
+            return jsonify({'error': 'Asaas não configurado'}), 400
+
+        amount = abs(float(withdrawal.amount))
+        pix_key_type = detect_pix_key_type(driver.pix_key)
+
+        result = transfer_pix(
+            value=amount,
+            pix_key=driver.pix_key,
+            pix_key_type=pix_key_type,
+            description=f'Saque muv.log - {driver.user.first_name}'
+        )
+
+        if result.get('success'):
+            withdrawal.status = PaymentStatus.PROCESSED
+            withdrawal.updated_at = datetime.utcnow()
+            driver.locked_balance = (driver.locked_balance or 0) - amount
+            db.session.commit()
+
+            return jsonify({
+                'message': f'Saque de R$ {amount:.2f} processado via PIX',
+                'transfer_id': result.get('transfer_id')
+            }), 200
+        else:
+            return jsonify({'error': f'Erro na transferência PIX: {result.get("error")}'}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

@@ -252,6 +252,8 @@ class Restaurant(db.Model):
     bank_agency = db.Column(db.String(20))
     bank_account = db.Column(db.String(30))
     bank_pix_key = db.Column(db.String(100))
+    # Integração Asaas
+    asaas_customer_id = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -278,6 +280,7 @@ class Restaurant(db.Model):
             'bank_agency': self.bank_agency,
             'bank_account': self.bank_account,
             'bank_pix_key': self.bank_pix_key,
+            'asaas_customer_id': self.asaas_customer_id,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

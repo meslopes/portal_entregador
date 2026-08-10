@@ -110,6 +110,18 @@
 - [ ] Testes completos (usar ROTEIRO_TESTES.md)
 - [ ] Atualizar documentacao restante (arquitetura, configuracoes, design)
 
+## 🔄 Fase 4: Financeiro e Carteiras (EM ANDAMENTO)
+- [x] Servico Asaas (gateway de pagamento)
+- [x] Webhook Asaas para notificacoes de pagamento
+- [x] Rotas admin para configuracao Asaas
+- [x] Geracao automatica de faturas semanais
+- [x] Cobranca via Asaas (PIX/boleto)
+- [x] Saque PIX automatico via Asaas
+- [x] API frontend para Asaas
+- [ ] Interface admin para configurar Asaas
+- [ ] Interface admin para gerar faturas automaticamente
+- [ ] Testes de integracao Asaas
+
 ## 🔧 Bugs Conhecidos
 - [ ] Footer "Privacidade" pode aparecer truncado em mobile
 - [ ] Dashboard do entregador pode mostrar zeros apos login (cache do navegador)

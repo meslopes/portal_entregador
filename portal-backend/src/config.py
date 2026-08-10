@@ -44,6 +44,11 @@ class Config:
     WHATSAPP_BUSINESS_ACCOUNT_ID = os.getenv('WHATSAPP_BUSINESS_ACCOUNT_ID', '')
     ADMIN_WHATSAPP = os.getenv('ADMIN_WHATSAPP', '5551981213934')
 
+    # Configurações do Asaas (Gateway de Pagamento)
+    ASAAS_API_KEY = os.getenv('ASAAS_API_KEY', '')
+    ASAAS_ENVIRONMENT = os.getenv('ASAAS_ENVIRONMENT', 'sandbox')
+    ASAAS_WEBHOOK_TOKEN = os.getenv('ASAAS_WEBHOOK_TOKEN', '')
+
 class DevelopmentConfig(Config):
     """Configuração para desenvolvimento"""
     DEBUG = True

@@ -865,3 +865,116 @@ def process_driver_response_whatsapp(phone, action):
 
     except Exception as e:
         print(f"Erro ao processar resposta WhatsApp do entregador: {e}")
+
+
+# ============================================
+# WEBHOOK ASAAS (Pagamentos)
+# ============================================
+
+@webhook_bp.route('/asaas', methods=['POST'])
+def asaas_webhook():
+    """
+    Webhook para receber notificações do Asaas.
+    Eventos: PAYMENT_RECEIVED, PAYMENT_CONFIRMED, PAYMENT_OVERDUE, etc.
+    """
+    try:
+        from src.services.asaas_service import verify_webhook_token
+
+        # Verificar token do webhook
+        token = request.headers.get('asaas-access-token', '')
+        if not verify_webhook_token(token):
+            return jsonify({'error': 'Token inválido'}), 401
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+
+        event = data.get('event')
+        payment = data.get('payment', {})
+
+        if not event or not payment:
+            return jsonify({'status': 'ignored'}), 200
+
+        payment_id = payment.get('id')
+        external_ref = payment.get('externalReference', '')
+        status = payment.get('status')
+
+        logger.info(f"Asaas webhook: event={event}, payment={payment_id}, status={status}")
+
+        # Processar conforme o evento
+        if event in ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED']:
+            process_asaas_payment_received(payment_id, external_ref, payment)
+        elif event == 'PAYMENT_OVERDUE':
+            process_asaas_payment_overdue(payment_id, external_ref)
+        elif event == 'PAYMENT_REFUNDED':
+            process_asaas_payment_refunded(payment_id, external_ref)
+
+        return jsonify({'status': 'ok'}), 200
+
+    except Exception as e:
+        logger.error(f"Erro no webhook Asaas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+def process_asaas_payment_received(payment_id, external_ref, payment_data):
+    """Processa pagamento recebido via Asaas"""
+    try:
+        from src.models.portal_models import Invoice, Payment, PaymentStatus
+
+        # Verificar se é pagamento de fatura (invoice)
+        if external_ref and external_ref.startswith('INV-'):
+            invoice_id = external_ref.replace('INV-', '')
+            invoice = Invoice.query.get(int(invoice_id))
+            if invoice:
+                invoice.status = 'PAID'
+                invoice.paid_at = datetime.utcnow()
+                db.session.commit()
+                logger.info(f"Fatura #{invoice.id} marcada como paga via Asaas")
+                return
+
+        # Verificar se é pagamento de saque (withdrawal)
+        if external_ref and external_ref.startswith('WDR-'):
+            withdrawal_id = external_ref.replace('WDR-', '')
+            withdrawal = Payment.query.get(int(withdrawal_id))
+            if withdrawal:
+                withdrawal.status = PaymentStatus.PROCESSED
+                db.session.commit()
+                logger.info(f"Saque #{withdrawal.id} processado via Asaas")
+                return
+
+    except Exception as e:
+        logger.error(f"Erro ao processar pagamento Asaas: {e}")
+
+
+def process_asaas_payment_overdue(payment_id, external_ref):
+    """Processa pagamento vencido"""
+    try:
+        from src.models.portal_models import Invoice
+        if external_ref and external_ref.startswith('INV-'):
+            invoice_id = external_ref.replace('INV-', '')
+            invoice = Invoice.query.get(int(invoice_id))
+            if invoice:
+                invoice.status = 'OVERDUE'
+                db.session.commit()
+                logger.info(f"Fatura #{invoice.id} marcada como vencida")
+    except Exception as e:
+        logger.error(f"Erro ao processar vencimento Asaas: {e}")
+
+
+def process_asaas_payment_refunded(payment_id, external_ref):
+    """Processa estorno de pagamento"""
+    try:
+        from src.models.portal_models import Invoice
+        if external_ref and external_ref.startswith('INV-'):
+            invoice_id = external_ref.replace('INV-', '')
+            invoice = Invoice.query.get(int(invoice_id))
+            if invoice:
+                invoice.status = 'REFUNDED'
+                db.session.commit()
+                logger.info(f"Fatura #{invoice.id} estornada")
+    except Exception as e:
+        logger.error(f"Erro ao processar estorno Asaas: {e}")
+
+
+import logging
+logger = logging.getLogger(__name__)

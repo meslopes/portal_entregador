@@ -401,6 +401,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: asaas_customer_id em restaurants
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'asaas_customer_id') THEN ALTER TABLE restaurants ADD COLUMN asaas_customer_id VARCHAR(50); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tenant_id em system_configs
         try:
             db.session.execute(db.text(

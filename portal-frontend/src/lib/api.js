@@ -385,6 +385,37 @@ export const adminService = {
     return response.data;
   },
 
+  // Asaas (Gateway de Pagamento)
+  getAsaasConfig: async () => {
+    const response = await api.get('/api/admin/asaas/config');
+    return response.data;
+  },
+
+  updateAsaasConfig: async (data) => {
+    const response = await api.put('/api/admin/asaas/config', data);
+    return response.data;
+  },
+
+  testAsaasConnection: async () => {
+    const response = await api.post('/api/admin/asaas/test');
+    return response.data;
+  },
+
+  generateAutoInvoices: async () => {
+    const response = await api.post('/api/admin/invoices/generate-auto');
+    return response.data;
+  },
+
+  createInvoiceCharge: async (invoiceId) => {
+    const response = await api.post(`/api/admin/invoices/${invoiceId}/charge`);
+    return response.data;
+  },
+
+  processWithdrawalAuto: async (withdrawalId) => {
+    const response = await api.post(`/api/admin/withdrawals/${withdrawalId}/process-auto`);
+    return response.data;
+  },
+
   // Pedidos admin
   adminUpdateOrder: async (orderId, data) => {
     const response = await api.put(`/api/admin/orders/${orderId}`, data);

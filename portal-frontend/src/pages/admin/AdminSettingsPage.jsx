@@ -425,6 +425,39 @@ const IntegrationSettings = ({ config, onChange }) => (
       )}
     </div>
 
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.625rem', fontWeight: 700 }}>$</div>
+          <div>
+            <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>Asaas (Gateway de Pagamento)</p>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Cobranças PIX, boleto e cartão • Saques automáticos</p>
+          </div>
+        </div>
+        <select value={config.integration_asaas || 'disabled'} onChange={e => onChange('integration_asaas', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
+          <option value="enabled">Ativada</option>
+          <option value="disabled">Desativada</option>
+        </select>
+      </div>
+      {config.integration_asaas === 'enabled' && (
+        <div style={{ padding: '0 1rem 1rem' }}>
+          <FormField label="API Key Asaas">
+            <input type="password" value={config.asaas_api_key || ''} onChange={e => onChange('asaas_api_key', e.target.value)} style={inputStyle} placeholder="Sua API Key do Asaas" />
+          </FormField>
+          <FormField label="Ambiente">
+            <select value={config.asaas_environment || 'sandbox'} onChange={e => onChange('asaas_environment', e.target.value)} style={inputStyle}>
+              <option value="sandbox">Sandbox (testes)</option>
+              <option value="production">Produção</option>
+            </select>
+          </FormField>
+          <FormField label="Webhook URL">
+            <input type="text" value={`${API_URL}/api/webhooks/asaas`} readOnly style={{ ...inputStyle, background: '#f1f5f9', color: '#64748b' }} />
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Configure essa URL no painel do Asaas</p>
+          </FormField>
+        </div>
+      )}
+    </div>
+
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
