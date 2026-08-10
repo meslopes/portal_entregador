@@ -9,26 +9,46 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
-# Configurações do Asaas
-ASAAS_API_KEY = os.getenv('ASAAS_API_KEY', '')
-ASAAS_ENVIRONMENT = os.getenv('ASAAS_ENVIRONMENT', 'sandbox')  # sandbox ou production
+
+def _get_config(key, env_key=None, default=''):
+    """Busca configuração do SystemConfig, fallback para env var"""
+    env_val = os.getenv(env_key or key.upper(), '')
+    if env_val:
+        return env_val
+    try:
+        from src.models.portal_models import SystemConfig
+        config = SystemConfig.query.filter_by(config_key=key).first()
+        return config.config_value if config else default
+    except Exception:
+        return default
+
+
+def get_api_key():
+    return _get_config('asaas_api_key', 'ASAAS_API_KEY')
+
+
+def get_environment():
+    return _get_config('asaas_environment', 'ASAAS_ENVIRONMENT', 'sandbox')
+
 
 def get_base_url():
     """Retorna a URL base do Asaas conforme o ambiente"""
-    if ASAAS_ENVIRONMENT == 'production':
+    if get_environment() == 'production':
         return 'https://api.asaas.com/v3'
     return 'https://api-sandbox.asaas.com/v3'
+
 
 def get_headers():
     """Headers para requisições ao Asaas"""
     return {
-        'access_token': ASAAS_API_KEY,
+        'access_token': get_api_key(),
         'Content-Type': 'application/json'
     }
 
+
 def is_configured():
     """Verifica se o Asaas está configurado"""
-    return bool(ASAAS_API_KEY)
+    return bool(get_api_key())
 
 
 # ============================================
