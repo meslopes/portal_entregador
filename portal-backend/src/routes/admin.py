@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
-    Notification, Tenant, PricingTable, Invoice, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    Notification, Tenant, PricingTable, DynamicPricing, Invoice, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -996,8 +996,19 @@ def assign_order_to_driver(order_id):
             delivery_longitude=order.delivery_address.longitude
         )
         
-        # Calcula ganhos
-        base_earning = float(order.delivery_fee) * 0.7
+        # Calcula ganhos (% configurável)
+        driver_pct = 0.70
+        if order.restaurant and order.restaurant.pricing_table_id:
+            from src.models.portal_models import PricingTable
+            pt = PricingTable.query.get(order.restaurant.pricing_table_id)
+            if pt and pt.driver_percentage:
+                driver_pct = float(pt.driver_percentage) / 100.0
+        elif order.restaurant and order.restaurant.square_id:
+            from src.models.portal_models import Square
+            sq = Square.query.get(order.restaurant.square_id)
+            if sq and sq.driver_percentage:
+                driver_pct = float(sq.driver_percentage) / 100.0
+        base_earning = float(order.delivery_fee) * driver_pct
         delivery.driver_earnings = base_earning
         
         db.session.add(delivery)
@@ -2597,6 +2608,131 @@ def delete_pricing_table(table_id):
         db.session.commit()
 
         return jsonify({'message': 'Tabela excluída com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# DYNAMIC PRICING (Taxas Adicionais)
+# ============================================
+
+@admin_bp.route('/dynamic-pricing', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_dynamic_pricing():
+    """Lista configurações de taxas adicionais por praça"""
+    try:
+        tenant_id = get_current_tenant_id()
+        query = DynamicPricing.query
+        if tenant_id:
+            query = query.join(DynamicPricing.square).filter(
+                db.or_(DynamicPricing.square.has(tenant_id=tenant_id), DynamicPricing.square.has(tenant_id=None))
+            )
+        configs = query.all()
+        return jsonify({'dynamic_pricing': [d.to_dict() for d in configs]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/dynamic-pricing', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_dynamic_pricing():
+    """Cria configuração de taxas adicionais para uma praça"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('square_id'):
+            return jsonify({'error': 'Praça é obrigatória'}), 400
+
+        square_id = data['square_id']
+        existing = DynamicPricing.query.filter_by(square_id=square_id).first()
+        if existing:
+            return jsonify({'error': 'Já existe configuração para esta praça. Edite a existente.'}), 400
+
+        config = DynamicPricing(
+            square_id=square_id,
+            rainy_day_active=data.get('rainy_day_active', False),
+            rainy_day_bonus=data.get('rainy_day_bonus', 3.00),
+            high_demand_active=data.get('high_demand_active', False),
+            high_demand_threshold=data.get('high_demand_threshold', 5),
+            high_demand_bonus=data.get('high_demand_bonus', 2.00),
+            holiday_active=data.get('holiday_active', False),
+            holiday_bonus=data.get('holiday_bonus', 5.00),
+            cancellation_fee_active=data.get('cancellation_fee_active', False),
+            cancellation_fee=data.get('cancellation_fee', 5.00)
+        )
+        db.session.add(config)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Configuração criada com sucesso',
+            'dynamic_pricing': config.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/dynamic-pricing/<int:config_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_dynamic_pricing(config_id):
+    """Atualiza configuração de taxas adicionais"""
+    try:
+        config = DynamicPricing.query.get(config_id)
+        if not config:
+            return jsonify({'error': 'Configuração não encontrada'}), 404
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+
+        if 'rainy_day_active' in data:
+            config.rainy_day_active = data['rainy_day_active']
+        if 'rainy_day_bonus' in data:
+            config.rainy_day_bonus = data['rainy_day_bonus']
+        if 'high_demand_active' in data:
+            config.high_demand_active = data['high_demand_active']
+        if 'high_demand_threshold' in data:
+            config.high_demand_threshold = data['high_demand_threshold']
+        if 'high_demand_bonus' in data:
+            config.high_demand_bonus = data['high_demand_bonus']
+        if 'holiday_active' in data:
+            config.holiday_active = data['holiday_active']
+        if 'holiday_bonus' in data:
+            config.holiday_bonus = data['holiday_bonus']
+        if 'cancellation_fee_active' in data:
+            config.cancellation_fee_active = data['cancellation_fee_active']
+        if 'cancellation_fee' in data:
+            config.cancellation_fee = data['cancellation_fee']
+
+        config.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Configuração atualizada com sucesso',
+            'dynamic_pricing': config.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/dynamic-pricing/<int:config_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_dynamic_pricing(config_id):
+    """Exclui configuração de taxas adicionais"""
+    try:
+        config = DynamicPricing.query.get(config_id)
+        if not config:
+            return jsonify({'error': 'Configuração não encontrada'}), 404
+
+        db.session.delete(config)
+        db.session.commit()
+
+        return jsonify({'message': 'Configuração excluída com sucesso'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

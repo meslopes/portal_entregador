@@ -26,6 +26,20 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return 6371 * c  # Raio da Terra em km
 
 
+def get_driver_percentage(order):
+    """Retorna o percentual do entregador (0.0 a 1.0) baseado na configuração do restaurante"""
+    from src.models.portal_models import PricingTable, Square
+    if order.restaurant and order.restaurant.pricing_table_id:
+        pt = PricingTable.query.get(order.restaurant.pricing_table_id)
+        if pt and pt.driver_percentage:
+            return float(pt.driver_percentage) / 100.0
+    if order.restaurant and order.restaurant.square_id:
+        sq = Square.query.get(order.restaurant.square_id)
+        if sq and sq.driver_percentage:
+            return float(sq.driver_percentage) / 100.0
+    return 0.70
+
+
 def process_scheduled_orders():
     """Converte pedidos SCHEDULED para PENDING quando o tempo de preparo expirou"""
     try:
@@ -41,13 +55,14 @@ def process_scheduled_orders():
             
             # Calcula distância e ganhos
             km_total = 0
-            driver_earnings = float(order.delivery_fee) * 0.7
+            driver_pct = get_driver_percentage(order)
+            driver_earnings = float(order.delivery_fee) * driver_pct
             if order.delivery_address.latitude and order.restaurant.latitude:
                 km_total = haversine_distance(
                     order.restaurant.latitude, order.restaurant.longitude,
                     order.delivery_address.latitude, order.delivery_address.longitude
                 )
-                driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+                driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
             
             order_info = {
                 'order_number': order.order_number,
@@ -229,13 +244,14 @@ def process_expired_offers():
                             if whatsapp_service.is_configured() and next_driver.user.phone:
                                 restaurant = order.restaurant
                                 km_total = 0
-                                driver_earnings = float(order.delivery_fee) * 0.7
+                                driver_pct = get_driver_percentage(order)
+                                driver_earnings = float(order.delivery_fee) * driver_pct
                                 if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
                                     km_total = haversine_distance(
                                         restaurant.latitude, restaurant.longitude,
                                         order.delivery_address.latitude, order.delivery_address.longitude
                                     )
-                                    driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+                                    driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
                                 
                                 whatsapp_service.send_new_order_to_driver(
                                     next_driver.user.phone,
@@ -555,15 +571,27 @@ def accept_order(order_id):
             delivery_longitude=order.delivery_address.longitude
         )
         
-        # Calcula ganhos estimados do entregador (70% da taxa de entrega + bônus por distância)
-        base_earning = float(order.delivery_fee) * 0.7
+        # Calcula ganhos estimados do entregador (% configurável + bônus por distância)
+        driver_pct = 0.70  # fallback
+        if order.restaurant and order.restaurant.pricing_table_id:
+            from src.models.portal_models import PricingTable
+            pt = PricingTable.query.get(order.restaurant.pricing_table_id)
+            if pt and pt.driver_percentage:
+                driver_pct = float(pt.driver_percentage) / 100.0
+        elif order.restaurant and order.restaurant.square_id:
+            from src.models.portal_models import Square
+            sq = Square.query.get(order.restaurant.square_id)
+            if sq and sq.driver_percentage:
+                driver_pct = float(sq.driver_percentage) / 100.0
+
+        base_earning = float(order.delivery_fee) * driver_pct
         if delivery.delivery_latitude and delivery.pickup_latitude:
             distance = haversine_distance(
                 delivery.pickup_latitude, delivery.pickup_longitude,
                 delivery.delivery_latitude, delivery.delivery_longitude
             )
             delivery.distance_km = distance
-            delivery.driver_earnings = base_earning + (distance * 0.5)  # R$ 0.50 por km
+            delivery.driver_earnings = base_earning + (distance * 0.5)
         else:
             delivery.driver_earnings = base_earning
         
@@ -689,13 +717,14 @@ def reject_order(order_id):
                     restaurant = order.restaurant
                     # Calcula distancia usando Haversine
                     km_total = 0
-                    driver_earnings = float(order.delivery_fee) * 0.7
+                    driver_pct = get_driver_percentage(order)
+                    driver_earnings = float(order.delivery_fee) * driver_pct
                     if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
                         km_total = haversine_distance(
                             restaurant.latitude, restaurant.longitude,
                             order.delivery_address.latitude, order.delivery_address.longitude
                         )
-                        driver_earnings = float(order.delivery_fee) * 0.7 + (km_total * 0.5)
+                        driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
 
                     whatsapp_service.send_new_order_to_driver(
                         next_driver.user.phone,
@@ -1083,6 +1112,14 @@ def cancel_order(order_id):
         if order.delivery:
             db.session.delete(order.delivery)
 
+        # Aplicar taxa de cancelamento (se configurada e se foi o estabelecimento que cancelou)
+        cancellation_fee = 0
+        if user.user_type == UserType.CLIENT and order.restaurant and order.restaurant.square_id:
+            from src.models.portal_models import DynamicPricing
+            dp = DynamicPricing.query.filter_by(square_id=order.restaurant.square_id).first()
+            if dp and dp.cancellation_fee_active and dp.cancellation_fee:
+                cancellation_fee = float(dp.cancellation_fee)
+
         # Notifica
         if order.customer and order.customer.user_id:
             notification = Notification(
@@ -1096,10 +1133,15 @@ def cancel_order(order_id):
 
         db.session.commit()
 
-        return jsonify({
+        response_data = {
             'message': 'Pedido cancelado com sucesso',
             'order': order.to_dict()
-        }), 200
+        }
+        if cancellation_fee > 0:
+            response_data['cancellation_fee'] = cancellation_fee
+            response_data['message'] = f'Pedido cancelado. Taxa de cancelamento: R$ {cancellation_fee:.2f}'
+
+        return jsonify(response_data), 200
 
     except Exception as e:
         db.session.rollback()
@@ -1333,7 +1375,7 @@ def create_order():
             if sq and sq.price_per_km:
                 price_per_km = float(sq.price_per_km)
                 min_km = float(sq.min_distance_km or 4.0)
-                
+
                 km_total = min_km
                 if address.latitude and address.longitude and restaurant.latitude and restaurant.longitude:
                     km_total = haversine_distance(
@@ -1341,8 +1383,27 @@ def create_order():
                         float(address.latitude), float(address.longitude)
                     )
                     km_total = max(km_total, min_km)
-                
+
                 delivery_fee = round(km_total * price_per_km, 2)
+
+                # Aplicar frete mínimo/máximo da praça
+                min_delivery = float(sq.price_per_km) * float(sq.min_distance_km or 4.0)
+                delivery_fee = max(delivery_fee, min_delivery)
+                if sq.max_delivery_fee:
+                    delivery_fee = min(delivery_fee, float(sq.max_delivery_fee))
+
+        # Aplicar taxas dinâmicas (chuva, alta demanda, feriado)
+        square_id = restaurant.square_id
+        if square_id:
+            from src.models.portal_models import DynamicPricing
+            dp = DynamicPricing.query.filter_by(square_id=square_id).first()
+            if dp:
+                if dp.rainy_day_active and dp.rainy_day_bonus:
+                    delivery_fee = round(delivery_fee + float(dp.rainy_day_bonus), 2)
+                if dp.high_demand_active and dp.high_demand_bonus:
+                    delivery_fee = round(delivery_fee + float(dp.high_demand_bonus), 2)
+                if dp.holiday_active and dp.holiday_bonus:
+                    delivery_fee = round(delivery_fee + float(dp.holiday_bonus), 2)
 
         # Gerar tracking_token único
         tracking_token = str(uuid.uuid4())

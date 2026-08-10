@@ -359,6 +359,27 @@ export const adminService = {
     return response.data;
   },
 
+  // Dynamic Pricing (Taxas Adicionais)
+  getDynamicPricing: async () => {
+    const response = await api.get('/api/admin/dynamic-pricing');
+    return response.data;
+  },
+
+  createDynamicPricing: async (data) => {
+    const response = await api.post('/api/admin/dynamic-pricing', data);
+    return response.data;
+  },
+
+  updateDynamicPricing: async (configId, data) => {
+    const response = await api.put(`/api/admin/dynamic-pricing/${configId}`, data);
+    return response.data;
+  },
+
+  deleteDynamicPricing: async (configId) => {
+    const response = await api.delete(`/api/admin/dynamic-pricing/${configId}`);
+    return response.data;
+  },
+
   deleteSquare: async (squareId) => {
     const response = await api.delete(`/api/admin/squares/${squareId}`);
     return response.data;

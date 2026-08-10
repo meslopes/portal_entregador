@@ -389,6 +389,18 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: cancellation_fee em dynamic_pricing
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dynamic_pricing' AND column_name = 'cancellation_fee_active') THEN ALTER TABLE dynamic_pricing ADD COLUMN cancellation_fee_active BOOLEAN DEFAULT FALSE; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dynamic_pricing' AND column_name = 'cancellation_fee') THEN ALTER TABLE dynamic_pricing ADD COLUMN cancellation_fee NUMERIC(10,2) DEFAULT 5.00; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tenant_id em system_configs
         try:
             db.session.execute(db.text(

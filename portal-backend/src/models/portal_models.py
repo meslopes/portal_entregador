@@ -745,7 +745,7 @@ class DriverAchievement(db.Model):
 
 
 class DynamicPricing(db.Model):
-    """Configuracao de preco dinamico por praca"""
+    """Configuracao de taxas adicionais por praca (chuva, demanda, cancelamento, feriado)"""
     __tablename__ = 'dynamic_pricing'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -757,6 +757,8 @@ class DynamicPricing(db.Model):
     high_demand_bonus = db.Column(db.Numeric(10, 2), default=2.00)
     holiday_active = db.Column(db.Boolean, default=False)
     holiday_bonus = db.Column(db.Numeric(10, 2), default=5.00)
+    cancellation_fee_active = db.Column(db.Boolean, default=False)
+    cancellation_fee = db.Column(db.Numeric(10, 2), default=5.00)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -774,6 +776,8 @@ class DynamicPricing(db.Model):
             'high_demand_bonus': float(self.high_demand_bonus) if self.high_demand_bonus else 2.00,
             'holiday_active': self.holiday_active,
             'holiday_bonus': float(self.holiday_bonus) if self.holiday_bonus else 5.00,
+            'cancellation_fee_active': self.cancellation_fee_active,
+            'cancellation_fee': float(self.cancellation_fee) if self.cancellation_fee else 5.00,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

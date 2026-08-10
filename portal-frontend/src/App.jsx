@@ -34,6 +34,7 @@ import AdminFinancePage from '@/pages/admin/AdminFinancePage';
 import AdminWithdrawalsPage from '@/pages/admin/AdminWithdrawalsPage';
 import AdminInvoicesPage from '@/pages/admin/AdminInvoicesPage';
 import AdminPricingPage from '@/pages/admin/AdminPricingPage';
+import AdminDynamicPricingPage from '@/pages/admin/AdminDynamicPricingPage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
@@ -353,6 +354,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminPricingPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dynamic-pricing"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <AdminDynamicPricingPage />
                 </Layout>
               </ProtectedRoute>
             }
