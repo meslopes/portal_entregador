@@ -456,6 +456,10 @@ const IntegrationSettings = ({ config, onChange }) => {
             <input type="text" value={`${API_URL}/api/webhooks/asaas`} readOnly style={{ ...inputStyle, background: '#f1f5f9', color: '#64748b' }} />
             <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Configure essa URL no painel do Asaas</p>
           </FormField>
+          <FormField label="Webhook Token">
+            <input type="password" value={config.asaas_webhook_token || ''} onChange={e => onChange('asaas_webhook_token', e.target.value)} style={inputStyle} placeholder="Token definido no painel do Asaas" />
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Token de autenticação do webhook (deixe vazio para aceitar qualquer requisição)</p>
+          </FormField>
         </div>
       )}
     </div>
