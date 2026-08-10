@@ -3636,12 +3636,16 @@ def create_invoice_charge(invoice_id):
 
             # Notificar estabelecimento no app com o link de pagamento
             try:
-                # Buscar owner do estabelecimento (user vinculado ao customer/restaurant)
-                restaurant_user = User.query.filter_by(
-                    user_type=UserType.CLIENT
-                ).join(Customer, Customer.user_id == User.id).filter(
-                    Customer.name == restaurant.name
-                ).first()
+                # Buscar owner do estabelecimento via Customer (mesmo telefone/email)
+                restaurant_user = None
+                if restaurant.phone:
+                    customer = Customer.query.filter_by(phone=restaurant.phone).first()
+                    if customer and customer.user_id:
+                        restaurant_user = User.query.get(customer.user_id)
+                if not restaurant_user and restaurant.email:
+                    customer = Customer.query.filter_by(email=restaurant.email).first()
+                    if customer and customer.user_id:
+                        restaurant_user = User.query.get(customer.user_id)
 
                 if restaurant_user:
                     notification = Notification(
@@ -3687,12 +3691,16 @@ def send_invoice_payment_link(invoice_id):
         if not payment_url:
             return jsonify({'error': 'URL de pagamento não informada'}), 400
 
-        # Buscar owner do estabelecimento
-        restaurant_user = User.query.filter_by(
-            user_type=UserType.CLIENT
-        ).join(Customer, Customer.user_id == User.id).filter(
-            Customer.name == restaurant.name
-        ).first()
+        # Buscar owner do estabelecimento via Customer (mesmo telefone/email)
+        restaurant_user = None
+        if restaurant.phone:
+            customer = Customer.query.filter_by(phone=restaurant.phone).first()
+            if customer and customer.user_id:
+                restaurant_user = User.query.get(customer.user_id)
+        if not restaurant_user and restaurant.email:
+            customer = Customer.query.filter_by(email=restaurant.email).first()
+            if customer and customer.user_id:
+                restaurant_user = User.query.get(customer.user_id)
 
         if not restaurant_user:
             return jsonify({'error': 'Usuário do estabelecimento não encontrado'}), 404
