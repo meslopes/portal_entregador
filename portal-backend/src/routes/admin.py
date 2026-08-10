@@ -3608,7 +3608,7 @@ def create_invoice_charge(invoice_id):
         if not restaurant.asaas_customer_id:
             customer = create_customer(
                 name=restaurant.name,
-                cpf_cnpj=restaurant.cnpj or restaurant.cpf or '00000000000',
+                cpf_cnpj=restaurant.cnpj or '00000000000',
                 email=restaurant.email,
                 phone=restaurant.phone
             )
