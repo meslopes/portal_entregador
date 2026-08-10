@@ -370,7 +370,9 @@ const NotificationSettings = ({ config, onChange }) => (
 );
 
 // Integrações
-const IntegrationSettings = ({ config, onChange }) => (
+const IntegrationSettings = ({ config, onChange }) => {
+  const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+  return (
   <SettingsCard title="Integrações com Plataformas" icon={<Globe size={18} />}>
     <div style={{ marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem', marginBottom: '0.75rem' }}>
@@ -549,7 +551,8 @@ const IntegrationSettings = ({ config, onChange }) => (
       </div>
     </div>
   </SettingsCard>
-);
+  );
+};
 
 // Componentes auxiliares
 const SettingsCard = ({ title, icon, children }) => (
