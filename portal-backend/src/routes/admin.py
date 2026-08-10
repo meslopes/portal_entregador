@@ -3651,11 +3651,12 @@ def create_invoice_charge(invoice_id):
                     notification = Notification(
                         user_id=restaurant_user.id,
                         title='Nova fatura disponível',
-                        message=f'Sua fatura da semana {invoice.week_start.date()} a {invoice.week_end.date()} no valor de R$ {float(invoice.platform_fee):.2f} está disponível. Clique para pagar via PIX.',
+                        message=f'Sua fatura da semana {invoice.week_start.date()} a {invoice.week_end.date()} no valor de R$ {float(invoice.platform_fee):.2f} está disponível. Pague via PIX: {payment_url}',
                         type=NotificationType.PAYMENT,
                         related_id=invoice.id
                     )
                     db.session.add(notification)
+                    db.session.commit()
             except Exception as notif_err:
                 logger.warning(f"Erro ao notificar estabelecimento: {notif_err}")
 

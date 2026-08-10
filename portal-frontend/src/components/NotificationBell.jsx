@@ -109,6 +109,24 @@ const NotificationBell = () => {
     return date.toLocaleDateString('pt-BR');
   };
 
+  const renderMessage = (message) => {
+    if (!message) return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = message.split(urlRegex);
+    return parts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <div ref={dropdownRef} style={{ position: 'relative', zIndex: 100003 }}>
       {/* Bell Button */}
@@ -219,7 +237,7 @@ const NotificationBell = () => {
                       fontSize: '0.75rem', color: '#64748b',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
                     }}>
-                      {notification.message}
+                      {renderMessage(notification.message)}
                     </p>
                     <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
                       {formatTime(notification.created_at)}
