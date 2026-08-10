@@ -1,8 +1,10 @@
 # PORTAL - Sistema de Controle de Entregadores
 
 **Desenvolvido por:** Manus AI  
-**Data:** Junho 2025  
-**Versão:** 1.0.0
+**Aperfeiçoado por:** MiMo 2.5 (mimo-code)  
+**Data:** Julho 2026  
+**Versão:** 2.0.0  
+**Última atualização:** 25/07/2026
 
 ---
 

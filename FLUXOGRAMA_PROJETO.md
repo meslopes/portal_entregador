@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        MUV.LOG (Plataforma)                        │
-│                     SaaS de Gestao de Entregas                     │
+│                     SaaS de Gestão de Entregas                     │
 └─────────────────────────────┬───────────────────────────────────────┘
                               │
           ┌───────────────────┼───────────────────┐
@@ -50,12 +50,10 @@
 │ SISTEMA MUV.LOG                                   │
 │                                                   │
 │  1. Recebe pedido (PENDING)                       │
-│  2. Busca entregador mais proximo (online)        │
-│  3. Verifica capacidade (< max_concurrent)        │
-│  4. Envia notificacao ao entregador selecionado   │
-│     - Sirene (se no app)                          │
-│     - WhatsApp (se configurado)                   │
-│     - Notificacao navegador                       │
+│  2. Calcula frete: max(dist, 4km) × Preço/KM     │
+│  3. Busca entregador mais proximo (online)        │
+│  4. Envia WhatsApp: "🔔 Novo Pedido! SIM/NAO"    │
+│  5. Notificacoes (sirene + navegador)             │
 └────────┬─────────────────────────────────────────┘
          │
          ▼
@@ -65,7 +63,8 @@
 │                  │
 │ [✓ Aceitar]      │──── ACEITAR ────┐
 │ [✕ Recusar]      │                 │
-│                  │──── RECUSAR ────┼──► Proximo entregador
+│ [SIM pelo WA]    │──── RECUSAR ────┼──► Proximo entregador
+│ [NAO pelo WA]    │                 │
 └──────────────────┘                 │
                                      │
                                      ▼
@@ -100,6 +99,13 @@
                                    │
                                    ▼
                           ┌──────────────────┐
+                          │ MAPA DE ROTA     │
+                          │ Entregador ve    │
+                          │ todos enderecos  │
+                          └────────┬─────────┘
+                                   │
+                                   ▼
+                          ┌──────────────────┐
                           │ PROVA DE ENTREGA │
                           │ Entregador tira  │
                           │ foto (opcional)  │
@@ -121,9 +127,9 @@
                                    │
                                    ▼
                           ┌──────────────────┐
-                          │ PAGAMENTO        │
-                          │ Frete acumulado  │
-                          │ semanalmente     │
+                          │ BONUS            │
+                          │ Pontos calculados│
+                          │ Ranking atualizado│
                           └──────────────────┘
 ```
 
@@ -143,19 +149,64 @@
 │      ▼                                                           │
 │  ADMIN (Muv.log)                                                │
 │      │                                                           │
-│      ├──► Paga ENTREGADOR (% do frete, semanal)                 │
+│      ├──► Paga ENTREGADOR (65% do frete)                        │
 │      │                                                           │
-│      └──► RETENCAO (lucro do admin)                             │
+│      ├──► BONUS POOL (5% do frete)                              │
+│      │    └──► Distribuido entre Top 5                          │
+│      │                                                           │
+│      └──► RETENCAO (30% do frete)                               │
 │                                                                  │
 │  CALCULO:                                                       │
-│  Frete = km x R$/km (configuravel por praca)                    │
-│  Entregador recebe: frete x (100% - comissao%)                  │
-│  Admin retem: frete x comissao%                                 │
+│  Frete = max(distancia, 4km) × Preco/KM                        │
+│  Entregador recebe: Frete × 65%                                 │
+│  Bonus Pool: Frete × 5%                                         │
+│  Admin retem: Frete × 30%                                       │
 │  Admin paga a Muv.log: por quantidade de entregas               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 4. FLUXO DE NOTIFICACOES
+## 4. SISTEMA DE BONIFICACAO
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SISTEMA DE BONUS                              │
+│                                                                  │
+│  DISTRIBUICAO DO FRETE:                                         │
+│  ┌─────────────────────────────────────────────────┐           │
+│  │  Frete Total (ex: R$ 15,00)                     │           │
+│  │  ├── 65% Entregador = R$ 9,75                   │           │
+│  │  ├── 5% Bonus Pool = R$ 0,75                    │           │
+│  │  └── 30% Muv = R$ 4,50                          │           │
+│  └─────────────────────────────────────────────────┘           │
+│                                                                  │
+│  RANKING (5 criterios):                                         │
+│  ┌─────────────────────────────────────────────────┐           │
+│  │  Tempo de Aceite .............. 20% (20 pts)    │           │
+│  │  Velocidade de Entrega ........ 25% (25 pts)    │           │
+│  │  Taxa de Aceitação ........... 20% (20 pts)    │           │
+│  │  Avaliação ................... 25% (25 pts)    │           │
+│  │  Tempo Online ................ 10% (10 pts)    │           │
+│  └─────────────────────────────────────────────────┘           │
+│                                                                  │
+│  NIVEIS:                                                        │
+│  ┌─────────────────────────────────────────────────┐           │
+│  │  🥉 Bronze: 0-500 pts (65% comissao)           │           │
+│  │  🥈 Prata: 501-1.500 pts (65% + prioridade)    │           │
+│  │  🥇 Ouro: 1.501-3.000 pts (63% + premium)      │           │
+│  │  💎 Diamante: 3.001+ pts (60% + VIP)           │           │
+│  └─────────────────────────────────────────────────┘           │
+│                                                                  │
+│  BONUS:                                                         │
+│  ┌─────────────────────────────────────────────────┐           │
+│  │  Semanal: Top 3 recebem do pool semanal         │           │
+│  │  Mensal: Top 5 recebem do pool mensal           │           │
+│  │  Chuva: +R$ X/corrida (admin ativa)             │           │
+│  │  Alta Demanda: +R$ Y/corrida (sistema detecta)  │           │
+│  └─────────────────────────────────────────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 5. FLUXO DE NOTIFICACOES
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -163,9 +214,17 @@
 │                                                                  │
 │  PEDIDO CRIADO                                                  │
 │      │                                                           │
+│      ├──► WhatsApp → Entregador ("🔔 Novo Pedido! SIM/NAO")    │
+│      │                                                           │
 │      ├──► WhatsApp → Estabelecimento ("Pedido recebido")        │
 │      │                                                           │
-│      └──► Sirene + WhatsApp + Browser → Entregador proximo     │
+│      └──► Sirene + Browser → Entregador proximo                 │
+│                                                                  │
+│  ENTREGADOR RESPONDE "SIM" PELO WHATSAPP                        │
+│      │                                                           │
+│      ├──► Sistema aceita automaticamente                         │
+│      ├──► WhatsApp → Entregador ("✅ Pedido Aceito!")           │
+│      └──► WhatsApp → Estabelecimento ("Pedido aceito por X")   │
 │                                                                  │
 │  STATUS MUDOU                                                   │
 │      │                                                           │
@@ -179,11 +238,12 @@
 │                                                                  │
 │  CANCELAMENTO                                                   │
 │      │                                                           │
-│      └──► WhatsApp → Estabelecimento ("Pedido cancelado")       │
+│      ├──► WhatsApp → Estabelecimento ("Pedido cancelado")       │
+│      └──► WhatsApp → Proximo entregador disponivel              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 5. FLUXO DE INTEGRACOES
+## 6. FLUXO DE INTEGRACOES
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -213,7 +273,9 @@
 │                           ▼                                     │
 │              ┌───────────────────────────┐                      │
 │              │  SISTEMA MUV.LOG          │                      │
-│              │  (atribui entregador)     │                      │
+│              │  - Calcula frete          │                      │
+│              │  - Busca entregador       │                      │
+│              │  - Envia WhatsApp         │                      │
 │              └───────────────────────────┘                      │
 │                                                                  │
 │  ┌──────────┐                                                   │
@@ -222,7 +284,7 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 6. ARQUITETURA TECNICA
+## 7. ARQUITETURA TECNICA
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -230,10 +292,11 @@
 │                                                                  │
 │  FRONTEND (Vercel)              BACKEND (Render)                │
 │  ┌─────────────────┐           ┌─────────────────┐             │
-│  │ React + Vite    │           │ Flask (Python)  │             │
-│  │ Tailwind CSS    │◄─────────►│ SQLAlchemy      │             │
-│  │ Leaflet (mapa)  │   API     │ JWT Auth        │             │
-│  │ Axios           │           │ Gunicorn        │             │
+│  │ React 19        │           │ Flask (Python)  │             │
+│  │ Vite            │◄─────────►│ SQLAlchemy      │             │
+│  │ Tailwind CSS    │   API     │ JWT Auth        │             │
+│  │ Leaflet (mapa)  │           │ Gunicorn        │             │
+│  │ Axios           │           │ WhatsApp API    │             │
 │  └─────────────────┘           └────────┬────────┘             │
 │                                         │                       │
 │                              ┌──────────┴──────────┐           │
@@ -246,10 +309,47 @@
 │  /api/orders/*    - Pedidos                                     │
 │  /api/admin/*     - Administrativo                              │
 │  /api/webhooks/*  - Integracoes externas                        │
+│  /api/user/*      - Perfil e notificacoes                       │
+│  /api/bonus/*     - Sistema de bonus e ranking                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 7. MODELOS DE DADOS
+## 8. MAPA DE NAVEGACAO
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MAPA DE NAVEGACAO                             │
+│                                                                  │
+│  ENTREGADOR:                                                    │
+│  /dashboard ──► /orders ──► /delivery/:orderId                  │
+│       │              │                                          │
+│       ├──► /earnings                                            │
+│       ├──► /history                                              │
+│       ├──► /ranking (bonus e conquistas)                        │
+│       ├──► /profile (meu perfil)                                │
+│       └──► /route (mapa de rota)                                │
+│                                                                  │
+│  ESTABELECIMENTO:                                               │
+│  /client ──► /client/new-order ──► /client/orders               │
+│       │              │                      │                    │
+│       ├──► /client/financial                                    │
+│       ├──► /client/invoices                                     │
+│       ├──► /client/integrations                                 │
+│       └──► /client/profile                                      │
+│                                                                  │
+│  ADMIN:                                                         │
+│  /admin ──► /admin/squares ──► /admin/establishments            │
+│       │              │                      │                    │
+│       ├──► /admin/drivers                                       │
+│       ├──► /admin/orders                                        │
+│       ├──► /admin/finance                                       │
+│       ├──► /admin/driver-payments                               │
+│       ├──► /admin/reports                                       │
+│       └──► /admin/settings                                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 9. MODELOS DE DADOS
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -275,11 +375,17 @@
 │  Order ──► Delivery (1:1)                                       │
 │    │       - proof_of_delivery_url                              │
 │    │       - customer_rating                                    │
+│    │       - driver_earnings                                    │
 │    │                                                            │
 │  Driver ──► Payment (1:N)                                       │
 │                                                                  │
+│  Driver ──► DriverScore (1:N)                                   │
+│  Driver ──► DriverBonus (1:N)                                   │
+│  Driver ──► DriverAchievement (1:N)                             │
+│                                                                  │
 │  Square ──► Restaurant (1:N)                                    │
 │  Square ──► Driver (1:N)                                        │
+│  Square ──► DynamicPricing (1:1)                                │
 │                                                                  │
 │  SystemConfig (key-value)                                       │
 │  - admin bank details                                           │
@@ -287,36 +393,39 @@
 │  - delivery price per km                                        │
 │  - timeout settings                                             │
 │  - integration keys                                             │
+│  - WhatsApp API config                                          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 8. MAPA DE NAVEGACAO
+## 10. TECNOLOGIAS UTILIZADAS
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    MAPA DE NAVEGACAO                             │
+│                    TECNOLOGIAS                                   │
 │                                                                  │
-│  ENTREGADOR:                                                    │
-│  /dashboard ──► /orders ──► /delivery/active                    │
-│       │              │                                          │
-│       ├──► /earnings                                            │
-│       ├──► /history                                              │
-│       └──► /ranking                                             │
+│  FRONTEND:                                                      │
+│  ├── React 19 .............. UI Framework                       │
+│  ├── Vite .................. Build Tool                          │
+│  ├── Tailwind CSS v4 ...... Estilizacao                         │
+│  ├── Leaflet .............. Mapas (OpenStreetMap)               │
+│  ├── Axios ................ HTTP Client                         │
+│  └── React Router v7 ...... Roteamento                          │
 │                                                                  │
-│  ESTABELECIMENTO:                                               │
-│  /client ──► /client/new-order ──► /client/orders               │
-│       │              │                      │                    │
-│       ├──► /client/financial                                    │
-│       └──► /client/invoices                                     │
+│  BACKEND:                                                       │
+│  ├── Flask ............... Web Framework                        │
+│  ├── SQLAlchemy ......... ORM                                   │
+│  ├── Flask-JWT-Extended . Autenticacao                          │
+│  ├── Gunicorn ........... WSGI Server                           │
+│  └── requests ........... HTTP Client (WhatsApp)                │
 │                                                                  │
-│  ADMIN:                                                         │
-│  /admin ──► /admin/squares ──► /admin/establishments            │
-│       │              │                      │                    │
-│       ├──► /admin/drivers                                       │
-│       ├──► /admin/orders                                        │
-│       ├──► /admin/finance                                       │
-│       ├──► /admin/driver-payments                               │
-│       ├──► /admin/reports                                       │
-│       └──► /admin/settings                                      │
+│  BANCO:                                                         │
+│  ├── PostgreSQL ......... Producao (Render)                     │
+│  └── SQLite ............. Desenvolvimento                       │
+│                                                                  │
+│  SERVICOS:                                                      │
+│  ├── Nominatim .......... Geocoding (gratuito)                 │
+│  ├── WhatsApp Business .. Notificacoes                          │
+│  ├── Vercel ............. Frontend hosting                      │
+│  └── Render ............. Backend hosting                       │
 └─────────────────────────────────────────────────────────────────┘
 ```

@@ -4,6 +4,7 @@ import {
   Star, X, Edit, Eye, MapPin, User, Trash2, Clock
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminDriversPage = () => {
   const [drivers, setDrivers] = useState([]);
@@ -15,6 +16,7 @@ const AdminDriversPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [squares, setSquares] = useState([]);
+  const [dateRange, setDateRange] = useState(null);
 
   // Modal states
   const [showForm, setShowForm] = useState(false);

@@ -1,127 +1,165 @@
-# Configurações para Deploy - PORTAL
+# Configurações de Deploy - muv.log
 
-## Arquivos de Configuração Criados
+## 🌐 URLs de Produção
 
-### 1. Backend (Flask)
-- ✅ `src/config.py` - Configurações por ambiente
-- ✅ `src/main_production.py` - Versão otimizada para produção
-- ✅ `.env.production` - Variáveis de ambiente de produção
-- ✅ `Procfile` - Configuração para Railway/Heroku
-- ✅ `requirements.txt` - Dependências Python atualizadas
+| Serviço | URL | Status |
+|---------|-----|--------|
+| **Frontend** | https://portal-entregador-gamma.vercel.app | ✅ Online |
+| **Backend** | https://muvlog-api.onrender.com | ✅ Online |
+| **Domínio** | https://muv.log.br | ✅ Configurado |
 
-### 2. Frontend (React)
-- ✅ Build de produção criado (`dist/`)
-- ✅ Configurações de API prontas
-- ✅ Otimizado para deploy
+## 🚀 Vercel (Frontend)
 
-## Comandos Úteis
+### Configurações
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Node.js Version:** 24.x
+- **Package Manager:** npm (não pnpm)
 
-### Testar Localmente em Modo Produção
-
-**Backend:**
-```bash
-cd portal-backend
-source venv/bin/activate
-FLASK_ENV=production python src/main_production.py
+### Variáveis de Ambiente
+```
+VITE_API_URL=https://muvlog-api.onrender.com
 ```
 
-**Frontend:**
-```bash
-cd portal-frontend
-pnpm run build
-pnpm run preview  # Testa o build de produção
-```
+### Notas
+- Usa `.npmrc` com `legacy-peer-deps=true` para resolver conflitos
+- Auto-deploy a cada push no branch main
+- Build inclui warning de chunk size (>500kB) - não é bloqueador
 
-### Preparar para Deploy
+## 🖥️ Render (Backend)
 
-**1. Criar repositório GitHub:**
-```bash
-git init
-git add .
-git commit -m "PORTAL - Sistema de controle de entregadores"
-git remote add origin https://github.com/SEU-USUARIO/portal-delivery.git
-git push -u origin main
-```
+### Configurações
+- **Build Command:** `cd portal-backend && pip install -r requirements.txt`
+- **Start Command:** `cd portal-backend && gunicorn src.main_production:app`
+- **Root Directory:** `portal-backend`
+- **Python Version:** 3.11
+- **Plano:** Gratuito (cold start ~5-10min)
 
-**2. Deploy no Vercel (Frontend):**
-- Conectar GitHub
-- Configurar: `cd portal-frontend && pnpm run build`
-- Output: `portal-frontend/dist`
-
-**3. Deploy no Railway (Backend):**
-- Conectar GitHub
-- Configurar variáveis de ambiente
-- Deploy automático
-
-## Variáveis de Ambiente Necessárias
-
-### Produção (Railway):
+### Variáveis de Ambiente
 ```
 FLASK_ENV=production
-SECRET_KEY=sua-chave-super-secreta-aqui
-JWT_SECRET_KEY=sua-jwt-chave-super-secreta-aqui
-DATABASE_URL=postgresql://user:pass@host:port/db
-CORS_ORIGINS=https://seu-frontend.vercel.app
+DATABASE_URL=postgresql://...
+JWT_SECRET_KEY=...
+SECRET_KEY=...
 ```
 
-### Desenvolvimento (Local):
+### Notas
+- Free tier tem cold start (5-10 min sem uso)
+- Upgrade para Starter ($7/mês) remove cold start
+- Build deve rodar de dentro de `portal-backend/`
+
+## 🗄️ PostgreSQL (Render)
+
+### Configurações
+- **Plano:** Gratuito (90 dias), depois Starter ($7/mês)
+- **Host:** Render Managed Database
+- **Database:** muvlog
+
+### Tabelas Principais
+- users, drivers, customers, restaurants
+- orders, deliveries, payments
+- addresses, squares, system_config
+- driver_scores, driver_bonuses, driver_achievements
+- dynamic_pricing
+
+## 🔑 Credenciais de Teste
+
+| Usuário | Email | Senha | Tipo |
+|---------|-------|-------|------|
+| Admin | admin@muv.log.br | admin123 | ADMIN |
+| Admin (Mauro) | enilton26011967@gmail.com | admin123 | ADMIN |
+| Entregador | entregador@teste.com | 123456 | DRIVER |
+| Cliente | cliente@teste.com | 123456 | CLIENT |
+
+## 🔧 Configurações Locais
+
+### Backend (Desenvolvimento)
+```bash
+cd portal-backend
+pip install -r requirements.txt
+set FLASK_ENV=development
+python -m src.main
 ```
+
+### Frontend (Desenvolvimento)
+```bash
+cd portal-frontend
+npm install
+npm run dev
+```
+
+### Variáveis de Ambiente Local
+```
+# portal-backend/.env
 FLASK_ENV=development
-SECRET_KEY=dev-secret-key
-JWT_SECRET_KEY=jwt-dev-secret-key
 DATABASE_URL=sqlite:///src/database/app.db
-CORS_ORIGINS=*
+JWT_SECRET_KEY=dev-secret-key
+SECRET_KEY=dev-secret-key
 ```
 
-## Estrutura Final do Projeto
+## 📱 WhatsApp Business API
 
+### Configurações (via admin Settings)
 ```
-portal-delivery/
-├── portal-frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── contexts/
-│   │   ├── lib/
-│   │   └── App.jsx
-│   ├── dist/              # Build de produção
-│   ├── package.json
-│   └── vite.config.js
-├── portal-backend/
-│   ├── src/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── config.py
-│   │   ├── main.py        # Desenvolvimento
-│   │   └── main_production.py  # Produção
-│   ├── venv/
-│   ├── requirements.txt
-│   ├── Procfile
-│   ├── .env
-│   └── .env.production
-├── docs/
-│   ├── guia_deploy.md
-│   ├── requisitos_portal.md
-│   ├── design_portal.md
-│   └── arquitetura_portal.md
-└── README.md
+whatsapp_api_token=...
+whatsapp_phone=...
+whatsapp_verify_token=...
 ```
 
-## Status do Projeto
+### Funcionalidades
+- Notificação de novos pedidos para entregador
+- Resposta SIM/NÃO pelo WhatsApp
+- Notificações de status para estabelecimento
+- Confirmações de aceite/recusa
 
-✅ **Desenvolvimento Completo**
-✅ **Testes Locais Aprovados**
-✅ **Configurações de Produção Prontas**
-✅ **Documentação Completa**
-🔄 **Aguardando Deploy (quando você decidir)**
+## 🗺️ Geocoding (Nominatim)
 
-## Próximos Passos Opcionais
+### Configurações
+- **Serviço:** Nominatim (OpenStreetMap)
+- **Custo:** Gratuito
+- **Limite:** 1 requisição/segundo
+- **User-Agent:** muv.log/1.0
 
-1. **Criar repositório GitHub privado**
-2. **Fazer upload do código**
-3. **Configurar deploy quando estiver pronto**
-4. **Testar em produção**
-5. **Configurar domínio personalizado (opcional)**
+### Uso
+- Geocodificação de endereços de estabelecimentos
+- Geocodificação de endereços de entrega
+- Cálculo de distâncias entre pontos
 
-O sistema está **100% pronto** para deploy quando você decidir!
+## 🔄 Deploy Manual
 
+### Frontend (Vercel)
+```bash
+cd portal-frontend
+git push origin main
+# Vercel faz auto-deploy
+```
+
+### Backend (Render)
+```bash
+cd portal-backend
+git push origin main
+# Render faz auto-deploy (pode demorar 5-10min no free tier)
+```
+
+### Forçar Deploy (Render)
+1. Acesse o painel do Render
+2. Clique em "Manual Deploy"
+3. Selecione "Clear build cache & deploy"
+
+## 🐛 Troubleshooting
+
+### Backend não responde (cold start)
+- Espere 5-10 minutos para o Render acordar
+- Ou faça um request para forçar o wake-up
+
+### Frontend mostra erro 403
+- Verifique se o CORS está configurado no backend
+- Verifique se o token JWT não expirou
+
+### Mapa não aparece
+- Verifique se o Leaflet está carregando (console: `window.L`)
+- Faça Ctrl+Shift+R para limpar cache
+
+### WhatsApp não envia mensagens
+- Verifique se as credenciais estão configuradas no admin
+- Teste o endpoint `/api/webhooks/whatsapp`

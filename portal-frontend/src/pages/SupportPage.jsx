@@ -62,7 +62,7 @@ const SupportPage = () => {
             <Mail size={20} style={{ color: '#2563eb' }} />
           </div>
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>Email</p>
-          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>suporte@muv.log.br</p>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>muvy.log@gmail.com</p>
         </div>
 
         <div style={{
@@ -73,7 +73,7 @@ const SupportPage = () => {
             <Phone size={20} style={{ color: '#22c55e' }} />
           </div>
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>Telefone</p>
-          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>(51) 99999-9999</p>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>(51) 98121-3934</p>
         </div>
 
         <div style={{
@@ -84,7 +84,7 @@ const SupportPage = () => {
             <MessageCircle size={20} style={{ color: '#d97706' }} />
           </div>
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>WhatsApp</p>
-          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>(51) 99999-9999</p>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>(51) 98121-3934</p>
         </div>
       </div>
 

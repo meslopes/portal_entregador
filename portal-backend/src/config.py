@@ -37,6 +37,12 @@ class Config:
     
     # Configurações de logging
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
+    
+    # Configurações do WhatsApp Cloud API
+    WHATSAPP_TOKEN = os.getenv('WHATSAPP_TOKEN', '')
+    WHATSAPP_PHONE_NUMBER_ID = os.getenv('WHATSAPP_PHONE_NUMBER_ID', '')
+    WHATSAPP_BUSINESS_ACCOUNT_ID = os.getenv('WHATSAPP_BUSINESS_ACCOUNT_ID', '')
+    ADMIN_WHATSAPP = os.getenv('ADMIN_WHATSAPP', '5551981213934')
 
 class DevelopmentConfig(Config):
     """Configuração para desenvolvimento"""
