@@ -281,8 +281,15 @@ def get_transfer(transfer_id):
 # ============================================
 
 def verify_webhook_token(token):
-    """Verifica o token do webhook do Asaas"""
+    """Verifica o token do webhook do Asaas (checa env var e SystemConfig)"""
     expected = os.getenv('ASAAS_WEBHOOK_TOKEN', '')
+    if not expected:
+        try:
+            from src.models.portal_models import SystemConfig
+            config = SystemConfig.query.filter_by(config_key='asaas_webhook_token').first()
+            expected = config.config_value if config else ''
+        except Exception:
+            pass
     return expected == token if expected else True
 
 
