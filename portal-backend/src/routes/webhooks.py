@@ -103,13 +103,9 @@ def process_ifood_order_real(order_data):
         if not parsed:
             return jsonify({'error': 'Erro ao processar pedido'}), 400
         
-        # Buscar restaurante por nome ou ID externo
+        # Buscar restaurante por nome
         restaurant = None
-        if parsed.get('restaurant_external_id'):
-            restaurant = Restaurant.query.filter_by(
-                ifood_merchant_id=parsed['restaurant_external_id']
-            ).first()
-        if not restaurant and parsed.get('restaurant_name'):
+        if parsed.get('restaurant_name'):
             restaurant = Restaurant.query.filter_by(name=parsed['restaurant_name']).first()
         if not restaurant:
             restaurant = Restaurant(
