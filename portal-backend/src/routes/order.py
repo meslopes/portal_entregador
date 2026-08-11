@@ -40,6 +40,46 @@ def get_driver_percentage(order):
     return 0.70
 
 
+def send_platform_callback(order, new_status):
+    """Envia callback para plataforma externa quando status do pedido muda"""
+    if not order.platform_source or not order.external_id:
+        return
+    
+    try:
+        if order.platform_source == 'IFOOD':
+            from src.services.ifood_service import update_status as ifood_update_status, INTERNAL_TO_IFOOD_STATUS
+            from src.models.portal_models import PlatformCredential
+            
+            ifood_status = INTERNAL_TO_IFOOD_MAP.get(new_status)
+            if not ifood_status:
+                return
+            
+            # Buscar credenciais do restaurante
+            cred = PlatformCredential.query.filter_by(
+                restaurant_id=order.restaurant_id,
+                platform='IFOOD',
+                is_active=True
+            ).first()
+            
+            if cred and cred.access_token:
+                result = ifood_update_status(cred.access_token, order.external_id, ifood_status)
+                if not result.get('success'):
+                    logger.warning(f"Callback iFood falhou para pedido {order.order_number}: {result.get('error')}")
+    except Exception as e:
+        logger.warning(f"Erro ao enviar callback para plataforma: {e}")
+
+
+# Mapeamento de status interno → iFood para callbacks
+INTERNAL_TO_IFOOD_MAP = {
+    'ACCEPTED': 'CONFIRMED',
+    'PREPARING': 'PREPARING',
+    'READY': 'READY_TO_DELIVER',
+    'PICKED_UP': 'DISPATCHED',
+    'DELIVERED': 'DELIVERED',
+    'CANCELLED': 'CANCELLED'
+}
+
+
 def process_scheduled_orders():
     """Converte pedidos SCHEDULED para PENDING quando o tempo de preparo expirou"""
     try:
@@ -615,6 +655,9 @@ def accept_order(order_id):
 
         db.session.commit()
         
+        # Callback para plataforma externa (iFood, etc.)
+        send_platform_callback(order, 'ACCEPTED')
+        
         order_dict = order.to_dict()
         order_dict['restaurant'] = order.restaurant.to_dict()
         order_dict['customer'] = order.customer.to_dict()
@@ -1049,6 +1092,9 @@ def update_order_status(order_id):
 
         db.session.commit()
         
+        # Callback para plataforma externa (iFood, etc.)
+        send_platform_callback(order, new_status_enum.value)
+        
         # Envia notificacao WhatsApp (se configurado)
         try:
             from src.services.whatsapp import whatsapp_service
@@ -1132,6 +1178,9 @@ def cancel_order(order_id):
             db.session.add(notification)
 
         db.session.commit()
+
+        # Callback para plataforma externa (iFood, etc.)
+        send_platform_callback(order, 'CANCELLED')
 
         response_data = {
             'message': 'Pedido cancelado com sucesso',

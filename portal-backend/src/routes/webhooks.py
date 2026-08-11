@@ -41,64 +41,195 @@ def verify_webhook_signature(payload, signature):
 def ifood_webhook():
     """
     Webhook para receber pedidos do iFood.
-    
-    Formato esperado do iFood (adaptado):
-    {
-        "event": "order_placed" | "order_cancelled",
-        "data": {
-            "order_id": "ifood-123456",
-            "restaurant_id": "rest-789",
-            "restaurant_name": "Farmácia da Esquina",
-            "customer": {
-                "name": "João Silva",
-                "phone": "(51) 99999-0000"
-            },
-            "delivery_address": {
-                "street": "Rua Principal, 100",
-                "neighborhood": "Centro",
-                "city": "Porto Alegre",
-                "state": "RS",
-                "zip_code": "90000-000",
-                "latitude": -29.95,
-                "longitude": -50.45
-            },
-            "items": [
-                {"name": "Produto X", "quantity": 1, "price": 25.00}
-            ],
-            "subtotal": 25.00,
-            "delivery_fee": 10.00,
-            "total_amount": 35.00,
-            "payment_method": "CASH" | "CARD" | "PIX",
-            "special_instructions": "Troco para R$ 50"
-        }
-    }
+    Suporta formato real do iFood (Open Delivery) e formato adaptado.
     """
     try:
-        # Verifica assinatura (se configurada)
-        signature = request.headers.get('X-Webhook-Signature', '')
-        if signature and not verify_webhook_signature(request.data.decode(), signature):
-            return jsonify({'error': 'Assinatura inválida'}), 401
-
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
 
-        event = data.get('event')
-        order_data = data.get('data', {})
-
-        if not event or not order_data:
-            return jsonify({'error': 'Evento ou dados ausentes'}), 400
-
-        # Processa根据不同event
-        if event == 'order_placed':
-            return process_ifood_order(order_data)
-        elif event == 'order_cancelled':
-            return process_ifood_cancellation(order_data)
+        # Detectar formato: real (Open Delivery) ou adaptado
+        # Formato real: tem 'id' e 'merchant' no nível raiz
+        # Formato adaptado: tem 'event' e 'data'
+        if 'event' in data:
+            # Formato adaptado (legado)
+            event = data.get('event')
+            order_data = data.get('data', {})
+            if event == 'order_placed':
+                return process_ifood_order(order_data)
+            elif event == 'order_cancelled':
+                return process_ifood_cancellation(order_data)
+            else:
+                return jsonify({'message': f'Evento {event} ignorado'}), 200
+        elif 'id' in data and 'merchant' in data:
+            # Formato real do iFood (Open Delivery)
+            return process_ifood_order_real(data)
         else:
-            return jsonify({'message': f'Evento {event} ignorado'}), 200
+            # Tentar como array de eventos (formato real do iFood)
+            if isinstance(data, list):
+                for event in data:
+                    process_ifood_event(event)
+                return jsonify({'status': 'ok'}), 200
+            return jsonify({'error': 'Formato não reconhecido'}), 400
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+def process_ifood_event(event_data):
+    """Processa um evento individual do iFood (formato Open Delivery)"""
+    try:
+        event_type = event_data.get('type', '').upper()
+        order_data = event_data.get('order', event_data)
+        
+        if event_type in ['PLACED', 'ORDER_PLACED']:
+            process_ifood_order_real(order_data)
+        elif event_type in ['CANCELLED', 'ORDER_CANCELLED']:
+            if order_data.get('id'):
+                process_ifood_cancellation_real(order_data)
+        elif event_type in ['CONFIRMED', 'DISPATCHED', 'DELIVERED']:
+            # Atualizar status do pedido existente
+            update_order_from_ifood_status(order_data, event_type)
+    except Exception as e:
+        logger.error(f"Erro ao processar evento iFood: {e}")
+
+
+def process_ifood_order_real(order_data):
+    """Processa um pedido no formato real do iFood (Open Delivery)"""
+    try:
+        from src.services.ifood_service import parse_ifood_order
+        
+        parsed = parse_ifood_order(order_data)
+        if not parsed:
+            return jsonify({'error': 'Erro ao processar pedido'}), 400
+        
+        # Buscar restaurante por nome ou ID externo
+        restaurant = None
+        if parsed.get('restaurant_external_id'):
+            restaurant = Restaurant.query.filter_by(
+                ifood_merchant_id=parsed['restaurant_external_id']
+            ).first()
+        if not restaurant and parsed.get('restaurant_name'):
+            restaurant = Restaurant.query.filter_by(name=parsed['restaurant_name']).first()
+        if not restaurant:
+            restaurant = Restaurant(
+                name=parsed['restaurant_name'],
+                address=parsed['delivery_address'].get('street', 'Endereço não informado'),
+                latitude=parsed['delivery_address'].get('latitude', -29.95),
+                longitude=parsed['delivery_address'].get('longitude', -50.45)
+            )
+            db.session.add(restaurant)
+            db.session.flush()
+        
+        # Buscar ou criar cliente
+        customer = None
+        if parsed['customer'].get('phone'):
+            customer = Customer.query.filter_by(phone=parsed['customer']['phone']).first()
+        if not customer:
+            customer = Customer(
+                name=parsed['customer']['name'],
+                phone=parsed['customer']['phone']
+            )
+            db.session.add(customer)
+            db.session.flush()
+        
+        # Criar endereço
+        addr = Address(
+            customer_id=customer.id,
+            street=parsed['delivery_address'].get('street', ''),
+            neighborhood=parsed['delivery_address'].get('neighborhood', ''),
+            city=parsed['delivery_address'].get('city', ''),
+            state=parsed['delivery_address'].get('state', ''),
+            zip_code=parsed['delivery_address'].get('zip_code', ''),
+            latitude=parsed['delivery_address'].get('latitude'),
+            longitude=parsed['delivery_address'].get('longitude')
+        )
+        db.session.add(addr)
+        db.session.flush()
+        
+        # Mapear pagamento
+        payment_methods = {'CASH': PaymentMethod.CASH, 'CARD': PaymentMethod.CARD, 'PIX': PaymentMethod.PIX}
+        payment_method = payment_methods.get(parsed['payment_method'], PaymentMethod.CASH)
+        
+        # Criar pedido
+        order = Order(
+            restaurant_id=restaurant.id,
+            customer_id=customer.id,
+            delivery_address_id=addr.id,
+            order_number=parsed['order_number'],
+            external_id=parsed['external_id'],
+            platform_source='IFOOD',
+            items=parsed['items'],
+            subtotal=parsed['subtotal'],
+            delivery_fee=parsed['delivery_fee'],
+            total_amount=parsed['total_amount'],
+            payment_method=payment_method,
+            special_instructions=parsed.get('special_instructions'),
+            status=OrderStatus.PENDING
+        )
+        db.session.add(order)
+        db.session.commit()
+        
+        logger.info(f"Pedido iFood {order.order_number} criado (ID externo: {order.external_id})")
+        return jsonify({
+            'message': 'Pedido iFood processado com sucesso',
+            'order_id': order.id,
+            'order_number': order.order_number,
+            'external_id': order.external_id,
+            'status': 'PENDING'
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao processar pedido iFood real: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+def process_ifood_cancellation_real(order_data):
+    """Processa cancelamento no formato real do iFood"""
+    try:
+        external_id = order_data.get('id')
+        if not external_id:
+            return
+        
+        order = Order.query.filter_by(external_id=external_id, platform_source='IFOOD').first()
+        if not order:
+            order = Order.query.filter(Order.order_number.like(f'%{external_id}%')).first()
+        
+        if order and order.status not in [OrderStatus.DELIVERED, OrderStatus.CANCELLED]:
+            order.status = OrderStatus.CANCELLED
+            order.updated_at = datetime.utcnow()
+            if order.delivery:
+                db.session.delete(order.delivery)
+            db.session.commit()
+            logger.info(f"Pedido iFood {order.order_number} cancelado via webhook")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao cancelar pedido iFood: {e}")
+
+
+def update_order_from_ifood_status(order_data, ifood_status):
+    """Atualiza status de um pedido baseado em callback do iFood"""
+    try:
+        from src.services.ifood_service import IFOOD_STATUS_MAP
+        
+        external_id = order_data.get('id')
+        if not external_id:
+            return
+        
+        order = Order.query.filter_by(external_id=external_id, platform_source='IFOOD').first()
+        if not order:
+            return
+        
+        new_status = IFOOD_STATUS_MAP.get(ifood_status)
+        if new_status and hasattr(OrderStatus, new_status):
+            order.status = OrderStatus[new_status]
+            order.updated_at = datetime.utcnow()
+            db.session.commit()
+            logger.info(f"Status do pedido iFood {order.order_number} atualizado para {new_status}")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar status do pedido iFood: {e}")
 
 
 def process_ifood_order(order_data):
