@@ -35,13 +35,25 @@ const AdminInvoicesPage = () => {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (period) => {
     try {
       setGenerating(true);
-      const response = await api.post('/api/admin/invoices/generate');
-      setSuccess(response.data.message);
+      let body = {};
+      if (period === 'current_week') {
+        const today = new Date();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        body = {
+          week_start: monday.toISOString().split('T')[0] + 'T00:00:00',
+          week_end: sunday.toISOString().split('T')[0] + 'T23:59:59'
+        };
+      }
+      const response = await api.post('/api/admin/invoices/generate', body);
+      setSuccess(response.data.message + (response.data.skipped?.length ? ` (${response.data.skipped.length} já existentes)` : ''));
       loadInvoices();
-      setTimeout(() => setSuccess(''), 3000);
+      setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao gerar faturas');
     } finally {
@@ -124,8 +136,11 @@ const AdminInvoicesPage = () => {
           <button onClick={loadInvoices} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
             <RefreshCw size={16} /> Atualizar
           </button>
-          <button onClick={handleGenerate} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: generating ? 'not-allowed' : 'pointer', fontSize: '0.875rem', fontWeight: 600, opacity: generating ? 0.7 : 1 }}>
-            <FileText size={16} /> {generating ? 'Gerando...' : 'Gerar Faturas'}
+          <button onClick={() => handleGenerate('previous_week')} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: generating ? 'not-allowed' : 'pointer', fontSize: '0.875rem', fontWeight: 600, opacity: generating ? 0.7 : 1 }}>
+            <FileText size={16} /> {generating ? 'Gerando...' : 'Gerar Semana Anterior'}
+          </button>
+          <button onClick={() => handleGenerate('current_week')} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: generating ? 'not-allowed' : 'pointer', fontSize: '0.875rem', fontWeight: 600, opacity: generating ? 0.7 : 1 }}>
+            <FileText size={16} /> {generating ? 'Gerando...' : 'Gerar Semana Atual'}
           </button>
         </div>
       </div>

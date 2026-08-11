@@ -3302,13 +3302,19 @@ def list_invoices():
     try:
         tenant_id = get_current_tenant_id()
         status = request.args.get('status')
-        
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+
         query = Invoice.query.join(Restaurant)
         if tenant_id:
             query = query.filter(Invoice.tenant_id == tenant_id)
         if status:
             query = query.filter(Invoice.status == status)
-        
+        if date_from:
+            query = query.filter(Invoice.week_start >= datetime.fromisoformat(date_from))
+        if date_to:
+            query = query.filter(Invoice.week_end <= datetime.fromisoformat(date_to) + timedelta(days=1))
+
         invoices = query.order_by(Invoice.created_at.desc()).all()
         return jsonify({'invoices': [i.to_dict() for i in invoices]}), 200
     except Exception as e:
@@ -3319,49 +3325,57 @@ def list_invoices():
 @jwt_required()
 @admin_required
 def generate_invoices():
-    """Gera faturas da semana anterior para todos os estabelecimentos"""
+    """Gera faturas para todos os estabelecimentos. Aceita período customizado via body."""
     try:
         from decimal import Decimal
         tenant_id = get_current_tenant_id()
-        
-        # Calcular semana anterior (seg-dom)
-        today = datetime.utcnow().date()
-        days_since_monday = today.weekday()
-        week_end = datetime.combine(today - timedelta(days=days_since_monday), datetime.min.time())
-        week_start = week_end - timedelta(days=7)
-        
+
+        data = request.get_json() if request.is_json else {}
+
+        # Calcular período: usa body se fornecido, senão semana anterior
+        if data.get('week_start') and data.get('week_end'):
+            week_start = datetime.fromisoformat(data['week_start'])
+            week_end = datetime.fromisoformat(data['week_end'])
+        else:
+            today = datetime.utcnow().date()
+            days_since_monday = today.weekday()
+            week_end = datetime.combine(today - timedelta(days=days_since_monday), datetime.min.time())
+            week_start = week_end - timedelta(days=7)
+
         # Buscar todos os restaurantes do tenant
         restaurant_query = Restaurant.query
         if tenant_id:
             restaurant_query = restaurant_query.filter(Restaurant.tenant_id == tenant_id)
         restaurants = restaurant_query.all()
-        
+
         generated = []
+        skipped = []
         for restaurant in restaurants:
-            # Verificar se já existe fatura para esta semana
+            # Verificar se já existe fatura para este período
             existing = Invoice.query.filter_by(
                 restaurant_id=restaurant.id,
                 week_start=week_start,
                 week_end=week_end
             ).first()
             if existing:
+                skipped.append(restaurant.name)
                 continue
-            
-            # Buscar entregas da semana (usando updated_at do Order quando foi marcado como DELIVERED)
+
+            # Buscar entregas do período
             delivered_orders = db.session.query(Order).filter(
                 Order.restaurant_id == restaurant.id,
                 Order.status == OrderStatus.DELIVERED,
                 Order.updated_at >= week_start,
                 Order.updated_at < week_end
             ).all()
-            
+
             if not delivered_orders:
                 continue
-            
+
             total_amount = sum(float(o.delivery_fee or 0) for o in delivered_orders)
             driver_earnings = sum(float(o.delivery.driver_earnings or 0) for o in delivered_orders if o.delivery)
             platform_fee = total_amount - driver_earnings
-            
+
             invoice = Invoice(
                 tenant_id=tenant_id or restaurant.tenant_id,
                 restaurant_id=restaurant.id,
@@ -3375,11 +3389,13 @@ def generate_invoices():
             )
             db.session.add(invoice)
             generated.append(restaurant.name)
-        
+
         db.session.commit()
         return jsonify({
             'message': f'{len(generated)} faturas geradas',
-            'restaurants': generated
+            'restaurants': generated,
+            'skipped': skipped,
+            'period': {'start': week_start.isoformat(), 'end': week_end.isoformat()}
         }), 200
     except Exception as e:
         db.session.rollback()
