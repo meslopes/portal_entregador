@@ -3650,9 +3650,11 @@ def create_invoice_charge(invoice_id):
         if charge.get('success'):
             payment_url = charge.get('invoice_url')
 
+            # Commit do asaas_customer_id se foi criado agora
+            db.session.commit()
+
             # Notificar estabelecimento no app com o link de pagamento
             try:
-                # Buscar owner do estabelecimento via Customer (mesmo telefone/email)
                 restaurant_user = None
                 if restaurant.phone:
                     customer = Customer.query.filter_by(phone=restaurant.phone).first()
