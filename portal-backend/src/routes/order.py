@@ -408,7 +408,7 @@ def notify_all_drivers(order, order_info):
 
 
 def find_next_in_queue(order):
-    """Encontra o próximo driver na fila ordenada"""
+    """Encontra o próximo driver na fila ordenada (global ou por estabelecimento)"""
     try:
         # Busca drivers online do tenant
         query = Driver.query.filter(
@@ -436,18 +436,31 @@ def find_next_in_queue(order):
             
             max_concurrent = driver.max_concurrent_orders or 3
             if active_orders < max_concurrent:
+                # Verificar se entregador está vinculado a este estabelecimento
+                is_priority = False
+                if order.restaurant_id:
+                    from src.models.portal_models import DriverRestaurant
+                    priority = DriverRestaurant.query.filter_by(
+                        driver_id=driver.id,
+                        restaurant_id=order.restaurant_id,
+                        is_priority=True
+                    ).first()
+                    is_priority = priority is not None
+                
                 available_drivers.append({
                     'driver': driver,
                     'queue_position': driver.queue_position or 0,
                     'last_order_at': driver.last_order_at,
-                    'total_orders_today': driver.total_orders_today or 0
+                    'total_orders_today': driver.total_orders_today or 0,
+                    'is_priority': is_priority
                 })
         
         if not available_drivers:
             return None
         
-        # Ordena por: queue_position (menor = maior prioridade), depois por last_order_at
+        # Ordena: prioridade primeiro, depois queue_position, depois last_order_at
         available_drivers.sort(key=lambda x: (
+            not x['is_priority'],  # True primeiro (prioridade)
             x['queue_position'],
             x['last_order_at'] or datetime.min
         ))

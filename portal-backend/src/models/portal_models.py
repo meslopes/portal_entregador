@@ -227,6 +227,36 @@ class Driver(db.Model):
             'updated_at': self.updated_at.isoformat()
         }
 
+
+class DriverRestaurant(db.Model):
+    """Vinculação de entregadores a estabelecimentos (prioridade)"""
+    __tablename__ = 'driver_restaurants'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    is_priority = db.Column(db.Boolean, default=False)  # Se True, entregador tem prioridade neste restaurante
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='restaurant_assignments')
+    restaurant = db.relationship('Restaurant', backref='driver_assignments')
+
+    # Índice único para evitar duplicatas
+    __table_args__ = (db.UniqueConstraint('driver_id', 'restaurant_id'),)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'restaurant_id': self.restaurant_id,
+            'is_priority': self.is_priority,
+            'driver_name': f"{self.driver.user.first_name} {self.driver.user.last_name}" if self.driver and self.driver.user else None,
+            'restaurant_name': self.restaurant.name if self.restaurant else None,
+            'created_at': self.created_at.isoformat()
+        }
+
+
 class Restaurant(db.Model):
     __tablename__ = 'restaurants'
     

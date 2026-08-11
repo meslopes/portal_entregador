@@ -455,6 +455,22 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tabela driver_restaurants
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS driver_restaurants (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER REFERENCES drivers(id),
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    is_priority BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(driver_id, restaurant_id)
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tenant_id em system_configs
         try:
             db.session.execute(db.text(

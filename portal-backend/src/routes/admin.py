@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
     Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice,
-    PlatformCredential, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    PlatformCredential, DriverRestaurant, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -3940,3 +3940,112 @@ def test_platform_credential(cred_id):
             
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================
+# VINCULAÇÃO ENTREGADOR-ESTABELECIMENTO
+# ============================================
+
+@admin_bp.route('/driver-assignments', methods=['GET'])
+@jwt_required()
+@admin_required
+def list_driver_assignments():
+    """Lista vinculações entregador-estabelecimento"""
+    try:
+        tenant_id = get_current_tenant_id()
+        restaurant_id = request.args.get('restaurant_id')
+        driver_id = request.args.get('driver_id')
+        
+        query = DriverRestaurant.query
+        if tenant_id:
+            query = query.join(Restaurant).filter(Restaurant.tenant_id == tenant_id)
+        if restaurant_id:
+            query = query.filter(DriverRestaurant.restaurant_id == int(restaurant_id))
+        if driver_id:
+            query = query.filter(DriverRestaurant.driver_id == int(driver_id))
+        
+        assignments = query.all()
+        return jsonify({'assignments': [a.to_dict() for a in assignments]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/driver-assignments', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_driver_assignment():
+    """Vincula entregador a estabelecimento"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('driver_id') or not data.get('restaurant_id'):
+            return jsonify({'error': 'Entregador e estabelecimento são obrigatórios'}), 400
+        
+        driver_id = data['driver_id']
+        restaurant_id = data['restaurant_id']
+        
+        # Verificar se já existe
+        existing = DriverRestaurant.query.filter_by(
+            driver_id=driver_id,
+            restaurant_id=restaurant_id
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'Vinculação já existe'}), 400
+        
+        assignment = DriverRestaurant(
+            driver_id=driver_id,
+            restaurant_id=restaurant_id,
+            is_priority=data.get('is_priority', False)
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Vinculação criada com sucesso',
+            'assignment': assignment.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/driver-assignments/<int:assignment_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_driver_assignment(assignment_id):
+    """Remove vinculação entregador-estabelecimento"""
+    try:
+        assignment = DriverRestaurant.query.get(assignment_id)
+        if not assignment:
+            return jsonify({'error': 'Vinculação não encontrada'}), 404
+        
+        db.session.delete(assignment)
+        db.session.commit()
+        
+        return jsonify({'message': 'Vinculação removida com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/driver-assignments/<int:assignment_id>/priority', methods=['PUT'])
+@jwt_required()
+@admin_required
+def toggle_driver_priority(assignment_id):
+    """Ativa/desativa prioridade do entregador no estabelecimento"""
+    try:
+        assignment = DriverRestaurant.query.get(assignment_id)
+        if not assignment:
+            return jsonify({'error': 'Vinculação não encontrada'}), 404
+        
+        data = request.get_json()
+        assignment.is_priority = data.get('is_priority', not assignment.is_priority)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Prioridade atualizada',
+            'assignment': assignment.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
