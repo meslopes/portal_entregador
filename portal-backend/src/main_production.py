@@ -503,6 +503,62 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tabela establishment_drivers
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS establishment_drivers (
+                    id SERIAL PRIMARY KEY,
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    name VARCHAR(200) NOT NULL,
+                    phone VARCHAR(20),
+                    vehicle_type VARCHAR(20),
+                    vehicle_plate VARCHAR(10),
+                    vehicle_model VARCHAR(100),
+                    is_online BOOLEAN DEFAULT FALSE,
+                    current_latitude NUMERIC(10,8),
+                    current_longitude NUMERIC(11,8),
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: campos de entregadores próprios em restaurants
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'has_own_drivers') THEN ALTER TABLE restaurants ADD COLUMN has_own_drivers BOOLEAN DEFAULT FALSE; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'subscription_type') THEN ALTER TABLE restaurants ADD COLUMN subscription_type VARCHAR(20); END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'subscription_expires_at') THEN ALTER TABLE restaurants ADD COLUMN subscription_expires_at TIMESTAMP; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'platform_pricing_table_id') THEN ALTER TABLE restaurants ADD COLUMN platform_pricing_table_id INTEGER REFERENCES pricing_tables(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: campos de entregadores próprios em orders
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'assigned_to_own_driver') THEN ALTER TABLE orders ADD COLUMN assigned_to_own_driver BOOLEAN DEFAULT FALSE; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'establishment_driver_id') THEN ALTER TABLE orders ADD COLUMN establishment_driver_id INTEGER REFERENCES establishment_drivers(id); END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'called_platform') THEN ALTER TABLE orders ADD COLUMN called_platform BOOLEAN DEFAULT FALSE; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tenant_id em system_configs
         try:
             db.session.execute(db.text(

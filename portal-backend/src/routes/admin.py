@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
     Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice,
-    PlatformCredential, DriverRestaurant, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    PlatformCredential, DriverRestaurant, EstablishmentDriver, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -4045,6 +4045,179 @@ def toggle_driver_priority(assignment_id):
         return jsonify({
             'message': 'Prioridade atualizada',
             'assignment': assignment.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# ENTREGADORES PRÓPRIOS DO ESTABELECIMENTO
+# ============================================
+
+@admin_bp.route('/establishment-drivers', methods=['GET'])
+@jwt_required()
+@admin_required
+def list_establishment_drivers():
+    """Lista entregadores próprios de um estabelecimento"""
+    try:
+        restaurant_id = request.args.get('restaurant_id')
+        if not restaurant_id:
+            return jsonify({'error': 'restaurant_id é obrigatório'}), 400
+        
+        drivers = EstablishmentDriver.query.filter_by(
+            restaurant_id=int(restaurant_id),
+            is_active=True
+        ).all()
+        
+        return jsonify({'drivers': [d.to_dict() for d in drivers]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_establishment_driver():
+    """Cadastra entregador próprio para um estabelecimento"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('restaurant_id') or not data.get('name'):
+            return jsonify({'error': 'Estabelecimento e nome são obrigatórios'}), 400
+        
+        driver = EstablishmentDriver(
+            restaurant_id=data['restaurant_id'],
+            name=data['name'],
+            phone=data.get('phone'),
+            vehicle_type=data.get('vehicle_type', 'MOTO'),
+            vehicle_plate=data.get('vehicle_plate'),
+            vehicle_model=data.get('vehicle_model'),
+            is_active=True
+        )
+        db.session.add(driver)
+        
+        # Marcar estabelecimento como tendo entregadores próprios
+        restaurant = Restaurant.query.get(data['restaurant_id'])
+        if restaurant:
+            restaurant.has_own_drivers = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Entregador cadastrado com sucesso',
+            'driver': driver.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/<int:driver_id>', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_establishment_driver(driver_id):
+    """Atualiza entregador próprio"""
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        data = request.get_json()
+        if 'name' in data:
+            driver.name = data['name']
+        if 'phone' in data:
+            driver.phone = data['phone']
+        if 'vehicle_type' in data:
+            driver.vehicle_type = data['vehicle_type']
+        if 'vehicle_plate' in data:
+            driver.vehicle_plate = data['vehicle_plate']
+        if 'vehicle_model' in data:
+            driver.vehicle_model = data['vehicle_model']
+        if 'is_active' in data:
+            driver.is_active = data['is_active']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Entregador atualizado',
+            'driver': driver.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/<int:driver_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_establishment_driver(driver_id):
+    """Remove entregador próprio"""
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        driver.is_active = False
+        db.session.commit()
+        
+        return jsonify({'message': 'Entregador removido'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/<int:driver_id>/toggle-online', methods=['PUT'])
+@jwt_required()
+@admin_required
+def toggle_establishment_driver_online(driver_id):
+    """Ativa/desativa status online do entregador próprio"""
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        data = request.get_json() or {}
+        driver.is_online = data.get('is_online', not driver.is_online)
+        
+        if 'latitude' in data:
+            driver.current_latitude = data['latitude']
+        if 'longitude' in data:
+            driver.current_longitude = data['longitude']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Entregador {"online" if driver.is_online else "offline"}',
+            'driver': driver.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishments/<int:restaurant_id>/subscription', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_restaurant_subscription(restaurant_id):
+    """Configura assinatura do estabelecimento"""
+    try:
+        restaurant = Restaurant.query.get(restaurant_id)
+        if not restaurant:
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+        
+        data = request.get_json()
+        if 'subscription_type' in data:
+            restaurant.subscription_type = data['subscription_type']
+        if 'subscription_expires_at' in data:
+            restaurant.subscription_expires_at = datetime.fromisoformat(data['subscription_expires_at']) if data['subscription_expires_at'] else None
+        if 'platform_pricing_table_id' in data:
+            restaurant.platform_pricing_table_id = data['platform_pricing_table_id']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Assinatura atualizada',
+            'restaurant': restaurant.to_dict()
         }), 200
     except Exception as e:
         db.session.rollback()

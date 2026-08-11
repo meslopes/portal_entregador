@@ -289,6 +289,45 @@ class DriverPenalty(db.Model):
         }
 
 
+class EstablishmentDriver(db.Model):
+    """Entregadores próprios do estabelecimento"""
+    __tablename__ = 'establishment_drivers'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    phone = db.Column(db.String(20))
+    vehicle_type = db.Column(db.String(20))  # MOTO, BIKE, CAR
+    vehicle_plate = db.Column(db.String(10))
+    vehicle_model = db.Column(db.String(100))
+    is_online = db.Column(db.Boolean, default=False)
+    current_latitude = db.Column(db.Numeric(10, 8))
+    current_longitude = db.Column(db.Numeric(11, 8))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    restaurant = db.relationship('Restaurant', backref='own_drivers')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'name': self.name,
+            'phone': self.phone,
+            'vehicle_type': self.vehicle_type,
+            'vehicle_plate': self.vehicle_plate,
+            'vehicle_model': self.vehicle_model,
+            'is_online': self.is_online,
+            'current_latitude': float(self.current_latitude) if self.current_latitude else None,
+            'current_longitude': float(self.current_longitude) if self.current_longitude else None,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+
 class Restaurant(db.Model):
     __tablename__ = 'restaurants'
     
@@ -309,6 +348,11 @@ class Restaurant(db.Model):
     square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
     # Tabela de preços (se vazio, usa a padrão da praça)
     pricing_table_id = db.Column(db.Integer, db.ForeignKey('pricing_tables.id'), nullable=True)
+    # Entregadores próprios
+    has_own_drivers = db.Column(db.Boolean, default=False)  # Se usa entregadores próprios
+    subscription_type = db.Column(db.String(20))  # WEEKLY, NONE
+    subscription_expires_at = db.Column(db.DateTime)  # Data de expiração da assinatura
+    platform_pricing_table_id = db.Column(db.Integer, db.ForeignKey('pricing_tables.id'), nullable=True)  # Tabela diferenciada para plataforma
     # Dados bancarios
     bank_name = db.Column(db.String(100))
     bank_agency = db.Column(db.String(20))
@@ -442,6 +486,10 @@ class Order(db.Model):
     # Integração com plataformas externas
     external_id = db.Column(db.String(100))  # ID do pedido na plataforma (iFood, etc.)
     platform_source = db.Column(db.String(20))  # IFOOD, OPEN_DELIVERY, etc.
+    # Entregadores próprios
+    assigned_to_own_driver = db.Column(db.Boolean, default=False)  # Se foi atribuído a entregador próprio
+    establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=True)
+    called_platform = db.Column(db.Boolean, default=False)  # Se chamou entregadores da plataforma
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
