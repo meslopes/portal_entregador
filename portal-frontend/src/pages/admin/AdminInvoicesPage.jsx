@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, RefreshCw, CheckCircle, Clock, AlertCircle, DollarSign, QrCode, ExternalLink, Bell } from 'lucide-react';
+import { FileText, RefreshCw, CheckCircle, AlertCircle, QrCode, ExternalLink, Bell } from 'lucide-react';
 import api from '@/lib/api';
-import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminInvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
@@ -12,21 +11,17 @@ const AdminInvoicesPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [filter, setFilter] = useState('all');
-  const [dateRange, setDateRange] = useState(null);
   const [paymentLinks, setPaymentLinks] = useState({});
   const [selectedRestaurant, setSelectedRestaurant] = useState('');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
 
   useEffect(() => { loadInvoices(); loadRestaurants(); }, [filter]);
-  useEffect(() => { if (dateRange && dateRange.startDate && dateRange.endDate) loadInvoices(); }, [dateRange]);
 
   const loadRestaurants = async () => {
     try {
       const response = await api.get('/api/admin/establishments');
       setRestaurants(response.data.establishments || response.data || []);
-    } catch {
-      // Silently fail
-    }
+    } catch { /* silent */ }
   };
 
   const loadInvoices = async () => {
@@ -34,13 +29,9 @@ const AdminInvoicesPage = () => {
       setLoading(true);
       const params = new URLSearchParams();
       if (filter !== 'all') params.append('status', filter.toUpperCase());
-      if (dateRange?.startDate && dateRange?.endDate) {
-        params.append('date_from', dateRange.startDate);
-        params.append('date_to', dateRange.endDate);
-      }
       const response = await api.get(`/api/admin/invoices?${params.toString()}`);
       setInvoices(response.data.invoices || []);
-    } catch (err) {
+    } catch {
       setError('Erro ao carregar faturas');
     } finally {
       setLoading(false);
@@ -50,6 +41,7 @@ const AdminInvoicesPage = () => {
   const handleGenerate = async (period, restaurantId) => {
     try {
       setGenerating(true);
+      setError('');
       let body = {};
       if (period === 'current_week') {
         const today = new Date();
@@ -60,9 +52,7 @@ const AdminInvoicesPage = () => {
         body.week_start = monday.toISOString().split('T')[0] + 'T00:00:00';
         body.week_end = sunday.toISOString().split('T')[0] + 'T23:59:59';
       }
-      if (restaurantId) {
-        body.restaurant_id = parseInt(restaurantId);
-      }
+      if (restaurantId) body.restaurant_id = parseInt(restaurantId);
       const response = await api.post('/api/admin/invoices/generate', body);
       setSuccess(response.data.message + (response.data.skipped?.length ? ` (${response.data.skipped.length} já existentes)` : ''));
       setShowGenerateModal(false);
@@ -142,28 +132,27 @@ const AdminInvoicesPage = () => {
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b' }}>Faturas Semanais</h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Faturas dos estabelecimentos por semana</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button onClick={loadInvoices} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
-            <RefreshCw size={16} /> Atualizar
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button onClick={loadInvoices} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.8125rem', color: '#64748b' }}>
+            <RefreshCw size={14} /> Atualizar
           </button>
-          <button onClick={() => handleGenerate('previous_week')} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: generating ? 'not-allowed' : 'pointer', fontSize: '0.875rem', fontWeight: 600, opacity: generating ? 0.7 : 1 }}>
-            <FileText size={16} /> {generating ? 'Gerando...' : 'Semana Anterior (Todos)'}
+          <button onClick={() => handleGenerate('previous_week')} disabled={generating} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: generating ? 'not-allowed' : 'pointer', fontSize: '0.8125rem', fontWeight: 600, opacity: generating ? 0.7 : 1 }}>
+            {generating ? 'Gerando...' : 'Gerar Sem. Anterior'}
           </button>
-          <button onClick={() => handleGenerate('current_week')} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: generating ? 'not-allowed' : 'pointer', fontSize: '0.875rem', fontWeight: 600, opacity: generating ? 0.7 : 1 }}>
-            <FileText size={16} /> {generating ? 'Gerando...' : 'Semana Atual (Todos)'}
+          <button onClick={() => handleGenerate('current_week')} disabled={generating} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: generating ? 'not-allowed' : 'pointer', fontSize: '0.8125rem', fontWeight: 600, opacity: generating ? 0.7 : 1 }}>
+            {generating ? 'Gerando...' : 'Gerar Sem. Atual'}
           </button>
-          <button onClick={() => setShowGenerateModal(true)} disabled={generating} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '2px dashed #2563eb', background: 'white', color: '#2563eb', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}>
-            <FileText size={16} /> Gerar para Cliente Específico
+          <button onClick={() => setShowGenerateModal(true)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '2px dashed #2563eb', background: 'white', color: '#2563eb', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+            Gerar p/ Cliente
           </button>
         </div>
       </div>
 
-      {/* Modal para gerar fatura para cliente específico */}
       {showGenerateModal && (
         <>
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999 }} onClick={() => setShowGenerateModal(false)} />
@@ -175,17 +164,17 @@ const AdminInvoicesPage = () => {
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Estabelecimento</label>
                 <select value={selectedRestaurant} onChange={e => setSelectedRestaurant(e.target.value)} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}>
-                  <option value="">Todos os estabelecimentos</option>
+                  <option value="">Selecione...</option>
                   {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button onClick={() => setShowGenerateModal(false)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>
                 <button onClick={() => handleGenerate('previous_week', selectedRestaurant)} disabled={!selectedRestaurant || generating} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: !selectedRestaurant ? 'not-allowed' : 'pointer', opacity: !selectedRestaurant ? 0.5 : 1 }}>
-                  {generating ? 'Gerando...' : 'Gerar Semana Anterior'}
+                  Sem. Anterior
                 </button>
                 <button onClick={() => handleGenerate('current_week', selectedRestaurant)} disabled={!selectedRestaurant || generating} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: !selectedRestaurant ? 'not-allowed' : 'pointer', opacity: !selectedRestaurant ? 0.5 : 1 }}>
-                  {generating ? 'Gerando...' : 'Gerar Semana Atual'}
+                  Sem. Atual
                 </button>
               </div>
             </div>
@@ -193,17 +182,14 @@ const AdminInvoicesPage = () => {
         </>
       )}
 
-      {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
+      {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><AlertCircle size={16} /> {error}</div>}
       {success && <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem' }}>{success}</div>}
 
-      {/* Filtro de Datas */}
-      <DateRangeFilter onChange={(range) => setDateRange(range)} />
-
-      {/* Filtros */}
+      {/* Filtro de status */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
         {['all', 'pending', 'paid'].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: filter === f ? '2px solid #2563eb' : '1px solid #e2e8f0', background: filter === f ? '#eff6ff' : 'white', color: filter === f ? '#2563eb' : '#64748b', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: filter === f ? 600 : 400 }}>
-            {f === 'all' ? 'Todas' : f === 'pending' ? 'Pendentes' : 'Pagas'}
+            {f === 'all' ? `Todas (${invoices.length})` : f === 'pending' ? 'Pendentes' : 'Pagas'}
           </button>
         ))}
       </div>
@@ -212,13 +198,13 @@ const AdminInvoicesPage = () => {
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <FileText size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
           <p style={{ color: '#64748b', fontSize: '1rem' }}>Nenhuma fatura encontrada</p>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>Clique em "Gerar Faturas" para criar faturas da semana anterior</p>
+          <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>Clique em "Gerar Sem. Anterior" ou "Gerar Sem. Atual" para criar faturas</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {invoices.map(inv => (
             <div key={inv.id} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${inv.status === 'PAID' ? '#22c55e' : '#f59e0b'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                     <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '1rem' }}>{inv.restaurant_name}</span>
@@ -243,7 +229,7 @@ const AdminInvoicesPage = () => {
                       {paymentLinks[inv.id] ? (
                         <>
                           <a href={paymentLinks[inv.id]} target="_blank" rel="noopener noreferrer"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none' }}>
                             <ExternalLink size={14} /> Abrir Link
                           </a>
                           <button onClick={() => handleSendLink(inv.id)}
