@@ -374,6 +374,9 @@ class Order(db.Model):
     pickup_time = db.Column(db.DateTime)
     delivery_time = db.Column(db.DateTime)
     special_instructions = db.Column(db.Text)
+    # Integração com plataformas externas
+    external_id = db.Column(db.String(100))  # ID do pedido na plataforma (iFood, etc.)
+    platform_source = db.Column(db.String(20))  # IFOOD, OPEN_DELIVERY, etc.
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -398,6 +401,8 @@ class Order(db.Model):
             'total_amount': float(self.total_amount),
             'payment_method': self.payment_method.value,
             'status': self.status.value,
+            'external_id': self.external_id,
+            'platform_source': self.platform_source,
             'distribution_method': self.distribution_method,
             'scheduled_at': self.scheduled_at.isoformat() if self.scheduled_at else None,
             'estimated_delivery_time': self.estimated_delivery_time.isoformat() if self.estimated_delivery_time else None,
@@ -822,5 +827,37 @@ class Invoice(db.Model):
             'status': self.status,
             'paid_at': self.paid_at.isoformat() if self.paid_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class PlatformCredential(db.Model):
+    """Credenciais de integração com plataformas externas (iFood, etc.)"""
+    __tablename__ = 'platform_credentials'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    platform = db.Column(db.String(20), nullable=False)  # IFOOD, OPEN_DELIVERY, etc.
+    client_id = db.Column(db.String(200))
+    client_secret = db.Column(db.String(200))
+    access_token = db.Column(db.Text)
+    refresh_token = db.Column(db.Text)
+    expires_at = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    restaurant = db.relationship('Restaurant', backref='platform_credentials')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'platform': self.platform,
+            'client_id': self.client_id,
+            'is_active': self.is_active,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
         }
 

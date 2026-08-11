@@ -410,6 +410,39 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: external_id e platform_source em orders
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'external_id') THEN ALTER TABLE orders ADD COLUMN external_id VARCHAR(100); END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'platform_source') THEN ALTER TABLE orders ADD COLUMN platform_source VARCHAR(20); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: tabela platform_credentials
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS platform_credentials (
+                    id SERIAL PRIMARY KEY,
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    platform VARCHAR(20) NOT NULL,
+                    client_id VARCHAR(200),
+                    client_secret VARCHAR(200),
+                    access_token TEXT,
+                    refresh_token TEXT,
+                    expires_at TIMESTAMP,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tenant_id em system_configs
         try:
             db.session.execute(db.text(
