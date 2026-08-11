@@ -3353,12 +3353,12 @@ def generate_invoices():
         generated = []
         skipped = []
         for restaurant in restaurants:
-            # Verificar se já existe fatura para este período
+            # Verificar se já existe fatura PENDENTE para este período
             existing = Invoice.query.filter_by(
                 restaurant_id=restaurant.id,
                 week_start=week_start,
                 week_end=week_end
-            ).first()
+            ).filter(Invoice.status == 'PENDING').first()
             if existing:
                 skipped.append(restaurant.name)
                 continue
