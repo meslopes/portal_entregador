@@ -118,13 +118,22 @@ const NotificationBell = () => {
         return (
           <a key={i} href={part} target="_blank" rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}>
-            {part}
+            style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all', fontWeight: 500 }}>
+            {part.length > 50 ? part.substring(0, 50) + '...' : part}
           </a>
         );
       }
       return part;
     });
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification.is_read) markAsRead(notification.id);
+    // Se a mensagem contém um link, abrir em nova aba
+    const urlMatch = notification.message?.match(/(https?:\/\/[^\s]+)/);
+    if (urlMatch) {
+      window.open(urlMatch[1], '_blank');
+    }
   };
 
   return (
@@ -204,12 +213,12 @@ const NotificationBell = () => {
               notifications.slice(0, 20).map(notification => (
                 <div
                   key={notification.id}
-                  onClick={() => !notification.is_read && markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                   style={{
                     padding: '0.875rem 1rem',
                     borderBottom: '1px solid #f8fafc',
                     display: 'flex', gap: '0.75rem',
-                    cursor: notification.is_read ? 'default' : 'pointer',
+                    cursor: 'pointer',
                     background: notification.is_read ? 'white' : '#f8fafc',
                     transition: 'background 0.2s'
                   }}
@@ -235,7 +244,7 @@ const NotificationBell = () => {
                     </p>
                     <p style={{
                       fontSize: '0.75rem', color: '#64748b',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                      wordBreak: 'break-all'
                     }}>
                       {renderMessage(notification.message)}
                     </p>
