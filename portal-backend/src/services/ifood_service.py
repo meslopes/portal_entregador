@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # URLs do iFood (sandbox e produção)
 IFOOD_BASE_URL = os.getenv('IFOOD_BASE_URL', 'https://merchant-api.ifood.com.br')
-IFOOD_AUTH_URL = os.getenv('IFOOD_AUTH_URL', 'https://merchant-api.ifood.com.br/authentication/v1.0'
+IFOOD_AUTH_URL = os.getenv('IFOOD_AUTH_URL', 'https://merchant-api.ifood.com.br/authentication/v1.0')
 
 
 def get_auth_headers(access_token):
