@@ -186,6 +186,10 @@ class Driver(db.Model):
     queue_position = db.Column(db.Integer, default=0)  # Posição na fila (menor = maior prioridade)
     last_order_at = db.Column(db.DateTime)  # Quando aceitou/rejeitou o último pedido
     total_orders_today = db.Column(db.Integer, default=0)  # Pedidos completados hoje
+    # Penalidades
+    rejection_count = db.Column(db.Integer, default=0)  # Rejeições consecutivas
+    is_blocked = db.Column(db.Boolean, default=False)  # Bloqueado por rejeições excessivas
+    blocked_until = db.Column(db.DateTime)  # Data de desbloqueio (se temporário)
     # Carteira
     balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo disponível para saque
     locked_balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo bloqueado (em trânsito)
@@ -253,6 +257,34 @@ class DriverRestaurant(db.Model):
             'is_priority': self.is_priority,
             'driver_name': f"{self.driver.user.first_name} {self.driver.user.last_name}" if self.driver and self.driver.user else None,
             'restaurant_name': self.restaurant.name if self.restaurant else None,
+            'created_at': self.created_at.isoformat()
+        }
+
+
+class DriverPenalty(db.Model):
+    """Registro de penalidades dos entregadores"""
+    __tablename__ = 'driver_penalties'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=True)
+    penalty_type = db.Column(db.String(50), nullable=False)  # REJECTION, LATE_DELIVERY, CANCELLED, etc.
+    reason = db.Column(db.String(500))
+    is_active = db.Column(db.Boolean, default=True)  # Se a penalidade ainda está ativa
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='penalties')
+    order = db.relationship('Order', backref='penalties')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'order_id': self.order_id,
+            'penalty_type': self.penalty_type,
+            'reason': self.reason,
+            'is_active': self.is_active,
             'created_at': self.created_at.isoformat()
         }
 

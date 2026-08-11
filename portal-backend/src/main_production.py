@@ -471,6 +471,38 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: campos de penalidade em drivers
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'rejection_count') THEN ALTER TABLE drivers ADD COLUMN rejection_count INTEGER DEFAULT 0; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'is_blocked') THEN ALTER TABLE drivers ADD COLUMN is_blocked BOOLEAN DEFAULT FALSE; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'blocked_until') THEN ALTER TABLE drivers ADD COLUMN blocked_until TIMESTAMP; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: tabela driver_penalties
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS driver_penalties (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER REFERENCES drivers(id),
+                    order_id INTEGER REFERENCES orders(id),
+                    penalty_type VARCHAR(50) NOT NULL,
+                    reason VARCHAR(500),
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tenant_id em system_configs
         try:
             db.session.execute(db.text(

@@ -603,6 +603,17 @@ def accept_order(order_id):
         if not driver or not driver.is_online:
             return jsonify({'error': 'Entregador deve estar online'}), 400
         
+        # Verificar se entregador está bloqueado
+        if driver.is_blocked:
+            if driver.blocked_until and driver.blocked_until > datetime.utcnow():
+                remaining = (driver.blocked_until - datetime.utcnow()).seconds // 60
+                return jsonify({'error': f'Entregador bloqueado por rejeições. Tente novamente em {remaining} minutos.'}), 403
+            else:
+                # Desbloquear automaticamente
+                driver.is_blocked = False
+                driver.blocked_until = None
+                driver.rejection_count = 0
+        
         order = Order.query.get(order_id)
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
@@ -614,6 +625,11 @@ def accept_order(order_id):
         order.driver_id = driver.id
         order.status = OrderStatus.ACCEPTED
         order.updated_at = datetime.utcnow()
+        
+        # Resetar contagem de rejeições ao aceitar pedido
+        driver.rejection_count = 0
+        driver.is_blocked = False
+        driver.blocked_until = None
         
         # Cria registro de entrega
         delivery = Delivery(
@@ -713,6 +729,32 @@ def reject_order(order_id):
         current_log = order.special_instructions or ''
         if reject_log not in current_log:
             order.special_instructions = f"{current_log}|{reject_log}" if current_log else reject_log
+
+        # Aplicar penalidade por rejeição
+        from src.models.portal_models import DriverPenalty, SystemConfig
+        driver.rejection_count = (driver.rejection_count or 0) + 1
+        
+        # Buscar limite de rejeições configurável (padrão: 3)
+        max_rejections_config = SystemConfig.query.filter_by(config_key='max_rejections_before_block').first()
+        max_rejections = int(max_rejections_config.config_value) if max_rejections_config else 3
+        
+        if driver.rejection_count >= max_rejections:
+            # Bloquear entregador temporariamente (padrão: 30 minutos)
+            block_minutes_config = SystemConfig.query.filter_by(config_key='block_duration_minutes').first()
+            block_minutes = int(block_minutes_config.config_value) if block_minutes_config else 30
+            
+            driver.is_blocked = True
+            driver.blocked_until = datetime.utcnow() + timedelta(minutes=block_minutes)
+            
+            # Registrar penalidade
+            penalty = DriverPenalty(
+                driver_id=driver.id,
+                order_id=order.id,
+                penalty_type='REJECTION',
+                reason=f'Bloqueado por {driver.rejection_count} rejeições consecutivas',
+                is_active=True
+            )
+            db.session.add(penalty)
 
         # Limpa ofertas anteriores antes de buscar próximo
         si = order.special_instructions or ''
@@ -2172,7 +2214,8 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         driver_query = Driver.query.filter(
             Driver.is_online == True,
             Driver.current_latitude.isnot(None),
-            Driver.current_longitude.isnot(None)
+            Driver.current_longitude.isnot(None),
+            Driver.is_blocked == False  # Excluir bloqueados
         )
         if order.tenant_id:
             driver_query = driver_query.filter(Driver.tenant_id == order.tenant_id)
