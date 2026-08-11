@@ -154,7 +154,7 @@ const NewOrderPage = () => {
   return (
     <div style={{ padding: '1.5rem', maxWidth: '700px', margin: '0 auto' }}>
       <div style={{ marginBottom: '1.5rem' }}>
-        <button onClick={() => navigate('/client')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+        <button onClick={() => navigate(isAdmin ? '/admin' : '/client')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
           <ArrowLeft size={16} /> Voltar
         </button>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>Lançar Novo Pedido</h1>
