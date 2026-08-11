@@ -111,8 +111,8 @@ def process_ifood_order_real(order_data):
             restaurant = Restaurant(
                 name=parsed['restaurant_name'],
                 address=parsed['delivery_address'].get('street', 'Endereço não informado'),
-                latitude=parsed['delivery_address'].get('latitude', -29.95),
-                longitude=parsed['delivery_address'].get('longitude', -50.45)
+                latitude=parsed['delivery_address'].get('latitude') or -29.95,
+                longitude=parsed['delivery_address'].get('longitude') or -50.45
             )
             db.session.add(restaurant)
             db.session.flush()
@@ -124,7 +124,7 @@ def process_ifood_order_real(order_data):
         if not customer:
             customer = Customer(
                 name=parsed['customer']['name'],
-                phone=parsed['customer']['phone']
+                phone=parsed['customer']['phone'] or '00000000000'
             )
             db.session.add(customer)
             db.session.flush()
@@ -137,8 +137,8 @@ def process_ifood_order_real(order_data):
             city=parsed['delivery_address'].get('city', ''),
             state=parsed['delivery_address'].get('state', ''),
             zip_code=parsed['delivery_address'].get('zip_code', ''),
-            latitude=parsed['delivery_address'].get('latitude'),
-            longitude=parsed['delivery_address'].get('longitude')
+            latitude=parsed['delivery_address'].get('latitude') or -29.95,
+            longitude=parsed['delivery_address'].get('longitude') or -50.45
         )
         db.session.add(addr)
         db.session.flush()
