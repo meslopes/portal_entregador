@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -46,6 +46,7 @@ const Layout = ({ children }) => {
     { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
     { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
     { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
+    { name: 'Integrações', href: '/admin/integrations', icon: Globe },
     { name: 'Saques', href: '/admin/withdrawals', icon: CreditCard },
     { name: 'Faturas', href: '/admin/invoices', icon: FileText },
     { name: 'Relatórios', href: '/admin/reports', icon: FileText },

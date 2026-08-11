@@ -432,6 +432,28 @@ export const adminService = {
     return response.data;
   },
 
+  // Credenciais de Plataformas (iFood, etc.)
+  getPlatformCredentials: async (restaurantId) => {
+    const params = restaurantId ? `?restaurant_id=${restaurantId}` : '';
+    const response = await api.get(`/api/admin/platform-credentials${params}`);
+    return response.data;
+  },
+
+  createPlatformCredential: async (data) => {
+    const response = await api.post('/api/admin/platform-credentials', data);
+    return response.data;
+  },
+
+  deletePlatformCredential: async (credId) => {
+    const response = await api.delete(`/api/admin/platform-credentials/${credId}`);
+    return response.data;
+  },
+
+  testPlatformCredential: async (credId) => {
+    const response = await api.post(`/api/admin/platform-credentials/${credId}/test`);
+    return response.data;
+  },
+
   // Aprovacao de cadastros
   getPendingUsers: async () => {
     const response = await api.get('/api/admin/pending-users');

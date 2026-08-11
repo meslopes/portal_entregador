@@ -6,7 +6,8 @@ logger = logging.getLogger(__name__)
 
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
-    Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice,
+    PlatformCredential, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -3794,3 +3795,148 @@ def process_withdrawal_auto(withdrawal_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# CREDENCIAIS DE PLATAFORMAS (iFood, etc.)
+# ============================================
+
+@admin_bp.route('/platform-credentials', methods=['GET'])
+@jwt_required()
+@admin_required
+def list_platform_credentials():
+    """Lista credenciais de plataformas por estabelecimento"""
+    try:
+        tenant_id = get_current_tenant_id()
+        restaurant_id = request.args.get('restaurant_id')
+        
+        query = PlatformCredential.query.join(Restaurant)
+        if tenant_id:
+            query = query.filter(Restaurant.tenant_id == tenant_id)
+        if restaurant_id:
+            query = query.filter(PlatformCredential.restaurant_id == int(restaurant_id))
+        
+        credentials = query.all()
+        return jsonify({'credentials': [c.to_dict() for c in credentials]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/platform-credentials', methods=['POST'])
+@jwt_required()
+@admin_required
+def create_platform_credential():
+    """Cria ou atualiza credencial de plataforma para um estabelecimento"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('restaurant_id') or not data.get('platform'):
+            return jsonify({'error': 'Estabelecimento e plataforma são obrigatórios'}), 400
+        
+        restaurant_id = data['restaurant_id']
+        platform = data['platform'].upper()
+        
+        # Verificar se já existe credencial para este restaurante/plataforma
+        existing = PlatformCredential.query.filter_by(
+            restaurant_id=restaurant_id,
+            platform=platform
+        ).first()
+        
+        if existing:
+            # Atualizar existente
+            if 'client_id' in data:
+                existing.client_id = data['client_id']
+            if 'client_secret' in data:
+                existing.client_secret = data['client_secret']
+            if 'access_token' in data:
+                existing.access_token = data['access_token']
+            if 'refresh_token' in data:
+                existing.refresh_token = data['refresh_token']
+            if 'is_active' in data:
+                existing.is_active = data['is_active']
+            existing.updated_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({
+                'message': 'Credencial atualizada com sucesso',
+                'credential': existing.to_dict()
+            }), 200
+        else:
+            # Criar nova
+            credential = PlatformCredential(
+                restaurant_id=restaurant_id,
+                platform=platform,
+                client_id=data.get('client_id'),
+                client_secret=data.get('client_secret'),
+                access_token=data.get('access_token'),
+                refresh_token=data.get('refresh_token'),
+                is_active=data.get('is_active', True)
+            )
+            db.session.add(credential)
+            db.session.commit()
+            return jsonify({
+                'message': 'Credencial criada com sucesso',
+                'credential': credential.to_dict()
+            }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/platform-credentials/<int:cred_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_platform_credential(cred_id):
+    """Exclui credencial de plataforma"""
+    try:
+        cred = PlatformCredential.query.get(cred_id)
+        if not cred:
+            return jsonify({'error': 'Credencial não encontrada'}), 404
+        
+        db.session.delete(cred)
+        db.session.commit()
+        return jsonify({'message': 'Credencial excluída com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/platform-credentials/<int:cred_id>/test', methods=['POST'])
+@jwt_required()
+@admin_required
+def test_platform_credential(cred_id):
+    """Testa conexão com a plataforma"""
+    try:
+        cred = PlatformCredential.query.get(cred_id)
+        if not cred:
+            return jsonify({'error': 'Credencial não encontrada'}), 404
+        
+        if cred.platform == 'IFOOD':
+            from src.services.ifood_service import authenticate
+            
+            if not cred.client_id or not cred.client_secret:
+                return jsonify({'success': False, 'error': 'Client ID e Client Secret são obrigatórios'}), 400
+            
+            result = authenticate(cred.client_id, cred.client_secret)
+            
+            if result.get('success'):
+                # Salvar tokens
+                cred.access_token = result.get('access_token')
+                cred.refresh_token = result.get('refresh_token')
+                from datetime import timedelta
+                cred.expires_at = datetime.utcnow() + timedelta(seconds=result.get('expires_in', 3600))
+                cred.is_active = True
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Conexão com iFood estabelecida com sucesso'
+                }), 200
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': result.get('error', 'Erro ao conectar com iFood')
+                }), 400
+        else:
+            return jsonify({'success': False, 'error': f'Plataforma {cred.platform} não suportada para teste'}), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
