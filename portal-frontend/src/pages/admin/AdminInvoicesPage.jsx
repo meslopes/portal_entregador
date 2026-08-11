@@ -18,7 +18,7 @@ const AdminInvoicesPage = () => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
 
   useEffect(() => { loadInvoices(); loadRestaurants(); }, [filter]);
-  useEffect(() => { if (dateRange) loadInvoices(); }, [dateRange]);
+  useEffect(() => { if (dateRange && dateRange.startDate && dateRange.endDate) loadInvoices(); }, [dateRange]);
 
   const loadRestaurants = async () => {
     try {
@@ -34,7 +34,7 @@ const AdminInvoicesPage = () => {
       setLoading(true);
       const params = new URLSearchParams();
       if (filter !== 'all') params.append('status', filter.toUpperCase());
-      if (dateRange) {
+      if (dateRange?.startDate && dateRange?.endDate) {
         params.append('date_from', dateRange.startDate);
         params.append('date_to', dateRange.endDate);
       }

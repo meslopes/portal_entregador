@@ -9,17 +9,18 @@ const formatDate = (date) => {
 };
 
 const DateRangeFilter = ({ onChange }) => {
-  const [startDate, setStartDate] = useState(() => {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    return formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff));
-  });
-  const [endDate, setEndDate] = useState(() => formatDate(new Date()));
-  const [preset, setPreset] = useState('thisWeek');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [preset, setPreset] = useState('all');
 
   const applyPreset = useCallback((presetKey) => {
     setPreset(presetKey);
+    if (presetKey === 'all') {
+      setStartDate('');
+      setEndDate('');
+      if (onChange) onChange({ startDate: '', endDate: '', preset: 'all' });
+      return;
+    }
     const now = new Date();
     let start, end;
     switch (presetKey) {
@@ -54,6 +55,7 @@ const DateRangeFilter = ({ onChange }) => {
   }, [startDate, endDate, onChange]);
 
   const presets = [
+    { key: 'all', label: 'Todos' },
     { key: 'today', label: 'Hoje' }, { key: 'yesterday', label: 'Ontem' },
     { key: 'thisWeek', label: 'Esta semana' }, { key: 'lastWeek', label: 'Semana passada' },
     { key: 'last7days', label: 'Últimos 7 dias' }, { key: 'thisMonth', label: 'Este mês' },
