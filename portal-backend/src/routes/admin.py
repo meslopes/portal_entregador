@@ -3325,7 +3325,7 @@ def list_invoices():
 @jwt_required()
 @admin_required
 def generate_invoices():
-    """Gera faturas para todos os estabelecimentos. Aceita período customizado via body."""
+    """Gera faturas para estabelecimentos. Aceita período customizado e cliente específico via body."""
     try:
         from decimal import Decimal
         tenant_id = get_current_tenant_id()
@@ -3342,10 +3342,12 @@ def generate_invoices():
             week_end = datetime.combine(today - timedelta(days=days_since_monday), datetime.min.time())
             week_start = week_end - timedelta(days=7)
 
-        # Buscar todos os restaurantes do tenant
+        # Buscar restaurantes (todos ou um específico)
         restaurant_query = Restaurant.query
         if tenant_id:
             restaurant_query = restaurant_query.filter(Restaurant.tenant_id == tenant_id)
+        if data.get('restaurant_id'):
+            restaurant_query = restaurant_query.filter(Restaurant.id == data['restaurant_id'])
         restaurants = restaurant_query.all()
 
         generated = []
@@ -3640,10 +3642,10 @@ def create_invoice_charge(invoice_id):
 
         charge = create_charge(
             customer_id=restaurant.asaas_customer_id,
-            value=float(invoice.platform_fee),
+            value=float(invoice.total_amount),
             billing_type='PIX',
             due_date=(datetime.utcnow().date() + timedelta(days=3)).isoformat(),
-            description=f'Fatura muv.log - Semana {invoice.week_start.date()} a {invoice.week_end.date()}',
+            description=f'Fatura muv.log - Semana {invoice.week_start.date()} a {invoice.week_end.date()} - {invoice.deliveries_count} entregas',
             external_reference=f'INV-{invoice.id}'
         )
 
@@ -3669,7 +3671,7 @@ def create_invoice_charge(invoice_id):
                     notification = Notification(
                         user_id=restaurant_user.id,
                         title='Nova fatura disponível',
-                        message=f'Sua fatura da semana {invoice.week_start.date()} a {invoice.week_end.date()} no valor de R$ {float(invoice.platform_fee):.2f} está disponível. Pague via PIX: {payment_url}',
+                        message=f'Sua fatura da semana {invoice.week_start.date()} a {invoice.week_end.date()} no valor de R$ {float(invoice.total_amount):.2f} ({invoice.deliveries_count} entregas) está disponível. Pague via PIX: {payment_url}',
                         type=NotificationType.PAYMENT,
                         related_id=invoice.id
                     )
