@@ -919,17 +919,35 @@ def asaas_webhook():
 def process_asaas_payment_received(payment_id, external_ref, payment_data):
     """Processa pagamento recebido via Asaas"""
     try:
-        from src.models.portal_models import Invoice, Payment, PaymentStatus
+        from src.models.portal_models import Invoice, Payment, PaymentStatus, Driver, Delivery, Order, OrderStatus
+        from decimal import Decimal
 
         # Verificar se é pagamento de fatura (invoice)
         if external_ref and external_ref.startswith('INV-'):
             invoice_id = external_ref.replace('INV-', '')
             invoice = Invoice.query.get(int(invoice_id))
-            if invoice:
+            if invoice and invoice.status != 'PAID':
                 invoice.status = 'PAID'
                 invoice.paid_at = datetime.utcnow()
+
+                # Desbloquear saldo dos entregadores
+                deliveries = Delivery.query.join(Order).filter(
+                    Order.restaurant_id == invoice.restaurant_id,
+                    Order.status == OrderStatus.DELIVERED,
+                    Order.delivery_time >= invoice.week_start,
+                    Order.delivery_time < invoice.week_end
+                ).all()
+
+                for delivery in deliveries:
+                    driver = Driver.query.get(delivery.driver_id)
+                    if driver:
+                        earnings = Decimal(str(float(delivery.driver_earnings or 0)))
+                        driver.locked_balance = (driver.locked_balance or Decimal('0')) - earnings
+                        driver.balance = (driver.balance or Decimal('0')) + earnings
+                        driver.updated_at = datetime.utcnow()
+
                 db.session.commit()
-                logger.info(f"Fatura #{invoice.id} marcada como paga via Asaas")
+                logger.info(f"Fatura #{invoice.id} marcada como paga via Asaas - saldos desbloqueados")
                 return
 
         # Verificar se é pagamento de saque (withdrawal)
