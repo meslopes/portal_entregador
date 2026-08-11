@@ -374,6 +374,9 @@ class Order(db.Model):
     pickup_time = db.Column(db.DateTime)
     delivery_time = db.Column(db.DateTime)
     special_instructions = db.Column(db.Text)
+    # Códigos anti-fraude
+    pickup_code = db.Column(db.String(6))  # Código para confirmar coleta
+    delivery_code = db.Column(db.String(6))  # Código para confirmar entrega
     # Integração com plataformas externas
     external_id = db.Column(db.String(100))  # ID do pedido na plataforma (iFood, etc.)
     platform_source = db.Column(db.String(20))  # IFOOD, OPEN_DELIVERY, etc.
@@ -409,6 +412,8 @@ class Order(db.Model):
             'pickup_time': self.pickup_time.isoformat() if self.pickup_time else None,
             'delivery_time': self.delivery_time.isoformat() if self.delivery_time else None,
             'special_instructions': self.special_instructions,
+            'pickup_code': self.pickup_code,
+            'delivery_code': self.delivery_code,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

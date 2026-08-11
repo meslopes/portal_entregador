@@ -12,6 +12,7 @@ import os
 import base64
 import math
 import re
+import random
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -935,6 +936,56 @@ def update_order_status(order_id):
             if order.status not in valid_transitions or new_status_enum not in valid_transitions[order.status]:
                 return jsonify({'error': 'Transição de status inválida'}), 400
         
+        # Validação de raio GPS para coleta e entrega
+        if new_status_enum in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+            driver_lat = data.get('latitude')
+            driver_lng = data.get('longitude')
+            
+            if driver_lat and driver_lng:
+                # Determinar local alvo (restaurante para coleta, endereço entrega para entrega)
+                if new_status_enum == OrderStatus.PICKED_UP:
+                    target_lat = float(order.restaurant.latitude) if order.restaurant else None
+                    target_lng = float(order.restaurant.longitude) if order.restaurant else None
+                    location_name = 'restaurante'
+                else:
+                    target_lat = float(order.delivery_address.latitude) if order.delivery_address else None
+                    target_lng = float(order.delivery_address.longitude) if order.delivery_address else None
+                    location_name = 'endereço de entrega'
+                
+                if target_lat and target_lng:
+                    distance = haversine_distance(
+                        float(driver_lat), float(driver_lng),
+                        target_lat, target_lng
+                    )
+                    distance_meters = distance * 1000
+                    
+                    # Raio configurável (padrão 500 metros)
+                    from src.models.portal_models import SystemConfig
+                    radius_config = SystemConfig.query.filter_by(config_key='gps_radius_meters').first()
+                    max_radius = int(radius_config.config_value) if radius_config else 500
+                    
+                    if distance_meters > max_radius:
+                        return jsonify({
+                            'error': f'Você está a {distance_meters:.0f}m do {location_name}. O máximo permitido é {max_radius}m.',
+                            'distance_meters': round(distance_meters),
+                            'max_radius': max_radius
+                        }), 400
+        
+        # Validação de código anti-fraude
+        if new_status_enum == OrderStatus.PICKED_UP and order.pickup_code:
+            provided_code = data.get('pickup_code')
+            if not provided_code:
+                return jsonify({'error': 'Código de coleta é obrigatório', 'code_required': 'pickup_code'}), 400
+            if provided_code != order.pickup_code:
+                return jsonify({'error': 'Código de coleta inválido'}), 400
+        
+        if new_status_enum == OrderStatus.DELIVERED and order.delivery_code:
+            provided_code = data.get('delivery_code')
+            if not provided_code:
+                return jsonify({'error': 'Código de entrega é obrigatório', 'code_required': 'delivery_code'}), 400
+            if provided_code != order.delivery_code:
+                return jsonify({'error': 'Código de entrega inválido'}), 400
+
         # Atualiza o status
         order.status = new_status_enum
         order.updated_at = datetime.utcnow()
@@ -1454,8 +1505,10 @@ def create_order():
                 if dp.holiday_active and dp.holiday_bonus:
                     delivery_fee = round(delivery_fee + float(dp.holiday_bonus), 2)
 
-        # Gerar tracking_token único
+        # Gerar tracking_token único e códigos anti-fraude
         tracking_token = str(uuid.uuid4())
+        pickup_code = str(random.randint(100000, 999999))
+        delivery_code = str(random.randint(100000, 999999))
 
         order = Order(
             tenant_id=tenant_id,
@@ -1464,6 +1517,8 @@ def create_order():
             delivery_address_id=address.id,
             order_number=f"PED{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}",
             tracking_token=tracking_token,
+            pickup_code=pickup_code,
+            delivery_code=delivery_code,
             items=data['items'],
             subtotal=delivery_fee,
             delivery_fee=delivery_fee,

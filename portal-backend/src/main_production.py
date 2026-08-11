@@ -422,6 +422,18 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: pickup_code e delivery_code em orders
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'pickup_code') THEN ALTER TABLE orders ADD COLUMN pickup_code VARCHAR(6); END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'delivery_code') THEN ALTER TABLE orders ADD COLUMN delivery_code VARCHAR(6); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabela platform_credentials
         try:
             db.session.execute(db.text("""
