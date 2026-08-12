@@ -1744,6 +1744,24 @@ def assign_own_driver(order_id):
         
         db.session.commit()
         
+        # Envia WhatsApp para o entregador próprio
+        try:
+            from src.services.whatsapp import whatsapp_service
+            if whatsapp_service.is_configured() and est_driver.phone:
+                restaurant = order.restaurant
+                whatsapp_service.send_message(
+                    est_driver.phone,
+                    f"🏍️ *Novo Pedido Atribuído!*\n\n"
+                    f"Pedido: #{order.order_number}\n"
+                    f"Restaurante: {restaurant.name if restaurant else 'N/A'}\n"
+                    f"Cliente: {order.customer.name if order.customer else 'N/A'}\n"
+                    f"Endereço: {order.delivery_address.street}, {order.delivery_address.neighborhood if order.delivery_address else 'N/A'}\n"
+                    f"Valor: R$ {float(order.total_amount):.2f}\n\n"
+                    f"Acesse o painel para mais detalhes."
+                )
+        except Exception:
+            pass  # Não falha a atribuição se WhatsApp falhar
+        
         return jsonify({
             'message': f'Pedido atribuído a {est_driver.name}',
             'order': order.to_dict()
