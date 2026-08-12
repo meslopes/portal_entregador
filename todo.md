@@ -117,9 +117,15 @@
 - [x] Rotas admin CRUD para entregadores próprios
 - [x] Interface /client/drivers
 - [x] Menu "Meus Entregadores"
-- [ ] Fase 2: Distribuição híbrida + botão "Chamar Plataforma"
-- [ ] Fase 3: Sistema de assinatura + tabela diferenciada
-- [ ] Fase 4: Interface completa + relatórios
+- [x] Fase 2: Distribuição híbrida + botão "Chamar Plataforma"
+- [x] Fase 1.1: Mostrar distribuição para pedidos SCHEDULED
+- [x] Fase 1.2: Redirecionar para /client/orders após criar pedido
+- [x] Fase 1.3: Incluir entregadores próprios no mapa de rastreamento
+- [x] Fase 1.4: Notificação WhatsApp ao atribuir entregador próprio
+- [ ] Fase 2: Controle financeiro (pagamentos, gastos, comparativo)
+- [ ] Fase 3: Fluxo completo (distribuição, timeline, confirmação, prova)
+- [ ] Fase 4: Avaliação e relatórios
+- [ ] Fase 5: App mobile / WhatsApp Business
 
 ## 🔧 Bugs Conhecidos
 - [ ] Footer "Privacidade" pode aparecer truncado em mobile
