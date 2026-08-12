@@ -746,7 +746,7 @@ class PricingTable(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relacionamentos
-    restaurants = db.relationship('Restaurant', backref='pricing_table')
+    restaurants = db.relationship('Restaurant', backref='pricing_table', foreign_keys='Restaurant.pricing_table_id')
 
     def to_dict(self):
         return {
