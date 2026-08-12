@@ -28,6 +28,19 @@ def admin_required(f):
     return decorated_function
 
 
+def client_or_admin_required(f):
+    """Decorator para verificar se o usuário é admin ou cliente (estabelecimento)"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type not in (UserType.ADMIN, UserType.CLIENT):
+            return jsonify({'error': 'Acesso restrito'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @admin_bp.route('/process-scheduled', methods=['POST'])
 @jwt_required()
 @admin_required
@@ -4057,7 +4070,7 @@ def toggle_driver_priority(assignment_id):
 
 @admin_bp.route('/establishment-drivers', methods=['GET'])
 @jwt_required()
-@admin_required
+@client_or_admin_required
 def list_establishment_drivers():
     """Lista entregadores próprios de um estabelecimento"""
     try:
@@ -4077,7 +4090,7 @@ def list_establishment_drivers():
 
 @admin_bp.route('/establishment-drivers', methods=['POST'])
 @jwt_required()
-@admin_required
+@client_or_admin_required
 def create_establishment_driver():
     """Cadastra entregador próprio para um estabelecimento"""
     try:
@@ -4114,7 +4127,7 @@ def create_establishment_driver():
 
 @admin_bp.route('/establishment-drivers/<int:driver_id>', methods=['PUT'])
 @jwt_required()
-@admin_required
+@client_or_admin_required
 def update_establishment_driver(driver_id):
     """Atualiza entregador próprio"""
     try:
@@ -4149,7 +4162,7 @@ def update_establishment_driver(driver_id):
 
 @admin_bp.route('/establishment-drivers/<int:driver_id>', methods=['DELETE'])
 @jwt_required()
-@admin_required
+@client_or_admin_required
 def delete_establishment_driver(driver_id):
     """Remove entregador próprio"""
     try:
@@ -4168,7 +4181,7 @@ def delete_establishment_driver(driver_id):
 
 @admin_bp.route('/establishment-drivers/<int:driver_id>/toggle-online', methods=['PUT'])
 @jwt_required()
-@admin_required
+@client_or_admin_required
 def toggle_establishment_driver_online(driver_id):
     """Ativa/desativa status online do entregador próprio"""
     try:
