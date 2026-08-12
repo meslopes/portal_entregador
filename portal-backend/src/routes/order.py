@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
-    Order, Restaurant, Customer, Address, Driver, User, UserType,
+    Order, Restaurant, Customer, Address, Driver, EstablishmentDriver, User, UserType,
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
@@ -2026,6 +2026,7 @@ def get_my_tracking():
         drivers_data = []
         seen_drivers = set()
 
+        # Entregadores da plataforma
         for order in active_orders:
             driver = order.driver
             if not driver or driver.id in seen_drivers:
@@ -2043,7 +2044,43 @@ def get_my_tracking():
                     'order_id': order.id,
                     'order_number': order.order_number,
                     'order_status': order.status.value,
-                    'last_update': driver.last_location_update.isoformat() if driver.last_location_update else None
+                    'last_update': driver.last_location_update.isoformat() if driver.last_location_update else None,
+                    'is_own': False
+                })
+
+        # Entregadores próprios com pedidos ativos
+        own_active_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status.in_([
+                OrderStatus.ACCEPTED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY,
+                OrderStatus.PICKED_UP
+            ]),
+            Order.assigned_to_own_driver == True,
+            Order.establishment_driver_id.isnot(None)
+        ).all()
+
+        seen_own_drivers = set()
+        for order in own_active_orders:
+            est_driver = order.establishment_driver
+            if not est_driver or est_driver.id in seen_own_drivers:
+                continue
+            seen_own_drivers.add(est_driver.id)
+
+            if est_driver.current_latitude and est_driver.current_longitude:
+                drivers_data.append({
+                    'driver_id': f"own_{est_driver.id}",
+                    'name': est_driver.name,
+                    'phone': est_driver.phone,
+                    'vehicle_type': est_driver.vehicle_type,
+                    'latitude': float(est_driver.current_latitude),
+                    'longitude': float(est_driver.current_longitude),
+                    'order_id': order.id,
+                    'order_number': order.order_number,
+                    'order_status': order.status.value,
+                    'last_update': est_driver.updated_at.isoformat() if est_driver.updated_at else None,
+                    'is_own': True
                 })
 
         return jsonify({'drivers': drivers_data}), 200
