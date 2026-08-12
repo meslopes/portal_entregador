@@ -8,6 +8,7 @@ import { orderService, utils } from '@/lib/api';
 import api from '@/lib/api';
 
 const STATUS_CONFIG = {
+  SCHEDULED: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Agendado', icon: Clock },
   PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente', icon: Clock },
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
@@ -98,7 +99,7 @@ const ClientOrdersPage = () => {
           </div>
           <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
             <FilterBtn active={filter === ''} onClick={() => { setFilter(''); setPage(1); }}>Todos</FilterBtn>
-            <FilterBtn active={filter === 'PENDING'} onClick={() => { setFilter('PENDING'); setPage(1); }}>Pendentes</FilterBtn>
+            <FilterBtn active={filter === 'PENDING' || filter === 'SCHEDULED'} onClick={() => { setFilter('PENDING'); setPage(1); }}>Pendentes</FilterBtn>
             <FilterBtn active={filter === 'ACCEPTED' || filter === 'PREPARING' || filter === 'READY' || filter === 'PICKED_UP'} onClick={() => { setFilter('ACCEPTED'); setPage(1); }}>Em Andamento</FilterBtn>
             <FilterBtn active={filter === 'DELIVERED'} onClick={() => { setFilter('DELIVERED'); setPage(1); }}>Entregues</FilterBtn>
             <FilterBtn active={filter === 'CANCELLED'} onClick={() => { setFilter('CANCELLED'); setPage(1); }}>Cancelados</FilterBtn>
@@ -278,7 +279,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
     }
   };
 
-  const isPending = order.status === 'PENDING';
+  const isPending = order.status === 'PENDING' || order.status === 'SCHEDULED';
   const hasOwnDriver = order.assigned_to_own_driver;
   const calledPlatform = order.called_platform;
 
