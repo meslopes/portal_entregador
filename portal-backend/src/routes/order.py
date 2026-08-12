@@ -1612,6 +1612,148 @@ def create_order():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@order_bp.route('/<int:order_id>/call-platform', methods=['POST'])
+@jwt_required()
+def call_platform_drivers(order_id):
+    """Chama entregadores da plataforma para um pedido (usado pelo estabelecimento)"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+        
+        # Verificar se o usuário é o dono do estabelecimento
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer or not order.restaurant or order.restaurant.name != customer.name:
+                return jsonify({'error': 'Não autorizado'}), 403
+        elif user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Não autorizado'}), 403
+        
+        # Marcar que chamou a plataforma
+        order.called_platform = True
+        order.distribution_method = 'nearest'  # Usar distribuição padrão da plataforma
+        
+        # Buscar próximo entregador da plataforma
+        next_driver = find_nearest_available_driver(order)
+        
+        if next_driver:
+            # Notificar entregador
+            try:
+                notification = Notification(
+                    user_id=next_driver.user_id,
+                    title="Novo pedido disponível",
+                    message=f"Pedido #{order.order_number} está disponível para entrega",
+                    type=NotificationType.NEW_ORDER,
+                    related_id=order.id
+                )
+                db.session.add(notification)
+            except Exception:
+                pass
+            
+            # Envia WhatsApp se configurado
+            try:
+                from src.services.whatsapp import whatsapp_service
+                if whatsapp_service.is_configured() and next_driver.user.phone:
+                    restaurant = order.restaurant
+                    km_total = 0
+                    driver_pct = get_driver_percentage(order)
+                    driver_earnings = float(order.delivery_fee) * driver_pct
+                    if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
+                        km_total = haversine_distance(
+                            restaurant.latitude, restaurant.longitude,
+                            order.delivery_address.latitude, order.delivery_address.longitude
+                        )
+                        driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
+                    
+                    whatsapp_service.send_new_order_to_driver(
+                        next_driver.user.phone,
+                        {
+                            'order_number': order.order_number,
+                            'restaurant': restaurant.name if restaurant else 'N/A',
+                            'restaurant_address': restaurant.address if restaurant else 'N/A',
+                            'customer_name': order.customer.name if order.customer else 'N/A',
+                            'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}" if order.delivery_address else 'N/A',
+                            'total_amount': float(order.total_amount),
+                            'delivery_fee': float(order.delivery_fee),
+                            'distance_km': km_total,
+                            'driver_earnings': driver_earnings
+                        }
+                    )
+            except Exception:
+                pass
+            
+            db.session.commit()
+            return jsonify({
+                'message': f'Pedido enviado para {next_driver.user.first_name}',
+                'driver_name': next_driver.user.first_name
+            }), 200
+        else:
+            db.session.commit()
+            return jsonify({
+                'message': 'Nenhum entregador da plataforma disponível no momento',
+                'notify_admin': True
+            }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@order_bp.route('/<int:order_id>/assign-own', methods=['POST'])
+@jwt_required()
+def assign_own_driver(order_id):
+    """Atribui pedido a entregador próprio do estabelecimento"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+        
+        data = request.get_json()
+        establishment_driver_id = data.get('establishment_driver_id')
+        if not establishment_driver_id:
+            return jsonify({'error': 'ID do entregador é obrigatório'}), 400
+        
+        from src.models.portal_models import EstablishmentDriver
+        est_driver = EstablishmentDriver.query.get(establishment_driver_id)
+        if not est_driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        # Atribuir pedido ao entregador próprio
+        order.assigned_to_own_driver = True
+        order.establishment_driver_id = est_driver.id
+        order.status = OrderStatus.ACCEPTED
+        order.updated_at = datetime.utcnow()
+        
+        # Criar registro de entrega
+        delivery = Delivery(
+            order_id=order.id,
+            driver_id=None,  # Entregador próprio não tem driver_id da plataforma
+            pickup_latitude=order.restaurant.latitude if order.restaurant else None,
+            pickup_longitude=order.restaurant.longitude if order.restaurant else None,
+            delivery_latitude=order.delivery_address.latitude if order.delivery_address else None,
+            delivery_longitude=order.delivery_address.longitude if order.delivery_address else None
+        )
+        db.session.add(delivery)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Pedido atribuído a {est_driver.name}',
+            'order': order.to_dict()
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @order_bp.route('/<int:order_id>', methods=['GET'])
 @jwt_required()
 def get_order_details(order_id):

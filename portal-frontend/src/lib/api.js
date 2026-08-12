@@ -207,6 +207,18 @@ export const orderService = {
     const response = await api.post(`/api/orders/${orderId}/cancel`);
     return response.data;
   },
+
+  callPlatformDrivers: async (orderId) => {
+    const response = await api.post(`/api/orders/${orderId}/call-platform`);
+    return response.data;
+  },
+
+  assignOwnDriver: async (orderId, establishmentDriverId) => {
+    const response = await api.post(`/api/orders/${orderId}/assign-own`, {
+      establishment_driver_id: establishmentDriverId
+    });
+    return response.data;
+  },
 };
 
 // Serviços administrativos

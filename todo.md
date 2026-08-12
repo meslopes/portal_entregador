@@ -110,17 +110,16 @@
 - [ ] Testes completos (usar ROTEIRO_TESTES.md)
 - [ ] Atualizar documentacao restante (arquitetura, configuracoes, design)
 
-## 🔄 Fase 4: Financeiro e Carteiras (EM ANDAMENTO)
-- [x] Servico Asaas (gateway de pagamento)
-- [x] Webhook Asaas para notificacoes de pagamento
-- [x] Rotas admin para configuracao Asaas
-- [x] Geracao automatica de faturas semanais
-- [x] Cobranca via Asaas (PIX/boleto)
-- [x] Saque PIX automatico via Asaas
-- [x] API frontend para Asaas
-- [ ] Interface admin para configurar Asaas
-- [ ] Interface admin para gerar faturas automaticamente
-- [ ] Testes de integracao Asaas
+## 🔄 Fase: Entregadores Próprios (EM ANDAMENTO)
+- [x] Modelo EstablishmentDriver
+- [x] Campos has_own_drivers, subscription_type no Restaurant
+- [x] Campos assigned_to_own_driver, establishment_driver_id no Order
+- [x] Rotas admin CRUD para entregadores próprios
+- [x] Interface /client/drivers
+- [x] Menu "Meus Entregadores"
+- [ ] Fase 2: Distribuição híbrida + botão "Chamar Plataforma"
+- [ ] Fase 3: Sistema de assinatura + tabela diferenciada
+- [ ] Fase 4: Interface completa + relatórios
 
 ## 🔧 Bugs Conhecidos
 - [ ] Footer "Privacidade" pode aparecer truncado em mobile
