@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from src.models.portal_models import User, Driver, Customer, db
+from src.models.portal_models import User, Driver, Customer, Restaurant, db
 
 user_bp = Blueprint('user', __name__)
 
@@ -24,6 +24,10 @@ def get_profile():
         customer = Customer.query.filter_by(user_id=user.id).first()
         if customer:
             user_data['customer'] = customer.to_dict()
+            # Busca o restaurante vinculado ao estabelecimento
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            if restaurant:
+                user_data['restaurant_id'] = restaurant.id
 
         return jsonify(user_data), 200
     except Exception as e:
