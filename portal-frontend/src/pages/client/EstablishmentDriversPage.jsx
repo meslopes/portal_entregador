@@ -18,7 +18,7 @@ const EstablishmentDriversPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     name: '', phone: '', vehicle_type: 'MOTO',
-    vehicle_plate: '', vehicle_model: ''
+    vehicle_plate: '', vehicle_model: '', pin: ''
   });
 
   useEffect(() => { loadDrivers(); }, []);
@@ -42,7 +42,7 @@ const EstablishmentDriversPage = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', phone: '', vehicle_type: 'MOTO', vehicle_plate: '', vehicle_model: '' });
+    setForm({ name: '', phone: '', vehicle_type: 'MOTO', vehicle_plate: '', vehicle_model: '', pin: '' });
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -54,7 +54,8 @@ const EstablishmentDriversPage = () => {
       phone: driver.phone || '',
       vehicle_type: driver.vehicle_type || 'MOTO',
       vehicle_plate: driver.vehicle_plate || '',
-      vehicle_model: driver.vehicle_model || ''
+      vehicle_model: driver.vehicle_model || '',
+      pin: ''
     });
     setEditingId(driver.id);
     setShowForm(true);
@@ -63,18 +64,34 @@ const EstablishmentDriversPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name) { setError('Nome é obrigatório'); return; }
-    
+
     try {
       const userRes = await api.get('/api/user/profile');
       const restaurantId = userRes.data.restaurant_id;
-      
+
+      const driverData = { ...form };
+      delete driverData.pin; // PIN é tratado separadamente
+
       if (editingId) {
-        await api.put(`/api/admin/establishment-drivers/${editingId}`, form);
+        await api.put(`/api/admin/establishment-drivers/${editingId}`, driverData);
         setSuccess('Entregador atualizado!');
       } else {
-        await api.post('/api/admin/establishment-drivers', { ...form, restaurant_id: restaurantId });
+        await api.post('/api/admin/establishment-drivers', { ...driverData, restaurant_id: restaurantId });
         setSuccess('Entregador cadastrado!');
       }
+
+      // Definir PIN se fornecido
+      if (form.pin && form.pin.length === 4) {
+        const driverId = editingId || (await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`)).data.drivers.find(d => d.phone === form.phone)?.id;
+        if (driverId) {
+          await api.post('/api/own-driver/register-pin', {
+            phone: form.phone,
+            pin: form.pin,
+            restaurant_id: restaurantId
+          });
+        }
+      }
+
       resetForm();
       loadDrivers();
       setTimeout(() => setSuccess(''), 3000);
@@ -181,6 +198,24 @@ const EstablishmentDriversPage = () => {
                 <input value={form.vehicle_model} onChange={e => setForm(p => ({ ...p, vehicle_model: e.target.value }))} style={inputStyle} placeholder="Honda CG 160" />
               </div>
 
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#0f766e', marginBottom: '0.5rem' }}>
+                  PIN de Acesso (PWA)
+                </label>
+                <p style={{ fontSize: '0.75rem', color: '#475569', marginBottom: '0.5rem' }}>
+                  O entregador usa este PIN de 4 dígitos para acessar o app
+                </p>
+                <input
+                  type="text"
+                  value={form.pin}
+                  onChange={e => setForm(p => ({ ...p, pin: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                  style={{ ...inputStyle, maxWidth: '150px', textAlign: 'center', letterSpacing: '0.5rem', fontFamily: 'monospace', fontSize: '1.25rem' }}
+                  placeholder="0000"
+                  maxLength={4}
+                  inputMode="numeric"
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={resetForm} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>
                 <button type="submit" style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
@@ -215,6 +250,11 @@ const EstablishmentDriversPage = () => {
                       <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: driver.is_online ? '#dcfce7' : '#f1f5f9', color: driver.is_online ? '#166534' : '#64748b' }}>
                         {driver.is_online ? 'Online' : 'Offline'}
                       </span>
+                      {driver.has_pin && (
+                        <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
+                          PIN ✓
+                        </span>
+                      )}
                     </div>
                     <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>
                       {driver.vehicle_type} {driver.vehicle_plate ? `• ${driver.vehicle_plate}` : ''} {driver.vehicle_model ? `• ${driver.vehicle_model}` : ''}

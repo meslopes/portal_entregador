@@ -27,6 +27,11 @@ import ClientProfilePage from '@/pages/client/ClientProfilePage';
 import EstablishmentDriversPage from '@/pages/client/EstablishmentDriversPage';
 import OwnDriverFinancialPage from '@/pages/client/OwnDriverFinancialPage';
 import OwnDriverMetricsPage from '@/pages/client/OwnDriverMetricsPage';
+import OwnDriverLoginPage from '@/pages/own-driver/OwnDriverLoginPage';
+import OwnDriverDashboardPage from '@/pages/own-driver/OwnDriverDashboardPage';
+import OwnDriverDeliveryPage from '@/pages/own-driver/OwnDriverDeliveryPage';
+import OwnDriverOrdersPage from '@/pages/own-driver/OwnDriverOrdersPage';
+import OwnDriverEarningsPage from '@/pages/own-driver/OwnDriverEarningsPage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
@@ -308,6 +313,13 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Rotas do entregador próprio (PWA) */}
+          <Route path="/own-driver/login" element={<OwnDriverLoginPage />} />
+          <Route path="/own-driver" element={<OwnDriverDashboardPage />} />
+          <Route path="/own-driver/delivery/:orderId" element={<OwnDriverDeliveryPage />} />
+          <Route path="/own-driver/orders" element={<OwnDriverOrdersPage />} />
+          <Route path="/own-driver/earnings" element={<OwnDriverEarningsPage />} />
 
           {/* Rotas do super admin (plataforma) */}
           <Route

@@ -125,7 +125,7 @@
 - [x] Fase 2: Controle financeiro (pagamentos, gastos, comparativo)
 - [x] Fase 3: Fluxo completo (distribuição, timeline, confirmação, prova)
 - [x] Fase 4: Avaliação e relatórios
-- [ ] Fase 5: App mobile / WhatsApp Business
+- [x] Fase 5: App mobile / WhatsApp Business (PWA entregadores próprios)
 
 ## 🔧 Bugs Conhecidos
 - [ ] Footer "Privacidade" pode aparecer truncado em mobile

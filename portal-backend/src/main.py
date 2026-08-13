@@ -64,6 +64,9 @@ app.register_blueprint(bonus_bp, url_prefix='/api/bonus')
 from src.routes.platform import platform_bp
 app.register_blueprint(platform_bp, url_prefix='/api/platform')
 
+from src.routes.own_driver import own_driver_bp
+app.register_blueprint(own_driver_bp)
+
 # Inicializa banco de dados
 db.init_app(app)
 with app.app_context():

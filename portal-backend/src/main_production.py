@@ -85,6 +85,9 @@ def create_app(config_name=None):
     from src.routes.platform import platform_bp
     app.register_blueprint(platform_bp, url_prefix='/api/platform')
 
+    from src.routes.own_driver import own_driver_bp
+    app.register_blueprint(own_driver_bp)
+
     # Criar tabelas do banco de dados
     with app.app_context():
         db.create_all()
@@ -741,6 +744,15 @@ def create_app(config_name=None):
                 db.session.execute(db.text(
                     f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'establishment_drivers' AND column_name = '{col}') THEN ALTER TABLE establishment_drivers ADD COLUMN {col} {coltype}; END IF; END $$"
                 ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: pin_hash para entregadores próprios (Fase 5 - PWA)
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'establishment_drivers' AND column_name = 'pin_hash') THEN ALTER TABLE establishment_drivers ADD COLUMN pin_hash VARCHAR(128); END IF; END $$"
+            ))
             db.session.commit()
         except Exception:
             db.session.rollback()

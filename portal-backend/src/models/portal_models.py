@@ -297,6 +297,7 @@ class EstablishmentDriver(db.Model):
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20))
+    pin_hash = db.Column(db.String(128))  # Hash do PIN de 4 dígitos para login no PWA
     vehicle_type = db.Column(db.String(20))  # MOTO, BIKE, CAR
     vehicle_plate = db.Column(db.String(10))
     vehicle_model = db.Column(db.String(100))
@@ -314,6 +315,16 @@ class EstablishmentDriver(db.Model):
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='own_drivers')
 
+    def set_pin(self, pin):
+        from werkzeug.security import generate_password_hash
+        self.pin_hash = generate_password_hash(pin)
+
+    def check_pin(self, pin):
+        from werkzeug.security import check_password_hash
+        if not self.pin_hash:
+            return False
+        return check_password_hash(self.pin_hash, pin)
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -330,6 +341,7 @@ class EstablishmentDriver(db.Model):
             'rating': float(self.rating) if self.rating else 5.0,
             'total_deliveries': self.total_deliveries or 0,
             'total_ratings': self.total_ratings or 0,
+            'has_pin': bool(self.pin_hash),
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
