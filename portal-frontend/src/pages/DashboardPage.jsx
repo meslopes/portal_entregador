@@ -260,7 +260,7 @@ const DashboardPage = () => {
           iconBg="#fef3c7"
           iconColor="#d97706"
           label="Avaliação"
-          value={stats ? stats.average_rating.toFixed(1) : '5.0'}
+          value={stats ? (stats.average_rating ?? 5).toFixed(1) : '5.0'}
           suffix="/5.0"
         />
       </div>

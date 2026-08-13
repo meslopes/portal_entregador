@@ -31,9 +31,18 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Verificar se é rota de own-driver
+      const isOwnDriverRequest = error.config?.url?.includes('/api/own-driver/');
+      if (isOwnDriverRequest) {
+        localStorage.removeItem('own_driver_token');
+        localStorage.removeItem('own_driver_data');
+        localStorage.removeItem('own_driver_restaurant');
+        window.location.href = '/own-driver/login';
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -583,6 +592,7 @@ export const adminService = {
 // Utilitários
 export const utils = {
   formatCurrency: (value) => {
+    if (value == null || isNaN(value)) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',

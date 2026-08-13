@@ -192,17 +192,6 @@ const LoginPage = () => {
           </div>
 
           {/* Credenciais de teste - sutil */}
-          <div style={{
-            marginTop: '2rem',
-            padding: '1rem',
-            background: '#f1f5f9',
-            borderRadius: '0.5rem',
-            fontSize: '0.75rem',
-            color: '#94a3b8',
-            textAlign: 'center'
-          }}>
-            <strong style={{ color: '#64748b' }}>Teste:</strong> admin@muv.log.br / admin123
-          </div>
         </div>
       </div>
 

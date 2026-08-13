@@ -162,7 +162,7 @@ const ClientLayout = ({ children }) => {
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 style={{
-                  display: 'none', padding: '0.5rem', borderRadius: '0.375rem',
+                  padding: '0.5rem', borderRadius: '0.375rem',
                   border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b'
                 }}
                 className="mobile-menu-btn"
@@ -222,6 +222,7 @@ const ClientLayout = ({ children }) => {
       </footer>
 
       <style>{`
+        .mobile-menu-btn { display: none; }
         @media (max-width: 768px) {
           .mobile-menu-btn { display: block !important; }
           nav { display: none !important; }

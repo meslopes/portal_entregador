@@ -13,6 +13,9 @@ import base64
 import math
 import re
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -713,17 +716,21 @@ def reject_order(order_id):
         
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
+        driver = user.driver
+        if not driver:
+            return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
+
         order = Order.query.get(order_id)
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
-        
+
         if order.status != OrderStatus.PENDING:
             return jsonify({'error': 'Pedido não está pendente'}), 400
 
         # Busca proximo entregador disponivel (excluindo o que recusou)
         from src.models.portal_models import SystemConfig
-        
+
         # Registra que este entregador recusou (usa special_instructions como flag)
         reject_log = f"REJECTED_BY_{user_id}"
         current_log = order.special_instructions or ''
@@ -777,7 +784,7 @@ def reject_order(order_id):
         # Se nenhum entregador disponível, limpa rejeições e tenta novamente
         if not next_driver and len(rejected_ids) > 1:
             # Notifica admin antes de reciclar
-            rejection_count = len(re.findall(r'REJECTED_BY_(\d)+', order.special_instructions or ''))
+            rejection_count = len(re.findall(r'REJECTED_BY_(\d+)', order.special_instructions or ''))
             timeout_count = len(re.findall(r'TIMEOUT_BY_(\d+)', order.special_instructions or ''))
             total_failures = rejection_count + timeout_count
             if total_failures >= 2:

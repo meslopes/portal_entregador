@@ -92,8 +92,14 @@ def login():
 
 
 @own_driver_bp.route('/register-pin', methods=['POST'])
+@jwt_required()
 def register_pin():
-    """Registra ou atualiza PIN do entregador próprio"""
+    """Registra ou atualiza PIN do entregador próprio (apenas admin/client)"""
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+        return jsonify({'error': 'Apenas administradores ou estabelecimentos podem definir PIN'}), 403
+
     data = request.get_json()
     phone = data.get('phone', '').strip()
     pin = data.get('pin', '').strip()

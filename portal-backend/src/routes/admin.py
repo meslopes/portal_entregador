@@ -631,7 +631,7 @@ def admin_update_order(order_id):
                     geo = geocode_address(full_addr)
                     if geo:
                         address.latitude = geo['latitude']
-                        longitude = geo['longitude']
+                        address.longitude = geo['longitude']
                 address.updated_at = datetime.utcnow()
 
         order.updated_at = datetime.utcnow()
@@ -1413,7 +1413,7 @@ def get_live_tracking():
                     
                     if restaurant.latitude and restaurant.longitude:
                         # Buscar pedidos ativos deste estabelecimento
-                        active_orders = Order.query.filter(
+                        restaurant_active_orders = Order.query.filter(
                             Order.restaurant_id == restaurant.id,
                             Order.status.in_([
                                 OrderStatus.PENDING,
@@ -1431,7 +1431,7 @@ def get_live_tracking():
                             'latitude': float(restaurant.latitude),
                             'longitude': float(restaurant.longitude),
                             'address': restaurant.address,
-                            'active_orders': len(active_orders),
+                            'active_orders': len(restaurant_active_orders),
                             'orders': [{
                                 'id': o.id,
                                 'order_number': o.order_number,
@@ -1441,7 +1441,7 @@ def get_live_tracking():
                             'total_amount': float(o.total_amount) if o.total_amount else 0,
                             'driver_name': f"{o.driver.user.first_name} {o.driver.user.last_name}" if o.driver and o.driver.user else None,
                             'created_at': o.created_at.isoformat() if o.created_at else None
-                        } for o in active_orders]
+                        } for o in restaurant_active_orders]
                     }
                     tracking_data.append(est_data)
             
@@ -1877,10 +1877,10 @@ def delete_establishment(establishment_id):
             for order in orders:
                 # Deletar entregas vinculadas
                 Delivery.query.filter_by(order_id=order.id).delete()
-                # Deletar pagamentos vinculados
-                Payment.query.filter_by(order_id=order.id).delete()
-                # Deletar notificações vinculadas
-                Notification.query.filter_by(order_id=order.id).delete()
+                # Deletar pagamentos vinculados (usa reference_id, não order_id)
+                Payment.query.filter_by(reference_id=order.id).delete()
+                # Deletar notificações vinculadas (usa related_id, não order_id)
+                Notification.query.filter_by(related_id=order.id).delete()
             # Deletar pedidos
             Order.query.filter_by(restaurant_id=establishment_id).delete()
 

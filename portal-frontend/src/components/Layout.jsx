@@ -186,7 +186,6 @@ const Layout = ({ children }) => {
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="mobile-menu-btn"
                 style={{
-                  display: 'none',
                   padding: '0.5rem',
                   borderRadius: '0.375rem',
                   border: 'none',
@@ -239,6 +238,14 @@ const Layout = ({ children }) => {
       <main style={{ minHeight: 'calc(100vh - 3.5rem)' }}>
         {children}
       </main>
+
+      <style>{`
+        .mobile-menu-btn { display: none; }
+        @media (max-width: 768px) {
+          .mobile-menu-btn { display: block !important; }
+          nav { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 };

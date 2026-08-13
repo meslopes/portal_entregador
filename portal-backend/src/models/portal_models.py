@@ -50,6 +50,7 @@ class PaymentStatus(Enum):
 
 class NotificationType(Enum):
     ORDER_AVAILABLE = "ORDER_AVAILABLE"
+    NEW_ORDER = "NEW_ORDER"
     ORDER_UPDATE = "ORDER_UPDATE"
     PAYMENT = "PAYMENT"
     SYSTEM = "SYSTEM"
@@ -172,7 +173,6 @@ class Driver(db.Model):
     vehicle_model = db.Column(db.String(100))
     vehicle_year = db.Column(db.Integer)
     bank_account = db.Column(db.String(50))
-    pix_key = db.Column(db.String(100))
     is_online = db.Column(db.Boolean, default=False)
     current_latitude = db.Column(db.Numeric(10, 8))
     current_longitude = db.Column(db.Numeric(11, 8))
