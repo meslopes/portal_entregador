@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus, DollarSign, Receipt, Globe, Users
+  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus, DollarSign, Receipt, Globe, Users, BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -34,6 +34,7 @@ const ClientLayout = ({ children }) => {
     { name: 'Integrações', href: '/client/integrations', icon: Globe },
     { name: 'Meus Entregadores', href: '/client/drivers', icon: Users },
     { name: 'Pagamentos Entregadores', href: '/client/drivers/financial', icon: DollarSign },
+    { name: 'Desempenho Entregadores', href: '/client/drivers/metrics', icon: BarChart3 },
   ];
 
   const isActive = (href) => location.pathname === href;

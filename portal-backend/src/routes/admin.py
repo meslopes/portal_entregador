@@ -4557,3 +4557,124 @@ def get_cost_comparison():
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/metrics', methods=['GET'])
+@client_or_admin_required
+def get_own_driver_metrics():
+    """Retorna métricas de desempenho dos entregadores próprios"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        # Buscar restaurante
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer:
+                return jsonify({'error': 'Cliente não encontrado'}), 404
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+        else:
+            restaurant_id = request.args.get('restaurant_id')
+            restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
+
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 404
+
+        # Parâmetros
+        period = request.args.get('period', 'month')
+        driver_id = request.args.get('driver_id')
+        from datetime import timedelta
+
+        if period == 'week':
+            start_date = datetime.utcnow() - timedelta(days=7)
+        else:
+            start_date = datetime.utcnow() - timedelta(days=30)
+
+        # Buscar entregadores próprios
+        drivers_query = EstablishmentDriver.query.filter_by(
+            restaurant_id=restaurant.id, is_active=True
+        )
+        if driver_id:
+            drivers_query = drivers_query.filter_by(id=int(driver_id))
+        drivers = drivers_query.all()
+
+        metrics = []
+        for driver in drivers:
+            # Pedidos atribuídos no período
+            orders = Order.query.filter(
+                Order.establishment_driver_id == driver.id,
+                Order.created_at >= start_date
+            ).all()
+
+            delivered = [o for o in orders if o.status == OrderStatus.DELIVERED]
+            cancelled = [o for o in orders if o.status == OrderStatus.CANCELLED]
+            total = len(orders)
+
+            # Tempos de entrega (accepted -> delivered)
+            delivery_times = []
+            for o in delivered:
+                if o.accepted_at and o.delivery_time:
+                    diff = (o.delivery_time - o.accepted_at).total_seconds() / 60
+                    delivery_times.append(diff)
+
+            avg_delivery_time = sum(delivery_times) / len(delivery_times) if delivery_times else 0
+
+            # Ganhos no período
+            earnings = OwnDriverEarning.query.filter(
+                OwnDriverEarning.establishment_driver_id == driver.id,
+                OwnDriverEarning.created_at >= start_date
+            ).all()
+            total_earning = sum(float(e.driver_earning) for e in earnings)
+            total_paid = sum(float(e.driver_earning) for e in earnings if e.is_paid)
+            total_pending = total_earning - total_paid
+
+            # Avaliações
+            ratings = Delivery.customer_rating.join(Order).filter(
+                Order.establishment_driver_id == driver.id,
+                Delivery.customer_rating.isnot(None),
+                Order.created_at >= start_date
+            ).all() if False else []  # Fallback simples
+
+            metrics.append({
+                'driver': driver.to_dict(),
+                'period': period,
+                'orders': {
+                    'total': total,
+                    'delivered': len(delivered),
+                    'cancelled': len(cancelled),
+                    'acceptance_rate': round((len(delivered) / total * 100) if total > 0 else 0, 1)
+                },
+                'delivery_time': {
+                    'avg_minutes': round(avg_delivery_time, 1),
+                    'min_minutes': round(min(delivery_times), 1) if delivery_times else 0,
+                    'max_minutes': round(max(delivery_times), 1) if delivery_times else 0
+                },
+                'financial': {
+                    'total_earning': total_earning,
+                    'total_paid': total_paid,
+                    'total_pending': total_pending,
+                    'avg_per_delivery': round(total_earning / len(delivered), 2) if delivered else 0
+                },
+                'rating': {
+                    'average': float(driver.rating) if driver.rating else 5.0,
+                    'total_ratings': driver.total_ratings or 0
+                }
+            })
+
+        # Resumo geral
+        total_deliveries = sum(m['orders']['delivered'] for m in metrics)
+        total_earning_all = sum(m['financial']['total_earning'] for m in metrics)
+        avg_time_all = sum(m['delivery_time']['avg_minutes'] for m in metrics) / len(metrics) if metrics else 0
+
+        return jsonify({
+            'drivers': metrics,
+            'summary': {
+                'total_drivers': len(drivers),
+                'total_deliveries': total_deliveries,
+                'total_earning': total_earning_all,
+                'avg_delivery_time': round(avg_time_all, 1)
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

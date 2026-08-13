@@ -124,7 +124,7 @@
 - [x] Fase 1.4: Notificação WhatsApp ao atribuir entregador próprio
 - [x] Fase 2: Controle financeiro (pagamentos, gastos, comparativo)
 - [x] Fase 3: Fluxo completo (distribuição, timeline, confirmação, prova)
-- [ ] Fase 4: Avaliação e relatórios
+- [x] Fase 4: Avaliação e relatórios
 - [ ] Fase 5: App mobile / WhatsApp Business
 
 ## 🔧 Bugs Conhecidos

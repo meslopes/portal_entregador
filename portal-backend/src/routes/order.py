@@ -1101,7 +1101,15 @@ def update_order_status(order_id):
                     from decimal import Decimal
                     driver.locked_balance = (driver.locked_balance or Decimal('0')) + Decimal(str(order.delivery.driver_earnings))
                     driver.updated_at = datetime.utcnow()
-        
+
+            # Incrementar total_deliveries do entregador próprio
+            if order.assigned_to_own_driver and order.establishment_driver_id:
+                from src.models.portal_models import EstablishmentDriver
+                est_driver = EstablishmentDriver.query.get(order.establishment_driver_id)
+                if est_driver:
+                    est_driver.total_deliveries = (est_driver.total_deliveries or 0) + 1
+                    est_driver.updated_at = datetime.utcnow()
+
         # Cria notificação
         status_messages = {
             OrderStatus.PREPARING: "Seu pedido está sendo preparado",
@@ -2300,20 +2308,37 @@ def rate_delivery(order_id):
             order.delivery.customer_feedback = feedback
             order.delivery.updated_at = datetime.utcnow()
 
-            # Atualiza a media de avaliacao do entregador
-            driver = order.delivery.driver
-            if driver:
-                avg_rating = db.session.query(func.avg(Delivery.customer_rating)).filter(
-                    Delivery.driver_id == driver.id,
-                    Delivery.customer_rating.isnot(None)
-                ).scalar()
-                if avg_rating:
-                    driver.rating = round(float(avg_rating), 2)
-                driver.updated_at = datetime.utcnow()
+            if order.assigned_to_own_driver and order.establishment_driver_id:
+                # Entregador próprio - atualiza EstablishmentDriver
+                from src.models.portal_models import EstablishmentDriver
+                est_driver = EstablishmentDriver.query.get(order.establishment_driver_id)
+                if est_driver:
+                    est_driver.total_ratings = (est_driver.total_ratings or 0) + 1
+                    # Calcula nova média
+                    avg_rating = db.session.query(func.avg(Delivery.customer_rating)).join(
+                        Order, Delivery.order_id == Order.id
+                    ).filter(
+                        Order.establishment_driver_id == est_driver.id,
+                        Delivery.customer_rating.isnot(None)
+                    ).scalar()
+                    if avg_rating:
+                        est_driver.rating = round(float(avg_rating), 2)
+                    est_driver.updated_at = datetime.utcnow()
+            else:
+                # Entregador da plataforma - atualiza Driver
+                driver = order.delivery.driver
+                if driver:
+                    avg_rating = db.session.query(func.avg(Delivery.customer_rating)).filter(
+                        Delivery.driver_id == driver.id,
+                        Delivery.customer_rating.isnot(None)
+                    ).scalar()
+                    if avg_rating:
+                        driver.rating = round(float(avg_rating), 2)
+                    driver.updated_at = datetime.utcnow()
 
-                # Alerta ao admin se avaliacao for baixa (menor que 3.0)
-                if driver.rating and float(driver.rating) < 3.0:
-                    notify_admin_low_rating(driver, rating, feedback, order)
+                    # Alerta ao admin se avaliacao for baixa (menor que 3.0)
+                    if driver.rating and float(driver.rating) < 3.0:
+                        notify_admin_low_rating(driver, rating, feedback, order)
 
         db.session.commit()
 

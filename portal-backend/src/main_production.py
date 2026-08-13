@@ -735,6 +735,16 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: campos de avaliação e métricas para entregadores próprios (Fase 4)
+        try:
+            for col, coltype in [('rating', 'NUMERIC(3,2) DEFAULT 5.00'), ('total_deliveries', 'INTEGER DEFAULT 0'), ('total_ratings', 'INTEGER DEFAULT 0')]:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'establishment_drivers' AND column_name = '{col}') THEN ALTER TABLE establishment_drivers ADD COLUMN {col} {coltype}; END IF; END $$"
+                ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

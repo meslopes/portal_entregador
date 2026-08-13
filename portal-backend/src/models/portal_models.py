@@ -304,6 +304,10 @@ class EstablishmentDriver(db.Model):
     current_latitude = db.Column(db.Numeric(10, 8))
     current_longitude = db.Column(db.Numeric(11, 8))
     is_active = db.Column(db.Boolean, default=True)
+    # Métricas de desempenho
+    rating = db.Column(db.Numeric(3, 2), default=5.00)
+    total_deliveries = db.Column(db.Integer, default=0)
+    total_ratings = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -323,6 +327,9 @@ class EstablishmentDriver(db.Model):
             'current_latitude': float(self.current_latitude) if self.current_latitude else None,
             'current_longitude': float(self.current_longitude) if self.current_longitude else None,
             'is_active': self.is_active,
+            'rating': float(self.rating) if self.rating else 5.0,
+            'total_deliveries': self.total_deliveries or 0,
+            'total_ratings': self.total_ratings or 0,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
