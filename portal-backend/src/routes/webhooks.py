@@ -106,25 +106,166 @@ def ifood_webhook():
         return jsonify({'error': str(e)}), 200  # Return 200 to avoid iFood retry
 
 
+def get_ifood_credentials(merchant_id=None):
+    """Obtém credenciais do iFood do banco de dados"""
+    from src.models.portal_models import SystemConfig
+    try:
+        # Buscar credenciais do iFood (suporta ambos os formatos de chave)
+        api_key_config = SystemConfig.query.filter_by(config_key='ifood_api_key').first()
+        client_id_config = SystemConfig.query.filter_by(config_key='ifood_client_id').first()
+        client_secret_config = SystemConfig.query.filter_by(config_key='ifood_client_secret').first()
+        
+        # Priorizar ifood_api_key (formato do frontend)
+        if api_key_config and api_key_config.config_value:
+            # Se tem api_key, usar como client_id (para sandbox/teste)
+            return {
+                'client_id': api_key_config.config_value,
+                'client_secret': api_key_config.config_value  # Em sandbox, mesmo valor
+            }
+        
+        # Fallback para credenciais separadas
+        if client_id_config and client_secret_config:
+            return {
+                'client_id': client_id_config.config_value,
+                'client_secret': client_secret_config.config_value
+            }
+        
+        # Fallback para credenciais de teste (sandbox)
+        logger.warning("Usando credenciais iFood de teste (sandbox)")
+        return {
+            'client_id': '8d1e5d84-5917-40dc-9b68-122b70da629e',
+            'client_secret': '10z6sd0fby0ker3qj30gr6bbeznk5p5nvhtpftycqzeywmzgxcnu0hncrx3w2amizlq34je3znkr5x1hpdinlan5dvigqan0qlbt'
+        }
+    except Exception as e:
+        logger.error(f"Erro ao obter credenciais iFood: {e}")
+        return None
+
+
+def get_ifood_access_token():
+    """Obtém access token do iFood"""
+    from src.services.ifood_service import authenticate
+    creds = get_ifood_credentials()
+    if not creds:
+        return None
+    
+    result = authenticate(creds['client_id'], creds['client_secret'])
+    if result.get('success'):
+        return result.get('access_token')
+    else:
+        logger.error(f"Erro ao autenticar com iFood: {result.get('error')}")
+        return None
+
+
 def process_ifood_event(event_data):
     """Processa um evento individual do iFood (formato Open Delivery)"""
     try:
         logger.info(f"Processando evento iFood: {event_data}")
         event_type = event_data.get('type', '').upper()
-        order_data = event_data.get('order', event_data)
+        
+        # Extrair order data - pode estar em 'order' ou ser o próprio event_data
+        order_ref = event_data.get('order', {})
+        if isinstance(order_ref, str):
+            # Se 'order' for uma string, é apenas o ID do pedido
+            order_id = order_ref
+        elif isinstance(order_ref, dict):
+            order_id = order_ref.get('id')
+        else:
+            order_id = event_data.get('id')
+        
+        logger.info(f"Evento iFood: tipo={event_type}, order_id={order_id}")
         
         if event_type in ['PLACED', 'ORDER_PLACED']:
-            process_ifood_order_real(order_data)
-        elif event_type in ['CANCELLED', 'ORDER_CANCELLED']:
-            if order_data.get('id'):
-                process_ifood_cancellation_real(order_data)
+            # Buscar detalhes completos do pedido na API do iFood
+            if order_id:
+                fetch_and_process_ifood_order(order_id)
+            else:
+                logger.error("Evento PLACED sem order_id")
+        elif event_type in ['CANCELLED', 'ORDER_CANCELLED', 'CANCELLATION_REQUESTED']:
+            if order_id:
+                process_ifood_cancellation_by_id(order_id)
         elif event_type in ['CONFIRMED', 'DISPATCHED', 'DELIVERED']:
-            # Atualizar status do pedido existente
-            update_order_from_ifood_status(order_data, event_type)
+            if order_id:
+                update_order_from_ifood_status_by_id(order_id, event_type)
         else:
             logger.warning(f"Tipo de evento iFood não reconhecido: {event_type}")
     except Exception as e:
         logger.error(f"Erro ao processar evento iFood: {e}")
+
+
+def fetch_and_process_ifood_order(order_id):
+    """Busca detalhes do pedido no iFood e processa"""
+    try:
+        from src.services.ifood_service import get_order_details, parse_ifood_order
+        
+        # Obter access token
+        access_token = get_ifood_access_token()
+        if not access_token:
+            logger.error("Não foi possível obter access token do iFood")
+            return
+        
+        # Buscar detalhes do pedido
+        result = get_order_details(access_token, order_id)
+        if not result.get('success'):
+            logger.error(f"Erro ao buscar detalhes do pedido iFood {order_id}: {result.get('error')}")
+            return
+        
+        order_data = result.get('data', {})
+        logger.info(f"Detalhes do pedido iFood {order_id}: {order_data}")
+        
+        # Processar o pedido
+        process_ifood_order_real(order_data)
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar/processar pedido iFood {order_id}: {e}")
+
+
+def process_ifood_cancellation_by_id(order_id):
+    """Processa cancelamento de pedido iFood por ID"""
+    try:
+        # Buscar pedido no banco de dados
+        order = Order.query.filter_by(external_id=order_id, platform_source='IFOOD').first()
+        if not order:
+            logger.warning(f"Pedido iFood {order_id} não encontrado para cancelamento")
+            return
+        
+        order.status = OrderStatus.CANCELLED
+        order.updated_at = datetime.utcnow()
+        if order.driver_id:
+            order.driver_id = None
+        db.session.commit()
+        logger.info(f"Pedido iFood {order.order_number} cancelado")
+        
+    except Exception as e:
+        logger.error(f"Erro ao cancelar pedido iFood {order_id}: {e}")
+        db.session.rollback()
+
+
+def update_order_from_ifood_status_by_id(order_id, ifood_status):
+    """Atualiza status de um pedido iFood por ID"""
+    try:
+        IFOOD_STATUS_MAP = {
+            'CONFIRMED': 'ACCEPTED',
+            'PREPARING': 'PREPARING',
+            'READY': 'READY',
+            'DISPATCHED': 'PICKED_UP',
+            'DELIVERED': 'DELIVERED'
+        }
+        
+        order = Order.query.filter_by(external_id=order_id, platform_source='IFOOD').first()
+        if not order:
+            logger.warning(f"Pedido iFood {order_id} não encontrado para atualização de status")
+            return
+        
+        new_status = IFOOD_STATUS_MAP.get(ifood_status)
+        if new_status and hasattr(OrderStatus, new_status):
+            order.status = OrderStatus[new_status]
+            order.updated_at = datetime.utcnow()
+            db.session.commit()
+            logger.info(f"Status do pedido iFood {order.order_number} atualizado para {new_status}")
+        
+    except Exception as e:
+        logger.error(f"Erro ao atualizar status do pedido iFood {order_id}: {e}")
+        db.session.rollback()
 
 
 def process_ifood_order_real(order_data):
