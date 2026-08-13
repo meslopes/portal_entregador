@@ -5,29 +5,17 @@ from src.models.portal_models import (
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
+from src.utils.geo import haversine_distance
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import uuid
 import os
 import base64
-import math
 import re
 import random
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-def haversine_distance(lat1, lon1, lat2, lon2):
-    """Calcula distância entre dois pontos usando fórmula de Haversine (em km)"""
-    if not all([lat1, lon1, lat2, lon2]):
-        return 0
-    lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.asin(math.sqrt(a))
-    return 6371 * c  # Raio da Terra em km
 
 
 def get_driver_percentage(order):

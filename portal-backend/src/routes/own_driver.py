@@ -265,7 +265,7 @@ def update_order_status(order_id):
         lng = data.get('longitude')
 
         if lat and lng:
-            from src.services.geocoding import haversine_distance
+            from src.utils.geo import haversine_distance
             from src.models.portal_models import SystemConfig
 
             if new_status_enum == OrderStatus.PICKED_UP:

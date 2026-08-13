@@ -3,23 +3,11 @@ from src.models.portal_models import (
     Order, Restaurant, Customer, Address, Driver, User, UserType,
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
 )
+from src.utils.geo import haversine_distance
 from datetime import datetime
 import uuid
 import hashlib
 import hmac
-import math
-
-
-def haversine_distance(lat1, lon1, lat2, lon2):
-    """Calcula distância entre dois pontos usando fórmula de Haversine (em km)"""
-    if not all([lat1, lon1, lat2, lon2]):
-        return 0
-    lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.asin(math.sqrt(a))
-    return 6371 * c  # Raio da Terra em km
 
 webhook_bp = Blueprint('webhook', __name__)
 

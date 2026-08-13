@@ -1,21 +1,9 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import Driver, User, UserType, Order, OrderStatus, Payment, PaymentStatus, PaymentType, PaymentMethod, db
+from src.utils.geo import haversine_distance
 from datetime import datetime, timedelta
 from sqlalchemy import func
-import math
-
-
-def haversine_distance(lat1, lon1, lat2, lon2):
-    """Calcula distância entre dois pontos usando fórmula de Haversine (em km)"""
-    if not all([lat1, lon1, lat2, lon2]):
-        return 0
-    lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.asin(math.sqrt(a))
-    return 6371 * c  # Raio da Terra em km
 
 driver_bp = Blueprint('driver', __name__)
 
