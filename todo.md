@@ -122,7 +122,7 @@
 - [x] Fase 1.2: Redirecionar para /client/orders após criar pedido
 - [x] Fase 1.3: Incluir entregadores próprios no mapa de rastreamento
 - [x] Fase 1.4: Notificação WhatsApp ao atribuir entregador próprio
-- [ ] Fase 2: Controle financeiro (pagamentos, gastos, comparativo)
+- [x] Fase 2: Controle financeiro (pagamentos, gastos, comparativo)
 - [ ] Fase 3: Fluxo completo (distribuição, timeline, confirmação, prova)
 - [ ] Fase 4: Avaliação e relatórios
 - [ ] Fase 5: App mobile / WhatsApp Business
