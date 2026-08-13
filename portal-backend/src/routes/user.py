@@ -4,6 +4,17 @@ from src.models.portal_models import User, Driver, Customer, Restaurant, db
 
 user_bp = Blueprint('user', __name__)
 
+
+def find_restaurant_by_name(name):
+    """Busca restaurante por nome (case-insensitive)"""
+    if not name:
+        return None
+    restaurant = Restaurant.query.filter_by(name=name).first()
+    if restaurant:
+        return restaurant
+    return Restaurant.query.filter(Restaurant.name.ilike(name)).first()
+
+
 @user_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def get_profile():
@@ -24,8 +35,8 @@ def get_profile():
         customer = Customer.query.filter_by(user_id=user.id).first()
         if customer:
             user_data['customer'] = customer.to_dict()
-            # Busca o restaurante vinculado ao estabelecimento
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            # Busca o restaurante vinculado ao estabelecimento (case-insensitive)
+            restaurant = find_restaurant_by_name(customer.name)
             if restaurant:
                 user_data['restaurant_id'] = restaurant.id
                 user_data['has_own_drivers'] = restaurant.has_own_drivers or False

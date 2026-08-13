@@ -15,6 +15,17 @@ from sqlalchemy import func, and_, or_
 
 admin_bp = Blueprint('admin', __name__)
 
+
+def find_restaurant_by_name(name):
+    """Busca restaurante por nome (case-insensitive)"""
+    if not name:
+        return None
+    restaurant = Restaurant.query.filter_by(name=name).first()
+    if restaurant:
+        return restaurant
+    return Restaurant.query.filter(Restaurant.name.ilike(name)).first()
+
+
 def admin_required(f):
     """Decorator para verificar se o usuário é admin"""
     from functools import wraps
@@ -4257,7 +4268,7 @@ def get_payment_config():
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
                 return jsonify({'error': 'Cliente não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            restaurant = find_restaurant_by_name(customer.name)
         else:
             restaurant_id = request.args.get('restaurant_id')
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
@@ -4289,7 +4300,7 @@ def update_payment_config():
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
                 return jsonify({'error': 'Cliente não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            restaurant = find_restaurant_by_name(customer.name)
         else:
             data = request.get_json()
             restaurant_id = data.get('restaurant_id')
@@ -4340,7 +4351,7 @@ def get_own_driver_earnings():
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
                 return jsonify({'error': 'Cliente não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            restaurant = find_restaurant_by_name(customer.name)
         else:
             restaurant_id = request.args.get('restaurant_id')
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
@@ -4440,7 +4451,7 @@ def pay_all_earnings():
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
                 return jsonify({'error': 'Cliente não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            restaurant = find_restaurant_by_name(customer.name)
         else:
             restaurant_id = data.get('restaurant_id')
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
@@ -4488,7 +4499,7 @@ def get_cost_comparison():
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
                 return jsonify({'error': 'Cliente não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            restaurant = find_restaurant_by_name(customer.name)
         else:
             restaurant_id = request.args.get('restaurant_id')
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
@@ -4574,7 +4585,7 @@ def get_own_driver_metrics():
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
                 return jsonify({'error': 'Cliente não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            restaurant = find_restaurant_by_name(customer.name)
         else:
             restaurant_id = request.args.get('restaurant_id')
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None

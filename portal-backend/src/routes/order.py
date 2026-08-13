@@ -18,6 +18,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def find_restaurant_by_name(name):
+    """Busca restaurante por nome (case-insensitive)"""
+    if not name:
+        return None
+    # Busca exata primeiro
+    restaurant = Restaurant.query.filter_by(name=name).first()
+    if restaurant:
+        return restaurant
+    # Busca case-insensitive
+    return Restaurant.query.filter(Restaurant.name.ilike(name)).first()
+
+
 def get_driver_percentage(order):
     """Retorna o percentual do entregador (0.0 a 1.0) baseado na configuração do restaurante"""
     from src.models.portal_models import PricingTable, Square
@@ -1255,7 +1267,7 @@ def cancel_order(order_id):
             customer_profile = Customer.query.filter_by(user_id=user.id).first()
             if not customer_profile:
                 return jsonify({'error': 'Perfil não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+            restaurant = find_restaurant_by_name(customer_profile.name)
             if not restaurant or order.restaurant_id != restaurant.id:
                 return jsonify({'error': 'Pedido não pertence a este estabelecimento'}), 403
         elif user.user_type != UserType.ADMIN:
@@ -1414,7 +1426,7 @@ def create_order():
                 return jsonify({'error': 'Perfil de estabelecimento não encontrado'}), 400
 
             # Busca ou cria restaurante para este estabelecimento
-            restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+            restaurant = find_restaurant_by_name(customer_profile.name)
             if not restaurant:
                 # Geocodifica o endereco do estabelecimento
                 est_address = data.get('establishment_address', 'Endereço não informado')
