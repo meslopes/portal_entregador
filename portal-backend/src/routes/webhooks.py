@@ -36,6 +36,9 @@ def ifood_webhook():
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
 
+        # Log para debug
+        logger.info(f"iFood webhook recebido: {data}")
+
         # Detectar formato: real (Open Delivery) ou adaptado
         # Formato real: tem 'id' e 'merchant' no nível raiz
         # Formato adaptado: tem 'event' e 'data'
@@ -52,21 +55,37 @@ def ifood_webhook():
         elif 'id' in data and 'merchant' in data:
             # Formato real do iFood (Open Delivery)
             return process_ifood_order_real(data)
+        elif 'type' in data:
+            # Formato de evento do iFood (com type e order)
+            event_type = data.get('type', '').upper()
+            if event_type in ['PLACED', 'ORDER_PLACED']:
+                order_data = data.get('order', data)
+                return process_ifood_order_real(order_data)
+            elif event_type in ['CANCELLED', 'ORDER_CANCELLED']:
+                order_data = data.get('order', data)
+                if order_data.get('id'):
+                    return process_ifood_cancellation_real(order_data)
+            return jsonify({'message': f'Evento {event_type} processado'}), 200
         else:
             # Tentar como array de eventos (formato real do iFood)
             if isinstance(data, list):
                 for event in data:
                     process_ifood_event(event)
                 return jsonify({'status': 'ok'}), 200
+            # Tentar processar como pedido direto
+            if 'orderId' in data or 'order_id' in data:
+                return process_ifood_order_real(data)
             return jsonify({'error': 'Formato não reconhecido'}), 400
 
     except Exception as e:
+        logger.error(f"Erro no webhook iFood: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 def process_ifood_event(event_data):
     """Processa um evento individual do iFood (formato Open Delivery)"""
     try:
+        logger.info(f"Processando evento iFood: {event_data}")
         event_type = event_data.get('type', '').upper()
         order_data = event_data.get('order', event_data)
         
@@ -78,6 +97,8 @@ def process_ifood_event(event_data):
         elif event_type in ['CONFIRMED', 'DISPATCHED', 'DELIVERED']:
             # Atualizar status do pedido existente
             update_order_from_ifood_status(order_data, event_type)
+        else:
+            logger.warning(f"Tipo de evento iFood não reconhecido: {event_type}")
     except Exception as e:
         logger.error(f"Erro ao processar evento iFood: {e}")
 
