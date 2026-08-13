@@ -168,12 +168,12 @@ const NotificationBell = () => {
       {isOpen && (
         <div style={{
           position: 'absolute', top: '100%', right: 0,
-          width: '350px', maxHeight: '450px',
+          width: 'min(350px, calc(100vw - 2rem))', maxHeight: '450px',
           background: 'white', borderRadius: '0.75rem',
           boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
           border: '1px solid #e2e8f0',
-          zIndex: 100003,
-          overflow: 'hidden', zIndex: 100002,
+          zIndex: 100002,
+          overflow: 'hidden',
           marginTop: '0.5rem'
         }}>
           {/* Header */}
