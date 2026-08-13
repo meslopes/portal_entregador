@@ -89,11 +89,9 @@ const AdminEstablishmentsPage = () => {
       await api.put(`/api/admin/establishments/${establishment.id}/subscription`, {
         has_own_drivers: newValue
       });
-      // Atualizar o showDetails se estiver aberto
-      if (showDetails && showDetails.id === establishment.id) {
-        setShowDetails({ ...showDetails, has_own_drivers: newValue });
-      }
-      loadEstablishments();
+      // Fechar modal e recarregar lista
+      setShowDetails(null);
+      await loadEstablishments();
     } catch (err) {
       alert(err.response?.data?.error || 'Erro ao alterar configuração');
     }
