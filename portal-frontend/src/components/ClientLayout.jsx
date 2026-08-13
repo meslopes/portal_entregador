@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -13,29 +13,52 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
+import api from '@/lib/api';
 
 const ClientLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasOwnDrivers, setHasOwnDrivers] = useState(false);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await api.get('/api/user/profile');
+        setHasOwnDrivers(res.data.has_own_drivers || false);
+      } catch (err) {
+        // Silencia erro - assume false
+      }
+    };
+    loadProfile();
+  }, []);
 
   const handleLogout = () => {
     logout();
     navigate('/client/login');
   };
 
-  const navigation = [
+  // Menu base (todos os estabelecimentos)
+  const baseNavigation = [
     { name: 'Início', href: '/client', icon: Home },
     { name: 'Novo Pedido', href: '/client/new-order', icon: Plus },
     { name: 'Meus Pedidos', href: '/client/orders', icon: Package },
     { name: 'Financeiro', href: '/client/financial', icon: DollarSign },
     { name: 'Faturas', href: '/client/invoices', icon: Receipt },
     { name: 'Integrações', href: '/client/integrations', icon: Globe },
+  ];
+
+  // Menu de entregadores próprios (apenas para quem tem has_own_drivers)
+  const ownDriverNavigation = [
     { name: 'Meus Entregadores', href: '/client/drivers', icon: Users },
     { name: 'Pagamentos Entregadores', href: '/client/drivers/financial', icon: DollarSign },
     { name: 'Desempenho Entregadores', href: '/client/drivers/metrics', icon: BarChart3 },
   ];
+
+  const navigation = hasOwnDrivers
+    ? [...baseNavigation, ...ownDriverNavigation]
+    : baseNavigation;
 
   const isActive = (href) => location.pathname === href;
 

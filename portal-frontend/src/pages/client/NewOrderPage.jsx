@@ -25,6 +25,7 @@ const NewOrderPage = () => {
   const [showDistribution, setShowDistribution] = useState(false);
   const [establishments, setEstablishments] = useState([]);
   const [pricingTable, setPricingTable] = useState(null);
+  const [hasOwnDrivers, setHasOwnDrivers] = useState(false);
   const isAdmin = user?.user_type === 'ADMIN';
 
   const [form, setForm] = useState({
@@ -44,6 +45,17 @@ const NewOrderPage = () => {
     change_for: '',
     special_instructions: '',
   });
+
+  // Carrega se tem entregadores próprios
+  useEffect(() => {
+    if (!isAdmin) {
+      import('@/lib/api').then(({ default: api }) => {
+        api.get('/api/user/profile').then(res => {
+          setHasOwnDrivers(res.data.has_own_drivers || false);
+        }).catch(() => {});
+      });
+    }
+  }, [isAdmin]);
 
   // Carrega estabelecimentos para admin
   useEffect(() => {
@@ -130,8 +142,8 @@ const NewOrderPage = () => {
         }),
       });
       setSuccess(true);
-      // Mostrar modal de distribuição para CLIENT (estabelecimento)
-      if (!isAdmin && response.order) {
+      // Mostrar modal de distribuição apenas para estabelecimentos com entregadores próprios
+      if (!isAdmin && hasOwnDrivers && response.order) {
         setCreatedOrder(response.order);
         setShowDistribution(true);
       } else {

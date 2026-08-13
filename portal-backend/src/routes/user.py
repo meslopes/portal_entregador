@@ -28,6 +28,8 @@ def get_profile():
             restaurant = Restaurant.query.filter_by(name=customer.name).first()
             if restaurant:
                 user_data['restaurant_id'] = restaurant.id
+                user_data['has_own_drivers'] = restaurant.has_own_drivers or False
+                user_data['subscription_type'] = restaurant.subscription_type
 
         return jsonify(user_data), 200
     except Exception as e:
