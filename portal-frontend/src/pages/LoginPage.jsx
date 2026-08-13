@@ -149,9 +149,9 @@ const LoginPage = () => {
               </div>
 
               <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer' }}>
+                <a href="/support" style={{ fontSize: '0.8125rem', color: '#64748b', textDecoration: 'none' }}>
                   Esqueci minha senha
-                </span>
+                </a>
               </div>
 
               <button type="submit" className="auth-btn-primary" disabled={isLoading}>

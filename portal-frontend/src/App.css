@@ -388,3 +388,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Animação de loading compartilhada */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

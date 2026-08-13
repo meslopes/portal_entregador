@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  DollarSign, ArrowLeft, Clock, CheckCircle, Package, Filter
+  DollarSign, ArrowLeft, Clock, CheckCircle, Package, Filter, AlertCircle
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
@@ -11,6 +11,7 @@ const OwnDriverEarningsPage = () => {
   const [earnings, setEarnings] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [period, setPeriod] = useState('month');
 
   useEffect(() => { loadEarnings(); }, [period]);
@@ -18,6 +19,7 @@ const OwnDriverEarningsPage = () => {
   const loadEarnings = async () => {
     try {
       setLoading(true);
+      setError('');
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get(`/api/own-driver/earnings?period=${period}`, { headers });
@@ -25,6 +27,7 @@ const OwnDriverEarningsPage = () => {
       setSummary(res.data.summary || {});
     } catch (err) {
       console.error('Erro ao carregar ganhos:', err);
+      setError('Erro ao carregar ganhos. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -44,6 +47,17 @@ const OwnDriverEarningsPage = () => {
       </header>
 
       <div style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+        {/* Erro */}
+        {error && (
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
+            padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1rem',
+            display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem'
+          }}>
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
         {/* Cards de Resumo */}
         {summary && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>

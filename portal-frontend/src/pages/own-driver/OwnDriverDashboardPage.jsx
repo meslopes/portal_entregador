@@ -34,6 +34,10 @@ const OwnDriverDashboardPage = () => {
       return;
     }
     loadData();
+
+    // Auto-refresh a cada 20 segundos
+    const interval = setInterval(loadData, 20000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {

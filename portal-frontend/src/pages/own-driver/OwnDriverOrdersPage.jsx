@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Package, ArrowLeft, MapPin, Clock, CheckCircle, Truck, DollarSign
+  Package, ArrowLeft, MapPin, Clock, CheckCircle, Truck, DollarSign, AlertCircle
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
@@ -18,6 +18,7 @@ const OwnDriverOrdersPage = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
 
   useEffect(() => { loadOrders(); }, [filter]);
@@ -25,12 +26,14 @@ const OwnDriverOrdersPage = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      setError('');
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get(`/api/own-driver/orders?status=${filter}`, { headers });
       setOrders(res.data.orders || []);
     } catch (err) {
       console.error('Erro ao carregar pedidos:', err);
+      setError('Erro ao carregar pedidos. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -50,6 +53,17 @@ const OwnDriverOrdersPage = () => {
       </header>
 
       <div style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+        {/* Erro */}
+        {error && (
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
+            padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1rem',
+            display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem'
+          }}>
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
         {/* Filtros */}
         <div style={{
           display: 'flex', gap: '0.5rem', marginBottom: '1rem', overflowX: 'auto',
