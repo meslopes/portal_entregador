@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   Store, Search, Plus, Phone, Mail, Package, DollarSign,
   Edit, Trash2, X, AlertCircle, MapPin, Clock, TrendingUp,
-  ChevronRight, User, CheckCircle, Truck
+  ChevronRight, User, CheckCircle, Truck, Users, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import api from '@/lib/api';
 
 const STATUS_CONFIG = {
   PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente' },
@@ -74,6 +75,28 @@ const AdminEstablishmentsPage = () => {
   const handleSearch = (e) => {
     setSearch(e.target.value);
     setPage(1);
+  };
+
+  const handleToggleOwnDrivers = async (establishment) => {
+    const newValue = !establishment.has_own_drivers;
+    const confirmMsg = newValue
+      ? `Ativar entregadores próprios para "${establishment.name}"?\n\nO estabelecimento terá acesso ao menu "Meus Entregadores" e poderá cadastrar seus próprios entregadores.`
+      : `Desativar entregadores próprios para "${establishment.name}"?\n\nO estabelecimento usará apenas entregadores da plataforma MUV.`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await api.put(`/api/admin/restaurants/${establishment.id}/subscription`, {
+        has_own_drivers: newValue
+      });
+      // Atualizar o showDetails se estiver aberto
+      if (showDetails && showDetails.id === establishment.id) {
+        setShowDetails({ ...showDetails, has_own_drivers: newValue });
+      }
+      loadEstablishments();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao alterar configuração');
+    }
   };
 
   const openCreateForm = () => {
@@ -390,7 +413,18 @@ const AdminEstablishmentsPage = () => {
                     <Store size={16} style={{ color: '#0d9488' }} />
                   </div>
                   <div>
-                    <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>{est.name}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>{est.name}</p>
+                      {est.has_own_drivers && (
+                        <span style={{
+                          padding: '0.0625rem 0.375rem', borderRadius: '9999px',
+                          fontSize: '0.5625rem', fontWeight: 600,
+                          background: '#dbeafe', color: '#1d4ed8'
+                        }}>
+                          Próprios
+                        </span>
+                      )}
+                    </div>
                     <p style={{ fontSize: '0.6875rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <MapPin size={10} /> {est.address?.length > 30 ? est.address.substring(0, 30) + '...' : est.address}
                     </p>
@@ -734,6 +768,58 @@ const AdminEstablishmentsPage = () => {
                 <p style={{ fontSize: '0.875rem', fontWeight: 600, color: showDetails.is_active ? '#16a34a' : '#94a3b8' }}>
                   {showDetails.is_active ? 'Ativo' : 'Inativo'}
                 </p>
+              </div>
+            </div>
+
+            {/* Tipo de Entregador */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Tipo de Entregador
+              </p>
+              <div style={{
+                padding: '1rem', borderRadius: '0.5rem',
+                background: showDetails.has_own_drivers ? '#eff6ff' : '#f0fdf4',
+                border: `1px solid ${showDetails.has_own_drivers ? '#93c5fd' : '#86efac'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: '2.5rem', height: '2.5rem', borderRadius: '50%',
+                    background: showDetails.has_own_drivers ? '#2563eb' : '#16a34a',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {showDetails.has_own_drivers
+                      ? <Users size={16} style={{ color: 'white' }} />
+                      : <Truck size={16} style={{ color: 'white' }} />
+                    }
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
+                      {showDetails.has_own_drivers ? 'Entregadores Próprios' : 'Plataforma MUV'}
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {showDetails.has_own_drivers
+                        ? 'Gerencia seus próprios entregadores'
+                        : 'Usa entregadores da plataforma'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleToggleOwnDrivers(showDetails)}
+                  style={{
+                    padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
+                    background: showDetails.has_own_drivers ? '#16a34a' : '#2563eb',
+                    color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: '0.375rem',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {showDetails.has_own_drivers
+                    ? <><Truck size={14} /> Mudar p/ Plataforma</>
+                    : <><Users size={14} /> Mudar p/ Próprios</>
+                  }
+                </button>
               </div>
             </div>
 
