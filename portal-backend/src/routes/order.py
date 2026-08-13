@@ -1945,8 +1945,12 @@ def get_my_orders():
         if not customer_profile:
             return jsonify({'orders': [], 'total': 0}), 200
 
-        # Busca o restaurante vinculado ao estabelecimento
+        # Busca o restaurante vinculado ao estabelecimento (case-insensitive)
         restaurant = Restaurant.query.filter_by(name=customer_profile.name).first()
+        if not restaurant:
+            restaurant = Restaurant.query.filter(
+                Restaurant.name.ilike(customer_profile.name)
+            ).first()
         if not restaurant:
             return jsonify({'orders': [], 'total': 0}), 200
 
