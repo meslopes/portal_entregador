@@ -86,7 +86,7 @@ const AdminEstablishmentsPage = () => {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      await api.put(`/api/admin/restaurants/${establishment.id}/subscription`, {
+      await api.put(`/api/admin/establishments/${establishment.id}/subscription`, {
         has_own_drivers: newValue
       });
       // Atualizar o showDetails se estiver aberto
