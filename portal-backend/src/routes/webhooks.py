@@ -32,54 +32,78 @@ def ifood_webhook():
     Suporta formato real do iFood (Open Delivery) e formato adaptado.
     """
     try:
-        data = request.get_json()
+        # Log raw body for debugging
+        raw_body = request.get_data(as_text=True)
+        logger.info(f"iFood webhook RAW: {raw_body}")
+        
+        data = request.get_json(silent=True)
         if not data:
-            return jsonify({'error': 'Dados não fornecidos'}), 400
+            logger.warning(f"iFood webhook: JSON parse falhou. Raw: {raw_body}")
+            return jsonify({'error': 'Dados não fornecidos'}), 200  # Return 200 to avoid iFood retry
 
-        # Log para debug
-        logger.info(f"iFood webhook recebido: {data}")
+        logger.info(f"iFood webhook JSON: {data}")
 
-        # Detectar formato: real (Open Delivery) ou adaptado
-        # Formato real: tem 'id' e 'merchant' no nível raiz
-        # Formato adaptado: tem 'event' e 'data'
-        if 'event' in data:
-            # Formato adaptado (legado)
-            event = data.get('event')
-            order_data = data.get('data', {})
-            if event == 'order_placed':
-                return process_ifood_order(order_data)
-            elif event == 'order_cancelled':
-                return process_ifood_cancellation(order_data)
-            else:
+        # Handle array of events (iFood sends arrays)
+        if isinstance(data, list):
+            logger.info(f"iFood webhook: array com {len(data)} eventos")
+            for event in data:
+                process_ifood_event(event)
+            return jsonify({'status': 'ok'}), 200
+
+        # Handle single event
+        if isinstance(data, dict):
+            # Check for iFood event format with 'type' field
+            if 'type' in data:
+                event_type = data.get('type', '').upper()
+                logger.info(f"iFood webhook: evento tipo={event_type}")
+                
+                if event_type in ['PLACED', 'ORDER_PLACED']:
+                    order_data = data.get('order', data)
+                    return process_ifood_order_real(order_data)
+                elif event_type in ['CANCELLED', 'ORDER_CANCELLED', 'CANCELLATION_REQUESTED']:
+                    order_data = data.get('order', data)
+                    if order_data.get('id'):
+                        return process_ifood_cancellation_real(order_data)
+                    return jsonify({'message': f'Cancelamento processado'}), 200
+                elif event_type in ['CONFIRMED', 'DISPATCHED', 'DELIVERED']:
+                    order_data = data.get('order', data)
+                    update_order_from_ifood_status(order_data, event_type)
+                    return jsonify({'message': f'Evento {event_type} processado'}), 200
+                else:
+                    logger.warning(f"iFood webhook: tipo não reconhecido: {event_type}")
+                    return jsonify({'message': f'Evento {event_type} ignorado'}), 200
+            
+            # Check for 'event' field (legacy format)
+            if 'event' in data:
+                event = data.get('event')
+                order_data = data.get('data', {})
+                if event == 'order_placed':
+                    return process_ifood_order(order_data)
+                elif event == 'order_cancelled':
+                    return process_ifood_cancellation(order_data)
                 return jsonify({'message': f'Evento {event} ignorado'}), 200
-        elif 'id' in data and 'merchant' in data:
-            # Formato real do iFood (Open Delivery)
-            return process_ifood_order_real(data)
-        elif 'type' in data:
-            # Formato de evento do iFood (com type e order)
-            event_type = data.get('type', '').upper()
-            if event_type in ['PLACED', 'ORDER_PLACED']:
-                order_data = data.get('order', data)
-                return process_ifood_order_real(order_data)
-            elif event_type in ['CANCELLED', 'ORDER_CANCELLED']:
-                order_data = data.get('order', data)
-                if order_data.get('id'):
-                    return process_ifood_cancellation_real(order_data)
-            return jsonify({'message': f'Evento {event_type} processado'}), 200
-        else:
-            # Tentar como array de eventos (formato real do iFood)
-            if isinstance(data, list):
-                for event in data:
-                    process_ifood_event(event)
-                return jsonify({'status': 'ok'}), 200
-            # Tentar processar como pedido direto
+            
+            # Check for order data directly
+            if 'id' in data and 'merchant' in data:
+                return process_ifood_order_real(data)
+            
+            # Check for orderId field
             if 'orderId' in data or 'order_id' in data:
                 return process_ifood_order_real(data)
-            return jsonify({'error': 'Formato não reconhecido'}), 400
+            
+            # Last resort: try to process as order
+            logger.warning(f"iFood webhook: formato não reconhecido, tentando processar como pedido")
+            try:
+                return process_ifood_order_real(data)
+            except Exception as e:
+                logger.error(f"iFood webhook: falhou ao processar como pedido: {e}")
+                return jsonify({'message': 'Evento recebido'}), 200
+
+        return jsonify({'message': 'Evento recebido'}), 200
 
     except Exception as e:
         logger.error(f"Erro no webhook iFood: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 200  # Return 200 to avoid iFood retry
 
 
 def process_ifood_event(event_data):
