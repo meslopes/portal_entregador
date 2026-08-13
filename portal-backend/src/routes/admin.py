@@ -2328,9 +2328,9 @@ def report_deliveries_by_driver():
 
 @admin_bp.route('/settings', methods=['GET'])
 @jwt_required()
-@admin_required
+@client_or_admin_required
 def get_settings():
-    """Obtém configurações do admin"""
+    """Obtém configurações do admin/cliente"""
     try:
         from src.models.portal_models import SystemConfig
         tenant_id = get_current_tenant_id()
@@ -2352,9 +2352,9 @@ def get_settings():
 
 @admin_bp.route('/settings', methods=['PUT'])
 @jwt_required()
-@admin_required
+@client_or_admin_required
 def update_settings():
-    """Atualiza configurações do admin"""
+    """Atualiza configurações do admin/cliente"""
     try:
         from src.models.portal_models import SystemConfig
         tenant_id = get_current_tenant_id()
