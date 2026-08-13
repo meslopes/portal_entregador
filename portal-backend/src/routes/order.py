@@ -1965,10 +1965,22 @@ def get_my_orders():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         status_filter = request.args.get('status')
+        status_group = request.args.get('status_group')
 
         query = Order.query.filter_by(restaurant_id=restaurant.id)
 
-        if status_filter:
+        if status_group == 'active':
+            # Grupo "Em Andamento": ACCEPTED, PREPARING, READY, PICKED_UP
+            query = query.filter(Order.status.in_([
+                OrderStatus.ACCEPTED, OrderStatus.PREPARING,
+                OrderStatus.READY, OrderStatus.PICKED_UP
+            ]))
+        elif status_group == 'pending':
+            # Grupo "Pendentes": PENDING, SCHEDULED
+            query = query.filter(Order.status.in_([
+                OrderStatus.PENDING, OrderStatus.SCHEDULED
+            ]))
+        elif status_filter:
             try:
                 status_enum = OrderStatus(status_filter)
                 query = query.filter(Order.status == status_enum)

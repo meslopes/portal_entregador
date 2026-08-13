@@ -5,7 +5,7 @@ import {
   AlertCircle, Navigation, CheckCircle, ArrowRight, ChevronRight,
   Camera, Image, X, ExternalLink
 } from 'lucide-react';
-import { orderService, utils } from '@/lib/api';
+import { orderService, utils, API_BASE_URL } from '@/lib/api';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -472,8 +472,8 @@ const ActiveDeliveryPage = () => {
           {/* Prova de Entrega */}
           {order.delivery?.proof_of_delivery_url && (
             <div style={{ marginTop: '1rem', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #bbf7d0' }}>
-              <img 
-                src={`https://muvlog-api.onrender.com${order.delivery.proof_of_delivery_url}`} 
+              <img
+                src={`${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
                 alt="Prova de entrega"
                 style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', background: '#f0fdf4' }}
                 onError={(e) => { e.target.style.display = 'none'; }}

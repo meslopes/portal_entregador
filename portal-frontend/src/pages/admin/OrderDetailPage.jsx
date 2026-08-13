@@ -4,7 +4,7 @@ import {
   ArrowLeft, Package, Clock, Truck, CheckCircle, XCircle,
   MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle
 } from 'lucide-react';
-import { adminService, orderService, utils } from '@/lib/api';
+import { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
 
 const STATUS_CONFIG = {
   SCHEDULED: { color: '#6366f1', bg: '#e0e7ff', text: 'Agendado', icon: '⏰' },
@@ -391,8 +391,8 @@ const OrderDetailPage = () => {
             📸 Prova de Entrega
           </h3>
           <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-            <img 
-              src={`https://muvlog-api.onrender.com${order.delivery.proof_of_delivery_url}`} 
+            <img
+              src={`${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
               alt="Prova de entrega"
               style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#f8fafc' }}
               onError={(e) => { e.target.style.display = 'none'; }}

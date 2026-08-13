@@ -1,5 +1,5 @@
 // Configuração da API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
 
 
 // Instância do axios com configurações padrão
@@ -179,7 +179,12 @@ export const orderService = {
   // Pedidos do estabelecimento
   getMyOrders: async (page = 1, perPage = 20, status = '') => {
     const params = { page, per_page: perPage };
-    if (status) params.status = status;
+    // Grupos de status especiais
+    if (status === 'active' || status === 'pending') {
+      params.status_group = status;
+    } else if (status) {
+      params.status = status;
+    }
     const response = await api.get('/api/orders/my', { params });
     return response.data;
   },

@@ -4,7 +4,7 @@ import {
   XCircle, AlertCircle, MapPin, User, Phone, DollarSign,
   Eye, ChevronRight, Users, Send, Loader2
 } from 'lucide-react';
-import { orderService, utils } from '@/lib/api';
+import { orderService, utils, API_BASE_URL } from '@/lib/api';
 import api from '@/lib/api';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
@@ -101,8 +101,8 @@ const ClientOrdersPage = () => {
           </div>
           <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
             <FilterBtn active={filter === ''} onClick={() => { setFilter(''); setPage(1); }}>Todos</FilterBtn>
-            <FilterBtn active={filter === 'PENDING' || filter === 'SCHEDULED'} onClick={() => { setFilter('PENDING'); setPage(1); }}>Pendentes</FilterBtn>
-            <FilterBtn active={filter === 'ACCEPTED' || filter === 'PREPARING' || filter === 'READY' || filter === 'PICKED_UP'} onClick={() => { setFilter('ACCEPTED'); setPage(1); }}>Em Andamento</FilterBtn>
+            <FilterBtn active={filter === 'pending'} onClick={() => { setFilter('pending'); setPage(1); }}>Pendentes</FilterBtn>
+            <FilterBtn active={filter === 'active'} onClick={() => { setFilter('active'); setPage(1); }}>Em Andamento</FilterBtn>
             <FilterBtn active={filter === 'DELIVERED'} onClick={() => { setFilter('DELIVERED'); setPage(1); }}>Entregues</FilterBtn>
             <FilterBtn active={filter === 'CANCELLED'} onClick={() => { setFilter('CANCELLED'); setPage(1); }}>Cancelados</FilterBtn>
           </div>
@@ -495,7 +495,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prova de Entrega</p>
               <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                 <img
-                  src={`https://muvlog-api.onrender.com${order.delivery.proof_of_delivery_url}`}
+                  src={`${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
                   alt="Prova de entrega"
                   style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', background: '#f8fafc' }}
                   onError={(e) => { e.target.style.display = 'none'; }}

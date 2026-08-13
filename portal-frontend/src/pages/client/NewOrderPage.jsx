@@ -84,10 +84,6 @@ const NewOrderPage = () => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
     setError('');
-    // Debug temporário
-    if (name === 'product_value') {
-      console.log(' product_value mudou para:', value, '| parseFloat:', parseFloat(value.replace(',', '.')));
-    }
   };
 
   // Distância será calculada pelo backend com Haversine
@@ -97,7 +93,7 @@ const NewOrderPage = () => {
   const MIN_DISTANCE_KM = pricingTable?.min_distance_km || 4;
   const DELIVERY_FEE = 0; // Será calculado pelo backend
   // Converte vírgula para ponto antes de parseFloat
-  const PRODUCT_VALUE = parseFloat(form.product_value.replace(',', '.')) || 0;
+  const PRODUCT_VALUE = parseFloat((form.product_value || '').replace(',', '.')) || 0;
   // Total = apenas frete (valor dos itens é info para entregador, não entra no cálculo)
   const TOTAL = DELIVERY_FEE;
 
