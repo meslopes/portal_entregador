@@ -532,6 +532,11 @@ class Order(db.Model):
     estimated_delivery_time = db.Column(db.DateTime)
     pickup_time = db.Column(db.DateTime)
     delivery_time = db.Column(db.DateTime)
+    # Timestamps para timeline
+    accepted_at = db.Column(db.DateTime)
+    preparing_at = db.Column(db.DateTime)
+    ready_at = db.Column(db.DateTime)
+    picked_up_at = db.Column(db.DateTime)
     special_instructions = db.Column(db.Text)
     # Códigos anti-fraude
     pickup_code = db.Column(db.String(6))  # Código para confirmar coleta
@@ -574,6 +579,10 @@ class Order(db.Model):
             'estimated_delivery_time': self.estimated_delivery_time.isoformat() if self.estimated_delivery_time else None,
             'pickup_time': self.pickup_time.isoformat() if self.pickup_time else None,
             'delivery_time': self.delivery_time.isoformat() if self.delivery_time else None,
+            'accepted_at': self.accepted_at.isoformat() if self.accepted_at else None,
+            'preparing_at': self.preparing_at.isoformat() if self.preparing_at else None,
+            'ready_at': self.ready_at.isoformat() if self.ready_at else None,
+            'picked_up_at': self.picked_up_at.isoformat() if self.picked_up_at else None,
             'special_instructions': self.special_instructions,
             'pickup_code': self.pickup_code,
             'delivery_code': self.delivery_code,

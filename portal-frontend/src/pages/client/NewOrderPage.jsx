@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { orderService, adminService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import DistributionModal from '@/components/DistributionModal';
 
 const inputStyle = {
   width: '100%', padding: '0.625rem 0.875rem',
@@ -20,6 +21,8 @@ const NewOrderPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState(null);
+  const [showDistribution, setShowDistribution] = useState(false);
   const [establishments, setEstablishments] = useState([]);
   const [pricingTable, setPricingTable] = useState(null);
   const isAdmin = user?.user_type === 'ADMIN';
@@ -102,7 +105,7 @@ const NewOrderPage = () => {
       setIsLoading(true);
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + (form.delivery_complement ? ' - ' + form.delivery_complement : '');
 
-      await orderService.createOrder({
+      const response = await orderService.createOrder({
         ...(isAdmin && { restaurant_id: form.selected_establishment }),
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
@@ -127,7 +130,13 @@ const NewOrderPage = () => {
         }),
       });
       setSuccess(true);
-      setTimeout(() => navigate(isAdmin ? '/admin/orders' : '/client/orders'), 2000);
+      // Mostrar modal de distribuição para CLIENT (estabelecimento)
+      if (!isAdmin && response.order) {
+        setCreatedOrder(response.order);
+        setShowDistribution(true);
+      } else {
+        setTimeout(() => navigate(isAdmin ? '/admin/orders' : '/client/orders'), 2000);
+      }
     } catch (err) {
       console.error('Erro ao criar pedido:', err);
       const msg = err.response?.data?.error || err.message || 'Erro ao criar pedido';
@@ -147,6 +156,21 @@ const NewOrderPage = () => {
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#166534', marginBottom: '0.5rem' }}>Pedido Enviado!</h2>
           <p style={{ color: '#16a34a' }}>O pedido foi registrado com sucesso.</p>
         </div>
+
+        {/* Modal de Distribuição */}
+        {showDistribution && createdOrder && (
+          <DistributionModal
+            order={createdOrder}
+            onClose={() => {
+              setShowDistribution(false);
+              navigate('/client/orders');
+            }}
+            onDistributed={() => {
+              setShowDistribution(false);
+              navigate('/client/orders');
+            }}
+          />
+        )}
       </div>
     );
   }

@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
 import api from '@/lib/api';
+import OrderTimeline from '@/components/OrderTimeline';
+import DeliveryCodes from '@/components/DeliveryCodes';
 
 const STATUS_CONFIG = {
   SCHEDULED: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Agendado', icon: Clock },
@@ -475,6 +477,31 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                 ) : null}
               </div>
             </InfoSection>
+          )}
+
+          {/* Códigos de Segurança */}
+          {isPending && (order.pickup_code || order.delivery_code) && (
+            <DeliveryCodes pickupCode={order.pickup_code} deliveryCode={order.delivery_code} />
+          )}
+
+          {/* Timeline do Pedido */}
+          <InfoSection title="Acompanhamento">
+            <OrderTimeline order={order} />
+          </InfoSection>
+
+          {/* Prova de Entrega */}
+          {order.delivery?.proof_of_delivery_url && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prova de Entrega</p>
+              <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                <img
+                  src={`https://muvlog-api.onrender.com${order.delivery.proof_of_delivery_url}`}
+                  alt="Prova de entrega"
+                  style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', background: '#f8fafc' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Timestamps */}

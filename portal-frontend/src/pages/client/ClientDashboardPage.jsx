@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { orderService, utils } from '@/lib/api';
+import OrderTimeline from '@/components/OrderTimeline';
+import DeliveryCodes from '@/components/DeliveryCodes';
 
 const STATUS_CONFIG = {
   PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente', icon: Clock },
@@ -511,6 +513,19 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                   Troco para: {specialInfo.change_for}
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* Códigos de Segurança */}
+          {['PENDING', 'SCHEDULED', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && (order.pickup_code || order.delivery_code) && (
+            <DeliveryCodes pickupCode={order.pickup_code} deliveryCode={order.delivery_code} />
+          )}
+
+          {/* Timeline do Pedido */}
+          <div style={{ marginBottom: '1rem' }}>
+            <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Acompanhamento</p>
+            <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem' }}>
+              <OrderTimeline order={order} />
             </div>
           </div>
 

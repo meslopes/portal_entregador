@@ -725,6 +725,16 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: timestamps para timeline do pedido (Fase 3)
+        try:
+            for col in ['accepted_at', 'preparing_at', 'ready_at', 'picked_up_at']:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = '{col}') THEN ALTER TABLE orders ADD COLUMN {col} TIMESTAMP; END IF; END $$"
+                ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

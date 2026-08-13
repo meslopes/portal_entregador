@@ -1046,8 +1046,15 @@ def update_order_status(order_id):
         order.updated_at = datetime.utcnow()
         
         # Registra timestamps específicos
-        if new_status_enum == OrderStatus.PICKED_UP:
+        if new_status_enum == OrderStatus.ACCEPTED:
+            order.accepted_at = datetime.utcnow()
+        elif new_status_enum == OrderStatus.PREPARING:
+            order.preparing_at = datetime.utcnow()
+        elif new_status_enum == OrderStatus.READY:
+            order.ready_at = datetime.utcnow()
+        elif new_status_enum == OrderStatus.PICKED_UP:
             order.pickup_time = datetime.utcnow()
+            order.picked_up_at = datetime.utcnow()
         elif new_status_enum == OrderStatus.DELIVERED:
             order.delivery_time = datetime.utcnow()
             
@@ -1729,6 +1736,7 @@ def assign_own_driver(order_id):
         order.assigned_to_own_driver = True
         order.establishment_driver_id = est_driver.id
         order.status = OrderStatus.ACCEPTED
+        order.accepted_at = datetime.utcnow()
         order.updated_at = datetime.utcnow()
         
         # Criar registro de entrega
