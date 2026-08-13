@@ -39,16 +39,18 @@ def ifood_webhook():
         data = request.get_json(silent=True)
         if not data:
             logger.warning(f"iFood webhook: JSON parse falhou. Raw: {raw_body}")
-            return jsonify({'error': 'Dados não fornecidos'}), 200  # Return 200 to avoid iFood retry
+            return jsonify({'error': 'Dados não fornecidos'}), 200
 
         logger.info(f"iFood webhook JSON: {data}")
 
         # Handle array of events (iFood sends arrays)
         if isinstance(data, list):
             logger.info(f"iFood webhook: array com {len(data)} eventos")
+            results = []
             for event in data:
-                process_ifood_event(event)
-            return jsonify({'status': 'ok'}), 200
+                result = process_ifood_event(event)
+                results.append(result)
+            return jsonify({'status': 'ok', 'results': results}), 200
 
         # Handle single event
         if isinstance(data, dict):
@@ -58,17 +60,33 @@ def ifood_webhook():
                 logger.info(f"iFood webhook: evento tipo={event_type}")
                 
                 if event_type in ['PLACED', 'ORDER_PLACED']:
-                    order_data = data.get('order', data)
-                    return process_ifood_order_real(order_data)
+                    # Try to get order data from event, or fetch from API
+                    order_data = data.get('order', {})
+                    if isinstance(order_data, dict) and order_data.get('id'):
+                        # We have order data in the event
+                        return process_ifood_order_real(order_data)
+                    else:
+                        # Need to fetch from API
+                        order_id = data.get('orderId') or data.get('id')
+                        if order_id:
+                            fetch_and_process_ifood_order(order_id)
+                            return jsonify({'message': 'Pedido sendo processado'}), 200
+                        else:
+                            logger.error("Evento PLACED sem order_id")
+                            return jsonify({'error': 'Evento sem order_id'}), 200
+                
                 elif event_type in ['CANCELLED', 'ORDER_CANCELLED', 'CANCELLATION_REQUESTED']:
-                    order_data = data.get('order', data)
-                    if order_data.get('id'):
-                        return process_ifood_cancellation_real(order_data)
-                    return jsonify({'message': f'Cancelamento processado'}), 200
+                    order_id = data.get('orderId') or data.get('id')
+                    if order_id:
+                        process_ifood_cancellation_by_id(order_id)
+                    return jsonify({'message': 'Cancelamento processado'}), 200
+                
                 elif event_type in ['CONFIRMED', 'DISPATCHED', 'DELIVERED']:
-                    order_data = data.get('order', data)
-                    update_order_from_ifood_status(order_data, event_type)
+                    order_id = data.get('orderId') or data.get('id')
+                    if order_id:
+                        update_order_from_ifood_status_by_id(order_id, event_type)
                     return jsonify({'message': f'Evento {event_type} processado'}), 200
+                
                 else:
                     logger.warning(f"iFood webhook: tipo não reconhecido: {event_type}")
                     return jsonify({'message': f'Evento {event_type} ignorado'}), 200
@@ -89,7 +107,9 @@ def ifood_webhook():
             
             # Check for orderId field
             if 'orderId' in data or 'order_id' in data:
-                return process_ifood_order_real(data)
+                order_id = data.get('orderId') or data.get('order_id')
+                fetch_and_process_ifood_order(order_id)
+                return jsonify({'message': 'Pedido sendo processado'}), 200
             
             # Last resort: try to process as order
             logger.warning(f"iFood webhook: formato não reconhecido, tentando processar como pedido")
@@ -103,7 +123,26 @@ def ifood_webhook():
 
     except Exception as e:
         logger.error(f"Erro no webhook iFood: {e}")
-        return jsonify({'error': str(e)}), 200  # Return 200 to avoid iFood retry
+        return jsonify({'error': str(e)}), 200
+
+
+@webhook_bp.route('/ifood/test', methods=['POST'])
+def ifood_test_webhook():
+    """Endpoint de teste para simular pedidos iFood"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+        
+        logger.info(f"iFood TEST webhook: {data}")
+        
+        # Processar como pedido direto
+        result = process_ifood_order_real(data)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Erro no webhook iFood TEST: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 def get_ifood_credentials(merchant_id=None):
