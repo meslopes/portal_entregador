@@ -314,13 +314,25 @@ def process_ifood_order_real(order_data):
         
         parsed = parse_ifood_order(order_data)
         if not parsed:
+            logger.error(f"Erro ao parsear pedido iFood: {order_data}")
             return jsonify({'error': 'Erro ao processar pedido'}), 400
         
-        # Buscar restaurante por nome
+        logger.info(f"Pedido iFood parseado: {parsed}")
+        
+        # Buscar restaurante por nome (case-insensitive)
         restaurant = None
         if parsed.get('restaurant_name'):
+            # Tentar busca exata primeiro
             restaurant = Restaurant.query.filter_by(name=parsed['restaurant_name']).first()
+            
+            # Se não encontrar, tentar case-insensitive
+            if not restaurant:
+                restaurant = Restaurant.query.filter(
+                    Restaurant.name.ilike(parsed['restaurant_name'])
+                ).first()
+        
         if not restaurant:
+            logger.warning(f"Restaurante não encontrado, criando novo: {parsed['restaurant_name']}")
             restaurant = Restaurant(
                 name=parsed['restaurant_name'],
                 address=parsed['delivery_address'].get('street', 'Endereço não informado'),
@@ -329,6 +341,8 @@ def process_ifood_order_real(order_data):
             )
             db.session.add(restaurant)
             db.session.flush()
+        
+        logger.info(f"Restaurante encontrado/criado: {restaurant.name} (ID: {restaurant.id})")
         
         # Buscar ou criar cliente
         customer = None
