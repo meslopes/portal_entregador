@@ -4217,7 +4217,7 @@ def update_restaurant_subscription(restaurant_id):
         restaurant = Restaurant.query.get(restaurant_id)
         if not restaurant:
             return jsonify({'error': 'Estabelecimento não encontrado'}), 404
-        
+
         data = request.get_json()
         if 'subscription_type' in data:
             restaurant.subscription_type = data['subscription_type']
@@ -4225,9 +4225,11 @@ def update_restaurant_subscription(restaurant_id):
             restaurant.subscription_expires_at = datetime.fromisoformat(data['subscription_expires_at']) if data['subscription_expires_at'] else None
         if 'platform_pricing_table_id' in data:
             restaurant.platform_pricing_table_id = data['platform_pricing_table_id']
-        
+        if 'has_own_drivers' in data:
+            restaurant.has_own_drivers = data['has_own_drivers']
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Assinatura atualizada',
             'restaurant': restaurant.to_dict()
