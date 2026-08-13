@@ -78,7 +78,8 @@ const NewOrderPage = () => {
         setPricingTable(null);
       }
     }
-  }, [form.selected_establishment, establishments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.selected_establishment]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -323,7 +323,7 @@ const ActiveDeliveryPage = () => {
         rating: ratingValue,
         feedback: ratingFeedback
       });
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao enviar avaliação');
     } finally {
@@ -332,7 +332,7 @@ const ActiveDeliveryPage = () => {
   };
 
   const skipRating = () => {
-    window.location.href = '/dashboard';
+    navigate('/dashboard');
   };
 
   if (isLoading) {
