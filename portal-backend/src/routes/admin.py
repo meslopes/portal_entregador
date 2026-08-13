@@ -328,6 +328,15 @@ def update_user(user_id):
                 if data.get('max_concurrent_orders'):
                     driver.max_concurrent_orders = data['max_concurrent_orders']
 
+        # Atualiza Customer se for CLIENT
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                if data.get('customer_name'):
+                    customer.name = data['customer_name']
+                if data.get('phone'):
+                    customer.phone = data['phone']
+
         user.updated_at = datetime.utcnow()
         db.session.commit()
 
