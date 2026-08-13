@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
-    Order, Restaurant, Customer, Address, Driver, EstablishmentDriver, User, UserType,
+    Order, Restaurant, Customer, Address, Driver, EstablishmentDriver, OwnDriverEarning, User, UserType,
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
@@ -1741,6 +1741,44 @@ def assign_own_driver(order_id):
             delivery_longitude=order.delivery_address.longitude if order.delivery_address else None
         )
         db.session.add(delivery)
+        
+        # Calcular ganho do entregador baseado na configuração do restaurante
+        restaurant = order.restaurant
+        distance_km = 0
+        if (order.delivery_address and order.delivery_address.latitude and 
+            restaurant and restaurant.latitude):
+            distance_km = haversine_distance(
+                float(restaurant.latitude), float(restaurant.longitude),
+                float(order.delivery_address.latitude), float(order.delivery_address.longitude)
+            )
+        
+        # Calcular ganho baseado no tipo de pagamento
+        payment_type = restaurant.own_driver_payment_type if restaurant else 'PER_DELIVERY'
+        delivery_fee = float(order.delivery_fee or 0)
+        
+        if payment_type == 'PER_DELIVERY':
+            driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
+        elif payment_type == 'PER_KM':
+            driver_earning = distance_km * float(restaurant.own_driver_km_value or 1.50)
+        elif payment_type == 'PERCENTAGE':
+            driver_earning = delivery_fee * (float(restaurant.own_driver_percentage or 70.0) / 100)
+        elif payment_type == 'DAILY':
+            driver_earning = float(restaurant.own_driver_fixed_value or 50.00)
+        else:  # FIXED
+            driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
+        
+        # Criar registro de ganho
+        from src.models.portal_models import OwnDriverEarning
+        earning = OwnDriverEarning(
+            restaurant_id=restaurant.id if restaurant else None,
+            establishment_driver_id=est_driver.id,
+            order_id=order.id,
+            delivery_fee=delivery_fee,
+            driver_earning=driver_earning,
+            payment_type=payment_type,
+            distance_km=distance_km
+        )
+        db.session.add(earning)
         
         db.session.commit()
         

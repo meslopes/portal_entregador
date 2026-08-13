@@ -328,6 +328,49 @@ class EstablishmentDriver(db.Model):
         }
 
 
+class OwnDriverEarning(db.Model):
+    """Ganhos de entregadores próprios por entrega"""
+    __tablename__ = 'own_driver_earnings'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    # Valores calculados
+    delivery_fee = db.Column(db.Numeric(10, 2), nullable=False)  # Frete cobrado do cliente
+    driver_earning = db.Column(db.Numeric(10, 2), nullable=False)  # Valor a pagar ao entregador
+    payment_type = db.Column(db.String(20))  # Tipo de pagamento aplicado
+    distance_km = db.Column(db.Numeric(10, 2))  # Distância percorrida
+    # Status do pagamento
+    is_paid = db.Column(db.Boolean, default=False)  # Se já foi pago
+    paid_at = db.Column(db.DateTime)  # Data do pagamento
+    payment_method = db.Column(db.String(20))  # PIX, CASH, TRANSFER
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    restaurant = db.relationship('Restaurant', backref='own_driver_earnings')
+    driver = db.relationship('EstablishmentDriver', backref='earnings')
+    order = db.relationship('Order', backref='own_driver_earnings')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'establishment_driver_id': self.establishment_driver_id,
+            'order_id': self.order_id,
+            'delivery_fee': float(self.delivery_fee),
+            'driver_earning': float(self.driver_earning),
+            'payment_type': self.payment_type,
+            'distance_km': float(self.distance_km) if self.distance_km else None,
+            'is_paid': self.is_paid,
+            'paid_at': self.paid_at.isoformat() if self.paid_at else None,
+            'payment_method': self.payment_method,
+            'created_at': self.created_at.isoformat(),
+            'driver_name': self.driver.name if self.driver else None,
+            'order_number': self.order.order_number if self.order else None
+        }
+
+
 class Restaurant(db.Model):
     __tablename__ = 'restaurants'
     
@@ -353,6 +396,11 @@ class Restaurant(db.Model):
     subscription_type = db.Column(db.String(20))  # WEEKLY, NONE
     subscription_expires_at = db.Column(db.DateTime)  # Data de expiração da assinatura
     platform_pricing_table_id = db.Column(db.Integer, db.ForeignKey('pricing_tables.id'), nullable=True)  # Tabela diferenciada para plataforma
+    # Configuração de pagamento para entregadores próprios
+    own_driver_payment_type = db.Column(db.String(20), default='PER_DELIVERY')  # PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED
+    own_driver_fixed_value = db.Column(db.Numeric(10, 2), default=5.00)  # Valor fixo por entrega/diária
+    own_driver_km_value = db.Column(db.Numeric(10, 2), default=1.50)  # Valor por km
+    own_driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)  # Percentual do frete
     # Dados bancarios
     bank_name = db.Column(db.String(100))
     bank_agency = db.Column(db.String(20))
@@ -387,6 +435,11 @@ class Restaurant(db.Model):
             'bank_account': self.bank_account,
             'bank_pix_key': self.bank_pix_key,
             'asaas_customer_id': self.asaas_customer_id,
+            'has_own_drivers': self.has_own_drivers,
+            'own_driver_payment_type': self.own_driver_payment_type or 'PER_DELIVERY',
+            'own_driver_fixed_value': float(self.own_driver_fixed_value) if self.own_driver_fixed_value else 5.00,
+            'own_driver_km_value': float(self.own_driver_km_value) if self.own_driver_km_value else 1.50,
+            'own_driver_percentage': float(self.own_driver_percentage) if self.own_driver_percentage else 70.0,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

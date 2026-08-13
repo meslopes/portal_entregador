@@ -559,6 +559,46 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: configuração de pagamento para entregadores próprios
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'own_driver_payment_type') THEN ALTER TABLE restaurants ADD COLUMN own_driver_payment_type VARCHAR(20) DEFAULT 'PER_DELIVERY'; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'own_driver_fixed_value') THEN ALTER TABLE restaurants ADD COLUMN own_driver_fixed_value NUMERIC(10,2) DEFAULT 5.00; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'own_driver_km_value') THEN ALTER TABLE restaurants ADD COLUMN own_driver_km_value NUMERIC(10,2) DEFAULT 1.50; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'own_driver_percentage') THEN ALTER TABLE restaurants ADD COLUMN own_driver_percentage NUMERIC(5,2) DEFAULT 70.0; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: tabela own_driver_earnings
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS own_driver_earnings (
+                    id SERIAL PRIMARY KEY,
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    establishment_driver_id INTEGER REFERENCES establishment_drivers(id),
+                    order_id INTEGER REFERENCES orders(id),
+                    delivery_fee NUMERIC(10,2) NOT NULL,
+                    driver_earning NUMERIC(10,2) NOT NULL,
+                    payment_type VARCHAR(20),
+                    distance_km NUMERIC(10,2),
+                    is_paid BOOLEAN DEFAULT FALSE,
+                    paid_at TIMESTAMP,
+                    payment_method VARCHAR(20),
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tenant_id em system_configs
         try:
             db.session.execute(db.text(

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 from src.models.portal_models import (
     User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
     Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice,
-    PlatformCredential, DriverRestaurant, EstablishmentDriver, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    PlatformCredential, DriverRestaurant, EstablishmentDriver, OwnDriverEarning, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from datetime import datetime, timedelta
@@ -4234,4 +4234,326 @@ def update_restaurant_subscription(restaurant_id):
         }), 200
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# CONFIGURAÇÃO DE PAGAMENTO - ENTREGADORES PRÓPRIOS
+# ============================================
+
+@admin_bp.route('/establishment-drivers/payment-config', methods=['GET'])
+@jwt_required()
+@client_or_admin_required
+def get_payment_config():
+    """Obtém configuração de pagamento do estabelecimento"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        # Buscar restaurante
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer:
+                return jsonify({'error': 'Cliente não encontrado'}), 404
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+        else:
+            restaurant_id = request.args.get('restaurant_id')
+            restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
+        
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 404
+        
+        return jsonify({
+            'payment_type': restaurant.own_driver_payment_type or 'PER_DELIVERY',
+            'fixed_value': float(restaurant.own_driver_fixed_value) if restaurant.own_driver_fixed_value else 5.00,
+            'km_value': float(restaurant.own_driver_km_value) if restaurant.own_driver_km_value else 1.50,
+            'percentage': float(restaurant.own_driver_percentage) if restaurant.own_driver_percentage else 70.0
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/payment-config', methods=['PUT'])
+@jwt_required()
+@client_or_admin_required
+def update_payment_config():
+    """Atualiza configuração de pagamento do estabelecimento"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        # Buscar restaurante
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer:
+                return jsonify({'error': 'Cliente não encontrado'}), 404
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+        else:
+            data = request.get_json()
+            restaurant_id = data.get('restaurant_id')
+            restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
+        
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 404
+        
+        data = request.get_json()
+        if 'payment_type' in data:
+            restaurant.own_driver_payment_type = data['payment_type']
+        if 'fixed_value' in data:
+            restaurant.own_driver_fixed_value = data['fixed_value']
+        if 'km_value' in data:
+            restaurant.own_driver_km_value = data['km_value']
+        if 'percentage' in data:
+            restaurant.own_driver_percentage = data['percentage']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Configuração atualizada',
+            'payment_type': restaurant.own_driver_payment_type,
+            'fixed_value': float(restaurant.own_driver_fixed_value) if restaurant.own_driver_fixed_value else 5.00,
+            'km_value': float(restaurant.own_driver_km_value) if restaurant.own_driver_km_value else 1.50,
+            'percentage': float(restaurant.own_driver_percentage) if restaurant.own_driver_percentage else 70.0
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# GANHOS DE ENTREGADORES PRÓPRIOS
+# ============================================
+
+@admin_bp.route('/establishment-drivers/earnings', methods=['GET'])
+@jwt_required()
+@client_or_admin_required
+def get_own_driver_earnings():
+    """Obtém ganhos dos entregadores próprios"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        # Buscar restaurante
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer:
+                return jsonify({'error': 'Cliente não encontrado'}), 404
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+        else:
+            restaurant_id = request.args.get('restaurant_id')
+            restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
+        
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 404
+        
+        # Parâmetros de filtro
+        period = request.args.get('period', 'week')  # week, month, all
+        driver_id = request.args.get('driver_id')
+        is_paid = request.args.get('is_paid')
+        
+        query = OwnDriverEarning.query.filter_by(restaurant_id=restaurant.id)
+        
+        # Filtro por período
+        if period == 'week':
+            from datetime import timedelta
+            week_ago = datetime.utcnow() - timedelta(days=7)
+            query = query.filter(OwnDriverEarning.created_at >= week_ago)
+        elif period == 'month':
+            from datetime import timedelta
+            month_ago = datetime.utcnow() - timedelta(days=30)
+            query = query.filter(OwnDriverEarning.created_at >= month_ago)
+        
+        # Filtro por entregador
+        if driver_id:
+            query = query.filter_by(establishment_driver_id=int(driver_id))
+        
+        # Filtro por status de pagamento
+        if is_paid is not None:
+            query = query.filter_by(is_paid=is_paid.lower() == 'true')
+        
+        earnings = query.order_by(OwnDriverEarning.created_at.desc()).all()
+        
+        # Calcular totais
+        total_earning = sum(float(e.driver_earning) for e in earnings)
+        total_delivery_fee = sum(float(e.delivery_fee) for e in earnings)
+        total_paid = sum(float(e.driver_earning) for e in earnings if e.is_paid)
+        total_pending = total_earning - total_paid
+        
+        return jsonify({
+            'earnings': [e.to_dict() for e in earnings],
+            'summary': {
+                'total_earning': total_earning,
+                'total_delivery_fee': total_delivery_fee,
+                'total_paid': total_paid,
+                'total_pending': total_pending,
+                'count': len(earnings)
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/earnings/<int:earning_id>/pay', methods=['POST'])
+@jwt_required()
+@client_or_admin_required
+def mark_earning_paid(earning_id):
+    """Marca um ganho como pago"""
+    try:
+        earning = OwnDriverEarning.query.get(earning_id)
+        if not earning:
+            return jsonify({'error': 'Ganho não encontrado'}), 404
+        
+        data = request.get_json() or {}
+        earning.is_paid = True
+        earning.paid_at = datetime.utcnow()
+        earning.payment_method = data.get('payment_method', 'PIX')
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Pagamento registrado',
+            'earning': earning.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/earnings/pay-all', methods=['POST'])
+@jwt_required()
+@client_or_admin_required
+def pay_all_earnings():
+    """Marca todos os ganhos pendentes de um entregador como pagos"""
+    try:
+        data = request.get_json()
+        driver_id = data.get('driver_id')
+        if not driver_id:
+            return jsonify({'error': 'ID do entregador é obrigatório'}), 400
+        
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        # Buscar restaurante
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer:
+                return jsonify({'error': 'Cliente não encontrado'}), 404
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+        else:
+            restaurant_id = data.get('restaurant_id')
+            restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
+        
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 404
+        
+        # Buscar ganhos pendentes
+        pending_earnings = OwnDriverEarning.query.filter_by(
+            restaurant_id=restaurant.id,
+            establishment_driver_id=int(driver_id),
+            is_paid=False
+        ).all()
+        
+        for earning in pending_earnings:
+            earning.is_paid = True
+            earning.paid_at = datetime.utcnow()
+            earning.payment_method = data.get('payment_method', 'PIX')
+        
+        db.session.commit()
+        
+        total_paid = sum(float(e.driver_earning) for e in pending_earnings)
+        
+        return jsonify({
+            'message': f'{len(pending_earnings)} pagamentos registrados',
+            'total_paid': total_paid,
+            'count': len(pending_earnings)
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/establishment-drivers/earnings/comparison', methods=['GET'])
+@jwt_required()
+@client_or_admin_required
+def get_cost_comparison():
+    """Compara custo de entregadores próprios vs plataforma"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        # Buscar restaurante
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer:
+                return jsonify({'error': 'Cliente não encontrado'}), 404
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+        else:
+            restaurant_id = request.args.get('restaurant_id')
+            restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
+        
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 404
+        
+        # Parâmetros
+        period = request.args.get('period', 'month')  # week, month
+        from datetime import timedelta
+        
+        if period == 'week':
+            start_date = datetime.utcnow() - timedelta(days=7)
+        else:
+            start_date = datetime.utcnow() - timedelta(days=30)
+        
+        # Entregas próprias
+        own_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.assigned_to_own_driver == True,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).all()
+        
+        # Entregas da plataforma
+        platform_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.assigned_to_own_driver == False,
+            Order.called_platform == True,
+            Order.status == OrderStatus.DELIVERED,
+            Order.created_at >= start_date
+        ).all()
+        
+        # Cálculos
+        own_count = len(own_orders)
+        own_total_fee = sum(float(o.delivery_fee or 0) for o in own_orders)
+        own_total_earning = sum(float(e.driver_earning) for e in 
+            OwnDriverEarning.query.filter(
+                OwnDriverEarning.restaurant_id == restaurant.id,
+                OwnDriverEarning.created_at >= start_date
+            ).all())
+        
+        platform_count = len(platform_orders)
+        platform_total_fee = sum(float(o.delivery_fee or 0) for o in platform_orders)
+        
+        # Economia (se tivesse usado plataforma para as próprias)
+        platform_avg_fee = platform_total_fee / platform_count if platform_count > 0 else 0
+        estimated_platform_cost = own_count * platform_avg_fee
+        savings = estimated_platform_cost - own_total_earning if estimated_platform_cost > 0 else 0
+        
+        return jsonify({
+            'period': period,
+            'own_drivers': {
+                'deliveries': own_count,
+                'total_delivery_fee': own_total_fee,
+                'total_earning': own_total_earning,
+                'avg_cost_per_delivery': own_total_earning / own_count if own_count > 0 else 0
+            },
+            'platform': {
+                'deliveries': platform_count,
+                'total_delivery_fee': platform_total_fee,
+                'avg_cost_per_delivery': platform_avg_fee
+            },
+            'savings': {
+                'estimated_savings': savings,
+                'savings_percentage': (savings / estimated_platform_cost * 100) if estimated_platform_cost > 0 else 0
+            }
+        }), 200
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
