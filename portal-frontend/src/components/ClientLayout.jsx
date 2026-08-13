@@ -33,6 +33,7 @@ const ClientLayout = ({ children }) => {
     { name: 'Faturas', href: '/client/invoices', icon: Receipt },
     { name: 'Integrações', href: '/client/integrations', icon: Globe },
     { name: 'Meus Entregadores', href: '/client/drivers', icon: Users },
+    { name: 'Pagamentos Entregadores', href: '/client/drivers/financial', icon: DollarSign },
   ];
 
   const isActive = (href) => location.pathname === href;
