@@ -22,8 +22,8 @@ const EarningsPage = () => {
         driverService.getEarningsHistory(),
         driverService.getStats()
       ]);
-      setEarnings(earningsRes);
-      setStats(statsRes);
+      setEarnings(earningsRes || {});
+      setStats(statsRes || {});
     } catch (err) {
       setError('Erro ao carregar dados de ganhos');
       console.error(err);
