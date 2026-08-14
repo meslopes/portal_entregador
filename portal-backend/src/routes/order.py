@@ -142,11 +142,11 @@ def process_scheduled_orders():
                 if notified_driver:
                     # Oferta ao entregador mais próximo (via special_instructions)
                     offer_ts = int(datetime.utcnow().timestamp())
-                    offer_tag = f"OFFERED_TO_{notified_driver.id}_{offer_ts}"
+                    offer_tag = f"|OFFERED_TO_{notified_driver.id}_{offer_ts}|"
                     current_si = order.special_instructions or ''
                     # Remove ofertas antigas antes de adicionar nova
-                    current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
-                    order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
+                    current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?\|?', '', current_si).strip('|')
+                    order.special_instructions = f"|{current_si}{offer_tag}" if current_si else offer_tag
                     try:
                         from src.services.whatsapp import whatsapp_service
                         if whatsapp_service.is_configured() and notified_driver.user.phone:
@@ -531,13 +531,13 @@ def get_available_orders():
             query = query.filter(Order.tenant_id == driver.tenant_id)
 
         # Exclui pedidos que este entregador já recusou
-        reject_log = f"REJECTED_BY_{user_id}"
+        reject_log = f"|REJECTED_BY_{user_id}|"
         query = query.filter(
             ~Order.special_instructions.contains(reject_log)
         )
 
         # Para distribuição 'nearest': só mostra pedidos oferecidos a este entregador
-        offer_pattern = f"OFFERED_TO_{driver.id}"
+        offer_pattern = f"|OFFERED_TO_{driver.id}|"
         query = query.filter(
             (Order.distribution_method != 'nearest') | 
             (Order.special_instructions.contains(offer_pattern))
@@ -732,10 +732,16 @@ def reject_order(order_id):
         from src.models.portal_models import SystemConfig
 
         # Registra que este entregador recusou (usa special_instructions como flag)
-        reject_log = f"REJECTED_BY_{user_id}"
+        reject_log = f"|REJECTED_BY_{user_id}|"
         current_log = order.special_instructions or ''
-        if reject_log not in current_log:
-            order.special_instructions = f"{current_log}|{reject_log}" if current_log else reject_log
+        if f"REJECTED_BY_{user_id}" not in current_log:
+            # Adicionar delimitadores para busca precisa
+            if current_log:
+                # Limpar pipes extras no início/fim
+                current_log = current_log.strip('|')
+                order.special_instructions = f"|{current_log}{reject_log}"
+            else:
+                order.special_instructions = reject_log
 
         # Aplicar penalidade por rejeição
         from src.models.portal_models import DriverPenalty, SystemConfig
