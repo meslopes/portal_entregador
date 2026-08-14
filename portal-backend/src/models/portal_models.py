@@ -487,6 +487,8 @@ class Customer(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'tenant_id': self.tenant_id,
+            'user_id': self.user_id,
             'name': self.name,
             'phone': self.phone,
             'email': self.email,
