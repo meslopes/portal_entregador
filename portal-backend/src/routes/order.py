@@ -51,7 +51,7 @@ def send_platform_callback(order, new_status):
     
     try:
         if order.platform_source == 'IFOOD':
-            from src.services.ifood_service import update_status as ifood_update_status, INTERNAL_TO_IFOOD_STATUS
+            from src.services.ifood_service import update_status as ifood_update_status
             from src.models.portal_models import PlatformCredential
             
             ifood_status = INTERNAL_TO_IFOOD_MAP.get(new_status)
