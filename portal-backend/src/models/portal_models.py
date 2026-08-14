@@ -463,6 +463,8 @@ class Restaurant(db.Model):
             'own_driver_fixed_value': float(self.own_driver_fixed_value) if self.own_driver_fixed_value else 5.00,
             'own_driver_km_value': float(self.own_driver_km_value) if self.own_driver_km_value else 1.50,
             'own_driver_percentage': float(self.own_driver_percentage) if self.own_driver_percentage else 70.0,
+            'subscription_type': self.subscription_type,
+            'subscription_expires_at': self.subscription_expires_at.isoformat() if self.subscription_expires_at else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
