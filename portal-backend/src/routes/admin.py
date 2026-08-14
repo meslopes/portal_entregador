@@ -952,7 +952,8 @@ def create_admin_user():
 
         unique_phone = f"119{uuid.uuid4().hex[:8]}"
 
-
+        # Herdar tenant_id do admin atual
+        tenant_id = get_current_tenant_id()
 
         user = User(
 
@@ -968,7 +969,9 @@ def create_admin_user():
 
             user_type=UserType.ADMIN,
 
-            status=UserStatus.ACTIVE
+            status=UserStatus.ACTIVE,
+
+            tenant_id=tenant_id
 
         )
 
