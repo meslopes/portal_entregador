@@ -418,16 +418,12 @@ def get_all_users():
 
         if search:
 
+            search_escaped = search.replace('%', '\\%').replace('_', '\\_')
             query = query.filter(or_(
-
-                User.first_name.ilike(f'%{search}%'),
-
-                User.last_name.ilike(f'%{search}%'),
-
-                User.email.ilike(f'%{search}%'),
-
-                User.phone.ilike(f'%{search}%')
-
+                User.first_name.ilike(f'%{search_escaped}%'),
+                User.last_name.ilike(f'%{search_escaped}%'),
+                User.email.ilike(f'%{search_escaped}%'),
+                User.phone.ilike(f'%{search_escaped}%')
             ))
 
 
@@ -3201,13 +3197,13 @@ def get_establishments():
 
             query = query.filter(or_(
 
-                Restaurant.name.ilike(f'%{search}%'),
+                Restaurant.name.ilike(f'%{search_escaped}%'),
 
-                Restaurant.address.ilike(f'%{search}%'),
+                Restaurant.address.ilike(f'%{search_escaped}%'),
 
-                Restaurant.cnpj.ilike(f'%{search}%'),
+                Restaurant.cnpj.ilike(f'%{search_escaped}%'),
 
-                Restaurant.phone.ilike(f'%{search}%')
+                Restaurant.phone.ilike(f'%{search_escaped}%')
 
             ))
 
