@@ -66,7 +66,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 100, padding: '1rem'
-    }}>
+    }} role="dialog" aria-modal="true" aria-label="Distribuir Pedido">
       <div style={{
         background: 'white', borderRadius: '0.75rem', width: '100%',
         maxWidth: '460px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
