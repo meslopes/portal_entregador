@@ -16,7 +16,7 @@ const ClientFinancialPage = () => {
     try {
       setLoading(true);
       const financialData = await orderService.getMyFinancial();
-      setData(financialData);
+      setData(financialData || {});
     } catch (err) {
       setError('Erro ao carregar dados financeiros');
       console.error(err);
