@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   DollarSign, Settings, TrendingUp, Users, CheckCircle,
   AlertCircle, RefreshCw, Download, Filter, ChevronDown,
-  Wallet, CreditCard, ArrowUpRight, ArrowDownRight, BarChart3
+  Wallet, CreditCard, ArrowDownRight, BarChart3
 } from 'lucide-react';
 import api from '@/lib/api';
 
