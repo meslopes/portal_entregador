@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
@@ -902,9 +902,9 @@ const AdminDashboardPage = () => {
             <span>© 2026 muv.log — Controle de Entregadores</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
-            <a href="/support" style={{ color: '#64748b', textDecoration: 'none' }}>Suporte</a>
-            <a href="/terms" style={{ color: '#64748b', textDecoration: 'none' }}>Termos</a>
-            <a href="/privacy" style={{ color: '#64748b', textDecoration: 'none' }}>Privacidade</a>
+            <Link to="/support" style={{ color: '#64748b', textDecoration: 'none' }}>Suporte</Link>
+            <Link to="/terms" style={{ color: '#64748b', textDecoration: 'none' }}>Termos</Link>
+            <Link to="/privacy" style={{ color: '#64748b', textDecoration: 'none' }}>Privacidade</Link>
           </div>
         </div>
       </div>
