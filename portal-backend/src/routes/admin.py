@@ -1446,6 +1446,8 @@ def get_drivers():
 
         status_filter = request.args.get('status')  # online, offline, all
 
+        square_id = request.args.get('square_id', type=int)
+
         tenant_id = get_current_tenant_id()
 
 
@@ -1459,6 +1461,12 @@ def get_drivers():
         if tenant_id:
 
             query = query.filter(Driver.tenant_id == tenant_id)
+
+        # Filtrar por praça
+
+        if square_id:
+
+            query = query.filter(Driver.square_id == square_id)
 
 
 
@@ -1928,6 +1936,8 @@ def get_all_orders():
 
         date_to = request.args.get('date_to')
 
+        square_id = request.args.get('square_id', type=int)
+
         tenant_id = get_current_tenant_id()
 
 
@@ -1941,6 +1951,12 @@ def get_all_orders():
         if tenant_id:
 
             query = query.filter(Order.tenant_id == tenant_id)
+
+        # Filtrar por praça
+
+        if square_id:
+
+            query = query.filter(Order.square_id == square_id)
 
 
 
@@ -3144,6 +3160,8 @@ def get_establishments():
 
         search = request.args.get('search', '')
 
+        square_id = request.args.get('square_id', type=int)
+
         tenant_id = get_current_tenant_id()
 
 
@@ -3157,6 +3175,12 @@ def get_establishments():
         if tenant_id:
 
             query = query.filter(Restaurant.tenant_id == tenant_id)
+
+        # Filtrar por praça
+
+        if square_id:
+
+            query = query.filter(Restaurant.square_id == square_id)
 
 
 

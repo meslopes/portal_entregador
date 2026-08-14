@@ -7,6 +7,7 @@ import { adminService, utils } from '@/lib/api';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminDriversPage = () => {
+  const { squareId } = useSquare();
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,7 +34,7 @@ const AdminDriversPage = () => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadDrivers(); loadSquares(); }, [page, statusFilter]);
+  useEffect(() => { loadDrivers(); loadSquares(); }, [page, statusFilter, squareId]);
 
   const loadDrivers = async () => {
     try {

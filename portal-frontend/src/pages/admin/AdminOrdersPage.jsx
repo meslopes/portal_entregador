@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
+import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
 const STATUS_FILTERS = [
@@ -29,6 +30,7 @@ const STATUS_COLORS = {
 
 const AdminOrdersPage = () => {
   const navigate = useNavigate();
+  const { squareId } = useSquare();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,12 +41,13 @@ const AdminOrdersPage = () => {
   const [editData, setEditData] = useState({});
   const [dateRange, setDateRange] = useState(null);
 
-  useEffect(() => { loadOrders(); }, [page, statusFilter, dateRange]);
+  useEffect(() => { loadOrders(); }, [page, statusFilter, dateRange, squareId]);
 
   const loadOrders = async () => {
     try {
       setLoading(true);
       const params = { page, per_page: 20, status: statusFilter };
+      if (squareId) params.square_id = squareId;
       if (dateRange) {
         params.start_date = dateRange.startDate;
         params.end_date = dateRange.endDate;
