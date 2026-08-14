@@ -294,7 +294,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Pedido #{order.order_number}</h2>
             <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{utils.formatDateTime(order.created_at)}</p>
           </div>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.25rem' }}>✕</button>
+          <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.25rem' }}>✕</button>
         </div>
 
         <div style={{ padding: '1.5rem' }}>
