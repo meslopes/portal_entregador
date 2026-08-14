@@ -20,6 +20,7 @@ const OwnDriverMetricsPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError('');
       await Promise.all([loadDrivers(), loadMetrics()]);
     } catch (err) {
       setError('Erro ao carregar dados');
