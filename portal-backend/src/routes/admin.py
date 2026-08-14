@@ -9511,18 +9511,44 @@ def get_own_driver_metrics():
 @admin_required
 def cleanup_clients_drivers():
     try:
+        # PRIMEIRO: Deletar todos os pedidos e dados vinculados
+        orders = Order.query.all()
+        for order in orders:
+            Delivery.query.filter_by(order_id=order.id).delete()
+            Payment.query.filter_by(reference_id=order.id).delete()
+            Notification.query.filter_by(related_id=order.id).delete()
+        Order.query.delete()
+        
+        # Deletar todos os pagamentos de drivers
+        Payment.query.filter(Payment.driver_id.isnot(None)).delete()
+        
+        # Deletar todos os deliveries restantes
+        Delivery.query.delete()
+        
+        # Deletar todas as invoices
+        Invoice.query.delete()
+        
+        # Deletar todos os ganhos de entregadores proprios
+        OwnDriverEarning.query.delete()
+        
+        # Deletar todos os establishment drivers
+        EstablishmentDriver.query.delete()
+        
+        # Deletar todas as credenciais de plataformas
+        PlatformCredential.query.delete()
+        
+        # Deletar vinculacoes driver-restaurant
+        DriverRestaurant.query.delete()
+        
         # Buscar todos os CLIENTs
         clients = User.query.filter_by(user_type=UserType.CLIENT).all()
         client_count = len(clients)
         
         for user in clients:
-            # Deletar Customer vinculado
             customer = Customer.query.filter_by(user_id=user.id).first()
             if customer:
                 db.session.delete(customer)
-            # Deletar notificacoes
             Notification.query.filter_by(user_id=user.id).delete()
-            # Deletar user
             db.session.delete(user)
         
         # Buscar todos os DRIVERs
@@ -9530,14 +9556,17 @@ def cleanup_clients_drivers():
         driver_count = len(drivers)
         
         for user in drivers:
-            # Deletar Driver vinculado
             driver = Driver.query.filter_by(user_id=user.id).first()
             if driver:
                 db.session.delete(driver)
-            # Deletar notificacoes
             Notification.query.filter_by(user_id=user.id).delete()
-            # Deletar user
             db.session.delete(user)
+        
+        # Deletar customers orfaos (sem user)
+        Customer.query.filter(Customer.user_id.is_(None)).delete()
+        
+        # Deletar drivers orfaos (sem user)
+        Driver.query.filter(Driver.user_id.is_(None)).delete()
         
         db.session.commit()
         
@@ -9545,7 +9574,7 @@ def cleanup_clients_drivers():
             'message': 'Limpeza concluida com sucesso',
             'clients_deleted': client_count,
             'drivers_deleted': driver_count,
-            'note': 'Os emails dos CLIENTs e DRIVERs foram liberados para novo cadastro'
+            'note': 'Todos os dados foram limpos. Apenas admins permanecem.'
         }), 200
         
     except Exception as e:
