@@ -84,7 +84,7 @@ const AdminWithdrawalsPage = () => {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '1.25rem', marginBottom: '0.75rem' }}>
-                    R$ {w.amount.toFixed(2).replace('.', ',')}
+                    R$ {(w.amount || 0).toFixed(2).replace('.', ',')}
                   </p>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button

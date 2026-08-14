@@ -297,10 +297,10 @@ def delete_admin(admin_id):
         
         # Excluir dados vinculados se force=true
         if force:
-            # Usar SQL direto para evitar problemas de cascade
-            db.session.execute(db.text(f"DELETE FROM orders WHERE tenant_id = {admin.tenant_id}"))
-            db.session.execute(db.text(f"DELETE FROM drivers WHERE tenant_id = {admin.tenant_id}"))
-            db.session.execute(db.text(f"DELETE FROM restaurants WHERE tenant_id = {admin.tenant_id}"))
+            # Usar SQL direto com parâmetros nomeados para evitar SQL injection
+            db.session.execute(db.text("DELETE FROM orders WHERE tenant_id = :tid"), {"tid": admin.tenant_id})
+            db.session.execute(db.text("DELETE FROM drivers WHERE tenant_id = :tid"), {"tid": admin.tenant_id})
+            db.session.execute(db.text("DELETE FROM restaurants WHERE tenant_id = :tid"), {"tid": admin.tenant_id})
         
         # Excluir tenant
         from src.models.portal_models import Tenant

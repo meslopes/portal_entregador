@@ -197,7 +197,7 @@ const DriverRankingPage = () => {
                   <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{bonus.bonus_type === 'weekly' ? 'Semanal' : 'Mensal'}</p>
                 </div>
                 <span style={{ fontWeight: 600, color: '#22c55e', fontSize: '0.875rem' }}>
-                  +R$ {bonus.amount.toFixed(2)}
+                  +R$ {(bonus.amount || 0).toFixed(2)}
                 </span>
               </div>
             ))

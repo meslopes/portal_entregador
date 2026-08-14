@@ -247,10 +247,10 @@ export const adminService = {
     return response.data;
   },
 
-  getDrivers: async (page = 1, perPage = 20, search = '', status = 'all') => {
-    const response = await api.get('/api/admin/drivers', {
-      params: { page, per_page: perPage, search, status },
-    });
+  getDrivers: async (page = 1, perPage = 20, search = '', status = 'all', squareId = null) => {
+    const params = { page, per_page: perPage, search, status };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/drivers', { params });
     return response.data;
   },
 
@@ -314,10 +314,10 @@ export const adminService = {
   },
 
   // Gestão de Estabelecimentos
-  getEstablishments: async (page = 1, perPage = 20, search = '') => {
-    const response = await api.get('/api/admin/establishments', {
-      params: { page, per_page: perPage, search },
-    });
+  getEstablishments: async (page = 1, perPage = 20, search = '', squareId = null) => {
+    const params = { page, per_page: perPage, search };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/establishments', { params });
     return response.data;
   },
 

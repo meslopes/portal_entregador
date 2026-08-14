@@ -85,9 +85,9 @@ const WalletPage = () => {
       <div style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', borderRadius: '1rem', padding: '1.5rem', color: 'white', marginBottom: '1rem' }}>
         <p style={{ fontSize: '0.875rem', opacity: 0.8, marginBottom: '0.25rem' }}>Saldo Disponível</p>
         <p style={{ fontSize: '2rem', fontWeight: 700 }}>R$ {(wallet?.balance || 0).toFixed(2).replace('.', ',')}</p>
-        {wallet?.locked_balance > 0 && (
+        {(wallet?.locked_balance || 0) > 0 && (
           <p style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '0.5rem' }}>
-            🔒 Bloqueado: R$ {wallet.locked_balance.toFixed(2).replace('.', ',')}
+            🔒 Bloqueado: R$ {(wallet?.locked_balance || 0).toFixed(2).replace('.', ',')}
           </p>
         )}
       </div>

@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 from src.models.portal_models import (
     db, EstablishmentDriver, Order, OrderStatus, Delivery,
-    OwnDriverEarning, Restaurant, Customer, User
+    OwnDriverEarning, Restaurant, Customer, User, UserType, UserStatus
 )
 from datetime import datetime, timedelta
 from functools import wraps

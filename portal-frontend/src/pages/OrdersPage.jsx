@@ -139,7 +139,7 @@ const OrdersPage = () => {
   };
 
   const calculateEarnings = (order) => {
-    const baseEarning = order.delivery_fee * 0.7;
+    const baseEarning = (order.delivery_fee || 0) * 0.7;
     const distanceBonus = (order.delivery_distance_km || 0) * 0.5;
     return baseEarning + distanceBonus;
   };
