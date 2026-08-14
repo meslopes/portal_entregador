@@ -17,6 +17,7 @@ const WalletPage = () => {
   const loadWallet = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await api.get('/api/driver/wallet');
       setWallet(response.data || {});
       setPixKey(response.data?.pix_key || '');
