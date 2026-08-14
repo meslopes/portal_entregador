@@ -1195,7 +1195,7 @@ def process_driver_response_whatsapp(phone, action):
                     f"✅ Pedido #{pending_order.order_number} foi aceito por {user.first_name} {user.last_name}"
                 )
 
-            print(f"Pedido #{pending_order.order_number} aceito via WhatsApp por {user.first_name}")
+            logger.info(f"Pedido #{pending_order.order_number} aceito via WhatsApp por {user.first_name}")
 
         elif action == 'REJECT':
             # Busca proximo entregador
