@@ -215,7 +215,7 @@ const ClientDashboardPage = () => {
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <FilterButton active={filter === ''} onClick={() => { setFilter(''); setPage(1); }}>Todos</FilterButton>
         <FilterButton active={filter === 'PENDING'} onClick={() => { setFilter('PENDING'); setPage(1); }}>Pendentes</FilterButton>
-        <FilterButton active={filter === 'ACCEPTED' || filter === 'PREPARING' || filter === 'READY' || filter === 'PICKED_UP'} onClick={() => { setFilter('ACCEPTED'); setPage(1); }}>Em Andamento</FilterButton>
+        <FilterButton active={filter === 'active'} onClick={() => { setFilter('active'); setPage(1); }}>Em Andamento</FilterButton>
         <FilterButton active={filter === 'DELIVERED'} onClick={() => { setFilter('DELIVERED'); setPage(1); }}>Entregues</FilterButton>
         <FilterButton active={filter === 'CANCELLED'} onClick={() => { setFilter('CANCELLED'); setPage(1); }}>Cancelados</FilterButton>
       </div>
