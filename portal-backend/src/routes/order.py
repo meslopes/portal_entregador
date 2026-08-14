@@ -1608,6 +1608,11 @@ def create_order():
         pickup_code = str(random.randint(100000, 999999))
         delivery_code = str(random.randint(100000, 999999))
 
+        # Calcular subtotal dos itens
+        items = data.get('items', [])
+        subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 1)) for item in items) if items else 0
+        total_amount = subtotal + delivery_fee
+
         order = Order(
             tenant_id=tenant_id,
             restaurant_id=restaurant.id,
@@ -1617,10 +1622,10 @@ def create_order():
             tracking_token=tracking_token,
             pickup_code=pickup_code,
             delivery_code=delivery_code,
-            items=data['items'],
-            subtotal=delivery_fee,
+            items=items,
+            subtotal=subtotal,
             delivery_fee=delivery_fee,
-            total_amount=delivery_fee,
+            total_amount=total_amount,
             payment_method=payment_enum,
             status=OrderStatus.SCHEDULED,
             distribution_method=data.get('distribution_method', 'nearest'),
