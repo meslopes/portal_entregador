@@ -81,11 +81,13 @@ const AdminDriversPage = () => {
     e.preventDefault();
     try {
       setFormLoading(true);
-      await adminService.updateUser(editing.user_id, editData);
-      setShowEdit(null);
+      const result = await api.post('/api/admin/drivers', formData);
+      setShowForm(false);
       loadDrivers();
+      alert('Entregador criado com sucesso!
+Email: ' + result.driver.email);
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao atualizar');
+      setFormError(err.response?.data?.error || 'Erro ao criar entregador');
     } finally {
       setFormLoading(false);
     }
@@ -123,24 +125,13 @@ const AdminDriversPage = () => {
 
     try {
       setFormLoading(true);
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
-      const response = await fetch(`${API_URL}/api/admin/drivers`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      const result = await response.json();
-
-      if (response.ok) {
-        setShowForm(false);
-        loadDrivers();
-        alert(`Entregador criado!\nEmail: ${result.driver.email}\nSenha: ${result.driver.password}`);
-      } else {
-        setFormError(result.error || 'Erro ao criar entregador');
-      }
+      const result = await api.post('/api/admin/drivers', formData);
+      setShowForm(false);
+      loadDrivers();
+      alert('Entregador criado com sucesso!
+Email: ' + result.driver.email);
     } catch (err) {
-      setFormError('Erro ao criar entregador');
+      setFormError(err.response?.data?.error || 'Erro ao criar entregador');
     } finally {
       setFormLoading(false);
     }
