@@ -214,7 +214,7 @@ const AdminDriversPage = () => {
               <span>Entregador</span><span style={{ textAlign: 'center' }}>VeÃ­culo</span><span style={{ textAlign: 'center' }}>Status</span><span style={{ textAlign: 'center' }}>AvaliaÃ§Ã£o</span><span style={{ textAlign: 'center' }}>Entregas</span><span style={{ textAlign: 'center' }}>AÃ§Ãµes</span>
             </div>
             {drivers.map(driver => (
-              <div key={driver.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px', padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc', alignItems: 'center', cursor: 'pointer' }} className="table-row" onClick={() => openDetails(driver)}>
+              <div key={driver.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px', padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc', alignItems: 'center', cursor: 'pointer' }} className="table-row" onClick={() => openDetails(driver)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetails(driver); } }}>
                 <div>
                   <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{driver.user?.first_name} {driver.user?.last_name}</p>
                   <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{driver.user?.email}</p>
