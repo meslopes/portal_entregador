@@ -685,6 +685,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
                 <button
                   key={s}
                   onClick={() => setRating(s)}
+                  aria-label={`${s} estrela${s > 1 ? 's' : ''}`}
                   style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0.25rem', transition: 'transform 0.15s' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
