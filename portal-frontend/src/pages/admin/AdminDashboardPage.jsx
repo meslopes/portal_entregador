@@ -83,10 +83,12 @@ const AdminDashboardPage = () => {
   const loadDashboard = async () => {
     try {
       setLoading(true);
+      setError('');
       const data = await adminService.getDashboard();
       setDashboard(data);
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);
+      setError('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
