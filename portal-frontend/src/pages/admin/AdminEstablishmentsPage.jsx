@@ -685,18 +685,10 @@ const AdminEstablishmentsPage = () => {
               <div style={{ marginBottom: '1rem' }}>
                 <button type="button" onClick={async () => {
                   try {
-                    const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/${editing.id}/geocode`, {
-                      method: 'POST',
-                      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                      setFormData(prev => ({ ...prev, latitude: data.latitude, longitude: data.longitude }));
-                      setFormError('');
-                      alert('Geocodificação realizada com sucesso!');
-                    } else {
-                      alert(data.error || 'Erro na geocodificação');
-                    }
+                    const res = await api.post(`/api/admin/establishments/${editing.id}/geocode`);
+                    setFormData(prev => ({ ...prev, latitude: res.data.latitude, longitude: res.data.longitude }));
+                    setFormError('');
+                    alert('Geocodificação realizada com sucesso!');
                   } catch (e) {
                     alert('Erro ao geocodificar');
                   }
