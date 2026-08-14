@@ -26,7 +26,9 @@ const LoginPage = () => {
       const userType = response?.user?.user_type;
       const tenantId = response?.user?.tenant_id;
       const userEmail = response?.user?.email;
-      const superAdminEmails = ['plataform@muv.log.br', 'muvy.log@gmail.com'];
+      // Super admin emails from environment variable (comma-separated)
+      const superAdminEmailsEnv = import.meta.env.VITE_SUPER_ADMIN_EMAILS || '';
+      const superAdminEmails = superAdminEmailsEnv.split(',').map(e => e.trim()).filter(Boolean);
       const isSuperAdmin = !tenantId || superAdminEmails.includes(userEmail);
 
       let target;
