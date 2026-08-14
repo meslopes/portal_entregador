@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import api from '@/lib/api';
+import { useSquare } from '@/contexts/SquareContext';
 
 const STATUS_CONFIG = {
   PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente' },
@@ -18,6 +19,7 @@ const STATUS_CONFIG = {
 };
 
 const AdminEstablishmentsPage = () => {
+  const { squareId } = useSquare();
   const [establishments, setEstablishments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,7 +43,7 @@ const AdminEstablishmentsPage = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [pricingTables, setPricingTables] = useState([]);
 
-  useEffect(() => { loadEstablishments(); loadSquares(); }, [page, search]);
+  useEffect(() => { loadEstablishments(); loadSquares(); }, [page, search, squareId]);
 
   const loadSquares = async () => {
     try {
@@ -50,9 +52,9 @@ const AdminEstablishmentsPage = () => {
     } catch (e) {}
   };
 
-  const loadPricingTables = async (squareId) => {
+  const loadPricingTables = async (sqId) => {
     try {
-      const data = await adminService.getPricingTables(squareId);
+      const data = await adminService.getPricingTables(sqId);
       setPricingTables(data.pricing_tables || []);
     } catch (e) { setPricingTables([]); }
   };
@@ -60,6 +62,8 @@ const AdminEstablishmentsPage = () => {
   const loadEstablishments = async () => {
     try {
       setLoading(true);
+      const params = { page, per_page: 20, search };
+      if (squareId) params.square_id = squareId;
       const data = await adminService.getEstablishments(page, 20, search);
       setEstablishments(data.establishments);
       setTotalPages(data.pages);

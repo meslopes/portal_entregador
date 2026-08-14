@@ -5,9 +5,11 @@ import {
   Percent, Wallet, ArrowDownRight, CreditCard
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminFinancePage = () => {
+  const { squareId } = useSquare();
   const [data, setData] = useState(null);
   const [estData, setEstData] = useState([]);
   const [driverPayments, setDriverPayments] = useState(null);
@@ -18,7 +20,7 @@ const AdminFinancePage = () => {
   const [commission, setCommission] = useState(30); // % que o admin retém
   const [savingCommission, setSavingCommission] = useState(false);
 
-  useEffect(() => { loadData(); }, [period]);
+  useEffect(() => { loadData(); }, [period, squareId]);
   useEffect(() => { if (dateRange) loadData(); }, [dateRange]);
 
   const loadData = async () => {

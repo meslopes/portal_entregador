@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { adminService, orderService, utils } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSquare } from '@/contexts/SquareContext';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -24,6 +25,7 @@ const STATUS_CONFIG = {
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { squareId, selectedSquare } = useSquare();
   const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -36,7 +38,6 @@ const AdminDashboardPage = () => {
   const [filterClient, setFilterClient] = useState('');
   const [filterDriver, setFilterDriver] = useState('');
   const [squares, setSquares] = useState([]);
-  const [selectedSquare, setSelectedSquare] = useState('');
   const [timeInterval, setTimeInterval] = useState(60); // minutos
   const [showSettings, setShowSettings] = useState(false);
   const [selectedOrderMenu, setSelectedOrderMenu] = useState(null);
