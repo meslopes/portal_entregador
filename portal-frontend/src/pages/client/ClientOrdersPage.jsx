@@ -37,9 +37,9 @@ const ClientOrdersPage = () => {
     try {
       setLoading(true);
       const data = await orderService.getMyOrders(page, 15, filter);
-      setOrders(data.orders);
-      setTotalPages(data.pages);
-      setTotal(data.total);
+      setOrders(data.orders || []);
+      setTotalPages(data.pages || 1);
+      setTotal(data.total || 0);
     } catch (err) {
       setError('Erro ao carregar pedidos');
       console.error(err);

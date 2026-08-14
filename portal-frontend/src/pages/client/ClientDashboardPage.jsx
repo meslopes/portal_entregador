@@ -52,8 +52,8 @@ const ClientDashboardPage = () => {
         orderService.getMyStats(),
         orderService.getMyTracking()
       ]);
-      setOrders(ordersData.orders);
-      setTotalPages(ordersData.pages);
+      setOrders(ordersData.orders || []);
+      setTotalPages(ordersData.pages || 1);
       setStats(statsData);
       setTrackingDrivers(trackingData.drivers || []);
     } catch (err) {

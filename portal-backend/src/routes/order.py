@@ -1418,6 +1418,21 @@ def create_order():
         user = User.query.get(user_id)
 
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+
+        # Validar campos obrigatórios
+        required_fields = ['customer_phone', 'customer_name', 'delivery_address', 'delivery_neighborhood', 'items']
+        missing_fields = [f for f in required_fields if not data.get(f)]
+        if missing_fields:
+            return jsonify({'error': f'Campos obrigatórios ausentes: {", ".join(missing_fields)}'}), 400
+
+        # Validar payment_method se fornecido
+        payment_method = data.get('payment_method', 'CASH')
+        try:
+            payment_enum = PaymentMethod(payment_method)
+        except (ValueError, KeyError):
+            return jsonify({'error': f'Método de pagamento inválido: {payment_method}'}), 400
 
         # Se for estabelecimento (CLIENT), usa o restaurante vinculado ao seu customer profile
         if user and user.user_type == UserType.CLIENT:
@@ -1600,7 +1615,7 @@ def create_order():
             subtotal=delivery_fee,
             delivery_fee=delivery_fee,
             total_amount=delivery_fee,
-            payment_method=PaymentMethod(data['payment_method']),
+            payment_method=payment_enum,
             status=OrderStatus.SCHEDULED,
             distribution_method=data.get('distribution_method', 'nearest'),
             scheduled_at=scheduled_at,
@@ -2495,6 +2510,9 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         max_radius = float(config.config_value) if config else 200.0
 
         # Coordenadas do restaurante
+        if not order.restaurant:
+            return None
+        
         rest_lat = float(order.restaurant.latitude) if order.restaurant.latitude else None
         rest_lng = float(order.restaurant.longitude) if order.restaurant.longitude else None
 

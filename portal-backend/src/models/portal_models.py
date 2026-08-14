@@ -650,7 +650,7 @@ class Delivery(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
-    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=True)  # Nullable para entregadores próprios
     pickup_latitude = db.Column(db.Numeric(10, 8))
     pickup_longitude = db.Column(db.Numeric(11, 8))
     delivery_latitude = db.Column(db.Numeric(10, 8))

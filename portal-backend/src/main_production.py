@@ -728,6 +728,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tornar driver_id nullable para entregadores próprios
+        try:
+            db.session.execute(db.text(
+                "ALTER TABLE deliveries ALTER COLUMN driver_id DROP NOT NULL"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: timestamps para timeline do pedido (Fase 3)
         try:
             for col in ['accepted_at', 'preparing_at', 'ready_at', 'picked_up_at']:

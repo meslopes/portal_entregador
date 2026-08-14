@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Truck, MapPin, DollarSign, Clock, Star, Package,
@@ -88,7 +88,7 @@ const DashboardPage = () => {
     }
   }, [location, currentOrder]);
 
-  const mapInstanceRef = { current: null };
+  const mapInstanceRef = useRef(null);
 
   const loadDashboardData = async () => {
     try {
