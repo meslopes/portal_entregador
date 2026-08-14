@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Store, User, Phone,
   AlertCircle, Navigation, CheckCircle, ArrowRight, ChevronRight,
-  Camera, Image, X, ExternalLink
+  Camera, Image, X
 } from 'lucide-react';
 import { orderService, utils, API_BASE_URL } from '@/lib/api';
 import L from 'leaflet';
