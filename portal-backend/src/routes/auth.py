@@ -282,7 +282,8 @@ def register_client():
                 latitude=latitude or -29.95,
                 longitude=longitude or -50.45,
                 phone=phone,
-                email=email
+                email=email,
+                tenant_id=tenant_id
             )
             db.session.add(restaurant)
 
