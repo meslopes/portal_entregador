@@ -209,7 +209,7 @@ const PlatformDashboardPage = () => {
                 <div>
                   <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Receita Total</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>
-                    R$ {dashboard.stats.total_revenue.toFixed(2)}
+                    R$ {(dashboard.stats.total_revenue || 0).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -314,7 +314,7 @@ const PlatformDashboardPage = () => {
                       {tenant.orders_count}
                     </td>
                     <td style={{ padding: '0.75rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 500, color: '#16a34a' }}>
-                      R$ {tenant.revenue.toFixed(2)}
+                      R$ {(tenant.revenue || 0).toFixed(2)}
                     </td>
                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                       <button
