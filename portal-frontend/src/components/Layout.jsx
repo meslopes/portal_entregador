@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
+import SquareSelector from '@/components/SquareSelector';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -144,6 +145,7 @@ const Layout = ({ children }) => {
 
             {/* User Menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, position: 'relative', zIndex: 100001 }}>
+              {isAdmin && !isSuperAdmin && <SquareSelector />}
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

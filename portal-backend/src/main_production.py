@@ -766,6 +766,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: square_id na tabela orders (Sistema Multi-Praça)
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'square_id') THEN ALTER TABLE orders ADD COLUMN square_id INTEGER REFERENCES squares(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

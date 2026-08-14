@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { SquareProvider } from '@/contexts/SquareContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
@@ -81,7 +82,8 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
+        <SquareProvider>
+          <Router>
           <Routes>
           {/* Rotas públicas */}
           <Route
@@ -518,6 +520,7 @@ function App() {
           } />
         </Routes>
       </Router>
+      </SquareProvider>
     </AuthProvider>
     </ErrorBoundary>
   );

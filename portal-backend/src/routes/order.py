@@ -1618,6 +1618,7 @@ def create_order():
             restaurant_id=restaurant.id,
             customer_id=customer.id,
             delivery_address_id=address.id,
+            square_id=restaurant.square_id,  # Herdar praça do restaurante
             order_number=f"PED{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}",
             tracking_token=tracking_token,
             pickup_code=pickup_code,

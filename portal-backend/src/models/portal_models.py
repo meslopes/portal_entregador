@@ -532,6 +532,7 @@ class Order(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)  # Praça do pedido
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
     delivery_address_id = db.Column(db.Integer, db.ForeignKey('addresses.id'), nullable=False)
