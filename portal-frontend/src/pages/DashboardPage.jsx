@@ -345,7 +345,7 @@ const DashboardPage = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <MapPin size={16} style={{ color: '#22c55e' }} />
             <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>
-              {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+              {(location.latitude || 0).toFixed(5)}, {(location.longitude || 0).toFixed(5)}
             </span>
           </div>
           <button
