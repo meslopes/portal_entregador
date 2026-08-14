@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   BarChart3, Users, Clock, DollarSign, Star, TrendingUp,
-  Package, CheckCircle, XCircle, AlertCircle, Filter,
-  Truck, Award, Target
+  Package, AlertCircle, Filter, Target
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
