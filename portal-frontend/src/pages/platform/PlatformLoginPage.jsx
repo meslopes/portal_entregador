@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -10,32 +10,45 @@ const PlatformLoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!mountedRef.current) return;
     setLoading(true);
     setError('');
 
     try {
       const response = await login(formData.email, formData.password);
+      if (!mountedRef.current) return;
+      
       const user = response?.user;
 
       if (!user || user.user_type !== 'ADMIN') {
         setError('Acesso restrito a administradores da plataforma');
+        setLoading(false);
         return;
       }
 
       // Verificar se é super admin (sem tenant_id)
       if (user.tenant_id) {
         setError('Acesso restrito a super administradores');
+        setLoading(false);
         return;
       }
 
       navigate('/platform', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao fazer login');
-    } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setError(err.response?.data?.error || 'Erro ao fazer login');
+        setLoading(false);
+      }
     }
   };
 
@@ -187,6 +200,7 @@ const PlatformLoginPage = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="admin@muv.log.br"
                 required
+                autoComplete="email"
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
@@ -219,6 +233,7 @@ const PlatformLoginPage = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   placeholder="••••••••"
                   required
+                  autoComplete="current-password"
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
