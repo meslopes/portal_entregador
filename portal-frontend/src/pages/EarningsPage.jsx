@@ -18,6 +18,7 @@ const EarningsPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError('');
       const [earningsRes, statsRes] = await Promise.all([
         driverService.getEarningsHistory(),
         driverService.getStats()
