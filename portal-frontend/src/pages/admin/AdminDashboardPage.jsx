@@ -103,7 +103,7 @@ const AdminDashboardPage = () => {
 
   const loadOrders = async () => {
     try {
-      const data = await adminService.getOrders(1, 100);
+      const data = await adminService.getOrders(1, 20);
       setOrders(data.orders || []);
     } catch (err) {
       console.error('Erro ao carregar pedidos:', err);
