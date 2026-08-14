@@ -883,7 +883,7 @@ def send_order_status_whatsapp(phone, order_number):
         )
 
     except Exception as e:
-        print(f"Erro ao enviar status WhatsApp: {e}")
+        logger.error(f"Erro ao enviar status WhatsApp: {e}")
 
 
 # ============================================
