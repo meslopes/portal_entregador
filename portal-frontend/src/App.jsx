@@ -51,6 +51,7 @@ import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminWhiteLabelPage from '@/pages/admin/AdminWhiteLabelPage';
 import PlatformDashboardPage from '@/pages/admin/PlatformDashboardPage';
+import PlatformLoginPage from '@/pages/platform/PlatformLoginPage';
 import TrackPage from '@/pages/TrackPage';
 import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
@@ -322,13 +323,12 @@ function App() {
           <Route path="/own-driver/earnings" element={<OwnDriverEarningsPage />} />
 
           {/* Rotas do super admin (plataforma) */}
+          <Route path="/platform/login" element={<PlatformLoginPage />} />
           <Route
             path="/platform"
             element={
               <ProtectedRoute requiredRole="ADMIN">
-                <Layout>
-                  <PlatformDashboardPage />
-                </Layout>
+                <PlatformDashboardPage />
               </ProtectedRoute>
             }
           />
