@@ -771,7 +771,7 @@ def process_whatsapp_message(message):
             )
 
     except Exception as e:
-        print(f"Erro ao processar mensagem WhatsApp: {e}")
+        logger.error(f"Erro ao processar mensagem WhatsApp: {e}")
 
 
 def create_order_from_whatsapp(phone, parts):
@@ -850,7 +850,7 @@ def create_order_from_whatsapp(phone, parts):
 
     except Exception as e:
         db.session.rollback()
-        print(f"Erro ao criar pedido WhatsApp: {e}")
+        logger.error(f"Erro ao criar pedido WhatsApp: {e}")
 
 
 def send_order_status_whatsapp(phone, order_number):
