@@ -110,7 +110,7 @@
 - [ ] Testes completos (usar ROTEIRO_TESTES.md)
 - [ ] Atualizar documentacao restante (arquitetura, configuracoes, design)
 
-## 🔄 Fase: Entregadores Próprios (EM ANDAMENTO)
+## ✅ Fase: Entregadores Próprios (CONCLUIDA)
 - [x] Modelo EstablishmentDriver
 - [x] Campos has_own_drivers, subscription_type no Restaurant
 - [x] Campos assigned_to_own_driver, establishment_driver_id no Order
@@ -127,12 +127,27 @@
 - [x] Fase 4: Avaliação e relatórios
 - [x] Fase 5: App mobile / WhatsApp Business (PWA entregadores próprios)
 
-## 🔧 Bugs Conhecidos
-- [ ] Footer "Privacidade" pode aparecer truncado em mobile
-- [ ] Dashboard do entregador pode mostrar zeros apos login (cache do navegador)
+## 🔧 Correções de Bugs (2026-08-13)
+### Críticos (CORRIGIDOS)
+- [x] Encoding UTF-8 corrompido em admin.py (52 linhas corrigidas)
+- [x] delete_user() bloqueava exclusão com pedidos - adicionado ?force=true
+- [x] Delivery.driver_id nullable para entregadores próprios
+- [x] create_order() sem validação de campos obrigatórios
+- [x] mapInstanceRef como objeto plain em vez de useRef (memory leak)
+- [x] Null safety em ClientDashboardPage e ClientOrdersPage
+
+### Planilha de Bugs
+- Criada planilha `bugs_correcoes.xlsx` com 27 bugs backend e 21 bugs frontend
+- 8 críticos, 16 altos, 16 médios, 8 baixos identificados
+- 2 críticos corrigidos nesta sessão
+
+## 🔄 Próximos Passos
+- [ ] Integração iFood - testar webhook com estabelecimento correto
+- [ ] Corrigir bugs restantes da planilha (altos e médios)
+- [ ] Deploy automático (Vercel + Render)
 
 ## 📊 Metricas do Projeto
-- **Total de commits:** 50+
+- **Total de commits:** 60+
 - **Arquivos frontend:** 30+
 - **Arquivos backend:** 15+
 - **Endpoints API:** 40+
