@@ -65,8 +65,21 @@ def update_location():
         if 'latitude' not in data or 'longitude' not in data:
             return jsonify({'error': 'Latitude e longitude são obrigatórias'}), 400
         
-        driver.current_latitude = data['latitude']
-        driver.current_longitude = data['longitude']
+        # Validar se são números válidos
+        try:
+            lat = float(data['latitude'])
+            lng = float(data['longitude'])
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Latitude e longitude devem ser números válidos'}), 400
+        
+        # Validar range
+        if not (-90 <= lat <= 90):
+            return jsonify({'error': 'Latitude deve estar entre -90 e 90'}), 400
+        if not (-180 <= lng <= 180):
+            return jsonify({'error': 'Longitude deve estar entre -180 e 180'}), 400
+        
+        driver.current_latitude = lat
+        driver.current_longitude = lng
         driver.last_location_update = datetime.utcnow()
         driver.updated_at = datetime.utcnow()
         
