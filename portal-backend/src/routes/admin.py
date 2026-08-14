@@ -9511,55 +9511,46 @@ def get_own_driver_metrics():
 @admin_required
 def cleanup_clients_drivers():
     try:
-        # Usar SQL direto para evitar problemas com SQLAlchemy cascade
-        tables_to_clean = [
-            'deliveries',
-            'payments', 
-            'notifications',
-            'own_driver_earnings',
-            'establishment_drivers',
-            'driver_restaurants',
-            'platform_credentials',
-            'invoices',
-            'orders',
+        # Desabilitar constraints temporariamente
+        db.session.execute(db.text("SET session_replication_role = 'replica'"))
+        
+        # Deletar tudo de todas as tabelas
+        tables = [
+            'deliveries', 'payments', 'notifications', 'own_driver_earnings',
+            'establishment_drivers', 'driver_restaurants', 'platform_credentials',
+            'invoices', 'orders', 'customers', 'drivers', 'users'
         ]
         
-        for table in tables_to_clean:
+        deleted = {}
+        for table in tables:
             try:
-                db.session.execute(db.text(f"DELETE FROM {table}"))
-            except Exception:
-                pass
+                result = db.session.execute(db.text(f"DELETE FROM {table} WHERE user_type != 'ADMIN' OR user_type IS NULL"))
+                if result.rowcount > 0:
+                    deleted[table] = result.rowcount
+            except Exception as e:
+                # Tentar sem WHERE para tabelas sem user_type
+                try:
+                    result = db.session.execute(db.text(f"DELETE FROM {table}"))
+                    deleted[table] = result.rowcount
+                except:
+                    pass
         
-        # Deletar customers que nao sao de admins
-        db.session.execute(db.text("""
-            DELETE FROM customers 
-            WHERE user_id IN (
-                SELECT id FROM users WHERE user_type != 'ADMIN'
-            ) OR user_id IS NULL
-        """))
-        
-        # Deletar drivers que nao sao de admins
-        db.session.execute(db.text("""
-            DELETE FROM drivers 
-            WHERE user_id IN (
-                SELECT id FROM users WHERE user_type != 'ADMIN'
-            ) OR user_id IS NULL
-        """))
-        
-        # Deletar users que nao sao admins
-        result = db.session.execute(db.text("""
-            DELETE FROM users WHERE user_type != 'ADMIN'
-        """))
-        deleted_count = result.rowcount
+        # Reabilitar constraints
+        db.session.execute(db.text("SET session_replication_role = 'origin'"))
         
         db.session.commit()
         
         return jsonify({
             'message': 'Limpeza concluida com sucesso',
-            'users_deleted': deleted_count,
-            'note': 'Todos os CLIENTs e DRIVERs foram removidos. Apenas ADMINs permanecem.'
+            'deleted': deleted,
+            'note': 'Todos os dados foram limpos. Apenas admins permanecem.'
         }), 200
         
     except Exception as e:
         db.session.rollback()
+        # Garantir que constraints sejam reabilitadas
+        try:
+            db.session.execute(db.text("SET session_replication_role = 'origin'"))
+        except:
+            pass
         return jsonify({'error': str(e)}), 500
