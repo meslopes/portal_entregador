@@ -514,7 +514,10 @@ def request_withdrawal():
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
         
         data = request.get_json()
-        amount = float(data.get('amount', 0))
+        try:
+            amount = float(data.get('amount', 0))
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Valor deve ser um número'}), 400
         
         if amount <= 0:
             return jsonify({'error': 'Valor inválido'}), 400
