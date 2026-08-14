@@ -145,7 +145,7 @@ const AdminPricingPage = () => {
                     {getSquareName(table.square_id)} {table.description ? `• ${table.description}` : ''}
                   </p>
                   <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#475569' }}><strong>R$/km:</strong> R$ {parseFloat(table.price_per_km).toFixed(2)}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#475569' }}><strong>R$/km:</strong> R$ {parseFloat(table.price_per_km || 0).toFixed(2)}</span>
                     <span style={{ fontSize: '0.75rem', color: '#475569' }}><strong>Mín:</strong> {table.min_distance_km} km</span>
                     <span style={{ fontSize: '0.75rem', color: '#475569' }}><strong>Frete mín:</strong> R$ {parseFloat(table.min_delivery_fee || 0).toFixed(2)}</span>
                     <span style={{ fontSize: '0.75rem', color: '#475569' }}><strong>Frete máx:</strong> R$ {parseFloat(table.max_delivery_fee || 50).toFixed(2)}</span>

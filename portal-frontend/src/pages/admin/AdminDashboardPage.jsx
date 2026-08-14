@@ -305,7 +305,7 @@ const AdminDashboardPage = () => {
               ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${o.order_number}</b><span style="color:${color}">${label}</span></div>`;
               ordersHtml += `<div style="color:#64748b;">${o.customer_name || 'Cliente'}</div>`;
               if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${o.driver_name}</div>`;
-              ordersHtml += `<div style="color:#64748b;">R$ ${o.total_amount.toFixed(2)}</div>`;
+              ordersHtml += `<div style="color:#64748b;">R$ ${(o.total_amount || 0).toFixed(2)}</div>`;
               ordersHtml += '</div>';
             });
             ordersHtml += '</div>';

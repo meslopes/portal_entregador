@@ -181,7 +181,7 @@ const AdminDynamicPricingPage = () => {
                       {config.rainy_day_active ? 'ATIVA' : 'INATIVA'}
                     </button>
                   </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.rainy_day_bonus).toFixed(2)}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.rainy_day_bonus || 0).toFixed(2)}</span>
                 </div>
 
                 {/* Alta Demanda */}
@@ -195,7 +195,7 @@ const AdminDynamicPricingPage = () => {
                       {config.high_demand_active ? 'ATIVA' : 'INATIVA'}
                     </button>
                   </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.high_demand_bonus).toFixed(2)}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.high_demand_bonus || 0).toFixed(2)}</span>
                   <span style={{ fontSize: '0.6875rem', color: '#64748b', marginLeft: '0.25rem' }}>({config.high_demand_threshold}+ pedidos)</span>
                 </div>
 
@@ -210,7 +210,7 @@ const AdminDynamicPricingPage = () => {
                       {config.holiday_active ? 'ATIVA' : 'INATIVA'}
                     </button>
                   </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.holiday_bonus).toFixed(2)}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.holiday_bonus || 0).toFixed(2)}</span>
                 </div>
 
                 {/* Cancelamento */}
@@ -224,7 +224,7 @@ const AdminDynamicPricingPage = () => {
                       {config.cancellation_fee_active ? 'ATIVA' : 'INATIVA'}
                     </button>
                   </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>R$ {parseFloat(config.cancellation_fee).toFixed(2)}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>R$ {parseFloat(config.cancellation_fee || 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>

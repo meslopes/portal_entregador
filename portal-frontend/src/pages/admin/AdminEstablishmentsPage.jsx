@@ -604,7 +604,7 @@ const AdminEstablishmentsPage = () => {
               <select name="pricing_table_id" value={formData.pricing_table_id} onChange={handleFormChange} style={inputStyle}>
                 <option value="">Padrão da praça</option>
                 {pricingTables.map(pt => (
-                  <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km).toFixed(2)}/km)</option>
+                  <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km || 0).toFixed(2)}/km)</option>
                 ))}
               </select>
               <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
