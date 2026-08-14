@@ -141,6 +141,8 @@ const NotificationBell = () => {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ''}`}
+        aria-expanded={isOpen}
         style={{
           position: 'relative', background: 'none', border: 'none',
           cursor: 'pointer', padding: '0.5rem', borderRadius: '0.5rem',
