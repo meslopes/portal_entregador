@@ -5962,7 +5962,7 @@ def get_squares():
 
                 # Se falhar ao processar uma praça, pula
 
-                print(f"Erro ao processar praça {sq.id}: {e}")
+                logger.error(f"Erro ao processar praça {sq.id}: {e}")
 
                 continue
 

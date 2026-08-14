@@ -335,7 +335,7 @@ def update_order_status(order_id):
 
                 order.delivery.proof_of_delivery_url = f"/uploads/proofs/{filename}"
             except Exception as e:
-                print(f"Erro ao salvar prova de entrega: {e}")
+                logger.error(f"Erro ao salvar prova de entrega: {e}")
 
         # Incrementar entregas do entregador
         driver.total_deliveries = (driver.total_deliveries or 0) + 1
