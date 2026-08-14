@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Package, Search, Filter, Clock, CheckCircle, Truck,
+  Package, Search, Clock, CheckCircle, Truck,
   XCircle, AlertCircle, MapPin, User, Phone, DollarSign,
-  Eye, ChevronRight, Users, Send, Loader2
+  Users, Send, Loader2
 } from 'lucide-react';
 import { orderService, utils, API_BASE_URL } from '@/lib/api';
 import api from '@/lib/api';
