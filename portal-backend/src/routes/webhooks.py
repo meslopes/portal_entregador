@@ -8,6 +8,9 @@ from datetime import datetime
 import uuid
 import hashlib
 import hmac
+import logging
+
+logger = logging.getLogger(__name__)
 
 webhook_bp = Blueprint('webhook', __name__)
 
