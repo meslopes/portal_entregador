@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, Navigation,
   Store, User, AlertCircle, RefreshCw, ChevronRight,
-  Phone, Bike, ShoppingCart, ArrowRight, Volume2, VolumeX, Bell, BellOff, Route, CheckCircle
+  ShoppingCart, ArrowRight, Volume2, VolumeX, Bell, BellOff, CheckCircle
 } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
 import {
