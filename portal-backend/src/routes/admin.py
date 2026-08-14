@@ -3904,11 +3904,15 @@ def delete_establishment(establishment_id):
 
 
         # Deletar cliente vinculado (se existir)
-
         customer = Customer.query.filter_by(name=est.name).first()
-
         if customer:
-
+            # Deletar User associado ao Customer (para liberar o email)
+            if customer.user_id:
+                user = User.query.get(customer.user_id)
+                if user and user.user_type == UserType.CLIENT:
+                    # Deletar notificações do user
+                    Notification.query.filter_by(user_id=user.id).delete()
+                    db.session.delete(user)
             db.session.delete(customer)
 
 
@@ -9497,3 +9501,53 @@ def get_own_driver_metrics():
 
         return jsonify({'error': str(e)}), 500
 
+
+# ============================================
+# ENDPOINT TEMPORARIO: LIMPEZA DE CLIENTS/DRIVERS
+# ============================================
+
+@admin_bp.route('/cleanup-clients-drivers', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def cleanup_clients_drivers():
+    try:
+        # Buscar todos os CLIENTs
+        clients = User.query.filter_by(user_type=UserType.CLIENT).all()
+        client_count = len(clients)
+        
+        for user in clients:
+            # Deletar Customer vinculado
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                db.session.delete(customer)
+            # Deletar notificacoes
+            Notification.query.filter_by(user_id=user.id).delete()
+            # Deletar user
+            db.session.delete(user)
+        
+        # Buscar todos os DRIVERs
+        drivers = User.query.filter_by(user_type=UserType.DRIVER).all()
+        driver_count = len(drivers)
+        
+        for user in drivers:
+            # Deletar Driver vinculado
+            driver = Driver.query.filter_by(user_id=user.id).first()
+            if driver:
+                db.session.delete(driver)
+            # Deletar notificacoes
+            Notification.query.filter_by(user_id=user.id).delete()
+            # Deletar user
+            db.session.delete(user)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Limpeza concluida com sucesso',
+            'clients_deleted': client_count,
+            'drivers_deleted': driver_count,
+            'note': 'Os emails dos CLIENTs e DRIVERs foram liberados para novo cadastro'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
