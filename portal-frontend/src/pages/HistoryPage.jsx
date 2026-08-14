@@ -20,6 +20,7 @@ const HistoryPage = () => {
   const loadHistory = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await driverService.getDeliveryHistory(page);
       setOrders(response.orders || []);
       setTotalPages(response.pages || 1);
