@@ -399,7 +399,7 @@ const AdminDashboardPage = () => {
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9' }}>
       {/* Sidebar Esquerda */}
-      <div style={{ width: '320px', background: 'white', borderRight: '1px solid #e2e8f0', overflow: 'auto', flexShrink: 0 }}>
+      <div className="admin-sidebar" style={{ width: '320px', background: 'white', borderRight: '1px solid #e2e8f0', overflow: 'auto', flexShrink: 0 }}>
         {/* Filtros */}
         <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -1064,6 +1064,9 @@ const AdminDashboardPage = () => {
         @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 900px) {
           .dashboard-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 768px) {
+          .admin-sidebar { width: 100% !important; max-height: 300px; }
         }
       `}</style>
     </div>
