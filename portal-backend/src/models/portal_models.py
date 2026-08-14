@@ -610,6 +610,10 @@ class Order(db.Model):
             'special_instructions': self.special_instructions,
             'pickup_code': self.pickup_code,
             'delivery_code': self.delivery_code,
+            'square_id': self.square_id,
+            'assigned_to_own_driver': self.assigned_to_own_driver or False,
+            'establishment_driver_id': self.establishment_driver_id,
+            'called_platform': self.called_platform or False,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
