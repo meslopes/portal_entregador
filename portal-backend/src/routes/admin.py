@@ -6560,11 +6560,13 @@ def list_withdrawals():
 
         
 
+        from src.models.portal_models import PaymentType, PaymentStatus
+
         query = Payment.query.filter_by(
 
-            payment_type='WITHDRAWAL',
+            payment_type=PaymentType.WITHDRAWAL,
 
-            status='PENDING'
+            status=PaymentStatus.PENDING
 
         ).join(Driver).join(User)
 
