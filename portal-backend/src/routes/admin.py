@@ -9511,46 +9511,38 @@ def get_own_driver_metrics():
 @admin_required
 def cleanup_clients_drivers():
     try:
-        # Desabilitar constraints temporariamente
-        db.session.execute(db.text("SET session_replication_role = 'replica'"))
+        # Deletar na ordem correta para respeitar foreign keys
+        # 1. Tabelas que referenciam orders/drivers/customers
+        db.session.execute(db.text("DELETE FROM deliveries"))
+        db.session.execute(db.text("DELETE FROM payments"))
+        db.session.execute(db.text("DELETE FROM notifications"))
+        db.session.execute(db.text("DELETE FROM own_driver_earnings"))
         
-        # Deletar tudo de todas as tabelas
-        tables = [
-            'deliveries', 'payments', 'notifications', 'own_driver_earnings',
-            'establishment_drivers', 'driver_restaurants', 'platform_credentials',
-            'invoices', 'orders', 'customers', 'drivers', 'users'
-        ]
+        # 2. Tabelas que referenciam restaurants
+        db.session.execute(db.text("DELETE FROM establishment_drivers"))
+        db.session.execute(db.text("DELETE FROM driver_restaurants"))
+        db.session.execute(db.text("DELETE FROM platform_credentials"))
+        db.session.execute(db.text("DELETE FROM invoices"))
         
-        deleted = {}
-        for table in tables:
-            try:
-                result = db.session.execute(db.text(f"DELETE FROM {table} WHERE user_type != 'ADMIN' OR user_type IS NULL"))
-                if result.rowcount > 0:
-                    deleted[table] = result.rowcount
-            except Exception as e:
-                # Tentar sem WHERE para tabelas sem user_type
-                try:
-                    result = db.session.execute(db.text(f"DELETE FROM {table}"))
-                    deleted[table] = result.rowcount
-                except:
-                    pass
+        # 3. Orders (referencia restaurants e customers)
+        db.session.execute(db.text("DELETE FROM orders"))
         
-        # Reabilitar constraints
-        db.session.execute(db.text("SET session_replication_role = 'origin'"))
+        # 4. Customers e Drivers (referenciam users)
+        db.session.execute(db.text("DELETE FROM customers"))
+        db.session.execute(db.text("DELETE FROM drivers"))
+        
+        # 5. Users que nao sao admins
+        result = db.session.execute(db.text("DELETE FROM users WHERE user_type != 'ADMIN'"))
+        deleted_count = result.rowcount
         
         db.session.commit()
         
         return jsonify({
             'message': 'Limpeza concluida com sucesso',
-            'deleted': deleted,
-            'note': 'Todos os dados foram limpos. Apenas admins permanecem.'
+            'users_deleted': deleted_count,
+            'note': 'Todos os CLIENTs e DRIVERs foram removidos. Apenas ADMINs permanecem.'
         }), 200
         
     except Exception as e:
         db.session.rollback()
-        # Garantir que constraints sejam reabilitadas
-        try:
-            db.session.execute(db.text("SET session_replication_role = 'origin'"))
-        except:
-            pass
         return jsonify({'error': str(e)}), 500
