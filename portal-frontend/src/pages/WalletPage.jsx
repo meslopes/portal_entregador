@@ -18,8 +18,8 @@ const WalletPage = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/driver/wallet');
-      setWallet(response.data);
-      setPixKey(response.data.pix_key || '');
+      setWallet(response.data || {});
+      setPixKey(response.data?.pix_key || '');
     } catch (err) {
       setError('Erro ao carregar carteira');
     } finally {
