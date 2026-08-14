@@ -26,20 +26,18 @@ const AdminFinancePage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
 
-      const [finance, establishments, payments, configRes] = await Promise.all([
+      const [finance, establishments, paymentsRes, configRes] = await Promise.all([
         adminService.getFinanceDashboard(period, dateRange?.startDate, dateRange?.endDate),
         adminService.getFinanceByEstablishment(period, dateRange?.startDate, dateRange?.endDate),
-        fetch(`${API_URL}/api/admin/driver-payments`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
-        fetch(`${API_URL}/api/admin/settings`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
+        api.get('/api/admin/driver-payments'),
+        api.get('/api/admin/settings')
       ]);
 
       setData(finance);
       setEstData(establishments.establishments || []);
-      setDriverPayments(payments);
-      if (configRes.commission_rate) setCommission(parseInt(configRes.commission_rate));
+      setDriverPayments(paymentsRes.data);
+      if (configRes.data.commission_rate) setCommission(parseInt(configRes.data.commission_rate));
     } catch (err) {
       setError('Erro ao carregar dados financeiros');
       console.error(err);
@@ -51,13 +49,7 @@ const AdminFinancePage = () => {
   const saveCommission = async () => {
     try {
       setSavingCommission(true);
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
-      await fetch(`${API_URL}/api/admin/settings`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commission_rate: commission.toString() })
-      });
+      await api.put('/api/admin/settings', { commission_rate: commission.toString() });
     } catch (err) {
       console.error(err);
     } finally {
