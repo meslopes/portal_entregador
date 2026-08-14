@@ -87,9 +87,11 @@ const DriverProfilePage = () => {
 
       await api.put('/api/user/profile', profileData);
       setSuccess('Perfil atualizado com sucesso!');
+      setError('');
       updateUser({ ...user, ...profileData });
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao salvar perfil');
+      setSuccess('');
     } finally {
       setIsSaving(false);
     }
