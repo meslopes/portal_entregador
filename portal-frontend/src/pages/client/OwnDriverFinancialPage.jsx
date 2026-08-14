@@ -46,6 +46,7 @@ const OwnDriverFinancialPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError('');
       await Promise.all([
         loadPaymentConfig(),
         loadEarnings(),
