@@ -26,11 +26,7 @@ const ClientIntegrationsPage = () => {
   const loadIntegrations = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/admin/settings`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      const { data } = await api.get('/api/admin/settings');
       setIntegrations({
         ifood_key: data.ifood_api_key || '',
         ifood_enabled: data.integration_ifood === 'enabled',
@@ -56,7 +52,6 @@ const ClientIntegrationsPage = () => {
       setSaving(true);
       setError('');
       setSuccess('');
-      const token = localStorage.getItem('token');
       const payload = {
         integration_ifood: integrations.ifood_enabled ? 'enabled' : 'disabled',
         ifood_api_key: integrations.ifood_key,
@@ -70,15 +65,9 @@ const ClientIntegrationsPage = () => {
         whatsapp_api_token: integrations.whatsapp_token,
         whatsapp_phone: integrations.whatsapp_phone,
       };
-      const response = await fetch(`${API_URL}/api/admin/settings`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (response.ok) {
-        setSuccess('Integrações salvas com sucesso!');
-        setTimeout(() => setSuccess(''), 3000);
-      }
+      await api.put('/api/admin/settings', payload);
+      setSuccess('Integrações salvas com sucesso!');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Erro ao salvar');
     } finally {
