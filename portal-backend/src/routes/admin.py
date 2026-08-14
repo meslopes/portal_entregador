@@ -9511,70 +9511,53 @@ def get_own_driver_metrics():
 @admin_required
 def cleanup_clients_drivers():
     try:
-        # PRIMEIRO: Deletar todos os pedidos e dados vinculados
-        orders = Order.query.all()
-        for order in orders:
-            Delivery.query.filter_by(order_id=order.id).delete()
-            Payment.query.filter_by(reference_id=order.id).delete()
-            Notification.query.filter_by(related_id=order.id).delete()
-        Order.query.delete()
+        # Usar SQL direto para evitar problemas com SQLAlchemy cascade
+        tables_to_clean = [
+            'deliveries',
+            'payments', 
+            'notifications',
+            'own_driver_earnings',
+            'establishment_drivers',
+            'driver_restaurants',
+            'platform_credentials',
+            'invoices',
+            'orders',
+        ]
         
-        # Deletar todos os pagamentos de drivers
-        Payment.query.filter(Payment.driver_id.isnot(None)).delete()
+        for table in tables_to_clean:
+            try:
+                db.session.execute(db.text(f"DELETE FROM {table}"))
+            except Exception:
+                pass
         
-        # Deletar todos os deliveries restantes
-        Delivery.query.delete()
+        # Deletar customers que nao sao de admins
+        db.session.execute(db.text("""
+            DELETE FROM customers 
+            WHERE user_id IN (
+                SELECT id FROM users WHERE user_type != 'ADMIN'
+            ) OR user_id IS NULL
+        """))
         
-        # Deletar todas as invoices
-        Invoice.query.delete()
+        # Deletar drivers que nao sao de admins
+        db.session.execute(db.text("""
+            DELETE FROM drivers 
+            WHERE user_id IN (
+                SELECT id FROM users WHERE user_type != 'ADMIN'
+            ) OR user_id IS NULL
+        """))
         
-        # Deletar todos os ganhos de entregadores proprios
-        OwnDriverEarning.query.delete()
-        
-        # Deletar todos os establishment drivers
-        EstablishmentDriver.query.delete()
-        
-        # Deletar todas as credenciais de plataformas
-        PlatformCredential.query.delete()
-        
-        # Deletar vinculacoes driver-restaurant
-        DriverRestaurant.query.delete()
-        
-        # Buscar todos os CLIENTs
-        clients = User.query.filter_by(user_type=UserType.CLIENT).all()
-        client_count = len(clients)
-        
-        for user in clients:
-            customer = Customer.query.filter_by(user_id=user.id).first()
-            if customer:
-                db.session.delete(customer)
-            Notification.query.filter_by(user_id=user.id).delete()
-            db.session.delete(user)
-        
-        # Buscar todos os DRIVERs
-        drivers = User.query.filter_by(user_type=UserType.DRIVER).all()
-        driver_count = len(drivers)
-        
-        for user in drivers:
-            driver = Driver.query.filter_by(user_id=user.id).first()
-            if driver:
-                db.session.delete(driver)
-            Notification.query.filter_by(user_id=user.id).delete()
-            db.session.delete(user)
-        
-        # Deletar customers orfaos (sem user)
-        Customer.query.filter(Customer.user_id.is_(None)).delete()
-        
-        # Deletar drivers orfaos (sem user)
-        Driver.query.filter(Driver.user_id.is_(None)).delete()
+        # Deletar users que nao sao admins
+        result = db.session.execute(db.text("""
+            DELETE FROM users WHERE user_type != 'ADMIN'
+        """))
+        deleted_count = result.rowcount
         
         db.session.commit()
         
         return jsonify({
             'message': 'Limpeza concluida com sucesso',
-            'clients_deleted': client_count,
-            'drivers_deleted': driver_count,
-            'note': 'Todos os dados foram limpos. Apenas admins permanecem.'
+            'users_deleted': deleted_count,
+            'note': 'Todos os CLIENTs e DRIVERs foram removidos. Apenas ADMINs permanecem.'
         }), 200
         
     except Exception as e:
