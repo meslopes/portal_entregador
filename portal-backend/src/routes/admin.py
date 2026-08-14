@@ -9512,20 +9512,21 @@ def get_own_driver_metrics():
 def cleanup_clients_drivers():
     try:
         # Deletar na ordem correta para respeitar foreign keys
-        # 1. Tabelas que referenciam orders/drivers/customers
+        # 1. Tabelas sem dependencias diretas
         db.session.execute(db.text("DELETE FROM deliveries"))
         db.session.execute(db.text("DELETE FROM payments"))
         db.session.execute(db.text("DELETE FROM notifications"))
         db.session.execute(db.text("DELETE FROM own_driver_earnings"))
-        
-        # 2. Tabelas que referenciam restaurants
-        db.session.execute(db.text("DELETE FROM establishment_drivers"))
         db.session.execute(db.text("DELETE FROM driver_restaurants"))
         db.session.execute(db.text("DELETE FROM platform_credentials"))
+        db.session.execute(db.text("DELETE FROM establishment_drivers"))
         db.session.execute(db.text("DELETE FROM invoices"))
         
-        # 3. Orders (referencia restaurants e customers)
+        # 2. Orders (referencia restaurants, customers, addresses)
         db.session.execute(db.text("DELETE FROM orders"))
+        
+        # 3. Addresses (referencia customers)
+        db.session.execute(db.text("DELETE FROM addresses"))
         
         # 4. Customers e Drivers (referenciam users)
         db.session.execute(db.text("DELETE FROM customers"))
