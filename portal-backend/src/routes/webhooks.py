@@ -144,8 +144,17 @@ def ifood_webhook():
 
 @webhook_bp.route('/ifood/test', methods=['POST'])
 def ifood_test_webhook():
-    """Endpoint de teste para simular pedidos iFood"""
+    """Endpoint de teste para simular pedidos iFood (requer autenticação)"""
     try:
+        # Verificar autenticação
+        from flask_jwt_extended import jwt_required, get_jwt_identity
+        from src.models.portal_models import User, UserType
+        
+        # Verificar token no header
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Token de autenticação necessário'}), 401
+        
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
