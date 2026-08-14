@@ -81,8 +81,10 @@ const ClientProfilePage = () => {
 
       await api.put('/api/user/profile', profileData);
       setSuccess('Perfil atualizado com sucesso!');
+      setError('');
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao salvar perfil');
+      setSuccess('');
     } finally {
       setIsSaving(false);
     }
@@ -96,8 +98,10 @@ const ClientProfilePage = () => {
 
       await api.put('/api/user/profile', establishmentData);
       setSuccess('Dados do estabelecimento atualizados!');
+      setError('');
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao salvar estabelecimento');
+      setSuccess('');
     } finally {
       setIsSaving(false);
     }
