@@ -84,8 +84,7 @@ const AdminDriversPage = () => {
       const result = await api.post('/api/admin/drivers', formData);
       setShowForm(false);
       loadDrivers();
-      alert('Entregador criado com sucesso!
-Email: ' + result.driver.email);
+      alert('Entregador criado com sucesso! Email: ' + result.driver.email);
     } catch (err) {
       setFormError(err.response?.data?.error || 'Erro ao criar entregador');
     } finally {
@@ -128,8 +127,7 @@ Email: ' + result.driver.email);
       const result = await api.post('/api/admin/drivers', formData);
       setShowForm(false);
       loadDrivers();
-      alert('Entregador criado com sucesso!
-Email: ' + result.driver.email);
+      alert('Entregador criado com sucesso! Email: ' + result.driver.email);
     } catch (err) {
       setFormError(err.response?.data?.error || 'Erro ao criar entregador');
     } finally {
