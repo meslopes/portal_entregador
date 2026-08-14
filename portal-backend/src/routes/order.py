@@ -18,16 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def find_restaurant_by_name(name):
-    """Busca restaurante por nome (case-insensitive)"""
-    if not name:
-        return None
-    # Busca exata primeiro
-    restaurant = Restaurant.query.filter_by(name=name).first()
-    if restaurant:
-        return restaurant
-    # Busca case-insensitive
-    return Restaurant.query.filter(Restaurant.name.ilike(name)).first()
+from src.utils.restaurant import find_restaurant_by_name
 
 
 def get_driver_percentage(order):

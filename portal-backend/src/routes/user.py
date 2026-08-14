@@ -1,18 +1,9 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import User, Driver, Customer, Restaurant, db
+from src.utils.restaurant import find_restaurant_by_name
 
 user_bp = Blueprint('user', __name__)
-
-
-def find_restaurant_by_name(name):
-    """Busca restaurante por nome (case-insensitive)"""
-    if not name:
-        return None
-    restaurant = Restaurant.query.filter_by(name=name).first()
-    if restaurant:
-        return restaurant
-    return Restaurant.query.filter(Restaurant.name.ilike(name)).first()
 
 
 @user_bp.route('/profile', methods=['GET'])
