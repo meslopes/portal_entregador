@@ -3766,11 +3766,24 @@ def re_geocode_establishment(establishment_id):
 
             return jsonify({'error': 'Estabelecimento nao encontrado'}), 404
 
+        if not est.address:
+
+            return jsonify({'error': 'Estabelecimento não possui endereço cadastrado'}), 400
+
 
 
         from src.services.geocoding import geocode_address
 
-        geo = geocode_address(est.address)
+        # Extrair cidade do endereço se disponível
+        city_hint = None
+        if est.address:
+            parts = est.address.split(',')
+            if len(parts) >= 3:
+                city_hint = parts[-2].strip()
+
+        logger.info(f"Re-geocodificando estabelecimento {est.id}: '{est.address}' (city_hint: {city_hint})")
+
+        geo = geocode_address(est.address, city_hint=city_hint)
 
 
 
