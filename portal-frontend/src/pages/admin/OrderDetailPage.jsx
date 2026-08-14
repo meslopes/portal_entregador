@@ -441,7 +441,7 @@ const OrderDetailPage = () => {
           {si.product_value && (
             <div>
               <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Valor dos Itens (cobrar do cliente)</p>
-              <p style={{ fontWeight: 600, color: '#f59e0b' }}>R$ {parseFloat(si.product_value).toFixed(2).replace('.', ',')}</p>
+              <p style={{ fontWeight: 600, color: '#f59e0b' }}>R$ {parseFloat(si.product_value || 0).toFixed(2).replace('.', ',')}</p>
             </div>
           )}
           <div>
@@ -476,7 +476,7 @@ const OrderDetailPage = () => {
             {si.price_per_km && (
               <div>
                 <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Preço por km</p>
-                <p style={{ fontWeight: 500, color: '#1e293b' }}>R$ {parseFloat(si.price_per_km).toFixed(2).replace('.', ',')}</p>
+                <p style={{ fontWeight: 500, color: '#1e293b' }}>R$ {parseFloat(si.price_per_km || 0).toFixed(2).replace('.', ',')}</p>
               </div>
             )}
           </div>
