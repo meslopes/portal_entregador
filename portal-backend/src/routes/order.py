@@ -181,7 +181,7 @@ def process_expired_offers():
         now = datetime.utcnow()
         now_ts = int(now.timestamp())
         
-        print(f"[PROCESS_EXPIRED] Checking {len(pending_orders)} pending orders, timeout={timeout_seconds}s")
+        logger.debug(f"[PROCESS_EXPIRED] Checking {len(pending_orders)} pending orders, timeout={timeout_seconds}s")
         
         for order in pending_orders:
             si = order.special_instructions or ''
@@ -191,7 +191,7 @@ def process_expired_offers():
             
             # Se não tem oferta, precisa oferecer a alguém
             if not offer_match:
-                print(f"[PROCESS_EXPIRED] Order #{order.order_number} has no offer, finding driver")
+                logger.debug(f"[PROCESS_EXPIRED] Order #{order.order_number} has no offer, finding driver")
                 # Busca próximo entregador
                 next_driver = find_nearest_available_driver(order)
                 if next_driver:
