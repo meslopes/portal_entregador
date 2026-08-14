@@ -333,44 +333,49 @@ def confirm_email():
 # Endpoint para login
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json() or {}
-    email = data.get('email')
-    password = data.get('password')
-    tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
+    try:
+        data = request.get_json() or {}
+        email = data.get('email')
+        password = data.get('password')
+        tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
 
-    if not email or not password:
-        return jsonify({'error': 'Email e senha são obrigatórios'}), 400
+        if not email or not password:
+            return jsonify({'error': 'Email e senha são obrigatórios'}), 400
 
-    # Buscar tenant se fornecido (com tratamento de erro)
-    tenant = None
-    if tenant_slug:
-        try:
-            tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
-            if not tenant:
-                return jsonify({'error': 'Organização não encontrada'}), 404
-        except Exception:
-            # Tabela tenants pode não existir ainda
-            pass
+        # Buscar tenant se fornecido (com tratamento de erro)
+        tenant = None
+        if tenant_slug:
+            try:
+                tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
+                if not tenant:
+                    return jsonify({'error': 'Organização não encontrada'}), 404
+            except Exception:
+                # Tabela tenants pode não existir ainda
+                pass
 
-    # Buscar usuário (backward compatibility)
-    user = User.query.filter_by(email=email).first()
+        # Buscar usuário (backward compatibility)
+        user = User.query.filter_by(email=email).first()
 
-    if user and check_password_hash(user.password_hash, password):
-        # Verifica se o usuario esta ativo
-        if user.status == UserStatus.INACTIVE:
-            return jsonify({'error': 'Sua conta está pendente de aprovação. Aguarde o administrador liberar seu acesso.'}), 403
-        if user.status == UserStatus.SUSPENDED:
-            return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
+        if user and check_password_hash(user.password_hash, password):
+            # Verifica se o usuario esta ativo
+            if user.status == UserStatus.INACTIVE:
+                return jsonify({'error': 'Sua conta está pendente de aprovação. Aguarde o administrador liberar seu acesso.'}), 403
+            if user.status == UserStatus.SUSPENDED:
+                return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
 
-        # Verificar se o usuário pertence ao tenant correto
-        if tenant and user.tenant_id and user.tenant_id != tenant.id:
+            # Verificar se o usuário pertence ao tenant correto
+            if tenant and user.tenant_id and user.tenant_id != tenant.id:
+                return jsonify({'error': 'Credenciais inválidas'}), 401
+
+            access_token = create_access_token(identity=str(user.id))
+            user_data = _build_user_response(user)
+            return jsonify(access_token=access_token, user=user_data), 200
+        else:
             return jsonify({'error': 'Credenciais inválidas'}), 401
 
-        access_token = create_access_token(identity=str(user.id))
-        user_data = _build_user_response(user)
-        return jsonify(access_token=access_token, user=user_data), 200
-    else:
-        return jsonify({'error': 'Credenciais inválidas'}), 401
+    except Exception as e:
+        logger.error(f"Erro no login: {e}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 
 # Endpoint para obter perfil do usuário autenticado
