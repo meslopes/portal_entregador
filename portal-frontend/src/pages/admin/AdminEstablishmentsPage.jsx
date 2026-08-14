@@ -663,24 +663,12 @@ const AdminEstablishmentsPage = () => {
                 }
                 try {
                   const endpoint = editing
-                    ? `${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/${editing.id}/geocode`
-                    : `${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/establishments/geocode`;
-                  const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ address: addr })
-                  });
-                  if (res.ok) {
-                    const data = await res.json();
-                    setFormData(prev => ({ ...prev, latitude: data.latitude, longitude: data.longitude }));
-                    setFormError('');
-                    alert('Geocodificação realizada com sucesso!');
-                  } else {
-                    alert('Não foi possível geocodificar o endereço. Verifique se está correto.');
-                  }
+                    ? `/api/admin/establishments/${editing.id}/geocode`
+                    : '/api/admin/establishments/geocode';
+                  const res = await api.post(endpoint, { address: addr });
+                  setFormData(prev => ({ ...prev, latitude: res.data.latitude, longitude: res.data.longitude }));
+                  setFormError('');
+                  alert('Geocodificação realizada com sucesso!');
                 } catch (e) {
                   alert('Erro ao geocodificar');
                 }

@@ -3,7 +3,7 @@ import {
   CreditCard, Users, DollarSign, AlertCircle, CheckCircle,
   Star, Truck, Phone, Mail, Send, Filter
 } from 'lucide-react';
-import { adminService, utils } from '@/lib/api';
+import api, { adminService, utils } from '@/lib/api';
 
 const AdminDriverPaymentsPage = () => {
   const [data, setData] = useState(null);
@@ -17,13 +17,8 @@ const AdminDriverPaymentsPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/driver-payments`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      const result = await response.json();
-      setData(result);
+      const result = await api.get('/api/admin/driver-payments');
+      setData(result.data);
     } catch (err) {
       setError('Erro ao carregar dados');
       console.error(err);
@@ -36,20 +31,11 @@ const AdminDriverPaymentsPage = () => {
     if (!window.confirm('Confirmar pagamento para este entregador?')) return;
     try {
       setPaying(driverId);
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/admin/driver-payments/${driverId}/pay`,
-        { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
-      );
-      const result = await response.json();
-      if (response.ok) {
-        alert(result.message);
-        loadData();
-      } else {
-        alert(result.error || 'Erro ao processar pagamento');
-      }
+      const result = await api.post(`/api/admin/driver-payments/${driverId}/pay`);
+      alert(result.data.message);
+      loadData();
     } catch (err) {
-      alert('Erro ao processar pagamento');
+      alert(err.response?.data?.error || 'Erro ao processar pagamento');
     } finally {
       setPaying(null);
     }
