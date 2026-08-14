@@ -9,6 +9,20 @@ from datetime import datetime
 auth_bp = Blueprint('auth', __name__)
 
 
+def _generate_confirmation_token(user_id):
+    """Gera um token HMAC para confirmação de email"""
+    import hashlib
+    import hmac as hmac_mod
+    import os
+    secret = os.environ.get('JWT_SECRET_KEY', 'muvlog-secret-key')
+    sig = hmac_mod.new(
+        secret.encode(),
+        str(user_id).encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return f"{user_id}:{sig}"
+
+
 def _build_user_response(user):
     """Monta a resposta completa do usuário com dados do driver/customer/tenant se aplicável."""
     user_data = user.to_dict()
@@ -287,21 +301,41 @@ def register_client():
         return jsonify({'error': str(e)}), 500
 
 
-# Endpoint para confirmar email
+# Endpoint para confirmar email (requer token HMAC válido)
 @auth_bp.route('/confirm-email', methods=['POST'])
 def confirm_email():
-    """Confirma o email do usuario e ativa a conta"""
+    """Confirma o email do usuario e ativa a conta (requer token HMAC)"""
     try:
+        import hashlib
+        import hmac as hmac_mod
+        import os
+
         data = request.get_json() or {}
         token = data.get('token')
 
         if not token:
             return jsonify({'error': 'Token é obrigatório'}), 400
 
+        # Verificar token HMAC no formato: user_id:signature
+        parts = token.split(':')
+        if len(parts) != 2:
+            return jsonify({'error': 'Token inválido'}), 400
+
         try:
-            user_id = int(token)
+            user_id = int(parts[0])
         except ValueError:
             return jsonify({'error': 'Token inválido'}), 400
+
+        # Verificar assinatura HMAC
+        secret = os.environ.get('JWT_SECRET_KEY', 'muvlog-secret-key')
+        expected_sig = hmac_mod.new(
+            secret.encode(),
+            str(user_id).encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac_mod.compare_digest(parts[1], expected_sig):
+            return jsonify({'error': 'Token inválido ou expirado'}), 400
 
         user = User.query.get(user_id)
         if not user:
