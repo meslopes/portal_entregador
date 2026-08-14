@@ -33,49 +33,52 @@ def platform_admin_required(f):
 def get_platform_dashboard():
     """Retorna métricas gerais da plataforma"""
     try:
-        # Contar admins (users com tenant_id != null e user_type = ADMIN)
-        admins = User.query.filter(
-            User.user_type == UserType.ADMIN,
-            User.tenant_id.isnot(None)
-        ).count()
+        from src.models.portal_models import Driver, Restaurant, Order, Tenant
+        from datetime import datetime, timedelta
+        
+        # Contar tenants ativos
+        tenants = Tenant.query.filter_by(is_active=True).count()
+        
+        # Contar usuários totais
+        users = User.query.count()
         
         # Contar entregadores
-        from src.models.portal_models import Driver
         drivers = Driver.query.count()
         
-        # Contar estabelecimentos
-        from src.models.portal_models import Restaurant
-        establishments = Restaurant.query.count()
-        
         # Contar pedidos
-        from src.models.portal_models import Order
         orders = Order.query.count()
         
-        # Pedidos do mês atual
-        from datetime import datetime, timedelta
-        first_day = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        orders_this_month = Order.query.filter(Order.created_at >= first_day).count()
+        # Pedidos dos últimos 7 dias
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        week_orders = Order.query.filter(Order.created_at >= week_ago).count()
         
         # Receita total (soma de delivery_fee de pedidos entregues)
         delivered_orders = Order.query.filter_by(status='DELIVERED').all()
         total_revenue = sum(float(o.delivery_fee or 0) for o in delivered_orders)
         
-        # Receita do mês
-        monthly_orders = Order.query.filter(
-            Order.status == 'DELIVERED',
-            Order.created_at >= first_day
-        ).all()
-        monthly_revenue = sum(float(o.delivery_fee or 0) for o in monthly_orders)
+        # Top tenants por pedidos
+        top_tenants = []
+        all_tenants = Tenant.query.filter_by(is_active=True).all()
+        for tenant in all_tenants[:5]:
+            tenant_orders = Order.query.filter_by(tenant_id=tenant.id).count()
+            tenant_drivers = Driver.query.filter_by(tenant_id=tenant.id).count()
+            top_tenants.append({
+                'id': tenant.id,
+                'name': tenant.name,
+                'orders': tenant_orders,
+                'drivers': tenant_drivers
+            })
         
         return jsonify({
-            'admins': admins,
-            'drivers': drivers,
-            'establishments': establishments,
-            'orders_total': orders,
-            'orders_month': orders_this_month,
-            'revenue_total': round(total_revenue, 2),
-            'revenue_month': round(monthly_revenue, 2),
-            'mrr': admins * 199.00  # MRR estimado
+            'stats': {
+                'total_tenants': tenants,
+                'total_users': users,
+                'total_drivers': drivers,
+                'total_orders': orders,
+                'total_revenue': round(total_revenue, 2),
+                'week_orders': week_orders
+            },
+            'top_tenants': sorted(top_tenants, key=lambda x: x['orders'], reverse=True)
         }), 200
         
     except Exception as e:
@@ -354,4 +357,136 @@ def setup_super_admin():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao promover admin: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants', methods=['GET'])
+@jwt_required()
+@platform_admin_required
+def get_tenants():
+    """Lista todos os tenants"""
+    try:
+        from src.models.portal_models import Tenant, Driver, Restaurant, Order
+        
+        tenants = Tenant.query.all()
+        result = []
+        
+        for tenant in tenants:
+            drivers_count = Driver.query.filter_by(tenant_id=tenant.id).count()
+            restaurants_count = Restaurant.query.filter_by(tenant_id=tenant.id).count()
+            orders_count = Order.query.filter_by(tenant_id=tenant.id).count()
+            
+            result.append({
+                'id': tenant.id,
+                'name': tenant.name,
+                'slug': tenant.slug,
+                'plan': tenant.plan or 'basic',
+                'is_active': tenant.is_active,
+                'created_at': tenant.created_at.isoformat() if tenant.created_at else None,
+                'drivers_count': drivers_count,
+                'restaurants_count': restaurants_count,
+                'orders_count': orders_count
+            })
+        
+        return jsonify({'tenants': result}), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar tenants: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/<int:tenant_id>', methods=['GET'])
+@jwt_required()
+@platform_admin_required
+def get_tenant_details(tenant_id):
+    """Retorna detalhes de um tenant"""
+    try:
+        from src.models.portal_models import Tenant, Driver, Restaurant, Order
+        
+        tenant = Tenant.query.get(tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Tenant não encontrado'}), 404
+        
+        drivers = Driver.query.filter_by(tenant_id=tenant.id).all()
+        restaurants = Restaurant.query.filter_by(tenant_id=tenant.id).all()
+        orders = Order.query.filter_by(tenant_id=tenant.id).order_by(Order.created_at.desc()).limit(10).all()
+        
+        return jsonify({
+            'tenant': {
+                'id': tenant.id,
+                'name': tenant.name,
+                'slug': tenant.slug,
+                'plan': tenant.plan or 'basic',
+                'is_active': tenant.is_active,
+                'created_at': tenant.created_at.isoformat() if tenant.created_at else None,
+                'users': [{'id': u.id, 'email': u.email, 'first_name': u.first_name} for u in User.query.filter_by(tenant_id=tenant.id).all()],
+                'drivers_count': len(drivers),
+                'restaurants_count': len(restaurants),
+                'orders_count': Order.query.filter_by(tenant_id=tenant.id).count(),
+                'recent_orders': [{'id': o.id, 'order_number': o.order_number, 'status': o.status.value if o.status else 'UNKNOWN', 'delivery_fee': float(o.delivery_fee or 0)} for o in orders]
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar tenant: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/<int:tenant_id>/toggle', methods=['POST'])
+@jwt_required()
+@platform_admin_required
+def toggle_tenant(tenant_id):
+    """Ativa/desativa um tenant"""
+    try:
+        from src.models.portal_models import Tenant
+        
+        tenant = Tenant.query.get(tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Tenant não encontrado'}), 404
+        
+        tenant.is_active = not tenant.is_active
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Tenant {"ativado" if tenant.is_active else "desativado"} com sucesso',
+            'is_active': tenant.is_active
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao alterar tenant: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/users', methods=['GET'])
+@jwt_required()
+@platform_admin_required
+def get_platform_users():
+    """Lista todos os usuários (com filtro por tenant)"""
+    try:
+        tenant_id = request.args.get('tenant_id', type=int)
+        
+        query = User.query
+        if tenant_id:
+            query = query.filter(User.tenant_id == tenant_id)
+        
+        users = query.order_by(User.created_at.desc()).all()
+        
+        result = []
+        for user in users:
+            result.append({
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'user_type': user.user_type.value if user.user_type else 'UNKNOWN',
+                'status': user.status.value if user.status else 'UNKNOWN',
+                'tenant_id': user.tenant_id,
+                'created_at': user.created_at.isoformat() if user.created_at else None
+            })
+        
+        return jsonify({'users': result}), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar usuários: {e}")
         return jsonify({'error': str(e)}), 500
