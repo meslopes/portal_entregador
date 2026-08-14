@@ -3937,7 +3937,12 @@ def delete_establishment(establishment_id):
 
 
         # Deletar cliente vinculado (se existir)
-        customer = Customer.query.filter_by(name=est.name).first()
+        # Buscar customer pelo email do restaurante ou pelo nome
+        customer = None
+        if est.email:
+            customer = Customer.query.filter_by(email=est.email).first()
+        if not customer:
+            customer = Customer.query.filter_by(name=est.name).first()
         if customer:
             # Deletar User associado ao Customer (para liberar o email)
             if customer.user_id:
