@@ -31,16 +31,10 @@ const ClientInvoicePage = () => {
     try {
       setLoading(true);
       setError('');
-      // Precisa do restaurant_id - vamos buscar dos dados do usuario
-      const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
 
       // Busca o restaurant_id atraves do perfil do cliente
-      const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
-      const profileRes = await fetch(`${API_URL}/api/user/profile`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const profileData = await profileRes.json();
+      const profileRes = await api.get('/api/user/profile');
+      const profileData = profileRes.data;
 
       // O restaurant_id vem do perfil do usuario logado
       const establishment = profileData.restaurant || profileData.customer?.restaurant;
