@@ -1488,20 +1488,15 @@ def get_drivers():
 
 
 
-        # Filtro de busca
-
+        # Filtro de busca (escapar caracteres especiais do LIKE)
         if search:
-
+            # Escapar % e _ que são especiais no LIKE
+            search_escaped = search.replace('%', '\\%').replace('_', '\\_')
             query = query.filter(or_(
-
-                User.first_name.ilike(f'%{search}%'),
-
-                User.last_name.ilike(f'%{search}%'),
-
-                User.email.ilike(f'%{search}%'),
-
-                User.phone.ilike(f'%{search}%')
-
+                User.first_name.ilike(f'%{search_escaped}%'),
+                User.last_name.ilike(f'%{search_escaped}%'),
+                User.email.ilike(f'%{search_escaped}%'),
+                User.phone.ilike(f'%{search_escaped}%')
             ))
 
 
