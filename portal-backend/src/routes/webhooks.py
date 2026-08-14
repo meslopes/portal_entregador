@@ -32,6 +32,22 @@ def ifood_webhook():
     Suporta formato real do iFood (Open Delivery) e formato adaptado.
     """
     try:
+        # Verificar autenticação do webhook (token no header ou query param)
+        from src.models.portal_models import SystemConfig
+        ifood_token_config = SystemConfig.query.filter_by(config_key='ifood_webhook_token').first()
+        if ifood_token_config and ifood_token_config.config_value:
+            # Verificar token no header Authorization ou X-Webhook-Token
+            auth_header = request.headers.get('Authorization', '')
+            webhook_token = request.headers.get('X-Webhook-Token', '')
+            query_token = request.args.get('token', '')
+            
+            expected_token = ifood_token_config.config_value
+            token_provided = auth_header.replace('Bearer ', '') or webhook_token or query_token
+            
+            if token_provided != expected_token:
+                logger.warning("iFood webhook: token de autenticação inválido")
+                return jsonify({'error': 'Não autorizado'}), 401
+        
         # Log raw body for debugging
         raw_body = request.get_data(as_text=True)
         logger.info(f"iFood webhook RAW: {raw_body}")
@@ -169,12 +185,9 @@ def get_ifood_credentials(merchant_id=None):
                 'client_secret': client_secret_config.config_value
             }
         
-        # Fallback para credenciais de teste (sandbox)
-        logger.warning("Usando credenciais iFood de teste (sandbox)")
-        return {
-            'client_id': '8d1e5d84-5917-40dc-9b68-122b70da629e',
-            'client_secret': '10z6sd0fby0ker3qj30gr6bbeznk5p5nvhtpftycqzeywmzgxcnu0hncrx3w2amizlq34je3znkr5x1hpdinlan5dvigqan0qlbt'
-        }
+        # Sem credenciais configuradas
+        logger.warning("Credenciais iFood não configuradas")
+        return None
     except Exception as e:
         logger.error(f"Erro ao obter credenciais iFood: {e}")
         return None

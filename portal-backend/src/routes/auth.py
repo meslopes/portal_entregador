@@ -38,12 +38,16 @@ def create_admin():
 
         # Verificar token de setup (apenas para configuração inicial)
         import os
-        expected_token = os.environ.get('ADMIN_SETUP_TOKEN', 'muv-setup-2024-secret')
+        expected_token = os.environ.get('ADMIN_SETUP_TOKEN')
+        if not expected_token:
+            return jsonify({'error': 'ADMIN_SETUP_TOKEN não configurado no servidor'}), 500
         if setup_token != expected_token:
             return jsonify({'error': 'Token de setup inválido'}), 403
 
-        email = data.get('email', 'admin@muv.log.br')
-        password = data.get('password', 'admin123')
+        email = data.get('email')
+        password = data.get('password')
+        if not email or not password:
+            return jsonify({'error': 'Email e senha são obrigatórios'}), 400
         if User.query.filter_by(email=email).first():
             return jsonify({'message': 'Usuário já existe'}), 400
 

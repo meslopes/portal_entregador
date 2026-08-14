@@ -716,9 +716,11 @@ def admin_reset_password(user_id):
 
         data = request.get_json() or {}
 
-        new_password = data.get('new_password', 'admin123')
+        new_password = data.get('new_password')
 
+        if not new_password:
 
+            return jsonify({'error': 'Nova senha é obrigatória'}), 400
 
         if len(new_password) < 6:
 
@@ -924,7 +926,11 @@ def create_admin_user():
 
         email = data.get('email')
 
-        password = data.get('password', 'admin123')
+        password = data.get('password')
+
+        if not password:
+
+            return jsonify({'error': 'Senha é obrigatória'}), 400
 
         first_name = data.get('first_name', 'Admin')
 
@@ -987,8 +993,6 @@ def create_admin_user():
                 'id': user.id,
 
                 'email': email,
-
-                'password': password,
 
                 'name': f"{first_name} {last_name}"
 
@@ -1644,7 +1648,7 @@ def create_driver():
 
         email = data.get('email')
 
-        password = data.get('password', '123456')
+        password = data.get('password')
 
         first_name = data.get('first_name')
 
@@ -1655,6 +1659,10 @@ def create_driver():
         if not email or not first_name or not last_name:
 
             return jsonify({'error': 'Email, nome e sobrenome são obrigatórios'}), 400
+
+        if not password:
+
+            return jsonify({'error': 'Senha é obrigatória'}), 400
 
 
 
@@ -1759,8 +1767,6 @@ def create_driver():
                 'user_id': user.id,
 
                 'email': email,
-
-                'password': password,
 
                 'name': f"{first_name} {last_name}"
 
@@ -3376,7 +3382,11 @@ def create_establishment():
 
         email = data.get('email')
 
-        password = data.get('password', '123456')  # Senha padrao
+        password = data.get('password')  # Senha obrigatória se email fornecido
+
+        if email and not password:
+
+            return jsonify({'error': 'Senha é obrigatória quando email é fornecido'}), 400
 
 
 
@@ -3520,7 +3530,7 @@ def create_establishment():
 
             result['login_email'] = email
 
-            result['login_password'] = password
+            # Não retornar senha por segurança
 
 
 
