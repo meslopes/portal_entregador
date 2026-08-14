@@ -323,7 +323,7 @@ def process_expired_offers():
                         if total_failures >= 2:
                             _notify_admin_pending_order(order, total_failures, now)
                         
-                        print(f"[AUTO] Pedido #{order.order_number} oferecido a {next_driver.user.first_name} (tentativa {total_failures + 1})")
+                        logger.info(f"[AUTO] Pedido #{order.order_number} oferecido a {next_driver.user.first_name} (tentativa {total_failures + 1})")
                     else:
                         # Nenhum entregador disponível - notifica admin
                         rejection_count = len(re.findall(r'REJECTED_BY_(\d+)', order.special_instructions or ''))
