@@ -2,13 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Truck, MapPin, DollarSign, Clock, Star, Package,
-  TrendingUp, AlertCircle, Navigation, Zap, ArrowRight, Bell, BellOff
+  TrendingUp, AlertCircle, Navigation, Zap, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { driverService, orderService, utils } from '@/lib/api';
 import {
   startOrderMonitor, stopOrderMonitor,
-  setSoundEnabled, getSoundEnabled,
   requestNotificationPermission
 } from '@/lib/notify';
 
