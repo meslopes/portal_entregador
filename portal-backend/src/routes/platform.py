@@ -315,3 +315,43 @@ def delete_admin(admin_id):
         db.session.rollback()
         logger.error(f"Erro ao excluir admin: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/setup-super-admin', methods=['POST'])
+def setup_super_admin():
+    """
+    Endpoint temporário para promover um admin a super admin.
+    ⚠️ USE APENAS UMA VEZ - depois remova este endpoint
+    """
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        secret = data.get('secret')
+        
+        # Segurança: só funciona com o secret correto
+        if secret != 'muvlog-setup-2024':
+            return jsonify({'error': 'Secret inválido'}), 403
+        
+        if not email:
+            return jsonify({'error': 'Email é obrigatório'}), 400
+        
+        # Buscar o admin
+        user = User.query.filter_by(email=email, user_type=UserType.ADMIN).first()
+        if not user:
+            return jsonify({'error': 'Admin não encontrado'}), 404
+        
+        # Promover a super admin (remover tenant_id)
+        old_tenant_id = user.tenant_id
+        user.tenant_id = None
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Admin {email} promovido a Super Admin com sucesso',
+            'old_tenant_id': old_tenant_id,
+            'note': 'Agora você pode acessar /platform/login com este email'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao promover admin: {e}")
+        return jsonify({'error': str(e)}), 500
