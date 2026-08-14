@@ -141,7 +141,7 @@ const OwnDriverFinancialPage = () => {
         payment_method: 'PIX'
       });
       loadEarnings();
-      setSuccess(`${res.data.count} pagamentos registrados! Total: R$ ${res.data.total_paid.toFixed(2)}`);
+      setSuccess(`${res.data.count} pagamentos registrados! Total: R$ ${(res.data.total_paid || 0).toFixed(2)}`);
       setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       setError('Erro ao registrar pagamentos');
@@ -493,7 +493,7 @@ const OwnDriverFinancialPage = () => {
                 <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>Economia estimada no período</p>
                 <p style={{ fontSize: '2rem', fontWeight: 700 }}>{formatCurrency(comparison.savings.estimated_savings)}</p>
                 <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>
-                  {comparison.savings.savings_percentage.toFixed(1)}% de economia em relação à plataforma
+                  {(comparison.savings.savings_percentage || 0).toFixed(1)}% de economia em relação à plataforma
                 </p>
               </div>
             </div>

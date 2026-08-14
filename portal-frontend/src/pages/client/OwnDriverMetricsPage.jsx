@@ -151,7 +151,7 @@ const OwnDriverMetricsPage = () => {
             iconBg="#fef3c7"
             iconColor="#f59e0b"
             label="Tempo Médio"
-            value={`${summary.avg_delivery_time} min`}
+            value={`${summary.avg_delivery_time || 0} min`}
           />
         </div>
       )}
@@ -242,8 +242,8 @@ const DriverMetricCard = ({ metric, getRatingColor, getRatingLabel }) => {
             fontSize: '0.8125rem', fontWeight: 600,
             display: 'flex', alignItems: 'center', gap: '0.375rem'
           }}>
-            <Star size={14} fill={getRatingColor(rating.average)} />
-            {rating.average.toFixed(1)}
+            <Star size={14} fill={getRatingColor(rating.average || 0)} />
+            {(rating.average || 0).toFixed(1)}
           </div>
           <span style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
             ({rating.total_ratings} {rating.total_ratings === 1 ? 'avaliação' : 'avaliações'})
