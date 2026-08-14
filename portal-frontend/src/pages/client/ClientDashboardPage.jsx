@@ -419,7 +419,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
               {utils.formatDateTime(order.created_at)}
             </p>
           </div>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+          <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
             ✕
           </button>
         </div>
