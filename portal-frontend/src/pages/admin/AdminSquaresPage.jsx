@@ -162,7 +162,7 @@ const AdminSquaresPage = () => {
                     <span style={{ color: '#64748b' }}>Dist. Mínima:</span>
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.min_distance_km || '4'} km</span>
                     <span style={{ color: '#64748b' }}>Frete Mínimo:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.min_delivery_fee || (sq.price_per_km * 4).toFixed(2)}</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.min_delivery_fee || ((sq.price_per_km || 0) * 4).toFixed(2)}</span>
                     <span style={{ color: '#64748b' }}>Frete Máximo:</span>
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.max_delivery_fee || '50,00'}</span>
                     <span style={{ color: '#64748b' }}>Entregador recebe:</span>
