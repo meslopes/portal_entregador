@@ -73,7 +73,11 @@ def update_profile():
         if user.driver:
             driver = user.driver
             if 'vehicle_type' in data:
-                driver.vehicle_type = data['vehicle_type']
+                try:
+                    from src.models.portal_models import VehicleType
+                    driver.vehicle_type = VehicleType(data['vehicle_type'])
+                except (ValueError, KeyError):
+                    return jsonify({'error': 'Tipo de veículo inválido'}), 400
             if 'vehicle_plate' in data:
                 driver.vehicle_plate = data['vehicle_plate']
             if 'vehicle_model' in data:
