@@ -480,7 +480,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
           )}
 
           {/* Códigos de Segurança */}
-          {isPending && (order.pickup_code || order.delivery_code) && (
+          {(order.pickup_code || order.delivery_code) && (
             <DeliveryCodes pickupCode={order.pickup_code} deliveryCode={order.delivery_code} />
           )}
 
