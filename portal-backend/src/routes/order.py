@@ -160,7 +160,7 @@ def process_scheduled_orders():
             db.session.commit()
             
     except Exception as e:
-        print(f"Erro ao processar pedidos agendados: {e}")
+        logger.error(f"Erro ao processar pedidos agendados: {e}")
 
 
 def process_expired_offers():
@@ -337,7 +337,7 @@ def process_expired_offers():
         db.session.commit()
         
     except Exception as e:
-        print(f"Erro ao processar ofertas expiradas: {e}")
+        logger.error(f"Erro ao processar ofertas expiradas: {e}")
         db.session.rollback()
 
 
