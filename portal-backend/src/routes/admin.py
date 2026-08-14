@@ -1250,15 +1250,33 @@ def admin_update_order(order_id):
 
         if data.get('subtotal') is not None:
 
-            order.subtotal = data['subtotal']
+            try:
+
+                order.subtotal = float(data['subtotal'])
+
+            except (ValueError, TypeError):
+
+                return jsonify({'error': 'subtotal deve ser um número'}), 400
 
         if data.get('delivery_fee') is not None:
 
-            order.delivery_fee = data['delivery_fee']
+            try:
+
+                order.delivery_fee = float(data['delivery_fee'])
+
+            except (ValueError, TypeError):
+
+                return jsonify({'error': 'delivery_fee deve ser um número'}), 400
 
         if data.get('total_amount') is not None:
 
-            order.total_amount = data['total_amount']
+            try:
+
+                order.total_amount = float(data['total_amount'])
+
+            except (ValueError, TypeError):
+
+                return jsonify({'error': 'total_amount deve ser um número'}), 400
 
         if data.get('payment_method'):
 
