@@ -1212,7 +1212,10 @@ def admin_update_order(order_id):
 
             return jsonify({'error': 'Pedido não encontrado'}), 404
 
-
+        # Verificar se o pedido pertence ao tenant do admin
+        tenant_id = get_current_tenant_id()
+        if tenant_id and order.tenant_id and order.tenant_id != tenant_id:
+            return jsonify({'error': 'Pedido não pertence ao seu tenant'}), 403
 
         data = request.get_json()
 
