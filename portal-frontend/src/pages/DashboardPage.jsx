@@ -105,8 +105,8 @@ const DashboardPage = () => {
         driverService.getStats(),
         orderService.getCurrentOrder()
       ]);
-      setStats(statsData);
-      setCurrentOrder(orderData.order || null);
+      setStats(statsData || {});
+      setCurrentOrder(orderData?.order || null);
     } catch (error) {
       setError('Erro ao carregar dados');
       console.error(error);
