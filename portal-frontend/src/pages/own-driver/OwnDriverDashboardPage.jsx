@@ -35,14 +35,14 @@ const OwnDriverDashboardPage = () => {
     }
     loadData();
 
-    // Auto-refresh a cada 20 segundos
-    const interval = setInterval(loadData, 20000);
+    // Auto-refresh a cada 20 segundos (sem flash de loading)
+    const interval = setInterval(() => loadData(true), 20000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isRefresh) setLoading(true);
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
 
@@ -66,7 +66,7 @@ const OwnDriverDashboardPage = () => {
         setError('Erro ao carregar dados');
       }
     } finally {
-      setLoading(false);
+      if (!isRefresh) setLoading(false);
     }
   };
 
