@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Globe, AlertCircle, CheckCircle, X, Save, Settings,
-  Link, Shield
+  Globe, AlertCircle, CheckCircle, X, Save, Settings
 } from 'lucide-react';
 import api from '@/lib/api';
 
