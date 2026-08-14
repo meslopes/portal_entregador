@@ -212,7 +212,7 @@ def process_expired_offers():
                     except Exception:
                         pass
                     
-                    print(f"[PROCESS_EXPIRED] Order #{order.order_number} offered to {next_driver.user.first_name}")
+                    logger.info(f"[PROCESS_EXPIRED] Order #{order.order_number} offered to {next_driver.user.first_name}")
                 continue
             
             expired_driver_id = int(offer_match.group(1))
@@ -227,10 +227,10 @@ def process_expired_offers():
             
             elapsed = now_ts - offer_ts
             
-            print(f"[PROCESS_EXPIRED] Order #{order.order_number}: offered to driver {expired_driver_id}, elapsed={elapsed}s, timeout={timeout_seconds}s")
+            logger.info(f"[PROCESS_EXPIRED] Order #{order.order_number}: offered to driver {expired_driver_id}, elapsed={elapsed}s, timeout={timeout_seconds}s")
             
             if elapsed >= timeout_seconds:
-                print(f"[PROCESS_EXPIRED] Order #{order.order_number}: TIMEOUT! elapsed={elapsed}s >= {timeout_seconds}s")
+                logger.info(f"[PROCESS_EXPIRED] Order #{order.order_number}: TIMEOUT! elapsed={elapsed}s >= {timeout_seconds}s")
                 # Oferta expirou - marca como timeout e move para próximo
                 offer_match = re.search(r'OFFERED_TO_(\d+)', order.special_instructions or '')
                 if offer_match:
@@ -377,10 +377,10 @@ def _notify_admin_pending_order(order, failure_count, now):
             except Exception:
                 pass
         
-        print(f"[ADMIN NOTIFY] Pedido #{order.order_number} - {failure_count} falhas, admin notificado")
+        logger.info(f"[ADMIN NOTIFY] Pedido #{order.order_number} - {failure_count} falhas, admin notificado")
         
     except Exception as e:
-        print(f"Erro ao notificar admin: {e}")
+        logger.error(f"Erro ao notificar admin: {e}")
 
 
 def notify_all_drivers(order, order_info):
@@ -407,7 +407,7 @@ def notify_all_drivers(order, order_info):
             except Exception:
                 continue
     except Exception as e:
-        print(f"Erro ao notificar drivers (broadcast): {e}")
+        logger.error(f"Erro ao notificar drivers (broadcast): {e}")
 
 
 def find_next_in_queue(order):
@@ -471,7 +471,7 @@ def find_next_in_queue(order):
         return available_drivers[0]['driver']
         
     except Exception as e:
-        print(f"Erro na fila ordenada: {e}")
+        logger.error(f"Erro na fila ordenada: {e}")
         return None
 
 
@@ -496,7 +496,7 @@ def update_driver_queue(driver, action):
         
         db.session.commit()
     except Exception as e:
-        print(f"Erro ao atualizar fila: {e}")
+        logger.error(f"Erro ao atualizar fila: {e}")
 
 
 order_bp = Blueprint('order', __name__)
@@ -942,7 +942,7 @@ def notify_admin_no_drivers(order):
         
         db.session.commit()
     except Exception as e:
-        print(f"Erro ao notificar admin: {e}")
+        logger.error(f"Erro ao notificar admin: {e}")
 
 @order_bp.route('/<int:order_id>/status', methods=['PUT'])
 @jwt_required()
@@ -1095,7 +1095,7 @@ def update_order_status(order_id):
                         proof_url = f"/uploads/proofs/{filename}"
                         order.delivery.proof_of_delivery_url = proof_url
                     except Exception as e:
-                        print(f"Erro ao salvar prova de entrega: {e}")
+                        logger.error(f"Erro ao salvar prova de entrega: {e}")
                 
                 # Cria pagamento para o entregador
                 if order.delivery:
@@ -2493,7 +2493,7 @@ def notify_admin_low_rating(driver, rating, feedback, order):
 
         db.session.commit()
     except Exception as e:
-        print(f"Erro ao notificar admin sobre avaliacao baixa: {e}")
+        logger.error(f"Erro ao notificar admin sobre avaliacao baixa: {e}")
 
 
 # ============================================
@@ -2589,7 +2589,7 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         return available_drivers[0]['driver']
 
     except Exception as e:
-        print(f"Erro na atribuicao inteligente: {e}")
+        logger.error(f"Erro na atribuicao inteligente: {e}")
         return None
 
 
