@@ -166,6 +166,8 @@ const ClientLayout = ({ children }) => {
                   border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b'
                 }}
                 className="mobile-menu-btn"
+                aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+                aria-expanded={isMobileMenuOpen}
               >
                 {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>

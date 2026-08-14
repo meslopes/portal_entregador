@@ -185,6 +185,8 @@ const Layout = ({ children }) => {
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="mobile-menu-btn"
+                aria-label={isMobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+                aria-expanded={isMobileMenuOpen}
                 style={{
                   padding: '0.5rem',
                   borderRadius: '0.375rem',
