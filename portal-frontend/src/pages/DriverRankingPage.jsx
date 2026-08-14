@@ -33,6 +33,7 @@ const DriverRankingPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError('');
       const [rankingRes, bonusesRes, achievementsRes] = await Promise.all([
         api.get(`/api/bonus/ranking?period=${period}`),
         api.get('/api/bonus/bonuses'),
