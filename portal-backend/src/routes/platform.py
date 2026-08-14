@@ -323,16 +323,21 @@ def delete_admin(admin_id):
 @platform_bp.route('/setup-super-admin', methods=['POST'])
 def setup_super_admin():
     """
-    Endpoint temporário para promover um admin a super admin.
-    ⚠️ USE APENAS UMA VEZ - depois remova este endpoint
+    Endpoint para promover um admin a super admin.
+    Requer ADMIN_SETUP_TOKEN como secret.
     """
+    import os
     try:
         data = request.get_json()
         email = data.get('email')
         secret = data.get('secret')
         
-        # Segurança: só funciona com o secret correto
-        if secret != 'muvlog-setup-2024':
+        # Segurança: usar token do ambiente
+        expected_token = os.environ.get('ADMIN_SETUP_TOKEN')
+        if not expected_token:
+            return jsonify({'error': 'ADMIN_SETUP_TOKEN não configurado no servidor'}), 500
+        
+        if secret != expected_token:
             return jsonify({'error': 'Secret inválido'}), 403
         
         if not email:
