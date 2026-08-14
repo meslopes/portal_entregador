@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Building2, Users, Package, DollarSign, TrendingUp,
   ChevronRight, Loader2, RefreshCw, Eye, Edit, ToggleLeft, ToggleRight,
-  Store, Truck, BarChart3, Globe, Shield, Calendar
+  Store, Truck, BarChart3, Globe, Shield, Calendar, Plus, Trash2, X
 } from 'lucide-react';
 import api from '@/lib/api';
 
