@@ -95,7 +95,7 @@ const ClientLayout = ({ children }) => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav style={{ display: 'flex', gap: '0.25rem' }}>
+            <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto' }}>
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
