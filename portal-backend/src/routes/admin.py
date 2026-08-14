@@ -1962,13 +1962,25 @@ def get_all_orders():
 
         if date_from:
 
-            query = query.filter(Order.created_at >= datetime.strptime(date_from, '%Y-%m-%d'))
+            try:
+
+                query = query.filter(Order.created_at >= datetime.strptime(date_from, '%Y-%m-%d'))
+
+            except ValueError:
+
+                return jsonify({'error': 'Formato de data_from inválido. Use YYYY-MM-DD'}), 400
 
 
 
         if date_to:
 
-            query = query.filter(Order.created_at <= datetime.strptime(date_to, '%Y-%m-%d'))
+            try:
+
+                query = query.filter(Order.created_at <= datetime.strptime(date_to, '%Y-%m-%d'))
+
+            except ValueError:
+
+                return jsonify({'error': 'Formato de data_to inválido. Use YYYY-MM-DD'}), 400
 
 
 
@@ -1986,11 +1998,11 @@ def get_all_orders():
 
             order_dict = order.to_dict()
 
-            order_dict['restaurant'] = order.restaurant.to_dict()
+            order_dict['restaurant'] = order.restaurant.to_dict() if order.restaurant else None
 
-            order_dict['customer'] = order.customer.to_dict()
+            order_dict['customer'] = order.customer.to_dict() if order.customer else None
 
-            order_dict['delivery_address'] = order.delivery_address.to_dict()
+            order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
 
             
 
@@ -2000,9 +2012,9 @@ def get_all_orders():
 
                     'id': order.driver.id,
 
-                    'name': f"{order.driver.user.first_name} {order.driver.user.last_name}",
+                    'name': f"{order.driver.user.first_name} {order.driver.user.last_name}" if order.driver.user else 'N/A',
 
-                    'phone': order.driver.user.phone
+                    'phone': order.driver.user.phone if order.driver.user else None
 
                 }
 
@@ -3922,7 +3934,7 @@ def report_orders_by_date():
 
             func.count(Order.id).label('total'),
 
-            func.sum(Order.delivery_fee).label('revenue'),
+            func.sum(Order.total_amount).label('revenue'),
 
             func.sum(Order.delivery_fee).label('delivery_fees')
 
