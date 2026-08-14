@@ -1240,10 +1240,10 @@ def process_driver_response_whatsapp(phone, action):
                 )
 
             whatsapp_service.send_order_rejected_by_whatsapp(phone, pending_order.order_number)
-            print(f"Pedido #{pending_order.order_number} recusado via WhatsApp por {user.first_name}")
+            logger.info(f"Pedido #{pending_order.order_number} recusado via WhatsApp por {user.first_name}")
 
     except Exception as e:
-        print(f"Erro ao processar resposta WhatsApp do entregador: {e}")
+        logger.error(f"Erro ao processar resposta WhatsApp do entregador: {e}")
 
 
 # ============================================
