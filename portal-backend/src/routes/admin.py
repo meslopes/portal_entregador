@@ -3868,6 +3868,26 @@ def delete_establishment(establishment_id):
 
             Order.query.filter_by(restaurant_id=establishment_id).delete()
 
+            # Deletar faturas vinculadas ao estabelecimento
+
+            Invoice.query.filter_by(restaurant_id=establishment_id).delete()
+
+            # Deletar ganhos de entregadores próprios vinculados
+
+            OwnDriverEarning.query.filter_by(restaurant_id=establishment_id).delete()
+
+            # Deletar entregadores próprios do estabelecimento
+
+            EstablishmentDriver.query.filter_by(restaurant_id=establishment_id).delete()
+
+            # Deletar vinculações entregador-estabelecimento
+
+            DriverRestaurant.query.filter_by(restaurant_id=establishment_id).delete()
+
+            # Deletar credenciais de plataformas vinculadas
+
+            PlatformCredential.query.filter_by(restaurant_id=establishment_id).delete()
+
 
 
         # Deletar cliente vinculado (se existir)
