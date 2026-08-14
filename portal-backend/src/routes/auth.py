@@ -90,6 +90,16 @@ def register():
         if not email or not password or not first_name or not last_name:
             return jsonify({'error': 'Email, senha, nome e sobrenome são obrigatórios'}), 400
 
+        # Validar formato de email
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return jsonify({'error': 'Formato de email inválido'}), 400
+
+        # Validar comprimento da senha
+        if len(password) < 6:
+            return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
+
         # Buscar tenant se fornecido
         tenant_id = None
         if tenant_slug:
@@ -191,6 +201,16 @@ def register_client():
 
         if not email or not password or not first_name or not last_name or not phone:
             return jsonify({'error': 'Email, senha, nome, sobrenome e telefone são obrigatórios'}), 400
+
+        # Validar formato de email
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return jsonify({'error': 'Formato de email inválido'}), 400
+
+        # Validar comprimento da senha
+        if len(password) < 6:
+            return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
 
         # Buscar tenant se fornecido
         tenant_id = None
