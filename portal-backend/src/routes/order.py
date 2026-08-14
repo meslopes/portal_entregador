@@ -928,8 +928,11 @@ def notify_admin_no_drivers(order):
         except Exception:
             pass
 
-        # Notifica via sistema
-        admin_users = User.query.filter_by(user_type=UserType.ADMIN).all()
+        # Notifica via sistema (apenas admins do mesmo tenant)
+        admin_query = User.query.filter_by(user_type=UserType.ADMIN)
+        if order.tenant_id:
+            admin_query = admin_query.filter(User.tenant_id == order.tenant_id)
+        admin_users = admin_query.all()
         for admin in admin_users:
             notification = Notification(
                 user_id=admin.id,
