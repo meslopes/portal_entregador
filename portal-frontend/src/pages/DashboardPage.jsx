@@ -86,6 +86,14 @@ const DashboardPage = () => {
         document.head.appendChild(script);
       }
     }
+
+    // Cleanup function to remove map on unmount
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
   }, [location, currentOrder]);
 
   const mapInstanceRef = useRef(null);
