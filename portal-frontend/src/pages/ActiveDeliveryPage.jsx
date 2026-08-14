@@ -620,7 +620,7 @@ const ActiveDeliveryPage = () => {
             <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>Prova de entrega</p>
             <p style={{ fontSize: '0.75rem', color: '#16a34a' }}>Foto capturada ✓</p>
           </div>
-          <button onClick={() => { setProofPhoto(null); setPreviewUrl(null); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+          <button onClick={() => { setProofPhoto(null); setPreviewUrl(null); }} aria-label="Remover foto" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
             <X size={18} />
           </button>
         </div>
