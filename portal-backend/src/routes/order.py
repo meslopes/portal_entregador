@@ -2543,6 +2543,23 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
             driver_query = driver_query.filter(Driver.tenant_id == order.tenant_id)
         online_drivers = driver_query.all()
 
+        # Busca contagem de pedidos ativos por entregador em uma única query
+        driver_ids = [d.id for d in online_drivers if d.id not in exclude_driver_ids]
+        active_counts = {}
+        if driver_ids:
+            active_orders_query = db.session.query(
+                Order.driver_id, func.count(Order.id)
+            ).filter(
+                Order.driver_id.in_(driver_ids),
+                Order.status.in_([
+                    OrderStatus.ACCEPTED,
+                    OrderStatus.PREPARING,
+                    OrderStatus.READY,
+                    OrderStatus.PICKED_UP
+                ])
+            ).group_by(Order.driver_id).all()
+            active_counts = {driver_id: count for driver_id, count in active_orders_query}
+
         available_drivers = []
 
         for driver in online_drivers:
@@ -2559,16 +2576,8 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
             if distance > max_radius:
                 continue
 
-            # Conta pedidos ativos do entregador
-            active_orders = Order.query.filter(
-                Order.driver_id == driver.id,
-                Order.status.in_([
-                    OrderStatus.ACCEPTED,
-                    OrderStatus.PREPARING,
-                    OrderStatus.READY,
-                    OrderStatus.PICKED_UP
-                ])
-            ).count()
+            # Usa contagem pré-buscada
+            active_orders = active_counts.get(driver.id, 0)
 
             # Verifica se tem capacidade
             max_concurrent = driver.max_concurrent_orders or 3
