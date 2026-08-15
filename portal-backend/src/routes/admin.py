@@ -1001,21 +1001,28 @@ def create_admin_user():
 
 @admin_required
 
+# Throttle para process_scheduled_orders e process_expired_offers
+_last_scheduled_process = 0
+_last_expired_process = 0
+
 def get_dashboard():
 
     """Obtém dados do dashboard administrativo"""
 
     try:
 
-        # Processa pedidos agendados e ofertas expiradas
-
-        from src.routes.order import process_scheduled_orders, process_expired_offers
-
-        process_scheduled_orders()
-
-        process_expired_offers()
-
-        
+        # Processa pedidos agendados e ofertas expiradas (throttle: a cada 5 min)
+        import time
+        global _last_scheduled_process, _last_expired_process
+        now = time.time()
+        if now - _last_scheduled_process > 300:
+            from src.routes.order import process_scheduled_orders
+            process_scheduled_orders()
+            _last_scheduled_process = now
+        if now - _last_expired_process > 300:
+            from src.routes.order import process_expired_offers
+            process_expired_offers()
+            _last_expired_process = now
 
         tenant_id = get_current_tenant_id()
 
@@ -1919,11 +1926,14 @@ def get_all_orders():
 
     try:
 
-        # Processa pedidos agendados e ofertas expiradas
-
-        from src.routes.order import process_scheduled_orders, process_expired_offers
-
-        process_expired_offers()
+        # Processa ofertas expiradas (throttle: a cada 5 min)
+        import time
+        global _last_expired_process
+        now = time.time()
+        if now - _last_expired_process > 300:
+            from src.routes.order import process_expired_offers
+            process_expired_offers()
+            _last_expired_process = now
 
 
 
@@ -2733,16 +2743,6 @@ def get_live_tracking():
 
     try:
 
-        # Processa pedidos agendados e ofertas expiradas
-
-        from src.routes.order import process_scheduled_orders, process_expired_offers
-
-        process_scheduled_orders()
-
-        process_expired_offers()
-
-        
-
         square_id = request.args.get('square_id', type=int)
 
         tenant_id = get_current_tenant_id()
@@ -2873,70 +2873,6 @@ def get_live_tracking():
 
                 if restaurant:
 
-                    # Geocodifica se não tem coordenadas OU se coordenadas são fallback
-
-                    needs_geocode = False
-
-                    if not restaurant.latitude or not restaurant.longitude:
-
-                        needs_geocode = True
-
-                    else:
-
-                        lat = float(restaurant.latitude)
-
-                        lng = float(restaurant.longitude)
-
-                        # Coordenadas de Capão da Canoa (-29.7447, -50.0111)
-
-                        if abs(lat - (-29.7447)) < 0.1 and abs(lng - (-50.0111)) < 0.1:
-
-                            if restaurant.address and 'capão' not in restaurant.address.lower() and 'capao' not in restaurant.address.lower():
-
-                                needs_geocode = True
-
-                        # Coordenadas de fallback (-29.95, -50.45)
-
-                        elif abs(lat - (-29.95)) < 0.01 and abs(lng - (-50.45)) < 0.01:
-
-                            needs_geocode = True
-
-                    
-
-                    if needs_geocode:
-
-                        try:
-
-                            from src.services.geocoding import geocode_address
-
-                            # Extrai cidade do endereço
-
-                            city_hint = None
-
-                            if restaurant.address:
-
-                                parts = restaurant.address.split(',')
-
-                                if len(parts) >= 3:
-
-                                    city_hint = parts[-2].strip()
-
-                            geo = geocode_address(restaurant.address, city_hint=city_hint)
-
-                            if geo:
-
-                                restaurant.latitude = geo['latitude']
-
-                                restaurant.longitude = geo['longitude']
-
-                                db.session.flush()
-
-                        except Exception:
-
-                            pass
-
-                    
-
                     if restaurant.latitude and restaurant.longitude:
 
                         # Buscar pedidos ativos deste estabelecimento
@@ -3014,76 +2950,6 @@ def get_live_tracking():
                 delivery_addr = Address.query.get(order.delivery_address_id)
 
                 if delivery_addr:
-
-                    # Geocodifica se não tem coordenadas OU se coordenadas são fallback
-
-                    needs_geocode = False
-
-                    if not delivery_addr.latitude or not delivery_addr.longitude:
-
-                        needs_geocode = True
-
-                    else:
-
-                        lat = float(delivery_addr.latitude)
-
-                        lng = float(delivery_addr.longitude)
-
-                        # Coordenadas de Capão da Canoa (-29.7447, -50.0111)
-
-                        if abs(lat - (-29.7447)) < 0.1 and abs(lng - (-50.0111)) < 0.1:
-
-                            if delivery_addr.city and 'capão' not in delivery_addr.city.lower() and 'capao' not in delivery_addr.city.lower():
-
-                                needs_geocode = True
-
-                        # Coordenadas de fallback (-29.95, -50.45)
-
-                        elif abs(lat - (-29.95)) < 0.01 and abs(lng - (-50.45)) < 0.01:
-
-                            needs_geocode = True
-
-                    
-
-                    if needs_geocode:
-
-                        try:
-
-                            from src.services.geocoding import geocode_address
-
-                            # Tenta obter cidade da praça do restaurante
-
-                            city_hint = delivery_addr.city
-
-                            if not city_hint and order.restaurant and order.restaurant.square_id:
-
-                                from src.models.portal_models import Square
-
-                                square = Square.query.get(order.restaurant.square_id)
-
-                                if square:
-
-                                    city_hint = square.city
-
-                            
-
-                            full_addr = f"{delivery_addr.street}, {delivery_addr.neighborhood or ''}, {delivery_addr.city or ''}, {delivery_addr.state or 'RS'}"
-
-                            geo = geocode_address(full_addr, city_hint=city_hint)
-
-                            if geo:
-
-                                delivery_addr.latitude = geo['latitude']
-
-                                delivery_addr.longitude = geo['longitude']
-
-                                db.session.flush()
-
-                        except Exception:
-
-                            pass
-
-                    
 
                     if delivery_addr.latitude and delivery_addr.longitude:
 
