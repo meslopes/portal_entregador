@@ -80,13 +80,13 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>
               Distribuir Pedido
             </h2>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
               #{order.order_number}
             </p>
           </div>
           <button onClick={onClose} style={{
             border: 'none', background: 'none', cursor: 'pointer',
-            color: '#94a3b8', fontSize: '1.25rem', padding: '0.25rem'
+            color: '#64748b', fontSize: '1.25rem', padding: '0.25rem'
           }}>
             <X size={20} />
           </button>
@@ -159,7 +159,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
                   disabled={!selectedDriverId || assigning}
                   style={{
                     padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
-                    background: selectedDriverId && !assigning ? '#2563eb' : '#94a3b8',
+                    background: selectedDriverId && !assigning ? '#2563eb' : '#64748b',
                     color: 'white', cursor: selectedDriverId && !assigning ? 'pointer' : 'not-allowed',
                     fontSize: '0.8125rem', fontWeight: 600,
                     display: 'flex', alignItems: 'center', gap: '0.375rem',
@@ -171,7 +171,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
                 </button>
               </div>
             ) : (
-              <p style={{ fontSize: '0.8125rem', color: '#94a3b8', padding: '0.5rem 0' }}>
+              <p style={{ fontSize: '0.8125rem', color: '#64748b', padding: '0.5rem 0' }}>
                 Nenhum entregador próprio online no momento.
               </p>
             )}
@@ -180,7 +180,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
           {/* Separador */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1rem 0' }}>
             <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-            <span style={{ fontSize: '0.6875rem', color: '#94a3b8', fontWeight: 500 }}>OU</span>
+            <span style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 500 }}>OU</span>
             <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
           </div>
 
@@ -214,7 +214,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
             onClick={onClose}
             style={{
               width: '100%', padding: '0.625rem', borderRadius: '0.5rem',
-              border: 'none', background: 'none', color: '#94a3b8',
+              border: 'none', background: 'none', color: '#64748b',
               fontSize: '0.8125rem', cursor: 'pointer', marginTop: '0.75rem'
             }}
           >

@@ -165,7 +165,7 @@ const EstablishmentDriversPage = () => {
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '500px', zIndex: 100000, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{editingId ? 'Editar Entregador' : 'Novo Entregador'}</h2>
-              <button onClick={resetForm} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={resetForm} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
               <div style={{ marginBottom: '1rem' }}>
@@ -231,14 +231,14 @@ const EstablishmentDriversPage = () => {
       {/* Lista de entregadores */}
       {drivers.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <Users size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
+          <Users size={48} style={{ color: '#64748b', marginBottom: '1rem' }} />
           <p style={{ color: '#64748b', fontSize: '1rem' }}>Nenhum entregador cadastrado</p>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>Cadastre seus entregadores para começar a usar</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.5rem' }}>Cadastre seus entregadores para começar a usar</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {drivers.map(driver => (
-            <div key={driver.id} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${driver.is_online ? '#22c55e' : '#94a3b8'}` }}>
+            <div key={driver.id} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${driver.is_online ? '#22c55e' : '#64748b'}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: driver.is_online ? '#dcfce7' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
@@ -260,7 +260,7 @@ const EstablishmentDriversPage = () => {
                       {driver.vehicle_type} {driver.vehicle_plate ? `• ${driver.vehicle_plate}` : ''} {driver.vehicle_model ? `• ${driver.vehicle_model}` : ''}
                     </p>
                     {driver.phone && (
-                      <p style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{driver.phone}</p>
+                      <p style={{ color: '#64748b', fontSize: '0.75rem' }}>{driver.phone}</p>
                     )}
                   </div>
                 </div>

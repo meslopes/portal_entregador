@@ -3,7 +3,8 @@ import {
   Users, Search, Plus, AlertCircle, Truck, Phone, Mail,
   Star, X, Edit, Eye, MapPin, User, Trash2, Clock
 } from 'lucide-react';
-import { adminService, utils } from '@/lib/api';
+import api, { adminService, utils } from '@/lib/api';
+import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminDriversPage = () => {
@@ -170,7 +171,7 @@ const AdminDriversPage = () => {
       {/* Filtros */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input type="text" placeholder="Buscar por nome, e-mail ou telefone..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ width: '100%', padding: '0.625rem 0.75rem 0.625rem 2.5rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
@@ -207,11 +208,11 @@ const AdminDriversPage = () => {
               <div key={driver.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px', padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc', alignItems: 'center', cursor: 'pointer' }} className="table-row" onClick={() => openDetails(driver)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetails(driver); } }}>
                 <div>
                   <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{driver.user?.first_name} {driver.user?.last_name}</p>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{driver.user?.email}</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{driver.user?.email}</p>
                 </div>
                 <span style={{ textAlign: 'center', fontSize: '0.8125rem' }}>{utils.getStatusText(driver.vehicle_type)}</span>
                 <span style={{ textAlign: 'center' }}>
-                  <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: driver.is_online ? '#dcfce7' : '#f1f5f9', color: driver.is_online ? '#16a34a' : '#94a3b8' }}>
+                  <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: driver.is_online ? '#dcfce7' : '#f1f5f9', color: driver.is_online ? '#16a34a' : '#64748b' }}>
                     {driver.is_online ? 'Online' : 'Offline'}
                   </span>
                 </span>
@@ -226,7 +227,7 @@ const AdminDriversPage = () => {
                   <button onClick={() => openEditForm(driver)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
                     <Edit size={14} />
                   </button>
-                  <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'OFFLINE' : 'ONLINE'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#94a3b8' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
+                  <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'OFFLINE' : 'ONLINE'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#64748b' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
                     {driver.is_online ? <Truck size={14} /> : <Truck size={14} />}
                   </button>
                   <button onClick={async (e) => { e.stopPropagation(); if (!window.confirm('Suspender este entregador?')) return; try { await adminService.updateDriverStatus(driver.id, 'SUSPENDED'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#f59e0b' }} title="Suspender">
@@ -256,7 +257,7 @@ const AdminDriversPage = () => {
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '550px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Novo Entregador</h2>
-              <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmitForm} style={{ padding: '1.5rem' }}>
               {formError && (
@@ -330,7 +331,7 @@ const AdminDriversPage = () => {
 
               <FormField label="MÃ¡ximo de Pedidos SimultÃ¢neos">
                 <input type="number" name="max_concurrent_orders" min="1" max="10" value={formData.max_concurrent_orders} onChange={handleFormChange} style={inputStyle} />
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Quantidade mÃ¡xima de pedidos que o entregador pode ter ao mesmo tempo (configurÃ¡vel pelo admin)</p>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Quantidade mÃ¡xima de pedidos que o entregador pode ter ao mesmo tempo (configurÃ¡vel pelo admin)</p>
               </FormField>
 
               <FormField label="Chave PIX">
@@ -354,7 +355,7 @@ const AdminDriversPage = () => {
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Detalhes do Entregador</h2>
-              <button onClick={() => setShowDetails(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={() => setShowDetails(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <div style={{ padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -363,7 +364,7 @@ const AdminDriversPage = () => {
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{showDetails.user?.first_name} {showDetails.user?.last_name}</h3>
-                  <p style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>{showDetails.user?.email}</p>
+                  <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>{showDetails.user?.email}</p>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -372,11 +373,11 @@ const AdminDriversPage = () => {
                 <InfoBox label="AvaliaÃ§Ã£o" value={showDetails.statistics?.average_rating ? `${showDetails.statistics.average_rating} â­` : '-'} />
                 <InfoBox label="Entregas" value={showDetails.total_deliveries || 0} />
                 <InfoBox label="Ganhos Totais" value={utils.formatCurrency(showDetails.statistics?.total_earnings || 0)} />
-                <InfoBox label="Status" value={showDetails.is_online ? 'Online' : 'Offline'} color={showDetails.is_online ? '#16a34a' : '#94a3b8'} />
+                <InfoBox label="Status" value={showDetails.is_online ? 'Online' : 'Offline'} color={showDetails.is_online ? '#16a34a' : '#64748b'} />
               </div>
               {showDetails.pix_key && (
                 <div style={{ padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', marginBottom: '1rem' }}>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>PIX</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>PIX</p>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{showDetails.pix_key}</p>
                 </div>
               )}
@@ -391,7 +392,7 @@ const AdminDriversPage = () => {
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Entregador</h2>
-              <button onClick={() => setShowEdit(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={() => setShowEdit(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleEdit} style={{ padding: '1.5rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
@@ -439,7 +440,7 @@ const FormField = ({ label, children }) => (
 
 const InfoBox = ({ label, value, color }) => (
   <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '0.75rem' }}>
-    <p style={{ fontSize: '0.625rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+    <p style={{ fontSize: '0.625rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: color || '#1e293b' }}>{value}</p>
   </div>
 );

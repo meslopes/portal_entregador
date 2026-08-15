@@ -147,18 +147,18 @@ const OrderTimeline = ({ order }) => {
                     fontWeight: stepStatus === 'current' ? 600 : 400,
                     color: stepStatus === 'completed' ? '#166534'
                       : stepStatus === 'current' ? '#1e40af'
-                      : '#94a3b8'
+                      : '#64748b'
                   }}>
                     {step.label}
                   </span>
                   {timestamp && (
-                    <span style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
+                    <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
                       {formatTime(timestamp)}
                     </span>
                   )}
                 </div>
                 {timestamp && (
-                  <span style={{ fontSize: '0.625rem', color: '#94a3b8' }}>
+                  <span style={{ fontSize: '0.625rem', color: '#64748b' }}>
                     {formatDate(timestamp)}
                   </span>
                 )}

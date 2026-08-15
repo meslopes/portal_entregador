@@ -239,11 +239,11 @@ const PricingSettings = ({ config, onChange }) => (
     </FormField>
     <FormField label="Comissão do Admin (%)">
       <input type="number" min="0" max="50" value={config.commission_rate || '30'} onChange={e => onChange('commission_rate', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Percentual retido sobre o frete de cada entrega</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual retido sobre o frete de cada entrega</p>
     </FormField>
     <FormField label="Entregador recebe (%)">
       <input type="number" min="0" max="100" value={config.driver_percentage || '70'} onChange={e => onChange('driver_percentage', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Percentual do frete que vai para o entregador</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual do frete que vai para o entregador</p>
     </FormField>
   </SettingsCard>
 );
@@ -253,11 +253,11 @@ const DeliverySettings = ({ config, onChange }) => (
   <SettingsCard title="Configurações de Entregas" icon={<Truck size={18} />}>
     <FormField label="Raio Máximo de Busca (km)">
       <input type="number" value={config.delivery_radius || '200'} onChange={e => onChange('delivery_radius', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Distância máxima para buscar entregadores disponíveis</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Distância máxima para buscar entregadores disponíveis</p>
     </FormField>
     <FormField label="Timeout para Notificar Admin (segundos)">
       <input type="number" value={config.order_timeout_seconds || '120'} onChange={e => onChange('order_timeout_seconds', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Tempo máximo sem atendimento antes de notificar o admin via mensagem e alerta sonoro (padrão: 120s = 2 minutos)</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Tempo máximo sem atendimento antes de notificar o admin via mensagem e alerta sonoro (padrão: 120s = 2 minutos)</p>
     </FormField>
     <FormField label="Auto-atribuição de Pedidos">
       <select value={config.auto_assign || 'true'} onChange={e => onChange('auto_assign', e.target.value)} style={inputStyle}>
@@ -286,20 +286,20 @@ const DriverSettings = ({ config, onChange }) => (
     </FormField>
     <FormField label="Avaliação Mínima para Continuar">
       <input type="number" min="0" max="5" step="0.5" value={config.min_driver_rating || '2.0'} onChange={e => onChange('min_driver_rating', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Avaliação mínima para o entregador continuar recebendo pedidos</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Avaliação mínima para o entregador continuar recebendo pedidos</p>
     </FormField>
     <FormField label="Atualização de Localização (segundos)">
       <input type="number" value={config.location_update_interval || '30'} onChange={e => onChange('location_update_interval', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Intervalo para o entregador enviar sua localização</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Intervalo para o entregador enviar sua localização</p>
     </FormField>
     <FormField label="Horário de Funcionamento">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
         <div>
-          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Abertura</label>
+          <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Abertura</label>
           <input type="time" value={config.driver_start_time || '08:00'} onChange={e => onChange('driver_start_time', e.target.value)} style={inputStyle} />
         </div>
         <div>
-          <label style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Fechamento</label>
+          <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Fechamento</label>
           <input type="time" value={config.driver_end_time || '22:00'} onChange={e => onChange('driver_end_time', e.target.value)} style={inputStyle} />
         </div>
       </div>
@@ -321,7 +321,7 @@ const EstablishmentSettings = ({ config, onChange }) => (
         <option value="true">Permitido (estabelecimento pode cancelar pedidos)</option>
         <option value="false">Não permitido (apenas admin pode cancelar)</option>
       </select>
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Se desativado, o estabelecimento não poderá cancelar pedidos. Apenas o admin terá essa permissão.</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Se desativado, o estabelecimento não poderá cancelar pedidos. Apenas o admin terá essa permissão.</p>
     </FormField>
     <FormField label="Cobrança Semanal">
       <select value={config.weekly_billing || 'true'} onChange={e => onChange('weekly_billing', e.target.value)} style={inputStyle}>
@@ -334,7 +334,7 @@ const EstablishmentSettings = ({ config, onChange }) => (
     </FormField>
     <FormField label="Dias de Cobrança">
       <input type="text" value={config.billing_days || 'segunda a domingo'} onChange={e => onChange('billing_days', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Período considerado para cada fatura semanal</p>
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Período considerado para cada fatura semanal</p>
     </FormField>
   </SettingsCard>
 );
@@ -380,7 +380,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#ea1d2c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.625rem', fontWeight: 700 }}>iF</div>
           <div>
             <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>iFood</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Receber pedidos automaticamente</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Receber pedidos automaticamente</p>
           </div>
         </div>
         <select value={config.integration_ifood || 'disabled'} onChange={e => onChange('integration_ifood', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
@@ -395,7 +395,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           </FormField>
           <FormField label="Webhook URL">
             <input type="text" value={`${API_URL}/api/webhooks/ifood`} readOnly style={{ ...inputStyle, background: '#f1f5f9', color: '#64748b' }} />
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Configure essa URL no painel do iFood</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Configure essa URL no painel do iFood</p>
           </FormField>
         </div>
       )}
@@ -407,7 +407,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#25d366', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700 }}>WA</div>
           <div>
             <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>WhatsApp</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Notificações e pedidos via WhatsApp</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Notificações e pedidos via WhatsApp</p>
           </div>
         </div>
         <select value={config.integration_whatsapp || 'disabled'} onChange={e => onChange('integration_whatsapp', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
@@ -433,7 +433,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.625rem', fontWeight: 700 }}>$</div>
           <div>
             <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>Asaas (Gateway de Pagamento)</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Cobranças PIX, boleto e cartão • Saques automáticos</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Cobranças PIX, boleto e cartão • Saques automáticos</p>
           </div>
         </div>
         <select value={config.integration_asaas || 'disabled'} onChange={e => onChange('integration_asaas', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
@@ -454,11 +454,11 @@ const IntegrationSettings = ({ config, onChange }) => {
           </FormField>
           <FormField label="Webhook URL">
             <input type="text" value={`${API_URL}/api/webhooks/asaas`} readOnly style={{ ...inputStyle, background: '#f1f5f9', color: '#64748b' }} />
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Configure essa URL no painel do Asaas</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Configure essa URL no painel do Asaas</p>
           </FormField>
           <FormField label="Webhook Token">
             <input type="password" value={config.asaas_webhook_token || ''} onChange={e => onChange('asaas_webhook_token', e.target.value)} style={inputStyle} placeholder="Token definido no painel do Asaas" />
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Token de autenticação do webhook (deixe vazio para aceitar qualquer requisição)</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Token de autenticação do webhook (deixe vazio para aceitar qualquer requisição)</p>
           </FormField>
         </div>
       )}
@@ -470,7 +470,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#ff6600', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>99</div>
           <div>
             <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>99Food</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Receber pedidos automaticamente</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Receber pedidos automaticamente</p>
           </div>
         </div>
         <select value={config.integration_99food || 'disabled'} onChange={e => onChange('integration_99food', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
@@ -496,7 +496,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#ff4500', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>ID</div>
           <div>
             <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>InstaDelivery</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Receber pedidos automaticamente</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Receber pedidos automaticamente</p>
           </div>
         </div>
         <select value={config.integration_instadelivery || 'disabled'} onChange={e => onChange('integration_instadelivery', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
@@ -522,7 +522,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#00a651', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>SP</div>
           <div>
             <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>SaiPos</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Receber pedidos automaticamente</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Receber pedidos automaticamente</p>
           </div>
         </div>
         <select value={config.integration_saipos || 'disabled'} onChange={e => onChange('integration_saipos', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
@@ -548,7 +548,7 @@ const IntegrationSettings = ({ config, onChange }) => {
           <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.5rem', fontWeight: 700 }}>+</div>
           <div>
             <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>Outras Plataformas</p>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>LoopFood, Goomer, etc.</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>LoopFood, Goomer, etc.</p>
           </div>
         </div>
         <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#fef3c7', color: '#d97706' }}>Em breve</span>

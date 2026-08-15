@@ -84,7 +84,7 @@ const PrivacyPage = () => {
         </section>
       </div>
 
-      <p style={{ color: '#94a3b8', fontSize: '0.8125rem', textAlign: 'center', marginTop: '1.5rem' }}>
+      <p style={{ color: '#64748b', fontSize: '0.8125rem', textAlign: 'center', marginTop: '1.5rem' }}>
         Última atualização: Julho de 2026
       </p>
     </div>

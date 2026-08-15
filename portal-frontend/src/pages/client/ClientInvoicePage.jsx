@@ -3,7 +3,7 @@ import {
   Receipt, Calendar, Download, AlertCircle, CheckCircle,
   Clock, Package, DollarSign, CreditCard, Copy, Check
 } from 'lucide-react';
-import { orderService, utils } from '@/lib/api';
+import api, { orderService, utils } from '@/lib/api';
 
 const ClientInvoicePage = () => {
   const [invoice, setInvoice] = useState(null);
@@ -137,12 +137,12 @@ const ClientInvoicePage = () => {
             <div style={{ textAlign: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
               <Package size={20} style={{ color: '#0d9488', marginBottom: '0.25rem' }} />
               <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{invoice.summary.total_orders}</p>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Entregas</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Entregas</p>
             </div>
             <div style={{ textAlign: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
               <DollarSign size={20} style={{ color: '#0d9488', marginBottom: '0.25rem' }} />
               <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{utils.formatCurrency(invoice.summary.total_amount)}</p>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Total Pedidos</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Total Pedidos</p>
             </div>
             <div style={{ textAlign: 'center', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
               <CreditCard size={20} style={{ color: '#0d9488', marginBottom: '0.25rem' }} />
@@ -161,7 +161,7 @@ const ClientInvoicePage = () => {
                   <img src={`data:image/png;base64,${invoice.qr_code_base64}`} alt="QR Code PIX" style={{ width: '200px', height: '200px' }} />
                 </div>
               )}
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.75rem' }}>PIX Copia e Cola</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.75rem' }}>PIX Copia e Cola</p>
             </div>
 
             {/* Dados de pagamento */}
@@ -169,21 +169,21 @@ const ClientInvoicePage = () => {
               <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b', marginBottom: '1rem' }}>Dados para Pagamento</p>
               <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem' }}>
                 <div style={{ marginBottom: '0.75rem' }}>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Banco</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Banco</p>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{invoice.payment.bank_name || '-'}</p>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                   <div>
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Agência</p>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Agência</p>
                     <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{invoice.payment.bank_agency || '-'}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Conta</p>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Conta</p>
                     <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{invoice.payment.bank_account || '-'}</p>
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Chave PIX</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Chave PIX</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b', flex: 1, wordBreak: 'break-all' }}>{invoice.payment.pix_key || '-'}</p>
                     <button onClick={copyPixKey} style={{ border: 'none', background: copied ? '#dcfce7' : '#f1f5f9', borderRadius: '0.375rem', padding: '0.375rem', cursor: 'pointer', color: copied ? '#16a34a' : '#64748b' }}>
@@ -204,7 +204,7 @@ const ClientInvoicePage = () => {
           <div style={{ padding: '0 1.5rem 1.5rem' }}>
             <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Detalhes das Entregas</p>
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '0.5rem', overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '0.5rem 1rem', background: '#f8fafc', fontSize: '0.6875rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '0.5rem 1rem', background: '#f8fafc', fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
                 <span>Pedido</span><span>Data</span><span style={{ textAlign: 'right' }}>Total</span><span style={{ textAlign: 'right' }}>Frete</span>
               </div>
               {invoice.orders?.map((order, i) => (

@@ -199,11 +199,11 @@ const OwnDriverDashboardPage = () => {
               background: 'white', borderRadius: '0.75rem', padding: '2rem',
               textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
             }}>
-              <Package size={40} style={{ color: '#94a3b8', marginBottom: '0.75rem' }} />
+              <Package size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
               <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
                 Nenhum pedido ativo
               </p>
-              <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+              <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
                 {isOnline ? 'Aguardando pedidos...' : 'Fique online para receber pedidos'}
               </p>
             </div>
@@ -247,7 +247,7 @@ const StatCard = ({ icon, label, value, color }) => (
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
       <span style={{ color }}>{icon}</span>
-      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{label}</span>
+      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{label}</span>
     </div>
     <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
   </div>
@@ -281,14 +281,14 @@ const ActiveOrderCard = ({ order, onClick }) => {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: '#64748b', marginBottom: '0.375rem' }}>
-        <MapPin size={14} style={{ color: '#94a3b8' }} />
+        <MapPin size={14} style={{ color: '#64748b' }} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {order.delivery_address?.street || 'Endereço não informado'}
         </span>
       </div>
 
       {order.customer && (
-        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
           {order.customer.name} • {order.customer.phone}
         </div>
       )}

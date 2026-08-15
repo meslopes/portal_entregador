@@ -4,7 +4,7 @@ import {
   AlertCircle, Store, Truck, ArrowUpRight, BarChart3,
   Percent, Wallet, ArrowDownRight, CreditCard
 } from 'lucide-react';
-import { adminService, utils } from '@/lib/api';
+import api, { adminService, utils } from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
@@ -183,7 +183,7 @@ const AdminFinancePage = () => {
                 {commission}%
               </span>
             </div>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
               Entregadores recebem {100 - commission}% • Admin retém {commission}%
             </p>
           </div>
@@ -208,7 +208,7 @@ const AdminFinancePage = () => {
             <span>Estabelecimento</span><span style={{ textAlign: 'center' }}>Pedidos</span><span style={{ textAlign: 'right' }}>Frete Total</span><span style={{ textAlign: 'right' }}>Ticket Médio</span>
           </div>
           {estData.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Sem dados</p>
+            <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Sem dados</p>
           ) : (
             estData.map((est, i) => (
               <div key={est.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '0.75rem 1.5rem', borderBottom: i < estData.length - 1 ? '1px solid #f8fafc' : 'none', fontSize: '0.8125rem', minWidth: '600px' }}>
@@ -234,7 +234,7 @@ const AdminFinancePage = () => {
             <span>Entregador</span><span style={{ textAlign: 'center' }}>Entregas</span><span style={{ textAlign: 'center' }}>Avaliação</span><span style={{ textAlign: 'center' }}>Pagamentos</span><span style={{ textAlign: 'right' }}>Valor Pendente</span>
           </div>
           {driverPayments?.drivers?.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Nenhum pagamento pendente</p>
+            <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Nenhum pagamento pendente</p>
           ) : (
             driverPayments?.drivers?.map((driver, i) => (
               <div key={driver.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', padding: '0.75rem 1.5rem', borderBottom: i < (driverPayments?.drivers?.length || 0) - 1 ? '1px solid #f8fafc' : 'none', fontSize: '0.8125rem', minWidth: '600px' }}>

@@ -133,7 +133,7 @@ const AdminOrdersPage = () => {
       {/* Filtros */}
       <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          <Filter size={16} style={{ color: '#94a3b8' }} />
+          <Filter size={16} style={{ color: '#64748b' }} />
           <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>Filtrar por status</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
@@ -160,7 +160,7 @@ const AdminOrdersPage = () => {
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '4rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <Package size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>Nenhum pedido encontrado</p>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Tente ajustar os filtros</p>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Tente ajustar os filtros</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -189,7 +189,7 @@ const AdminOrdersPage = () => {
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Pedido #{editingOrder.order_number}</h2>
-              <button onClick={() => setEditingOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={() => setEditingOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleEditOrder} style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>
               {/* Status */}
@@ -324,7 +324,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
         </div>
         <div style={{ textAlign: 'right' }}>
           <p style={{ fontWeight: 700, color: '#1e293b' }}>{utils.formatCurrency(order.total_amount)}</p>
-          <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Taxa: {utils.formatCurrency(order.delivery_fee)}</p>
+          <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Taxa: {utils.formatCurrency(order.delivery_fee)}</p>
         </div>
       </div>
 
@@ -337,7 +337,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
               <Store size={14} style={{ color: '#d97706' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Restaurante</p>
+              <p style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Restaurante</p>
               <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.name}</p>
             </div>
           </div>
@@ -348,7 +348,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
               <User size={14} style={{ color: '#2563eb' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cliente</p>
+              <p style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cliente</p>
               <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>{order.customer?.name}</p>
             </div>
           </div>
@@ -359,7 +359,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
               <MapPin size={14} style={{ color: '#16a34a' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: '0.625rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entrega</p>
+              <p style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entrega</p>
               <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.delivery_address?.street}</p>
             </div>
           </div>
@@ -374,7 +374,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
               </span>
             )}
           </div>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: '#94a3b8' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: '#64748b' }}>
             <Clock size={11} /> {utils.formatDateTime(order.created_at)}
           </span>
           <div style={{ display: 'flex', gap: '0.25rem' }}>

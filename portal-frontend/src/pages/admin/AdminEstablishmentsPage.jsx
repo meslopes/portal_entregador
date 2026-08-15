@@ -342,7 +342,7 @@ const AdminEstablishmentsPage = () => {
       {/* Busca */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
         <div style={{ position: 'relative', maxWidth: '500px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input
             type="text"
             placeholder="Buscar por nome, endereço, CNPJ ou telefone..."
@@ -365,12 +365,12 @@ const AdminEstablishmentsPage = () => {
       ) : establishments.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-            <Store size={24} style={{ color: '#94a3b8' }} />
+            <Store size={24} style={{ color: '#64748b' }} />
           </div>
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
             {search ? 'Nenhum estabelecimento encontrado' : 'Nenhum estabelecimento cadastrado'}
           </p>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
             {search ? 'Tente outro termo de busca' : 'Clique em "NOVO ESTABELECIMENTO" para cadastrar'}
           </p>
         </div>
@@ -427,7 +427,7 @@ const AdminEstablishmentsPage = () => {
                         </span>
                       )}
                     </div>
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <MapPin size={10} /> {est.address?.length > 30 ? est.address.substring(0, 30) + '...' : est.address}
                     </p>
                   </div>
@@ -437,14 +437,14 @@ const AdminEstablishmentsPage = () => {
                 <div>
                   {est.phone && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.125rem' }}>
-                      <Phone size={12} style={{ color: '#94a3b8' }} />
+                      <Phone size={12} style={{ color: '#64748b' }} />
                       <span style={{ fontSize: '0.8125rem', color: '#475569' }}>{est.phone}</span>
                     </div>
                   )}
                   {est.email && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <Mail size={12} style={{ color: '#94a3b8' }} />
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{est.email}</span>
+                      <Mail size={12} style={{ color: '#64748b' }} />
+                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{est.email}</span>
                     </div>
                   )}
                   {!est.phone && !est.email && (
@@ -461,7 +461,7 @@ const AdminEstablishmentsPage = () => {
                       fontSize: '0.6875rem', fontWeight: 600, border: 'none',
                       cursor: 'pointer',
                       background: est.is_active ? '#dcfce7' : '#f1f5f9',
-                      color: est.is_active ? '#16a34a' : '#94a3b8'
+                      color: est.is_active ? '#16a34a' : '#64748b'
                     }}
                   >
                     {est.is_active ? 'Ativo' : 'Inativo'}
@@ -502,9 +502,9 @@ const AdminEstablishmentsPage = () => {
                   </button>
                   <button
                     onClick={() => handleDelete(est.id, est.total_orders > 0)}
-                    style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94a3b8', transition: 'color 0.15s' }}
+                    style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'color 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#dc2626'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
                     title="Excluir"
                   >
                     <Trash2 size={16} />
@@ -556,7 +556,7 @@ const AdminEstablishmentsPage = () => {
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>
               {editing ? 'Editar Estabelecimento' : 'Novo Estabelecimento'}
             </h2>
-            <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+            <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
               <X size={20} />
             </button>
           </div>
@@ -587,7 +587,7 @@ const AdminEstablishmentsPage = () => {
             {!editing && (
               <FormField label="Senha de Acesso">
                 <input type="text" name="password" value={formData.password} onChange={handleFormChange} style={inputStyle} placeholder="123456 (padrão)" />
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Senha para o estabelecimento fazer login no portal</p>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Senha para o estabelecimento fazer login no portal</p>
               </FormField>
             )}
 
@@ -607,14 +607,14 @@ const AdminEstablishmentsPage = () => {
                   <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km || 0).toFixed(2)}/km)</option>
                 ))}
               </select>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
                 Selecione uma tabela específica ou deixe vazio para usar a padrão da praça
               </p>
             </FormField>
 
             <FormField label="Tempo de Preparo (minutos)">
               <input type="number" name="preparation_minutes" value={formData.preparation_minutes} onChange={handleFormChange} style={inputStyle} placeholder="10" min="1" max="120" />
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
                 Tempo estimado entre aceite e pedido pronto. O entregador é notificado após este tempo.
               </p>
             </FormField>
@@ -717,7 +717,7 @@ const AdminEstablishmentsPage = () => {
         <Modal onClose={() => setShowDetails(null)}>
           <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Detalhes do Estabelecimento</h2>
-            <button onClick={() => setShowDetails(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+            <button onClick={() => setShowDetails(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
               <X size={20} />
             </button>
           </div>
@@ -729,7 +729,7 @@ const AdminEstablishmentsPage = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{showDetails.name}</h3>
-                <p style={{ fontSize: '0.8125rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <p style={{ fontSize: '0.8125rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <MapPin size={12} /> {showDetails.address}
                 </p>
               </div>
@@ -738,16 +738,16 @@ const AdminEstablishmentsPage = () => {
             {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
               <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Total Pedidos</p>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Total Pedidos</p>
                 <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#2563eb' }}>{showDetails.total_orders}</p>
               </div>
               <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Receita Total</p>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Receita Total</p>
                 <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#22c55e' }}>{utils.formatCurrency(showDetails.total_revenue)}</p>
               </div>
               <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Status</p>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: showDetails.is_active ? '#16a34a' : '#94a3b8' }}>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Status</p>
+                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: showDetails.is_active ? '#16a34a' : '#64748b' }}>
                   {showDetails.is_active ? 'Ativo' : 'Inativo'}
                 </p>
               </div>
@@ -811,19 +811,19 @@ const AdminEstablishmentsPage = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                 {showDetails.phone && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Phone size={14} style={{ color: '#94a3b8' }} />
+                    <Phone size={14} style={{ color: '#64748b' }} />
                     <span style={{ fontSize: '0.875rem', color: '#475569' }}>{showDetails.phone}</span>
                   </div>
                 )}
                 {showDetails.email && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Mail size={14} style={{ color: '#94a3b8' }} />
+                    <Mail size={14} style={{ color: '#64748b' }} />
                     <span style={{ fontSize: '0.875rem', color: '#475569' }}>{showDetails.email}</span>
                   </div>
                 )}
                 {showDetails.cnpj && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Store size={14} style={{ color: '#94a3b8' }} />
+                    <Store size={14} style={{ color: '#64748b' }} />
                     <span style={{ fontSize: '0.875rem', color: '#475569' }}>CNPJ: {showDetails.cnpj}</span>
                   </div>
                 )}
@@ -836,7 +836,7 @@ const AdminEstablishmentsPage = () => {
                 <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pedidos por Status</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {Object.entries(showDetails.orders_by_status).map(([status, count]) => {
-                    const config = STATUS_CONFIG[status] || { color: '#94a3b8', bg: '#f1f5f9', text: status };
+                    const config = STATUS_CONFIG[status] || { color: '#64748b', bg: '#f1f5f9', text: status };
                     return (
                       <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.25rem 0.625rem', borderRadius: '9999px', background: config.bg, color: config.color, fontSize: '0.75rem', fontWeight: 600 }}>
                         <div style={{ width: '0.375rem', height: '0.375rem', borderRadius: '50%', background: config.color }} />
@@ -853,12 +853,12 @@ const AdminEstablishmentsPage = () => {
               <div>
                 <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Últimos Pedidos</p>
                 {showDetails.recent_orders.slice(0, 8).map((order) => {
-                  const config = STATUS_CONFIG[order.status] || { color: '#94a3b8', bg: '#f1f5f9', text: order.status };
+                  const config = STATUS_CONFIG[order.status] || { color: '#64748b', bg: '#f1f5f9', text: order.status };
                   return (
                     <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f8fafc' }}>
                       <div>
                         <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
-                        <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{utils.formatDate(order.created_at)}</p>
+                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{utils.formatDate(order.created_at)}</p>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1e293b' }}>{utils.formatCurrency(order.total_amount)}</p>
@@ -913,7 +913,7 @@ const StatCard = ({ icon, iconBg, iconColor, label, value }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
       <div style={{ padding: '0.625rem', borderRadius: '0.5rem', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
       <div>
-        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+        <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
         <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
       </div>
     </div>

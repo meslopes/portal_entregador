@@ -2929,7 +2929,7 @@ def get_live_tracking():
 
                                 restaurant.longitude = geo['longitude']
 
-                                db.session.commit()
+                                db.session.flush()
 
                         except Exception:
 
@@ -3077,7 +3077,7 @@ def get_live_tracking():
 
                                 delivery_addr.longitude = geo['longitude']
 
-                                db.session.commit()
+                                db.session.flush()
 
                         except Exception:
 
@@ -3112,6 +3112,10 @@ def get_live_tracking():
                         tracking_data.append(del_data)
 
         
+
+        # Commit único após processar todos os geocodings
+
+        db.session.commit()
 
         return jsonify({
 

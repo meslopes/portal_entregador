@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component {
             <p style={{ color: '#64748b', marginBottom: '1rem' }}>
               Ocorreu um erro inesperado. Tente recarregar a pagina.
             </p>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '1rem', wordBreak: 'break-all' }}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem', wordBreak: 'break-all' }}>
               {this.state.error?.message}
             </p>
             <button

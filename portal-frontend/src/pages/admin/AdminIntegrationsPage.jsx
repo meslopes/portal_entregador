@@ -184,16 +184,16 @@ const AdminIntegrationsPage = () => {
       {/* Lista de credenciais */}
       {credentials.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <Globe size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
+          <Globe size={48} style={{ color: '#64748b', marginBottom: '1rem' }} />
           <p style={{ color: '#64748b', fontSize: '1rem' }}>Nenhuma credencial configurada</p>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>Adicione credenciais para integrar com iFood e outras plataformas</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.5rem' }}>Adicione credenciais para integrar com iFood e outras plataformas</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {credentials.map(cred => {
             const platformInfo = getPlatformInfo(cred.platform);
             return (
-              <div key={cred.id} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${cred.is_active ? platformInfo.color : '#94a3b8'}` }}>
+              <div key={cred.id} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${cred.is_active ? platformInfo.color : '#64748b'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem', background: platformInfo.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700 }}>
@@ -209,11 +209,11 @@ const AdminIntegrationsPage = () => {
                       <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>
                         {getRestaurantName(cred.restaurant_id)}
                       </p>
-                      <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                      <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                         Client ID: {cred.client_id ? `${cred.client_id.substring(0, 8)}...` : 'Não configurado'}
                       </p>
                       {cred.expires_at && (
-                        <p style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                        <p style={{ color: '#64748b', fontSize: '0.75rem' }}>
                           Token expira: {new Date(cred.expires_at).toLocaleString('pt-BR')}
                         </p>
                       )}

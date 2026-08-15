@@ -54,7 +54,7 @@ const TrackPage = () => {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
         <div style={{ textAlign: 'center', padding: '2rem', background: 'white', borderRadius: '1rem', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-          <Package size={48} style={{ color: '#94a3b8', margin: '0 auto 1rem' }} />
+          <Package size={48} style={{ color: '#64748b', margin: '0 auto 1rem' }} />
           <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>{error}</h2>
           <p style={{ color: '#64748b' }}>Verifique o link e tente novamente.</p>
         </div>
@@ -92,11 +92,11 @@ const TrackPage = () => {
           <div style={{ padding: '1.5rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Pedido</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedido</p>
                 <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>#{tracking.order_number}</p>
               </div>
               <div>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Estabelecimento</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Estabelecimento</p>
                 <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{tracking.restaurant_name}</p>
               </div>
             </div>
@@ -119,7 +119,7 @@ const TrackPage = () => {
                         flexShrink: 0
                       }} />
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: '0.8125rem', fontWeight: isActive ? 600 : 400, color: isPast || isActive ? '#1e293b' : '#94a3b8' }}>
+                        <p style={{ fontSize: '0.8125rem', fontWeight: isActive ? 600 : 400, color: isPast || isActive ? '#1e293b' : '#64748b' }}>
                           {step.label}
                         </p>
                       </div>
@@ -156,7 +156,7 @@ const TrackPage = () => {
 
         {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
             Atualização automática a cada 30 segundos
           </p>
         </div>

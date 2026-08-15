@@ -101,7 +101,7 @@ const OwnDriverOrdersPage = () => {
             background: 'white', borderRadius: '0.75rem', padding: '2rem',
             textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
           }}>
-            <Package size={40} style={{ color: '#94a3b8', marginBottom: '0.75rem' }} />
+            <Package size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
             <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum pedido encontrado</p>
           </div>
         ) : (
@@ -135,13 +135,13 @@ const OwnDriverOrdersPage = () => {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: '#64748b', marginBottom: '0.25rem' }}>
-                    <MapPin size={14} style={{ color: '#94a3b8' }} />
+                    <MapPin size={14} style={{ color: '#64748b' }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {order.delivery_address?.street || 'Endereço não informado'}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#64748b' }}>
                     <span>{order.customer?.name}</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <DollarSign size={12} /> {order.delivery_fee?.toFixed(2)}

@@ -5,7 +5,7 @@ import {
   AlertCircle, Navigation, CheckCircle, ArrowRight, ChevronRight,
   Camera, Image, X
 } from 'lucide-react';
-import { orderService, utils, API_BASE_URL } from '@/lib/api';
+import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -418,7 +418,7 @@ const ActiveDeliveryPage = () => {
                   borderRadius: '50%',
                   background: isCompleted ? '#22c55e' : isCurrent ? '#2563eb' : '#e2e8f0',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isCompleted || isCurrent ? 'white' : '#94a3b8',
+                  color: isCompleted || isCurrent ? 'white' : '#64748b',
                   transition: 'all 0.3s',
                   boxShadow: isCurrent ? '0 0 0 4px rgba(37, 99, 235, 0.2)' : 'none'
                 }}>
@@ -428,7 +428,7 @@ const ActiveDeliveryPage = () => {
                   fontSize: '0.6875rem',
                   marginTop: '0.5rem',
                   fontWeight: isCurrent ? 600 : 400,
-                  color: isCurrent ? '#1e293b' : '#94a3b8',
+                  color: isCurrent ? '#1e293b' : '#64748b',
                   textAlign: 'center'
                 }}>
                   {step.label}
@@ -507,6 +507,7 @@ const ActiveDeliveryPage = () => {
                 <button
                   key={star}
                   onClick={() => setRatingValue(star)}
+                  aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     fontSize: '2.5rem', color: star <= ratingValue ? '#f59e0b' : '#e2e8f0',
@@ -548,7 +549,7 @@ const ActiveDeliveryPage = () => {
                 disabled={isRating || ratingValue === 0}
                 style={{
                   flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
-                  border: 'none', background: ratingValue > 0 ? '#2563eb' : '#94a3b8',
+                  border: 'none', background: ratingValue > 0 ? '#2563eb' : '#64748b',
                   color: 'white', cursor: ratingValue > 0 ? 'pointer' : 'not-allowed',
                   fontSize: '0.875rem', fontWeight: 600
                 }}
@@ -620,7 +621,7 @@ const ActiveDeliveryPage = () => {
             <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>Prova de entrega</p>
             <p style={{ fontSize: '0.75rem', color: '#16a34a' }}>Foto capturada ✓</p>
           </div>
-          <button onClick={() => { setProofPhoto(null); setPreviewUrl(null); }} aria-label="Remover foto" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+          <button onClick={() => { setProofPhoto(null); setPreviewUrl(null); }} aria-label="Remover foto" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
             <X size={18} />
           </button>
         </div>
@@ -779,7 +780,7 @@ const ActiveDeliveryPage = () => {
               <Store size={16} style={{ color: '#d97706' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.125rem' }}>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.125rem' }}>
                 Coletar em
               </p>
               <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
@@ -826,7 +827,7 @@ const ActiveDeliveryPage = () => {
               <MapPin size={16} style={{ color: '#16a34a' }} />
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.125rem' }}>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.125rem' }}>
                 Entregar em
               </p>
               <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
@@ -864,23 +865,23 @@ const ActiveDeliveryPage = () => {
         <div style={{ padding: '1.25rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Valor Total</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Valor Total</p>
               <p style={{ fontWeight: 700, color: '#1e293b' }}>{utils.formatCurrency(order.total_amount)}</p>
             </div>
             <div>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Seus Ganhos</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Seus Ganhos</p>
               <p style={{ fontWeight: 700, color: '#22c55e' }}>
                 {utils.formatCurrency(order.delivery?.driver_earnings || 0)}
               </p>
             </div>
             <div>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Pagamento</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Pagamento</p>
               <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>
                 {utils.getStatusText(order.payment_method)}
               </p>
             </div>
             <div>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Itens</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Itens</p>
               <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>
                 {order.items?.length || 0} ite{order.items?.length !== 1 ? 'ns' : 'm'}
               </p>

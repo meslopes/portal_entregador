@@ -101,7 +101,7 @@ const OwnDriverMetricsPage = () => {
 
       {/* Filtros */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <Filter size={16} style={{ color: '#94a3b8' }} />
+        <Filter size={16} style={{ color: '#64748b' }} />
         <select
           value={period}
           onChange={e => setPeriod(e.target.value)}
@@ -160,12 +160,12 @@ const OwnDriverMetricsPage = () => {
       {metrics.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-            <Users size={24} style={{ color: '#94a3b8' }} />
+            <Users size={24} style={{ color: '#64748b' }} />
           </div>
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
             Nenhum entregador encontrado
           </p>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
             Cadastre entregadores próprios para ver as métricas
           </p>
         </div>
@@ -199,7 +199,7 @@ const SummaryCard = ({ icon, iconBg, iconColor, label, value }) => (
         {icon}
       </div>
       <div>
-        <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+        <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
         <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
       </div>
     </div>
@@ -229,7 +229,7 @@ const DriverMetricCard = ({ metric, getRatingColor, getRatingLabel }) => {
           </div>
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>{driver.name}</h3>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
               {driver.vehicle_type} {driver.vehicle_plate ? `• ${driver.vehicle_plate}` : ''}
             </p>
           </div>
@@ -245,7 +245,7 @@ const DriverMetricCard = ({ metric, getRatingColor, getRatingLabel }) => {
             <Star size={14} fill={getRatingColor(rating.average || 0)} />
             {(rating.average || 0).toFixed(1)}
           </div>
-          <span style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
+          <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
             ({rating.total_ratings} {rating.total_ratings === 1 ? 'avaliação' : 'avaliações'})
           </span>
         </div>
@@ -294,7 +294,7 @@ const DriverMetricCard = ({ metric, getRatingColor, getRatingLabel }) => {
             transition: 'width 0.5s'
           }} />
         </div>
-        <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.375rem', textAlign: 'center' }}>
+        <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.375rem', textAlign: 'center' }}>
           {getRatingLabel(rating.average)} — {orders.acceptance_rate}% de entregas concluídas
         </p>
       </div>
@@ -307,10 +307,10 @@ const MetricItem = ({ icon, label, value, sub, color }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
       <span style={{ color }}>{icon}</span>
-      <span style={{ fontSize: '0.6875rem', color: '#94a3b8', fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 500 }}>{label}</span>
     </div>
     <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{value}</span>
-    {sub && <span style={{ fontSize: '0.625rem', color: '#94a3b8' }}>{sub}</span>}
+    {sub && <span style={{ fontSize: '0.625rem', color: '#64748b' }}>{sub}</span>}
   </div>
 );
 

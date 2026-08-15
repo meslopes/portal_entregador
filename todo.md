@@ -127,23 +127,38 @@
 - [x] Fase 4: Avaliação e relatórios
 - [x] Fase 5: App mobile / WhatsApp Business (PWA entregadores próprios)
 
-## 🔧 Correções de Bugs (2026-08-13)
-### Críticos (CORRIGIDOS)
-- [x] Encoding UTF-8 corrompido em admin.py (52 linhas corrigidas)
-- [x] delete_user() bloqueava exclusão com pedidos - adicionado ?force=true
-- [x] Delivery.driver_id nullable para entregadores próprios
-- [x] create_order() sem validação de campos obrigatórios
-- [x] mapInstanceRef como objeto plain em vez de useRef (memory leak)
-- [x] Null safety em ClientDashboardPage e ClientOrdersPage
+## 🔧 Correções de Bugs (2026-08-13 a 2026-08-14)
+### Planilha de Bugs - TODOS CORRIGIDOS
+- Planilha `bugs_correcoes.xlsx` com 27 bugs backend e 21 bugs frontend
+- **48/48 CORRIGIDOS** (100%)
+- Backend: 8 críticos, 8 altos, 8 médios, 3 baixos - TODOS CORRIGIDOS
+- Frontend: 1 crítico, 8 altos, 8 médios, 4 baixos - TODOS CORRIGIDOS
 
-### Planilha de Bugs
-- Criada planilha `bugs_correcoes.xlsx` com 27 bugs backend e 21 bugs frontend
-- 8 críticos, 16 altos, 16 médios, 8 baixos identificados
-- 2 críticos corrigidos nesta sessão
+### Principais correções realizadas
+- Encoding UTF-8 corrompido em admin.py
+- delete_user() com force=true
+- Delivery.driver_id nullable para entregadores próprios
+- Validação de campos obrigatórios em create_order()
+- Validação de items (isinstance, name obrigatório)
+- Webhook iFood retorna 400 para JSON inválido
+- Token de setup via variável de ambiente (não hardcoded)
+- Senhas não retornadas em texto plano nas respostas
+- Webhook iFood com autenticação por token
+- mapInstanceRef como useRef(null) com cleanup
+- Null safety em ClientDashboardPage e ClientOrdersPage
+- Rotas own-driver com ProtectedRoute
+- Modais com role="dialog" e aria-modal
+- Interceptor 401 com flag isRedirecting
+- Sidebar responsiva para tablets
+- Nav com overflow scroll suave
+- Labels associados via htmlFor/id no LoginPage
+- Contraste: #94a3b8 → #64748b (350 ocorrências em 58 arquivos)
+- Commit dentro de loop → flush + commit único
 
 ## 🔄 Próximos Passos
+- [ ] Testes manuais (usuario vai executar e reportar novos bugs)
+- [ ] Corrigir bugs encontrados nos testes manuais
 - [ ] Integração iFood - testar webhook com estabelecimento correto
-- [ ] Corrigir bugs restantes da planilha (altos e médios)
 - [ ] Deploy automático (Vercel + Render)
 
 ## 📊 Metricas do Projeto

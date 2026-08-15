@@ -270,7 +270,7 @@ const PeakHoursReport = ({ data }) => (
               );
             })}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.5rem', color: '#94a3b8' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.5rem', color: '#64748b' }}>
             <span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span>
           </div>
         </div>
@@ -331,7 +331,7 @@ const ReportCard = ({ icon, iconBg, iconColor, label, value }) => (
 
 const MiniReport = ({ label, value }) => (
   <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: '3px solid #2563eb' }}>
-    <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>{label}</p>
+    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>{label}</p>
     <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
   </div>
 );
@@ -352,7 +352,7 @@ const ReportTable = ({ title, headers, children }) => (
       </table>
     </div>
     {React.Children.count(children) === 0 && (
-      <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Sem dados no período</p>
+      <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Sem dados no período</p>
     )}
   </div>
 );
@@ -363,7 +363,7 @@ const RankBadge = ({ rank }) => (
   <span style={{
     width: '1.5rem', height: '1.5rem', borderRadius: '50%',
     background: rank === 1 ? '#22c55e' : rank === 2 ? '#3b82f6' : rank === 3 ? '#f59e0b' : '#e2e8f0',
-    color: rank <= 3 ? 'white' : '#94a3b8',
+    color: rank <= 3 ? 'white' : '#64748b',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     fontSize: '0.625rem', fontWeight: 700
   }}>{rank}</span>

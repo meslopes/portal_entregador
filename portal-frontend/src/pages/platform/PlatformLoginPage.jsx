@@ -259,7 +259,7 @@ const PlatformLoginPage = () => {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: '#94a3b8',
+                    color: '#64748b',
                     padding: '0.25rem'
                   }}
                 >

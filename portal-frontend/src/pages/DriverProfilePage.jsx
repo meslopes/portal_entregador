@@ -286,7 +286,7 @@ const DriverProfilePage = () => {
                 width: '100%', padding: '0.625rem 0.75rem',
                 border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
                 fontSize: '0.9375rem', outline: 'none',
-                background: '#f8fafc', color: '#94a3b8'
+                background: '#f8fafc', color: '#64748b'
               }}
             />
           </div>
@@ -486,7 +486,7 @@ const DriverProfilePage = () => {
                 style={{
                   position: 'absolute', right: '0.75rem', top: '50%',
                   transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#94a3b8'
+                  border: 'none', cursor: 'pointer', color: '#64748b'
                 }}
               >
                 {showPassword.current ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -516,7 +516,7 @@ const DriverProfilePage = () => {
                 style={{
                   position: 'absolute', right: '0.75rem', top: '50%',
                   transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#94a3b8'
+                  border: 'none', cursor: 'pointer', color: '#64748b'
                 }}
               >
                 {showPassword.new ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -546,7 +546,7 @@ const DriverProfilePage = () => {
                 style={{
                   position: 'absolute', right: '0.75rem', top: '50%',
                   transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#94a3b8'
+                  border: 'none', cursor: 'pointer', color: '#64748b'
                 }}
               >
                 {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}

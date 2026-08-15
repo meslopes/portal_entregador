@@ -107,7 +107,7 @@ const SupportPage = () => {
               alignItems: 'center'
             }}>
               {item.question}
-              <span style={{ color: '#94a3b8', fontSize: '1.25rem' }}>+</span>
+              <span style={{ color: '#64748b', fontSize: '1.25rem' }}>+</span>
             </summary>
             <div style={{ padding: '0 1.25rem 1rem', color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6 }}>
               {item.answer}

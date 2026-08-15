@@ -90,7 +90,7 @@ const ClientOrdersPage = () => {
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
             <input
               type="text"
               placeholder="Buscar por número, cliente ou endereço..."
@@ -117,12 +117,12 @@ const ClientOrdersPage = () => {
       ) : filtered.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-            <Package size={24} style={{ color: '#94a3b8' }} />
+            <Package size={24} style={{ color: '#64748b' }} />
           </div>
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
             {search || filter ? 'Nenhum pedido encontrado' : 'Nenhum pedido ainda'}
           </p>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
             {search || filter ? 'Tente outro termo ou filtro' : 'Crie seu primeiro pedido em "Novo Pedido"'}
           </p>
         </div>
@@ -160,27 +160,27 @@ const ClientOrdersPage = () => {
                             </span>
                           )}
                         </div>
-                        <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{utils.formatDateTime(order.created_at)}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{utils.formatDateTime(order.created_at)}</p>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '1rem' }}>{utils.formatCurrency(order.total_amount)}</p>
-                        <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Frete: {utils.formatCurrency(order.delivery_fee || 0)}</p>
+                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Frete: {utils.formatCurrency(order.delivery_fee || 0)}</p>
                       </div>
                     </div>
 
                     {/* Info */}
                     <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.8125rem', color: '#64748b', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <User size={14} style={{ color: '#94a3b8' }} />
+                        <User size={14} style={{ color: '#64748b' }} />
                         {order.customer?.name || 'Cliente'}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <MapPin size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                        <MapPin size={14} style={{ color: '#64748b', flexShrink: 0 }} />
                         {order.delivery_address?.street || 'Sem endereço'}
                       </div>
                       {order.driver && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                          <Truck size={14} style={{ color: '#94a3b8' }} />
+                          <Truck size={14} style={{ color: '#64748b' }} />
                           {order.driver.name}
                         </div>
                       )}
@@ -287,14 +287,14 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-      <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+      <div role="dialog" aria-modal="true" aria-label={`Pedido #${order.order_number}`} style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
         {/* Header */}
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Pedido #{order.order_number}</h2>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{utils.formatDateTime(order.created_at)}</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{utils.formatDateTime(order.created_at)}</p>
           </div>
-          <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.25rem' }}>✕</button>
+          <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.25rem' }}>✕</button>
         </div>
 
         <div style={{ padding: '1.5rem' }}>
@@ -314,12 +314,12 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
           {/* Cliente */}
           <InfoSection title="Cliente Final">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-              <User size={14} style={{ color: '#94a3b8' }} />
+              <User size={14} style={{ color: '#64748b' }} />
               <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.customer?.name}</span>
             </div>
             {order.customer?.phone && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Phone size={14} style={{ color: '#94a3b8' }} />
+                <Phone size={14} style={{ color: '#64748b' }} />
                 <span style={{ fontSize: '0.875rem', color: '#475569' }}>{order.customer.phone}</span>
               </div>
             )}
@@ -331,7 +331,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
               <MapPin size={14} style={{ color: '#0d9488', marginTop: '0.125rem' }} />
               <div>
                 <p style={{ fontSize: '0.875rem', color: '#1e293b' }}>{order.delivery_address?.street}{order.delivery_address?.neighborhood ? `, ${order.delivery_address.neighborhood}` : ''}</p>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.delivery_address?.city}/{order.delivery_address?.state} - {order.delivery_address?.zip_code}</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.delivery_address?.city}/{order.delivery_address?.state} - {order.delivery_address?.zip_code}</p>
               </div>
             </div>
           </InfoSection>
@@ -345,7 +345,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.driver.name}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
                     {hasOwnDriver ? 'Entregador Próprio' : 'Plataforma'} {order.driver.phone ? `• ${order.driver.phone}` : ''}
                   </p>
                 </div>
@@ -358,11 +358,11 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
             <p style={{ fontSize: '0.875rem', color: '#1e293b' }}>
               {utils.getStatusText(order.payment_method)}
               {specialInfo.product_value && (
-                <span style={{ color: '#94a3b8', marginLeft: '0.5rem' }}>(Produto: {utils.formatCurrency(specialInfo.product_value)})</span>
+                <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>(Produto: {utils.formatCurrency(specialInfo.product_value)})</span>
               )}
             </p>
             {specialInfo.change_for && (
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Troco para: {specialInfo.change_for}</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Troco para: {specialInfo.change_for}</p>
             )}
           </InfoSection>
 
@@ -414,7 +414,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                       disabled={!selectedDriverId || assigning}
                       style={{
                         padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
-                        background: selectedDriverId && !assigning ? '#2563eb' : '#94a3b8',
+                        background: selectedDriverId && !assigning ? '#2563eb' : '#64748b',
                         color: 'white', cursor: selectedDriverId && !assigning ? 'pointer' : 'not-allowed',
                         fontSize: '0.8125rem', fontWeight: 600,
                         display: 'flex', alignItems: 'center', gap: '0.375rem',
@@ -426,7 +426,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                     </button>
                   </div>
                 ) : (
-                  <p style={{ fontSize: '0.8125rem', color: '#94a3b8', padding: '0.5rem 0' }}>
+                  <p style={{ fontSize: '0.8125rem', color: '#64748b', padding: '0.5rem 0' }}>
                     Nenhum entregador próprio online no momento.
                   </p>
                 )}
@@ -435,7 +435,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
               {/* Separador */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.75rem 0' }}>
                 <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-                <span style={{ fontSize: '0.6875rem', color: '#94a3b8', fontWeight: 500 }}>OU</span>
+                <span style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 500 }}>OU</span>
                 <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
               </div>
 
@@ -520,7 +520,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
 // Componentes auxiliares
 const StatBox = ({ label, value, highlight, bold }) => (
   <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>
-    <p style={{ fontSize: '0.625rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+    <p style={{ fontSize: '0.625rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
     <p style={{ fontSize: bold ? '1rem' : '0.875rem', fontWeight: bold ? 700 : 600, color: highlight ? '#0d9488' : '#1e293b' }}>{value}</p>
   </div>
 );

@@ -124,7 +124,7 @@ const WalletPage = () => {
       <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.75rem' }}>Últimas Transações</h3>
         {wallet?.recent_payments?.length === 0 ? (
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', textAlign: 'center', padding: '1rem' }}>Nenhuma transação</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', textAlign: 'center', padding: '1rem' }}>Nenhuma transação</p>
         ) : (
           wallet?.recent_payments?.map(p => (
             <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f1f5f9' }}>
@@ -138,7 +138,7 @@ const WalletPage = () => {
                   <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>
                     {p.type === 'WITHDRAWAL' ? 'Saque PIX' : 'Ganho de entrega'}
                   </p>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
+                  <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>
                     {p.created_at ? new Date(p.created_at + 'Z').toLocaleString('pt-BR') : ''}
                   </p>
                 </div>

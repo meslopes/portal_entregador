@@ -58,7 +58,7 @@ def ifood_webhook():
         data = request.get_json(silent=True)
         if not data:
             logger.warning(f"iFood webhook: JSON parse falhou. Raw: {raw_body}")
-            return jsonify({'error': 'Dados não fornecidos'}), 200
+            return jsonify({'error': 'Dados não fornecidos ou JSON inválido'}), 400
 
         logger.info(f"iFood webhook JSON: {data}")
 

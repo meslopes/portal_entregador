@@ -77,7 +77,7 @@ const OwnDriverLoginPage = () => {
               Telefone
             </label>
             <div style={{ position: 'relative' }}>
-              <Phone size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Phone size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input
                 type="tel"
                 value={phone}
@@ -97,7 +97,7 @@ const OwnDriverLoginPage = () => {
               PIN (4 dígitos)
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Lock size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input
                 type={showPin ? 'text' : 'password'}
                 value={pin}
@@ -117,7 +117,7 @@ const OwnDriverLoginPage = () => {
                 onClick={() => setShowPin(!showPin)}
                 style={{
                   position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '0.25rem'
+                  background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0.25rem'
                 }}
               >
                 {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -139,7 +139,7 @@ const OwnDriverLoginPage = () => {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8', marginTop: '1.5rem' }}>
+        <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '1.5rem' }}>
           Não tem seu PIN? Peça ao estabelecimento para cadastrar.
         </p>
       </div>

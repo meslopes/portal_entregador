@@ -7,10 +7,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 
-const RANKING_COLORS = ['#f59e0b', '#94a3b8', '#cd7f32', '#64748b', '#94a3b8'];
+const RANKING_COLORS = ['#f59e0b', '#64748b', '#cd7f32', '#64748b', '#64748b'];
 const LEVEL_THRESHOLDS = [
   { min: 0, level: 'Bronze', color: '#cd7f32', icon: '🥉' },
-  { min: 500, level: 'Prata', color: '#94a3b8', icon: '🥈' },
+  { min: 500, level: 'Prata', color: '#64748b', icon: '🥈' },
   { min: 1500, level: 'Ouro', color: '#f59e0b', icon: '🥇' },
   { min: 3000, level: 'Diamante', color: '#8b5cf6', icon: '💎' },
 ];
@@ -164,11 +164,11 @@ const DriverRankingPage = () => {
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{item.name}</p>
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{item.total_deliveries} entregas</p>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{item.total_deliveries} entregas</p>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontWeight: 600, color: '#f59e0b', fontSize: '0.875rem' }}>{item.score} pts</p>
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>⭐ {item.avg_rating}</p>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>⭐ {item.avg_rating}</p>
               </div>
             </div>
           ))}
@@ -182,7 +182,7 @@ const DriverRankingPage = () => {
         </div>
         <div style={{ padding: '0.5rem' }}>
           {bonuses.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '0.875rem' }}>
+            <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontSize: '0.875rem' }}>
               Nenhum bônus disponível ainda
             </p>
           ) : (
@@ -195,7 +195,7 @@ const DriverRankingPage = () => {
                 <Award size={18} style={{ color: '#22c55e' }} />
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{bonus.criteria}</p>
-                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{bonus.bonus_type === 'weekly' ? 'Semanal' : 'Mensal'}</p>
+                  <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{bonus.bonus_type === 'weekly' ? 'Semanal' : 'Mensal'}</p>
                 </div>
                 <span style={{ fontWeight: 600, color: '#22c55e', fontSize: '0.875rem' }}>
                   +R$ {(bonus.amount || 0).toFixed(2)}
@@ -213,7 +213,7 @@ const DriverRankingPage = () => {
         </div>
         <div style={{ padding: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {achievements.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8', fontSize: '0.875rem', width: '100%' }}>
+            <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b', fontSize: '0.875rem', width: '100%' }}>
               Nenhuma conquista desbloqueada ainda
             </p>
           ) : (

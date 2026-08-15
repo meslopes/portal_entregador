@@ -58,7 +58,7 @@ const AdminWithdrawalsPage = () => {
 
       {withdrawals.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <DollarSign size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
+          <DollarSign size={48} style={{ color: '#64748b', marginBottom: '1rem' }} />
           <p style={{ color: '#64748b', fontSize: '1rem' }}>Nenhuma solicitação de saque pendente</p>
         </div>
       ) : (
@@ -77,7 +77,7 @@ const AdminWithdrawalsPage = () => {
                       <strong>PIX:</strong> {w.pix_key}
                     </p>
                   )}
-                  <p style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>
+                  <p style={{ color: '#64748b', fontSize: '0.6875rem' }}>
                     <Clock size={12} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />
                     {w.created_at ? new Date(w.created_at + 'Z').toLocaleString('pt-BR') : ''}
                   </p>

@@ -193,11 +193,11 @@ const ClientDashboardPage = () => {
             <Navigation size={18} style={{ color: '#0d9488' }} />
             <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Entregas em Andamento</span>
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{trackingDrivers.length} entregador(es) ativo(s)</span>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{trackingDrivers.length} entregador(es) ativo(s)</span>
         </div>
         <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
         {trackingDrivers.length === 0 && (
-          <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8125rem' }}>
+          <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.8125rem' }}>
             Nenhuma entrega em andamento no momento
           </div>
         )}
@@ -228,12 +228,12 @@ const ClientDashboardPage = () => {
       ) : orders.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-            <Package size={24} style={{ color: '#94a3b8' }} />
+            <Package size={24} style={{ color: '#64748b' }} />
           </div>
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
             {filter ? 'Nenhum pedido encontrado' : 'Nenhum pedido ainda'}
           </p>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
             {filter ? 'Tente outro filtro' : 'Clique em "NOVO PEDIDO" para começar'}
           </p>
         </div>
@@ -273,7 +273,7 @@ const ClientDashboardPage = () => {
                             <StatusIcon size={10} /> {config.text}
                           </span>
                         </div>
-                        <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
                           {utils.formatDateTime(order.created_at)}
                         </p>
                       </div>
@@ -287,11 +287,11 @@ const ClientDashboardPage = () => {
                     {/* Info do cliente */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8125rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <User size={14} style={{ color: '#94a3b8' }} />
+                        <User size={14} style={{ color: '#64748b' }} />
                         <span style={{ color: '#475569' }}>{order.customer?.name || 'Cliente'}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <MapPin size={14} style={{ color: '#94a3b8' }} />
+                        <MapPin size={14} style={{ color: '#64748b' }} />
                         <span style={{ color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {order.delivery_address?.street || 'Endereço não informado'}
                         </span>
@@ -305,8 +305,8 @@ const ClientDashboardPage = () => {
                         <span style={{ color: '#475569' }}>
                           Entregador: <strong>{order.driver.name}</strong>
                         </span>
-                        <span style={{ color: '#94a3b8' }}>•</span>
-                        <span style={{ color: '#94a3b8' }}>{order.driver.phone}</span>
+                        <span style={{ color: '#64748b' }}>•</span>
+                        <span style={{ color: '#64748b' }}>{order.driver.phone}</span>
                       </div>
                     )}
                   </div>
@@ -401,7 +401,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 100, padding: '1rem'
     }}>
-      <div style={{
+      <div role="dialog" aria-modal="true" aria-label={`Pedido #${order.order_number}`} style={{
         background: 'white', borderRadius: '0.75rem', width: '100%',
         maxWidth: '500px', maxHeight: '90vh', overflow: 'auto',
         boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
@@ -415,11 +415,11 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>
               Pedido #{order.order_number}
             </h2>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
               {utils.formatDateTime(order.created_at)}
             </p>
           </div>
-          <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+          <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
             ✕
           </button>
         </div>
@@ -437,11 +437,11 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
           {/* Valor */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
             <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Total</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Total</p>
               <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{utils.formatCurrency(order.total_amount)}</p>
             </div>
             <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Frete</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Frete</p>
               <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0d9488' }}>{utils.formatCurrency(order.delivery_fee || 0)}</p>
             </div>
           </div>
@@ -451,12 +451,12 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
             <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cliente</p>
             <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.375rem' }}>
-                <User size={14} style={{ color: '#94a3b8' }} />
+                <User size={14} style={{ color: '#64748b' }} />
                 <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.customer?.name}</span>
               </div>
               {order.customer?.phone && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Phone size={14} style={{ color: '#94a3b8' }} />
+                  <Phone size={14} style={{ color: '#64748b' }} />
                   <span style={{ fontSize: '0.875rem', color: '#475569' }}>{order.customer.phone}</span>
                 </div>
               )}
@@ -473,7 +473,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                   {order.delivery_address?.street}
                   {order.delivery_address?.neighborhood ? `, ${order.delivery_address.neighborhood}` : ''}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
                   {order.delivery_address?.city}/{order.delivery_address?.state} - {order.delivery_address?.zip_code}
                 </p>
               </div>
@@ -490,7 +490,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.driver.name}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.driver.phone}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.driver.phone}</p>
                 </div>
               </div>
             </div>
@@ -503,13 +503,13 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
               <p style={{ fontSize: '0.875rem', color: '#1e293b' }}>
                 {utils.getStatusText(order.payment_method)}
                 {specialInfo.product_value && (
-                  <span style={{ color: '#94a3b8', marginLeft: '0.5rem' }}>
+                  <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>
                     (Produto: {utils.formatCurrency(specialInfo.product_value)})
                   </span>
                 )}
               </p>
               {specialInfo.change_for && (
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
                   Troco para: {specialInfo.change_for}
                 </p>
               )}
@@ -623,7 +623,7 @@ const StatCard = ({ icon, iconBg, iconColor, label, value }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
       <div style={{ padding: '0.625rem', borderRadius: '0.5rem', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
       <div>
-        <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+        <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
         <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
       </div>
     </div>
@@ -660,7 +660,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
         {/* Header */}
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Avaliar Entrega</h2>
-          <p style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>Pedido #{order.order_number}</p>
+          <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Pedido #{order.order_number}</p>
         </div>
 
         <div style={{ padding: '1.5rem' }}>
@@ -672,7 +672,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
               </div>
               <div>
                 <p style={{ fontWeight: 600, color: '#1e293b' }}>{order.driver.name}</p>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.driver.phone}</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.driver.phone}</p>
               </div>
             </div>
           )}
@@ -694,7 +694,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
                 </button>
               ))}
             </div>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
               {rating === 0 && 'Toque nas estrelas para avaliar'}
               {rating === 1 && 'Ruim'}
               {rating === 2 && 'Regular'}
@@ -727,7 +727,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
               style={{
                 flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
                 border: 'none', background: rating === 0 ? '#e2e8f0' : '#f59e0b',
-                color: rating === 0 ? '#94a3b8' : 'white',
+                color: rating === 0 ? '#64748b' : 'white',
                 fontSize: '0.875rem', fontWeight: 600, cursor: rating === 0 ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
               }}

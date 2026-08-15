@@ -165,7 +165,7 @@ const OrdersPage = () => {
               ? `${orders.length} pedido${orders.length !== 1 ? 's' : ''} disponível${orders.length !== 1 ? 'eis' : ''}`
               : `${activeOrders.length} pedido${activeOrders.length !== 1 ? 's' : ''} em andamento`
             }
-            {!isLoading && <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>• atualiza a cada 10s</span>}
+            {!isLoading && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>• atualiza a cada 10s</span>}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -262,7 +262,7 @@ const OrdersPage = () => {
         orders.length === 0 ? (
           <div style={{ background: 'white', borderRadius: '0.75rem', padding: '4rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-              <Package size={32} style={{ color: '#94a3b8' }} />
+              <Package size={32} style={{ color: '#64748b' }} />
             </div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Nenhum pedido disponível</h3>
             <p style={{ color: '#64748b', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
@@ -321,7 +321,7 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
           </div>
           <div>
             <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Pedido #{order.order_number}</p>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.items?.length || 0} ite{order.items?.length !== 1 ? 'ns' : 'm'}</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.items?.length || 0} ite{order.items?.length !== 1 ? 'ns' : 'm'}</p>
           </div>
         </div>
         <div style={{ padding: '0.375rem 0.875rem', borderRadius: '9999px', background: '#dcfce7', color: '#16a34a', fontSize: '0.875rem', fontWeight: 600 }}>
@@ -336,7 +336,7 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
             <Store size={14} style={{ color: '#d97706' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coletar em</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coletar em</p>
             <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.name || 'Restaurante'}</p>
             <p style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.address || 'Endereço não informado'}</p>
             {order.distance_to_restaurant_km && <p style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: '0.125rem' }}>📍 {order.distance_to_restaurant_km} km de você</p>}
@@ -348,7 +348,7 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
             <MapPin size={14} style={{ color: '#16a34a' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregar em</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregar em</p>
             <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.customer?.name || 'Cliente'}</p>
             <p style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.delivery_address?.street || ''}{order.delivery_address?.neighborhood ? `, ${order.delivery_address.neighborhood}` : ''}</p>
             {order.delivery_distance_km && <p style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '0.125rem' }}>🏁 {order.delivery_distance_km} km de distância</p>}
@@ -357,15 +357,15 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
         {/* Info */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', padding: '0.875rem', background: '#f8fafc', borderRadius: '0.5rem', marginBottom: '1rem' }}>
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Total</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Total</p>
             <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9375rem' }}>{utils.formatCurrency(order.total_amount)}</p>
           </div>
           <div style={{ textAlign: 'center', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Pagamento</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Pagamento</p>
             <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem' }}>{utils.getStatusText(order.payment_method)}</p>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Tempo</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Tempo</p>
             <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
               <Clock size={12} /> {order.estimated_delivery_time_minutes || '—'} min
             </p>
@@ -423,7 +423,7 @@ const ActiveOrderCard = ({ order }) => {
     PICKED_UP: { color: '#f59e0b', bg: '#fef3c7', text: 'A Caminho' },
   };
 
-  const config = STATUS_CONFIG[order.status] || { color: '#94a3b8', bg: '#f1f5f9', text: order.status };
+  const config = STATUS_CONFIG[order.status] || { color: '#64748b', bg: '#f1f5f9', text: order.status };
   const navigate = useNavigate();
 
   return (
@@ -436,7 +436,7 @@ const ActiveOrderCard = ({ order }) => {
             </div>
             <div>
               <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>#{order.order_number}</p>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{order.restaurant?.name}</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{order.restaurant?.name}</p>
             </div>
           </div>
           <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: config.bg, color: config.color }}>
@@ -447,11 +447,11 @@ const ActiveOrderCard = ({ order }) => {
       <div style={{ padding: '1rem 1.25rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
           <div>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Coletar em</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Coletar em</p>
             <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{order.restaurant?.name}</p>
           </div>
           <div>
-            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Entregar em</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Entregar em</p>
             <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{order.customer?.name}</p>
           </div>
         </div>
@@ -482,7 +482,7 @@ const iconBtn = (active) => ({
   width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem',
   border: '1px solid #e2e8f0',
   background: active ? '#dcfce7' : 'white',
-  color: active ? '#16a34a' : '#94a3b8',
+  color: active ? '#16a34a' : '#64748b',
   cursor: 'pointer', transition: 'all 0.15s'
 });
 

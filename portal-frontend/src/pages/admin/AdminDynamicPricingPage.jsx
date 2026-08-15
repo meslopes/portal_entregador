@@ -147,9 +147,9 @@ const AdminDynamicPricingPage = () => {
 
       {configs.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <DollarSign size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
+          <DollarSign size={48} style={{ color: '#64748b', marginBottom: '1rem' }} />
           <p style={{ color: '#64748b', fontSize: '1rem', marginBottom: '0.5rem' }}>Nenhuma configuração de taxas adicionais</p>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Crie uma configuração para cada praça</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Crie uma configuração para cada praça</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
@@ -174,7 +174,7 @@ const AdminDynamicPricingPage = () => {
                 <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.rainy_day_active ? '#eff6ff' : '#f8fafc', border: `1px solid ${config.rainy_day_active ? '#bfdbfe' : '#e2e8f0'}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <CloudRain size={14} color={config.rainy_day_active ? '#2563eb' : '#94a3b8'} />
+                      <CloudRain size={14} color={config.rainy_day_active ? '#2563eb' : '#64748b'} />
                       <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Taxa de Chuva</span>
                     </div>
                     <button onClick={() => toggleActive(config, 'rainy_day_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.rainy_day_active ? '#2563eb' : '#e2e8f0', color: config.rainy_day_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
@@ -188,7 +188,7 @@ const AdminDynamicPricingPage = () => {
                 <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.high_demand_active ? '#fefce8' : '#f8fafc', border: `1px solid ${config.high_demand_active ? '#fde68a' : '#e2e8f0'}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <TrendingUp size={14} color={config.high_demand_active ? '#ca8a04' : '#94a3b8'} />
+                      <TrendingUp size={14} color={config.high_demand_active ? '#ca8a04' : '#64748b'} />
                       <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Alta Demanda</span>
                     </div>
                     <button onClick={() => toggleActive(config, 'high_demand_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.high_demand_active ? '#ca8a04' : '#e2e8f0', color: config.high_demand_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
@@ -203,7 +203,7 @@ const AdminDynamicPricingPage = () => {
                 <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.holiday_active ? '#fdf2f8' : '#f8fafc', border: `1px solid ${config.holiday_active ? '#fbcfe8' : '#e2e8f0'}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <Calendar size={14} color={config.holiday_active ? '#db2777' : '#94a3b8'} />
+                      <Calendar size={14} color={config.holiday_active ? '#db2777' : '#64748b'} />
                       <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Feriado</span>
                     </div>
                     <button onClick={() => toggleActive(config, 'holiday_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.holiday_active ? '#db2777' : '#e2e8f0', color: config.holiday_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
@@ -217,7 +217,7 @@ const AdminDynamicPricingPage = () => {
                 <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.cancellation_fee_active ? '#fef2f2' : '#f8fafc', border: `1px solid ${config.cancellation_fee_active ? '#fecaca' : '#e2e8f0'}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <XCircle size={14} color={config.cancellation_fee_active ? '#dc2626' : '#94a3b8'} />
+                      <XCircle size={14} color={config.cancellation_fee_active ? '#dc2626' : '#64748b'} />
                       <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Cancelamento</span>
                     </div>
                     <button onClick={() => toggleActive(config, 'cancellation_fee_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.cancellation_fee_active ? '#dc2626' : '#e2e8f0', color: config.cancellation_fee_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
@@ -239,7 +239,7 @@ const AdminDynamicPricingPage = () => {
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '550px', maxHeight: '90vh', overflow: 'auto', zIndex: 100000, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{editingId ? 'Editar Taxas' : 'Nova Configuração de Taxas'}</h2>
-              <button onClick={resetForm} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={resetForm} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
               <div style={{ marginBottom: '1.25rem' }}>

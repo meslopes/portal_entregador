@@ -27,10 +27,12 @@ api.interceptors.request.use(
 );
 
 // Interceptor para tratar respostas
+let isRedirecting = false;
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isRedirecting) {
+      isRedirecting = true;
       // Verificar se é rota de own-driver
       const isOwnDriverRequest = error.config?.url?.includes('/api/own-driver/');
       if (isOwnDriverRequest) {

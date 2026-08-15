@@ -361,7 +361,7 @@ const Row = ({ label, value, bold }) => (
 const PayBtn = ({ active, onClick, label, desc }) => (
   <button type="button" onClick={onClick} style={{ flex: 1, minWidth: '180px', padding: '0.75rem', borderRadius: '0.5rem', border: '1.5px solid', borderColor: active ? '#0d9488' : '#e2e8f0', background: active ? '#f0fdfa' : 'white', cursor: 'pointer', textAlign: 'left' }}>
     <p style={{ fontWeight: 600, color: active ? '#0f766e' : '#1e293b', fontSize: '0.875rem', marginBottom: '0.125rem' }}>{label}</p>
-    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{desc}</p>
+    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{desc}</p>
   </button>
 );
 

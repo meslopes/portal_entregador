@@ -178,7 +178,7 @@ const ClientLoginPage = () => {
             background: '#f1f5f9',
             borderRadius: '0.5rem',
             fontSize: '0.75rem',
-            color: '#94a3b8',
+            color: '#64748b',
             textAlign: 'center'
           }}>
             <strong style={{ color: '#64748b' }}>Teste:</strong> cliente@teste.com / 123456

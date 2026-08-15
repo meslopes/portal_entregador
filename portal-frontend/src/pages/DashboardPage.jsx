@@ -399,8 +399,8 @@ const StatCard = ({ icon, iconBg, iconColor, label, value, suffix = '' }) => (
         {icon}
       </div>
       <div>
-        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
-        <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}<span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8' }}>{suffix}</span></p>
+        <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
+        <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}<span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#64748b' }}>{suffix}</span></p>
       </div>
     </div>
   </div>
@@ -410,6 +410,10 @@ const StatCard = ({ icon, iconBg, iconColor, label, value, suffix = '' }) => (
 const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick }) => (
   <div
     onClick={onClick}
+    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); }}}
+    role="button"
+    tabIndex={0}
+    aria-label={title}
     style={{
       background: 'white',
       borderRadius: '0.75rem',
@@ -434,7 +438,7 @@ const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick }) =>
         </div>
         <div>
           <h3 style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>{title}</h3>
-          <p style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>{description}</p>
+          <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>{description}</p>
         </div>
       </div>
       <ArrowRight size={18} style={{ color: '#cbd5e1' }} />

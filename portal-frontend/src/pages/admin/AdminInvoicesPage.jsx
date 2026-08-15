@@ -196,9 +196,9 @@ const AdminInvoicesPage = () => {
 
       {invoices.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <FileText size={48} style={{ color: '#94a3b8', marginBottom: '1rem' }} />
+          <FileText size={48} style={{ color: '#64748b', marginBottom: '1rem' }} />
           <p style={{ color: '#64748b', fontSize: '1rem' }}>Nenhuma fatura encontrada</p>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>Clique em "Gerar Sem. Anterior" ou "Gerar Sem. Atual" para criar faturas</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.5rem' }}>Clique em "Gerar Sem. Anterior" ou "Gerar Sem. Atual" para criar faturas</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>

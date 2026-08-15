@@ -86,7 +86,7 @@ const HistoryPage = () => {
         }}>
           <Search size={16} style={{
             position: 'absolute', left: '0.875rem', top: '50%',
-            transform: 'translateY(-50%)', color: '#94a3b8'
+            transform: 'translateY(-50%)', color: '#64748b'
           }} />
           <input
             type="text"
@@ -125,7 +125,7 @@ const HistoryPage = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 1.5rem'
           }}>
-            <Package size={32} style={{ color: '#94a3b8' }} />
+            <Package size={32} style={{ color: '#64748b' }} />
           </div>
           <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>
             Nenhuma entrega no histórico
@@ -233,7 +233,7 @@ const HistoryCard = ({ order }) => {
               <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
                 Pedido #{order.order_number}
               </p>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 <Calendar size={11} />
                 {utils.formatDateTime(order.created_at)}
               </p>
@@ -244,7 +244,7 @@ const HistoryCard = ({ order }) => {
               padding: '0.375rem 0.75rem',
               borderRadius: '9999px',
               background: isDelivered ? '#dcfce7' : '#f1f5f9',
-              color: isDelivered ? '#16a34a' : '#94a3b8',
+              color: isDelivered ? '#16a34a' : '#64748b',
               fontSize: '0.875rem',
               fontWeight: 700
             }}>
@@ -280,7 +280,7 @@ const HistoryCard = ({ order }) => {
           borderTop: '1px solid #f1f5f9'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <DollarSign size={13} style={{ color: '#94a3b8' }} />
+            <DollarSign size={13} style={{ color: '#64748b' }} />
             <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>
               Total: {utils.formatCurrency(order.total_amount)}
             </span>

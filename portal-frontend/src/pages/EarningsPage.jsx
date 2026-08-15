@@ -125,7 +125,7 @@ const EarningsPage = () => {
             <span style={{ fontWeight: 600, color: '#1e293b' }}>Histórico de Pagamentos</span>
           </div>
           {earnings?.payments && (
-            <span style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>
               {earnings.payments.length} registro{earnings.payments.length !== 1 ? 's' : ''}
             </span>
           )}
@@ -149,12 +149,12 @@ const EarningsPage = () => {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto 1rem'
             }}>
-              <DollarSign size={24} style={{ color: '#94a3b8' }} />
+              <DollarSign size={24} style={{ color: '#64748b' }} />
             </div>
             <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
               Nenhum pagamento registrado
             </p>
-            <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
               Seus pagamentos aparecerão aqui
             </p>
           </div>
@@ -190,7 +190,7 @@ const SummaryCard = ({ icon, iconBg, iconColor, label, value, large = false }) =
         {icon}
       </div>
       <div>
-        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+        <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
         <p style={{ fontSize: large ? '1.5rem' : '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
       </div>
     </div>
@@ -207,9 +207,9 @@ const MiniStat = ({ icon, label, value }) => (
     alignItems: 'center',
     gap: '0.75rem'
   }}>
-    <div style={{ color: '#94a3b8' }}>{icon}</div>
+    <div style={{ color: '#64748b' }}>{icon}</div>
     <div>
-      <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.125rem' }}>{label}</p>
+      <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
       <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b' }}>{value}</p>
     </div>
   </div>
@@ -248,7 +248,7 @@ const PaymentRow = ({ payment }) => {
         </div>
         <div>
           <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{config.label}</p>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
             {utils.formatDateTime(payment.created_at)}
           </p>
         </div>

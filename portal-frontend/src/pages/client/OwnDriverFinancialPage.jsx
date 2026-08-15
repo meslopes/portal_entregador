@@ -270,7 +270,7 @@ const OwnDriverFinancialPage = () => {
               <tbody>
                 {earnings.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                    <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
                       Nenhum ganho registrado
                     </td>
                   </tr>

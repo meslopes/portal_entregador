@@ -92,7 +92,7 @@ const Layout = ({ children }) => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
+            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
@@ -163,13 +163,13 @@ const Layout = ({ children }) => {
                     <Avatar style={{ height: '2rem', width: '2rem' }}>
                       <AvatarFallback style={{ fontSize: '0.75rem', background: '#2563eb', color: 'white' }}>{userInitials}</AvatarFallback>
                     </Avatar>
-                    <ChevronDown size={14} style={{ color: '#94a3b8' }} />
+                    <ChevronDown size={14} style={{ color: '#64748b' }} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" style={{ width: '220px', zIndex: 100002 }}>
                   <div style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>{user?.first_name} {user?.last_name}</p>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{user?.email}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{user?.email}</p>
                   </div>
                   <DropdownMenuItem onClick={() => navigate(isAdmin ? '/admin/settings' : '/profile')} style={{ cursor: 'pointer', padding: '0.625rem 0.75rem' }}>
                     <User size={16} style={{ marginRight: '0.75rem', color: '#64748b' }} />

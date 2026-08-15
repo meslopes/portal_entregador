@@ -138,13 +138,13 @@ const ClientLayout = ({ children }) => {
                     <Avatar style={{ height: '2rem', width: '2rem' }}>
                       <AvatarFallback style={{ fontSize: '0.75rem', background: '#0d9488', color: 'white' }}>{userInitials}</AvatarFallback>
                     </Avatar>
-                    <ChevronDown size={14} style={{ color: '#94a3b8' }} />
+                    <ChevronDown size={14} style={{ color: '#64748b' }} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" style={{ width: '220px' }}>
                   <div style={{ padding: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
                     <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>{user?.first_name} {user?.last_name}</p>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{user?.email}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{user?.email}</p>
                   </div>
                   <DropdownMenuItem onClick={() => navigate('/client/profile')} style={{ cursor: 'pointer', padding: '0.625rem 0.75rem' }}>
                     <User size={16} style={{ marginRight: '0.75rem', color: '#64748b' }} />
@@ -212,13 +212,13 @@ const ClientLayout = ({ children }) => {
       {/* Footer */}
       <footer style={{ background: 'white', borderTop: '1px solid #e2e8f0', padding: '1rem 0' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <p style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
+          <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
             © 2026 muv.log — Portal do Estabelecimento
           </p>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <Link to="/support" style={{ fontSize: '0.8125rem', color: '#94a3b8', textDecoration: 'none' }}>Suporte</Link>
-            <Link to="/terms" style={{ fontSize: '0.8125rem', color: '#94a3b8', textDecoration: 'none' }}>Termos</Link>
-            <Link to="/privacy" style={{ fontSize: '0.8125rem', color: '#94a3b8', textDecoration: 'none' }}>Privacidade</Link>
+            <Link to="/support" style={{ fontSize: '0.8125rem', color: '#64748b', textDecoration: 'none' }}>Suporte</Link>
+            <Link to="/terms" style={{ fontSize: '0.8125rem', color: '#64748b', textDecoration: 'none' }}>Termos</Link>
+            <Link to="/privacy" style={{ fontSize: '0.8125rem', color: '#64748b', textDecoration: 'none' }}>Privacidade</Link>
           </div>
         </div>
       </footer>

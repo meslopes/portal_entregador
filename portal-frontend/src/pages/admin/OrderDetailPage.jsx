@@ -340,7 +340,7 @@ const OrderDetailPage = () => {
                   <p style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.detail}</p>
                 </div>
                 {item.time && (
-                  <span style={{ color: '#94a3b8', fontSize: '0.6875rem', whiteSpace: 'nowrap' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.6875rem', whiteSpace: 'nowrap' }}>
                     {formatLocalDateTime(item.time)}
                   </span>
                 )}

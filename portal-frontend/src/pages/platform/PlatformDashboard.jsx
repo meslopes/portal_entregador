@@ -265,7 +265,7 @@ const PlatformDashboard = () => {
             <div style={{
               padding: '3rem',
               textAlign: 'center',
-              color: '#94a3b8'
+              color: '#64748b'
             }}>
               <Users size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
               <p style={{ fontSize: '0.9375rem' }}>Nenhum admin cadastrado</p>
@@ -299,7 +299,7 @@ const PlatformDashboard = () => {
                           <p style={{ fontWeight: 500, color: '#1e293b' }}>
                             {admin.first_name} {admin.last_name}
                           </p>
-                          <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{admin.email}</p>
+                          <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{admin.email}</p>
                         </div>
                       </td>
                       <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>
@@ -388,7 +388,7 @@ const PlatformDashboard = () => {
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#94a3b8'
+                  color: '#64748b'
                 }}
               >
                 <X size={20} />
@@ -532,7 +532,7 @@ const MetricCard = ({ icon, label, value, color, bg }) => (
         {icon}
       </div>
       <div>
-        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>{label}</p>
+        <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>{label}</p>
         <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
       </div>
     </div>

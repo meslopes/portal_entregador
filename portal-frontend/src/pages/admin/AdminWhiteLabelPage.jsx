@@ -184,7 +184,7 @@ const AdminWhiteLabelPage = () => {
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             ) : (
-              <Image size={32} style={{ color: '#94a3b8' }} />
+              <Image size={32} style={{ color: '#64748b' }} />
             )}
           </div>
 
@@ -202,7 +202,7 @@ const AdminWhiteLabelPage = () => {
                 style={{ display: 'none' }}
               />
             </label>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
               PNG, JPG ou SVG. Máximo 2MB.
             </p>
           </div>
@@ -260,7 +260,7 @@ const AdminWhiteLabelPage = () => {
 
         {/* Preview */}
         <div style={{ marginTop: '1rem', padding: '1rem', borderRadius: '0.5rem', background: '#f8fafc' }}>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Pré-visualização</p>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>Pré-visualização</p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{
               padding: '0.5rem 1rem', borderRadius: '0.375rem',
@@ -365,7 +365,7 @@ const AdminWhiteLabelPage = () => {
             style={inputStyle}
             placeholder="app.suaempresa.com.br"
           />
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
             Configure um domínio personalizado para o portal do cliente
           </p>
         </div>

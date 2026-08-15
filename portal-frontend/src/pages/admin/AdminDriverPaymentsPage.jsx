@@ -73,7 +73,7 @@ const AdminDriverPaymentsPage = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ padding: '0.625rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><DollarSign size={22} /></div>
             <div>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Total Pendente</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Total Pendente</p>
               <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{utils.formatCurrency(data?.total_pending || 0)}</p>
             </div>
           </div>
@@ -82,7 +82,7 @@ const AdminDriverPaymentsPage = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ padding: '0.625rem', borderRadius: '0.5rem', background: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={22} /></div>
             <div>
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>Entregadores com Pendência</p>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Entregadores com Pendência</p>
               <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{data?.total_drivers || 0}</p>
             </div>
           </div>
@@ -101,18 +101,18 @@ const AdminDriverPaymentsPage = () => {
           <span>Entregador</span><span style={{ textAlign: 'center' }}>Entregas</span><span style={{ textAlign: 'center' }}>Avaliação</span><span style={{ textAlign: 'center' }}>Pagamentos</span><span style={{ textAlign: 'right' }}>Valor Pendente</span><span style={{ textAlign: 'center' }}>Ação</span>
         </div>
         {filtered.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Nenhum entregador com pendência</p>
+          <p style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Nenhum entregador com pendência</p>
         ) : (
           filtered.map(driver => (
             <div key={driver.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 120px', padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc', alignItems: 'center' }} className="table-row">
               <div>
                 <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{driver.name}</p>
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{driver.email}</p>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{driver.email}</p>
                 {driver.pix_key && <p style={{ fontSize: '0.625rem', color: '#0d9488' }}>PIX: {driver.pix_key}</p>}
               </div>
               <span style={{ textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>{driver.total_deliveries}</span>
               <span style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
-                {driver.rating ? <><Star size={14} fill="#f59e0b" stroke="#f59e0b" /> <span style={{ fontSize: '0.8125rem' }}>{driver.rating}</span></> : <span style={{ color: '#94a3b8' }}>-</span>}
+                {driver.rating ? <><Star size={14} fill="#f59e0b" stroke="#f59e0b" /> <span style={{ fontSize: '0.8125rem' }}>{driver.rating}</span></> : <span style={{ color: '#64748b' }}>-</span>}
               </span>
               <span style={{ textAlign: 'center' }}>
                 <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#fef3c7', color: '#d97706' }}>
@@ -126,7 +126,7 @@ const AdminDriverPaymentsPage = () => {
                 <button onClick={() => handlePay(driver.id)} disabled={paying === driver.id || driver.pending_amount === 0} style={{
                   padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none',
                   background: driver.pending_amount > 0 ? '#22c55e' : '#e2e8f0',
-                  color: driver.pending_amount > 0 ? 'white' : '#94a3b8',
+                  color: driver.pending_amount > 0 ? 'white' : '#64748b',
                   fontSize: '0.75rem', fontWeight: 600, cursor: driver.pending_amount > 0 ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem'
                 }}>

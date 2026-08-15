@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SquareProvider } from '@/contexts/SquareContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import OwnDriverProtectedRoute from '@/components/OwnDriverProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
 import LoginPage from '@/pages/LoginPage';
@@ -319,10 +320,10 @@ function App() {
 
           {/* Rotas do entregador próprio (PWA) */}
           <Route path="/own-driver/login" element={<OwnDriverLoginPage />} />
-          <Route path="/own-driver" element={<OwnDriverDashboardPage />} />
-          <Route path="/own-driver/delivery/:orderId" element={<OwnDriverDeliveryPage />} />
-          <Route path="/own-driver/orders" element={<OwnDriverOrdersPage />} />
-          <Route path="/own-driver/earnings" element={<OwnDriverEarningsPage />} />
+          <Route path="/own-driver" element={<OwnDriverProtectedRoute><OwnDriverDashboardPage /></OwnDriverProtectedRoute>} />
+          <Route path="/own-driver/delivery/:orderId" element={<OwnDriverProtectedRoute><OwnDriverDeliveryPage /></OwnDriverProtectedRoute>} />
+          <Route path="/own-driver/orders" element={<OwnDriverProtectedRoute><OwnDriverOrdersPage /></OwnDriverProtectedRoute>} />
+          <Route path="/own-driver/earnings" element={<OwnDriverProtectedRoute><OwnDriverEarningsPage /></OwnDriverProtectedRoute>} />
 
           {/* Rotas do super admin (plataforma) */}
           <Route path="/platform/login" element={<PlatformLoginPage />} />

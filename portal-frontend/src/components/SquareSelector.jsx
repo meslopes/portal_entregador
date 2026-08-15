@@ -76,7 +76,7 @@ const SquareSelector = () => {
           {selectedSquare?.name || 'Selecionar praça'}
         </span>
         <ChevronDown size={14} style={{ 
-          color: '#94a3b8',
+          color: '#64748b',
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0)',
           transition: 'transform 0.2s'
         }} />
@@ -112,7 +112,7 @@ const SquareSelector = () => {
             }}>
               <p style={{
                 fontSize: '0.6875rem',
-                color: '#94a3b8',
+                color: '#64748b',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 padding: '0.25rem 0.5rem'
@@ -152,14 +152,14 @@ const SquareSelector = () => {
                 }}
               >
                 <MapPin size={14} style={{ 
-                  color: selectedSquare?.id === square.id ? '#2563eb' : '#94a3b8' 
+                  color: selectedSquare?.id === square.id ? '#2563eb' : '#64748b' 
                 }} />
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <p style={{ fontWeight: selectedSquare?.id === square.id ? 600 : 400 }}>
                     {square.name}
                   </p>
                   {square.city && (
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>
                       {square.city}/{square.state}
                     </p>
                   )}

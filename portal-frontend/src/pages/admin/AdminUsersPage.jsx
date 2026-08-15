@@ -106,7 +106,7 @@ const AdminUsersPage = () => {
       case 'ADMIN': return <Shield size={14} style={{ color: '#8b5cf6' }} />;
       case 'DRIVER': return <Truck size={14} style={{ color: '#2563eb' }} />;
       case 'CLIENT': return <Store size={14} style={{ color: '#0d9488' }} />;
-      default: return <Users size={14} style={{ color: '#94a3b8' }} />;
+      default: return <Users size={14} style={{ color: '#64748b' }} />;
     }
   };
 
@@ -124,7 +124,7 @@ const AdminUsersPage = () => {
       case 'ACTIVE': return { bg: '#dcfce7', color: '#16a34a' };
       case 'INACTIVE': return { bg: '#fef3c7', color: '#d97706' };
       case 'SUSPENDED': return { bg: '#fee2e2', color: '#dc2626' };
-      default: return { bg: '#f1f5f9', color: '#94a3b8' };
+      default: return { bg: '#f1f5f9', color: '#64748b' };
     }
   };
 
@@ -157,7 +157,7 @@ const AdminUsersPage = () => {
       {/* Filtros */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
           <input type="text" placeholder="Buscar por nome, e-mail ou telefone..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); loadUsers(); }}
             style={{ width: '100%', padding: '0.625rem 0.75rem 0.625rem 2.5rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
         </div>
@@ -186,7 +186,7 @@ const AdminUsersPage = () => {
                   </div>
                   <div style={{ flex: 1, minWidth: '150px' }}>
                     <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{user.first_name} {user.last_name}</p>
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{user.email}</p>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{user.email}</p>
                   </div>
                   <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#f1f5f9', color: '#64748b' }}>{getTypeLabel(user.user_type)}</span>
                   <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: statusStyle.bg, color: statusStyle.color }}>{user.status}</span>
@@ -214,7 +214,7 @@ const AdminUsersPage = () => {
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Novo Admin</h2>
-              <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleCreateAdmin} style={{ padding: '1.5rem' }}>
               {formError && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.625rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.8125rem' }}><AlertCircle size={14} /> {formError}</div>}
@@ -237,7 +237,7 @@ const AdminUsersPage = () => {
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar UsuÃ¡rio</h2>
-              <button onClick={() => setShowEdit(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={() => setShowEdit(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleEdit} style={{ padding: '1.5rem' }}>
               <FormField label="Nome"><input type="text" value={editData.first_name} onChange={e => setEditData(p => ({ ...p, first_name: e.target.value }))} style={inputStyle} /></FormField>

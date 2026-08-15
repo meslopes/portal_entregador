@@ -72,7 +72,7 @@ const OwnDriverEarningsPage = () => {
               background: 'white', borderRadius: '0.75rem', padding: '1.25rem',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
             }}>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Pendente</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Pendente</p>
               <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f59e0b' }}>
                 {utils.formatCurrency(summary.pending || 0)}
               </p>
@@ -115,7 +115,7 @@ const OwnDriverEarningsPage = () => {
             background: 'white', borderRadius: '0.75rem', padding: '2rem',
             textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
           }}>
-            <DollarSign size={40} style={{ color: '#94a3b8', marginBottom: '0.75rem' }} />
+            <DollarSign size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
             <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum ganho neste período</p>
           </div>
         ) : (

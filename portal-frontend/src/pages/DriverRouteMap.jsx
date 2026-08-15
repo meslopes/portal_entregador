@@ -307,7 +307,7 @@ const DriverRouteMap = () => {
                     style={{
                       width: '100%', marginTop: '0.5rem', padding: '0.5rem',
                       borderRadius: '0.375rem', border: 'none',
-                      background: isUpdating ? '#94a3b8' : statusInfo.color,
+                      background: isUpdating ? '#64748b' : statusInfo.color,
                       color: 'white', fontSize: '0.75rem', fontWeight: 600,
                       cursor: isUpdating ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem'

@@ -124,13 +124,13 @@ const ClientIntegrationsPage = () => {
               </div>
               <div>
                 <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>{integ.name}</p>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{integ.description}</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{integ.description}</p>
               </div>
             </div>
             <button onClick={() => toggleIntegration(integ.key, `${integ.key}_enabled`)} style={{
               padding: '0.375rem 0.75rem', borderRadius: '9999px', border: 'none',
               background: integrations[`${integ.key}_enabled`] ? '#dcfce7' : '#f1f5f9',
-              color: integrations[`${integ.key}_enabled`] ? '#16a34a' : '#94a3b8',
+              color: integrations[`${integ.key}_enabled`] ? '#16a34a' : '#64748b',
               fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s'
             }}>
               {integrations[`${integ.key}_enabled`] ? 'Ativada' : 'Desativada'}
@@ -159,7 +159,7 @@ const ClientIntegrationsPage = () => {
                     📋
                   </button>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Configure essa URL no painel da plataforma</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Configure essa URL no painel da plataforma</p>
               </FormField>
             </div>
           )}

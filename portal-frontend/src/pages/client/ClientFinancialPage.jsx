@@ -17,7 +17,12 @@ const ClientFinancialPage = () => {
       setLoading(true);
       setError('');
       const financialData = await orderService.getMyFinancial();
-      setData(financialData || {});
+      if (financialData && Object.keys(financialData).length > 0) {
+        setData(financialData);
+      } else {
+        setData(null);
+        setError('Nenhum dado financeiro disponível');
+      }
     } catch (err) {
       setError('Erro ao carregar dados financeiros');
       console.error(err);
@@ -132,12 +137,12 @@ const ClientFinancialPage = () => {
                     <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>
                       {i === 0 ? 'Esta Semana' : `Semana de ${formatWeekDate(week.week_start)}`}
                     </p>
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
                       {week.orders} entrega{week.orders !== 1 ? 's' : ''}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontWeight: 700, color: week.delivery_fees > 0 ? '#dc2626' : '#94a3b8', fontSize: '1rem' }}>
+                    <p style={{ fontWeight: 700, color: week.delivery_fees > 0 ? '#dc2626' : '#64748b', fontSize: '1rem' }}>
                       {utils.formatCurrency(week.delivery_fees)}
                     </p>
                     {i === 0 && week.delivery_fees > 0 && (
@@ -147,7 +152,7 @@ const ClientFinancialPage = () => {
                 </div>
               ))}
               {(!data.weekly_history || data.weekly_history.length === 0) && (
-                <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Sem dados</p>
+                <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Sem dados</p>
               )}
             </div>
           </div>
@@ -180,7 +185,7 @@ const FinanceCard = ({ icon, iconBg, iconColor, label, value, sub, alert }) => (
       <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>{label}</p>
     </div>
     <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.125rem' }}>{value}</p>
-    {sub && <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{sub}</p>}
+    {sub && <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{sub}</p>}
   </div>
 );
 

@@ -198,11 +198,11 @@ const OwnDriverDeliveryPage = () => {
                     width: '2rem', height: '2rem', borderRadius: '50%',
                     background: isPast ? '#22c55e' : isActive ? '#3b82f6' : '#e2e8f0',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: isPast || isActive ? 'white' : '#94a3b8', fontSize: '0.75rem', fontWeight: 600
+                    color: isPast || isActive ? 'white' : '#64748b', fontSize: '0.75rem', fontWeight: 600
                   }}>
                     {isPast ? <CheckCircle size={14} /> : i + 1}
                   </div>
-                  <span style={{ fontSize: '0.625rem', color: isPast || isActive ? '#1e293b' : '#94a3b8', marginTop: '0.25rem', fontWeight: isActive ? 600 : 400 }}>
+                  <span style={{ fontSize: '0.625rem', color: isPast || isActive ? '#1e293b' : '#64748b', marginTop: '0.25rem', fontWeight: isActive ? 600 : 400 }}>
                     {status === 'ACCEPTED' ? 'Aceito' : status === 'PICKED_UP' ? 'Coletado' : 'Entregue'}
                   </span>
                 </div>
@@ -445,7 +445,7 @@ const OwnDriverDeliveryPage = () => {
                 disabled={codeInput.length !== 6 || updating}
                 style={{
                   flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
-                  border: 'none', background: codeInput.length === 6 ? '#0d9488' : '#94a3b8',
+                  border: 'none', background: codeInput.length === 6 ? '#0d9488' : '#64748b',
                   color: 'white', fontSize: '0.875rem', fontWeight: 600,
                   cursor: codeInput.length === 6 ? 'pointer' : 'not-allowed'
                 }}

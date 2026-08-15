@@ -206,7 +206,7 @@ const NotificationBell = () => {
             {notifications.length === 0 ? (
               <div style={{
                 padding: '2rem', textAlign: 'center',
-                color: '#94a3b8', fontSize: '0.875rem'
+                color: '#64748b', fontSize: '0.875rem'
               }}>
                 <Bell size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
                 <p>Nenhuma notificação</p>
@@ -250,7 +250,7 @@ const NotificationBell = () => {
                     }}>
                       {renderMessage(notification.message)}
                     </p>
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
                       {formatTime(notification.created_at)}
                     </p>
                   </div>

@@ -113,8 +113,9 @@ const LoginPage = () => {
               )}
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label className="auth-form-label">Email</label>
+                <label htmlFor="login-email" className="auth-form-label">Email</label>
                 <input
+                  id="login-email"
                   type="email"
                   name="email"
                   className="auth-form-input"
@@ -127,9 +128,10 @@ const LoginPage = () => {
               </div>
 
               <div style={{ marginBottom: '0.5rem' }}>
-                <label className="auth-form-label">Senha</label>
+                <label htmlFor="login-password" className="auth-form-label">Senha</label>
                 <div className="password-wrapper">
                   <input
+                    id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     className="auth-form-input"

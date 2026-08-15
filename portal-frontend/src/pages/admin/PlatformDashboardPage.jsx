@@ -159,7 +159,7 @@ const PlatformDashboardPage = () => {
                   <Building2 size={20} style={{ color: '#2563eb' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Tenants Ativos</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Tenants Ativos</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{dashboard.stats.total_tenants}</p>
                 </div>
               </div>
@@ -171,7 +171,7 @@ const PlatformDashboardPage = () => {
                   <Users size={20} style={{ color: '#16a34a' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Total Usuários</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Usuários</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{dashboard.stats.total_users}</p>
                 </div>
               </div>
@@ -183,7 +183,7 @@ const PlatformDashboardPage = () => {
                   <Truck size={20} style={{ color: '#d97706' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Entregadores</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Entregadores</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{dashboard.stats.total_drivers}</p>
                 </div>
               </div>
@@ -195,7 +195,7 @@ const PlatformDashboardPage = () => {
                   <Package size={20} style={{ color: '#db2777' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Total Pedidos</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Total Pedidos</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{dashboard.stats.total_orders}</p>
                 </div>
               </div>
@@ -207,7 +207,7 @@ const PlatformDashboardPage = () => {
                   <DollarSign size={20} style={{ color: '#16a34a' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Receita Total</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Receita Total</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>
                     R$ {(dashboard.stats.total_revenue || 0).toFixed(2)}
                   </p>
@@ -221,7 +221,7 @@ const PlatformDashboardPage = () => {
                   <Calendar size={20} style={{ color: '#2563eb' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Pedidos (7 dias)</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedidos (7 dias)</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{dashboard.stats.week_orders}</p>
                 </div>
               </div>
@@ -242,7 +242,7 @@ const PlatformDashboardPage = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{
                       width: '24px', height: '24px', borderRadius: '50%',
-                      background: index === 0 ? '#fbbf24' : index === 1 ? '#94a3b8' : '#cd7f32',
+                      background: index === 0 ? '#fbbf24' : index === 1 ? '#64748b' : '#cd7f32',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.75rem', fontWeight: 600, color: 'white'
                     }}>
@@ -250,7 +250,7 @@ const PlatformDashboardPage = () => {
                     </span>
                     <div>
                       <p style={{ fontWeight: 500, color: '#1e293b' }}>{tenant.name}</p>
-                      <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{tenant.slug} • {tenant.plan}</p>
+                      <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{tenant.slug} • {tenant.plan}</p>
                     </div>
                   </div>
                   <span style={{ fontWeight: 600, color: '#2563eb' }}>{tenant.order_count} pedidos</span>
@@ -394,7 +394,7 @@ const PlatformDashboardPage = () => {
               <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: '#6366f1' }} />
             </div>
           ) : users.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
               <Users size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
               <p style={{ fontSize: '0.875rem' }}>Nenhum usuário encontrado</p>
             </div>
@@ -443,7 +443,7 @@ const PlatformDashboardPage = () => {
                           {user.status === 'ACTIVE' ? 'Ativo' : user.status === 'INACTIVE' ? 'Inativo' : 'Suspenso'}
                         </span>
                       </td>
-                      <td style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
+                      <td style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
                         {new Date(user.created_at).toLocaleDateString('pt-BR')}
                       </td>
                     </tr>
@@ -479,7 +479,7 @@ const PlatformDashboardPage = () => {
               </h2>
               <button
                 onClick={() => { setShowTenantModal(false); setSelectedTenant(null); }}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.5rem' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.5rem' }}
               >
                 ×
               </button>
@@ -489,21 +489,21 @@ const PlatformDashboardPage = () => {
               {/* Tenant Info */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Slug</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Slug</p>
                   <p style={{ fontSize: '0.875rem', color: '#1e293b' }}>{selectedTenant.slug}</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Plano</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Plano</p>
                   <p style={{ fontSize: '0.875rem', color: '#1e293b' }}>{selectedTenant.plan}</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Status</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Status</p>
                   <p style={{ fontSize: '0.875rem', color: selectedTenant.is_active ? '#16a34a' : '#dc2626' }}>
                     {selectedTenant.is_active ? 'Ativo' : 'Inativo'}
                   </p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Criado em</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Criado em</p>
                   <p style={{ fontSize: '0.875rem', color: '#1e293b' }}>
                     {new Date(selectedTenant.created_at).toLocaleDateString('pt-BR')}
                   </p>
@@ -514,19 +514,19 @@ const PlatformDashboardPage = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 <div style={{ textAlign: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
                   <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563eb' }}>{selectedTenant.users?.length || 0}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Usuários</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Usuários</p>
                 </div>
                 <div style={{ textAlign: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
                   <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#16a34a' }}>{selectedTenant.drivers_count}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Entregadores</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Entregadores</p>
                 </div>
                 <div style={{ textAlign: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
                   <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#d97706' }}>{selectedTenant.restaurants_count}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Estabelecimentos</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Estabelecimentos</p>
                 </div>
                 <div style={{ textAlign: 'center', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
                   <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#db2777' }}>{selectedTenant.orders_count}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Pedidos</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedidos</p>
                 </div>
               </div>
 
@@ -544,7 +544,7 @@ const PlatformDashboardPage = () => {
                       }}>
                         <div>
                           <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
-                          <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{order.status}</p>
+                          <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.status}</p>
                         </div>
                         <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#16a34a' }}>
                           R$ {order.delivery_fee}
@@ -660,7 +660,7 @@ const AdminsTab = () => {
       </div>
 
       {admins.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
           <Users size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
           <p style={{ fontSize: '0.9375rem' }}>Nenhum admin cadastrado</p>
           <p style={{ fontSize: '0.8125rem', marginTop: '0.5rem' }}>
@@ -690,7 +690,7 @@ const AdminsTab = () => {
                         <p style={{ fontWeight: 500, color: '#1e293b' }}>
                           {admin.first_name} {admin.last_name}
                         </p>
-                        <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{admin.email}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{admin.email}</p>
                       </div>
                     </td>
                     <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>
@@ -760,7 +760,7 @@ const AdminsTab = () => {
               </h2>
               <button
                 onClick={() => setShowCreateModal(false)}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.5rem' }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.5rem' }}
               >
                 ×
               </button>

@@ -1604,6 +1604,13 @@ def create_order():
 
         # Calcular subtotal dos itens
         items = data.get('items', [])
+        if not isinstance(items, list):
+            return jsonify({'error': 'items deve ser uma lista'}), 400
+        for i, item in enumerate(items):
+            if not isinstance(item, dict):
+                return jsonify({'error': f'Item {i} deve ser um objeto'}), 400
+            if 'name' not in item:
+                return jsonify({'error': f'Item {i} deve ter o campo name'}), 400
         subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 1)) for item in items) if items else 0
         total_amount = subtotal + delivery_fee
 

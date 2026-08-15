@@ -117,7 +117,7 @@ const AdminSquaresPage = () => {
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <MapPin size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
           <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>Nenhuma praça cadastrada</p>
-          <p style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Clique em "NOVA PRAÇA" para começar</p>
+          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Clique em "NOVA PRAÇA" para começar</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
@@ -132,7 +132,7 @@ const AdminSquaresPage = () => {
                   <span style={{
                     padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600,
                     background: sq.is_active ? '#dcfce7' : '#f1f5f9',
-                    color: sq.is_active ? '#16a34a' : '#94a3b8'
+                    color: sq.is_active ? '#16a34a' : '#64748b'
                   }}>
                     {sq.is_active ? 'Ativa' : 'Inativa'}
                   </span>
@@ -142,15 +142,15 @@ const AdminSquaresPage = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', textAlign: 'center' }}>
                   <div>
                     <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{sq.restaurants_count}</p>
-                    <p style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Estabelecimentos</p>
+                    <p style={{ fontSize: '0.625rem', color: '#64748b' }}>Estabelecimentos</p>
                   </div>
                   <div>
                     <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563eb' }}>{sq.drivers_count}</p>
-                    <p style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Entregadores</p>
+                    <p style={{ fontSize: '0.625rem', color: '#64748b' }}>Entregadores</p>
                   </div>
                   <div>
                     <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#16a34a' }}>{sq.orders_count}</p>
-                    <p style={{ fontSize: '0.625rem', color: '#94a3b8' }}>Pedidos</p>
+                    <p style={{ fontSize: '0.625rem', color: '#64748b' }}>Pedidos</p>
                   </div>
                 </div>
                 {/* Tabela de Precos */}
@@ -189,7 +189,7 @@ const AdminSquaresPage = () => {
           <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{editing ? 'Editar Praça' : 'Nova Praça'}</h2>
-              <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ padding: '1.5rem' }}>
               {formError && (
@@ -223,7 +223,7 @@ const AdminSquaresPage = () => {
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Distância Mínima (km)</label>
                     <input type="number" step="0.5" value={formData.min_distance_km || '4.0'} onChange={e => setFormData(p => ({ ...p, min_distance_km: e.target.value }))} style={inputStyle} placeholder="4.0" />
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Mínimo cobrado: R$ {((parseFloat(formData.price_per_km) || 2.95) * (parseFloat(formData.min_distance_km) || 4)).toFixed(2)}</p>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Mínimo cobrado: R$ {((parseFloat(formData.price_per_km) || 2.95) * (parseFloat(formData.min_distance_km) || 4)).toFixed(2)}</p>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -234,7 +234,7 @@ const AdminSquaresPage = () => {
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Entregador recebe (%)</label>
                     <input type="number" step="1" min="0" max="100" value={formData.driver_percentage || '70'} onChange={e => setFormData(p => ({ ...p, driver_percentage: e.target.value }))} style={inputStyle} placeholder="70" />
-                    <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>Percentual do frete que vai pro entregador</p>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual do frete que vai pro entregador</p>
                   </div>
                 </div>
               </div>

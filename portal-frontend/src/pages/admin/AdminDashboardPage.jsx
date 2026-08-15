@@ -333,7 +333,7 @@ const AdminDashboardPage = () => {
     if (tracking.deliveries) {
       tracking.deliveries.forEach(del => {
         if (del.latitude && del.longitude) {
-          const color = del.status === 'PICKED_UP' ? '#22c55e' : '#94a3b8';
+          const color = del.status === 'PICKED_UP' ? '#22c55e' : '#64748b';
           const icon = L.divIcon({
             html: `<div style="background:${color};width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.2)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
@@ -397,6 +397,16 @@ const AdminDashboardPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+        <AlertCircle size={48} style={{ color: '#ef4444' }} />
+        <p style={{ color: '#64748b', fontSize: '1rem' }}>{error}</p>
+        <button onClick={loadDashboard} style={{ padding: '0.5rem 1rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>Tentar novamente</button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9' }}>
       {/* Sidebar Esquerda */}
@@ -410,7 +420,7 @@ const AdminDashboardPage = () => {
           
           <div style={{ marginBottom: '0.75rem' }}>
             <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input
                 type="text"
                 placeholder="Buscar por ID, cliente..."
@@ -527,7 +537,7 @@ const AdminDashboardPage = () => {
                       <ChevronDown
                         size={14}
                         style={{
-                          color: '#94a3b8',
+                          color: '#64748b',
                           transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
                           transition: 'transform 0.2s'
                         }}
@@ -551,7 +561,7 @@ const AdminDashboardPage = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <span style={{ color: '#94a3b8', fontSize: '0.6875rem' }}>{utils.formatCurrency(order.total_amount)}</span>
+                                <span style={{ color: '#64748b', fontSize: '0.6875rem' }}>{utils.formatCurrency(order.total_amount)}</span>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -559,7 +569,7 @@ const AdminDashboardPage = () => {
                                   }}
                                   style={{
                                     padding: '0.125rem 0.25rem', border: 'none', background: 'transparent',
-                                    cursor: 'pointer', color: '#94a3b8', fontSize: '0.875rem', lineHeight: 1
+                                    cursor: 'pointer', color: '#64748b', fontSize: '0.875rem', lineHeight: 1
                                   }}
                                 >
                                   ⋮
@@ -592,7 +602,7 @@ const AdminDashboardPage = () => {
                               }}>
                                 {/* Detalhes do pedido */}
                                 <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '0.25rem' }}>
-                                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Detalhes</p>
+                                  <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Detalhes</p>
                                   <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Rest: {order.restaurant?.name}</p>
                                   <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Cliente: {order.customer?.name}</p>
                                   <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Frete: {utils.formatCurrency(order.delivery_fee)}</p>
@@ -620,7 +630,7 @@ const AdminDashboardPage = () => {
                                 </button>
 
                                 {/* Opções de status */}
-                                <p style={{ fontSize: '0.625rem', color: '#94a3b8', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
+                                <p style={{ fontSize: '0.625rem', color: '#64748b', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
                                 {['SCHEDULED', 'PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
                                   if (s === order.status) return null;
                                   const cfg = STATUS_CONFIG[s];
@@ -699,7 +709,7 @@ const AdminDashboardPage = () => {
         {activeTab === 'drivers' && (
           <div style={{ padding: '0.5rem' }}>
             {allDrivers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+              <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.75rem' }}>
                 Nenhum entregador encontrado
               </div>
             ) : (
@@ -741,7 +751,7 @@ const AdminDashboardPage = () => {
         {activeTab === 'establishments' && (
           <div style={{ padding: '0.5rem' }}>
             {allEstablishments.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+              <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.75rem' }}>
                 Nenhum estabelecimento com pedidos ativos
               </div>
             ) : (
@@ -794,7 +804,7 @@ const AdminDashboardPage = () => {
                   <Store size={14} style={{ color: '#64748b' }} />
                   <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>{sq.name}</span>
                 </div>
-                <div style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
                   {sq.city}/{sq.state}
                 </div>
               </div>
@@ -810,7 +820,7 @@ const AdminDashboardPage = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MapPin size={18} style={{ color: '#2563eb' }} />
             <span style={{ fontWeight: 600, color: '#1e293b' }}>Mapa em Tempo Real</span>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>
+            <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>
               {tracking?.drivers?.length || 0} entregadores | {tracking?.establishments?.length || 0} estabelecimentos
             </span>
           </div>
@@ -901,7 +911,7 @@ const AdminDashboardPage = () => {
 
         {/* Footer */}
         <div style={{ padding: '0.75rem 1rem', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
             <span>© 2026 muv.log — Controle de Entregadores</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
@@ -919,14 +929,14 @@ const AdminDashboardPage = () => {
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999 }}
             onClick={() => setShowSettings(false)}
           />
-          <div style={{ 
+          <div role="dialog" aria-modal="true" aria-label="Configurações da Sidebar" style={{ 
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
             background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '400px', 
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 100000 
           }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Configurações da Sidebar</h2>
-              <button onClick={() => setShowSettings(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+              <button onClick={() => setShowSettings(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
                 <X size={20} />
               </button>
             </div>
@@ -935,7 +945,7 @@ const AdminDashboardPage = () => {
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
                   Intervalo de Tempo (minutos)
                 </label>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
                   Mostra pedidos criados nos últimos X minutos
                 </p>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -956,7 +966,7 @@ const AdminDashboardPage = () => {
                     </button>
                   ))}
                 </div>
-                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.5rem' }}>
                   Atual: {timeInterval} minutos ({timeInterval >= 60 ? `${Math.floor(timeInterval/60)}h` : `${timeInterval}min`})
                 </p>
               </div>
@@ -982,27 +992,27 @@ const AdminDashboardPage = () => {
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999 }}
             onClick={() => { setShowAssignModal(false); setOrderToAssign(null); }}
           />
-          <div style={{ 
+          <div role="dialog" aria-modal="true" aria-label="Atribuir Entregador" style={{ 
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
             background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '450px', 
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 100000 
           }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Atribuir Entregador</h2>
-              <button onClick={() => { setShowAssignModal(false); setOrderToAssign(null); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+              <button onClick={() => { setShowAssignModal(false); setOrderToAssign(null); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
                 <X size={20} />
               </button>
             </div>
             <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
               <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Pedido</p>
               <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b' }}>#{orderToAssign.order_number}</p>
-              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
                 {orderToAssign.restaurant?.name} → {orderToAssign.customer?.name}
               </p>
             </div>
             <div style={{ padding: '1rem', maxHeight: '350px', overflowY: 'auto' }}>
               {onlineDrivers.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
                   <Users size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
                   <p style={{ fontSize: '0.875rem' }}>Nenhum entregador online</p>
                 </div>
@@ -1039,7 +1049,7 @@ const AdminDashboardPage = () => {
                           {driver.current_order ? ' • Em entrega' : ' • Livre'}
                         </p>
                       </div>
-                      <Users size={16} style={{ color: '#94a3b8' }} />
+                      <Users size={16} style={{ color: '#64748b' }} />
                     </button>
                   ))}
                 </div>
@@ -1065,6 +1075,7 @@ const AdminDashboardPage = () => {
         @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 900px) {
           .dashboard-grid { grid-template-columns: 1fr !important; }
+          .admin-sidebar { width: 260px !important; }
         }
         @media (max-width: 768px) {
           .admin-sidebar { width: 100% !important; max-height: 300px; }
