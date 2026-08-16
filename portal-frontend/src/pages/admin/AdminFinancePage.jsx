@@ -27,10 +27,13 @@ const AdminFinancePage = () => {
     try {
       setLoading(true);
 
+      const params = {};
+      if (squareId) params.square_id = squareId;
+
       const [finance, establishments, paymentsRes, configRes] = await Promise.all([
-        adminService.getFinanceDashboard(period, dateRange?.startDate, dateRange?.endDate),
-        adminService.getFinanceByEstablishment(period, dateRange?.startDate, dateRange?.endDate),
-        api.get('/api/admin/driver-payments'),
+        adminService.getFinanceDashboard(period, dateRange?.startDate, dateRange?.endDate, squareId),
+        adminService.getFinanceByEstablishment(period, dateRange?.startDate, dateRange?.endDate, squareId),
+        api.get('/api/admin/driver-payments', { params }),
         api.get('/api/admin/settings')
       ]);
 

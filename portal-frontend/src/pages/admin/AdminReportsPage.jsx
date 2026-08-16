@@ -5,9 +5,11 @@ import {
   Target, ArrowUpDown
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
+import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminReportsPage = () => {
+  const { squareId } = useSquare();
   const [period, setPeriod] = useState(30);
   const [activeTab, setActiveTab] = useState('financial');
   const [loading, setLoading] = useState(true);
@@ -22,21 +24,21 @@ const AdminReportsPage = () => {
   const [dateRange, setDateRange] = useState(null);
   const [deliveriesByDriver, setDeliveriesByDriver] = useState([]);
 
-  useEffect(() => { loadAll(); }, [period]);
+  useEffect(() => { loadAll(); }, [period, squareId]);
   useEffect(() => { if (dateRange) loadAll(); }, [dateRange]);
 
   const loadAll = async () => {
     try {
       setLoading(true);
       const [fin, orders, drivers, estabs, canc, rats, peaks, deliv] = await Promise.all([
-        adminService.getFinancialSummary(period),
-        adminService.getOrdersByDate(period),
-        adminService.getDriversPerformance(period),
-        adminService.getEstablishmentsRanking(period),
-        adminService.getCancellations(period),
-        adminService.getRatings(period),
-        adminService.getPeakHours(period),
-        adminService.getDeliveriesByDriver(period)
+        adminService.getFinancialSummary(period, squareId),
+        adminService.getOrdersByDate(period, squareId),
+        adminService.getDriversPerformance(period, squareId),
+        adminService.getEstablishmentsRanking(period, squareId),
+        adminService.getCancellations(period, squareId),
+        adminService.getRatings(period, squareId),
+        adminService.getPeakHours(period, squareId),
+        adminService.getDeliveriesByDriver(period, squareId)
       ]);
       setFinancial(fin);
       setOrdersByDate(orders.data || []);

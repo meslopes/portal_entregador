@@ -31,6 +31,12 @@ from sqlalchemy import func, and_, or_
 admin_bp = Blueprint('admin', __name__)
 
 
+def get_square_filter():
+    """Retorna o square_id do query param se fornecido."""
+    from flask import request
+    return request.args.get('square_id', type=int)
+
+
 
 
 
@@ -1025,20 +1031,36 @@ def get_dashboard():
             _last_expired_process = now
 
         tenant_id = get_current_tenant_id()
+        square_id = get_square_filter()
 
 
 
-        # Estatísticas gerais (filtradas por tenant)
+        # Estatísticas gerais (filtradas por tenant e square)
 
-        total_drivers = Driver.query.filter_by(tenant_id=tenant_id).count() if tenant_id else Driver.query.count()
+        total_drivers_query = Driver.query
+        if tenant_id:
+            total_drivers_query = total_drivers_query.filter_by(tenant_id=tenant_id)
+        if square_id:
+            total_drivers_query = total_drivers_query.filter(Driver.square_id == square_id)
+        total_drivers = total_drivers_query.count()
 
-        online_drivers = Driver.query.filter_by(is_online=True, tenant_id=tenant_id).count() if tenant_id else Driver.query.filter_by(is_online=True).count()
+        online_drivers_query = Driver.query.filter_by(is_online=True)
+        if tenant_id:
+            online_drivers_query = online_drivers_query.filter_by(tenant_id=tenant_id)
+        if square_id:
+            online_drivers_query = online_drivers_query.filter(Driver.square_id == square_id)
+        online_drivers = online_drivers_query.count()
 
-        total_orders = Order.query.filter_by(tenant_id=tenant_id).count() if tenant_id else Order.query.count()
+        total_orders_query = Order.query
+        if tenant_id:
+            total_orders_query = total_orders_query.filter_by(tenant_id=tenant_id)
+        if square_id:
+            total_orders_query = total_orders_query.filter(Order.square_id == square_id)
+        total_orders = total_orders_query.count()
 
 
 
-        # Pedidos por status (filtrados por tenant)
+        # Pedidos por status (filtrados por tenant e square)
 
         orders_by_status_query = db.session.query(
 
@@ -1049,12 +1071,14 @@ def get_dashboard():
         if tenant_id:
 
             orders_by_status_query = orders_by_status_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            orders_by_status_query = orders_by_status_query.filter(Order.square_id == square_id)
 
         orders_by_status = orders_by_status_query.group_by(Order.status).all()
 
 
 
-        # Estatísticas do dia atual (filtradas por tenant)
+        # Estatísticas do dia atual (filtradas por tenant e square)
 
         today = datetime.utcnow().date()
 
@@ -1063,6 +1087,8 @@ def get_dashboard():
         if tenant_id:
 
             today_orders_query = today_orders_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            today_orders_query = today_orders_query.filter(Order.square_id == square_id)
 
         today_orders = today_orders_query.count()
 
@@ -1079,12 +1105,14 @@ def get_dashboard():
         if tenant_id:
 
             today_deliveries_query = today_deliveries_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            today_deliveries_query = today_deliveries_query.filter(Order.square_id == square_id)
 
         today_deliveries = today_deliveries_query.count()
 
 
 
-        # Receita do dia (filtrada por tenant)
+        # Receita do dia (filtrada por tenant e square)
 
         today_revenue_query = db.session.query(func.sum(Order.delivery_fee)).filter(
 
@@ -1097,6 +1125,8 @@ def get_dashboard():
         if tenant_id:
 
             today_revenue_query = today_revenue_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            today_revenue_query = today_revenue_query.filter(Order.square_id == square_id)
 
         today_revenue = today_revenue_query.scalar() or 0
 
@@ -1129,6 +1159,8 @@ def get_dashboard():
         if tenant_id:
 
             top_drivers_query = top_drivers_query.filter(Driver.tenant_id == tenant_id)
+        if square_id:
+            top_drivers_query = top_drivers_query.filter(Driver.square_id == square_id)
 
         top_drivers = top_drivers_query.group_by(Driver.id, User.first_name, User.last_name).order_by(
 
@@ -2360,6 +2392,7 @@ def get_finance_dashboard():
         period = request.args.get('period', 'month')  # today, week, month, year
 
         tenant_id = get_current_tenant_id()
+        square_id = get_square_filter()
 
 
 
@@ -2406,6 +2439,8 @@ def get_finance_dashboard():
         if tenant_id:
 
             revenue_query = revenue_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            revenue_query = revenue_query.filter(Order.square_id == square_id)
 
         revenue_result = revenue_query.scalar() or 0
 
@@ -2418,6 +2453,8 @@ def get_finance_dashboard():
         if tenant_id:
 
             orders_query = orders_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            orders_query = orders_query.filter(Order.square_id == square_id)
 
         total_orders = orders_query.count()
 
@@ -2436,6 +2473,8 @@ def get_finance_dashboard():
         if tenant_id:
 
             delivered_query = delivered_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            delivered_query = delivered_query.filter(Order.square_id == square_id)
 
         delivered_orders = delivered_query.count()
 
@@ -2448,6 +2487,8 @@ def get_finance_dashboard():
         if tenant_id:
 
             pending_query = pending_query.filter(Order.tenant_id == tenant_id)
+        if square_id:
+            pending_query = pending_query.filter(Order.square_id == square_id)
 
         pending_orders = pending_query.count()
 
@@ -2470,6 +2511,11 @@ def get_finance_dashboard():
         if tenant_id:
 
             payments_query = payments_query.join(Driver).filter(Driver.tenant_id == tenant_id)
+        elif square_id:
+            payments_query = payments_query.join(Driver)
+
+        if square_id:
+            payments_query = payments_query.filter(Driver.square_id == square_id)
 
         driver_payments = payments_query.scalar() or 0
 
@@ -2490,6 +2536,11 @@ def get_finance_dashboard():
         if tenant_id:
 
             pending_pay_query = pending_pay_query.join(Driver).filter(Driver.tenant_id == tenant_id)
+        elif square_id:
+            pending_pay_query = pending_pay_query.join(Driver)
+
+        if square_id:
+            pending_pay_query = pending_pay_query.filter(Driver.square_id == square_id)
 
         pending_payments = pending_pay_query.scalar() or 0
 
@@ -2503,7 +2554,7 @@ def get_finance_dashboard():
 
         # Frete total cobrado
 
-        total_delivery_fees = db.session.query(
+        total_delivery_fees_query = db.session.query(
 
             func.sum(Order.delivery_fee)
 
@@ -2513,13 +2564,17 @@ def get_finance_dashboard():
 
             Order.created_at >= start_date
 
-        ).scalar() or 0
+        )
+        if square_id:
+            total_delivery_fees_query = total_delivery_fees_query.filter(Order.square_id == square_id)
+
+        total_delivery_fees = total_delivery_fees_query.scalar() or 0
 
 
 
         # Receita por estabelecimento (top 10)
 
-        revenue_by_establishment = db.session.query(
+        revenue_by_est_query = db.session.query(
 
             Restaurant.name,
 
@@ -2533,7 +2588,11 @@ def get_finance_dashboard():
 
             Order.created_at >= start_date
 
-        ).group_by(Restaurant.name).order_by(
+        )
+        if square_id:
+            revenue_by_est_query = revenue_by_est_query.filter(Order.square_id == square_id)
+
+        revenue_by_establishment = revenue_by_est_query.group_by(Restaurant.name).order_by(
 
             func.sum(Order.delivery_fee).desc()
 
@@ -2543,7 +2602,7 @@ def get_finance_dashboard():
 
         # Receita diária (últimos 30 dias para gráfico)
 
-        daily_revenue = db.session.query(
+        daily_revenue_query = db.session.query(
 
             func.date(Order.created_at).label('date'),
 
@@ -2557,7 +2616,11 @@ def get_finance_dashboard():
 
             Order.created_at >= now - timedelta(days=30)
 
-        ).group_by(func.date(Order.created_at)).order_by(
+        )
+        if square_id:
+            daily_revenue_query = daily_revenue_query.filter(Order.square_id == square_id)
+
+        daily_revenue = daily_revenue_query.group_by(func.date(Order.created_at)).order_by(
 
             func.date(Order.created_at)
 
@@ -5374,6 +5437,7 @@ def get_dynamic_pricing():
     try:
 
         tenant_id = get_current_tenant_id()
+        square_id = get_square_filter()
 
         query = DynamicPricing.query
 
@@ -5384,6 +5448,9 @@ def get_dynamic_pricing():
                 db.or_(DynamicPricing.square.has(tenant_id=tenant_id), DynamicPricing.square.has(tenant_id=None))
 
             )
+
+        if square_id:
+            query = query.filter(DynamicPricing.square_id == square_id)
 
         configs = query.all()
 
@@ -6116,6 +6183,7 @@ def get_driver_payments():
     try:
 
         tenant_id = get_current_tenant_id()
+        square_id = get_square_filter()
 
         
 
@@ -6146,6 +6214,10 @@ def get_driver_payments():
         if tenant_id:
 
             query = query.filter(Driver.tenant_id == tenant_id)
+
+        # Filtrar por square
+        if square_id:
+            query = query.filter(Driver.square_id == square_id)
 
         
 
@@ -6546,6 +6618,7 @@ def list_withdrawals():
     try:
 
         tenant_id = get_current_tenant_id()
+        square_id = get_square_filter()
 
         
 
@@ -6564,6 +6637,10 @@ def list_withdrawals():
         if tenant_id:
 
             query = query.filter(Driver.tenant_id == tenant_id)
+
+        # Filtrar por square
+        if square_id:
+            query = query.filter(Driver.square_id == square_id)
 
         
 
@@ -6722,6 +6799,7 @@ def list_invoices():
     try:
 
         tenant_id = get_current_tenant_id()
+        square_id = get_square_filter()
 
         status = request.args.get('status')
 
@@ -6736,6 +6814,10 @@ def list_invoices():
         if tenant_id:
 
             query = query.filter(Invoice.tenant_id == tenant_id)
+
+        # Filtrar por square (através do Restaurant)
+        if square_id:
+            query = query.filter(Restaurant.square_id == square_id)
 
         if status:
 

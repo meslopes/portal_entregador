@@ -239,8 +239,10 @@ export const orderService = {
 
 // Serviços administrativos
 export const adminService = {
-  getDashboard: async () => {
-    const response = await api.get('/api/admin/dashboard');
+  getDashboard: async (squareId = null) => {
+    const params = {};
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/dashboard', { params });
     return response.data;
   },
 
@@ -292,18 +294,20 @@ export const adminService = {
     return response.data;
   },
 
-  getFinanceDashboard: async (period = 'month', dateFrom, dateTo) => {
+  getFinanceDashboard: async (period = 'month', dateFrom, dateTo, squareId = null) => {
     const params = { period };
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
+    if (squareId) params.square_id = squareId;
     const response = await api.get('/api/admin/finance', { params });
     return response.data;
   },
 
-  getFinanceByEstablishment: async (period = 'month', dateFrom, dateTo) => {
+  getFinanceByEstablishment: async (period = 'month', dateFrom, dateTo, squareId = null) => {
     const params = { period };
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
+    if (squareId) params.square_id = squareId;
     const response = await api.get('/api/admin/finance/establishments', { params });
     return response.data;
   },
@@ -388,8 +392,10 @@ export const adminService = {
   },
 
   // Dynamic Pricing (Taxas Adicionais)
-  getDynamicPricing: async () => {
-    const response = await api.get('/api/admin/dynamic-pricing');
+  getDynamicPricing: async (squareId = null) => {
+    const params = {};
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/dynamic-pricing', { params });
     return response.data;
   },
 
@@ -536,43 +542,59 @@ export const adminService = {
   },
 
   // Relatórios
-  getOrdersByDate: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/orders-by-date', { params: { days } });
+  getOrdersByDate: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/orders-by-date', { params });
     return response.data;
   },
 
-  getDriversPerformance: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/drivers-performance', { params: { days } });
+  getDriversPerformance: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/drivers-performance', { params });
     return response.data;
   },
 
-  getEstablishmentsRanking: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/establishments-ranking', { params: { days } });
+  getEstablishmentsRanking: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/establishments-ranking', { params });
     return response.data;
   },
 
-  getFinancialSummary: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/financial-summary', { params: { days } });
+  getFinancialSummary: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/financial-summary', { params });
     return response.data;
   },
 
-  getCancellations: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/cancellations', { params: { days } });
+  getCancellations: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/cancellations', { params });
     return response.data;
   },
 
-  getRatings: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/ratings', { params: { days } });
+  getRatings: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/ratings', { params });
     return response.data;
   },
 
-  getPeakHours: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/peak-hours', { params: { days } });
+  getPeakHours: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/peak-hours', { params });
     return response.data;
   },
 
-  getDeliveriesByDriver: async (days = 30) => {
-    const response = await api.get('/api/admin/reports/deliveries-by-driver', { params: { days } });
+  getDeliveriesByDriver: async (days = 30, squareId = null) => {
+    const params = { days };
+    if (squareId) params.square_id = squareId;
+    const response = await api.get('/api/admin/reports/deliveries-by-driver', { params });
     return response.data;
   },
 

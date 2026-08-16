@@ -67,9 +67,10 @@ const AdminDashboardPage = () => {
     }
   }, [tracking]);
 
-  // Recarrega tracking quando muda a praça
+  // Recarrega tracking e dashboard quando muda a praça
   useEffect(() => {
     loadTracking();
+    loadDashboard();
   }, [selectedSquare]);
 
   // Auto-refresh tracking e pedidos
@@ -85,7 +86,7 @@ const AdminDashboardPage = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await adminService.getDashboard();
+      const data = await adminService.getDashboard(squareId);
       setDashboard(data);
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);

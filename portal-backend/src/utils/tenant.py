@@ -59,3 +59,10 @@ def add_tenant_to_data(data):
     if tenant_id and isinstance(data, dict):
         data['tenant_id'] = tenant_id
     return data
+
+
+def filter_by_square(query, model, square_id=None):
+    """Filtra uma consulta pelo square_id se fornecido."""
+    if square_id:
+        return query.filter(model.square_id == square_id)
+    return query

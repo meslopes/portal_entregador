@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, CloudRain, TrendingUp, Calendar, XCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
+import { useSquare } from '@/contexts/SquareContext';
 
 const AdminDynamicPricingPage = () => {
+  const { squareId } = useSquare();
   const [configs, setConfigs] = useState([]);
   const [squares, setSquares] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,13 +20,13 @@ const AdminDynamicPricingPage = () => {
     cancellation_fee_active: false, cancellation_fee: '5.00'
   });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [squareId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const [configsRes, squaresRes] = await Promise.all([
-        adminService.getDynamicPricing(),
+        adminService.getDynamicPricing(squareId),
         adminService.getSquares()
       ]);
       setConfigs(configsRes.dynamic_pricing || []);
