@@ -90,7 +90,13 @@ def create_app(config_name=None):
 
     # Criar tabelas do banco de dados
     with app.app_context():
-        db.create_all()
+        _db_available = True
+        try:
+            db.create_all()
+        except Exception as e:
+            _db_available = False
+            print(f"WARNING: db.create_all() falhou: {e}")
+            print("O app vai iniciar, mas rotas que dependem do banco retornarão erro.")
 
         # Migration: adicionar CLIENT ao enum usertype no PostgreSQL
         try:
