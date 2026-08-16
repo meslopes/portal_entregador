@@ -5057,15 +5057,31 @@ def create_pricing_table():
 
         if not data.get('name') or not data.get('square_id'):
 
-            return jsonify({'error': 'Nome e praça são obrigatórios'}), 400
+            return jsonify({'error': 'Nome e praca sao obrigatorios'}), 400
 
 
 
-        price_per_km = float(data.get('price_per_km', 2.95))
+        def safe_float(value, default):
 
-        min_distance_km = float(data.get('min_distance_km', 4.0))
+            if value is None or value == '':
 
-        min_delivery_fee = float(data.get('min_delivery_fee', price_per_km * min_distance_km))
+                return default
+
+            try:
+
+                return float(value)
+
+            except (ValueError, TypeError):
+
+                return default
+
+
+
+        price_per_km = safe_float(data.get('price_per_km'), 2.95)
+
+        min_distance_km = safe_float(data.get('min_distance_km'), 4.0)
+
+        min_delivery_fee = safe_float(data.get('min_delivery_fee'), price_per_km * min_distance_km)
 
 
 
@@ -5085,9 +5101,9 @@ def create_pricing_table():
 
             min_delivery_fee=min_delivery_fee,
 
-            max_delivery_fee=float(data.get('max_delivery_fee', 50.0)),
+            max_delivery_fee=safe_float(data.get('max_delivery_fee'), 50.0),
 
-            driver_percentage=float(data.get('driver_percentage', 70.0)),
+            driver_percentage=safe_float(data.get('driver_percentage'), 70.0),
 
             is_active=data.get('is_active', True)
 
@@ -5101,7 +5117,7 @@ def create_pricing_table():
 
         return jsonify({
 
-            'message': 'Tabela de preços criada com sucesso',
+            'message': 'Tabela de precos criada com sucesso',
 
             'pricing_table': table.to_dict()
 
@@ -5187,6 +5203,22 @@ def update_pricing_table(table_id):
 
 
 
+        def safe_float(value, default=None):
+
+            if value is None or value == '':
+
+                return default
+
+            try:
+
+                return float(value)
+
+            except (ValueError, TypeError):
+
+                return default
+
+
+
         if 'name' in data:
 
             table.name = data['name']
@@ -5197,23 +5229,43 @@ def update_pricing_table(table_id):
 
         if 'price_per_km' in data:
 
-            table.price_per_km = float(data['price_per_km'])
+            val = safe_float(data['price_per_km'])
+
+            if val is not None:
+
+                table.price_per_km = val
 
         if 'min_distance_km' in data:
 
-            table.min_distance_km = float(data['min_distance_km'])
+            val = safe_float(data['min_distance_km'])
+
+            if val is not None:
+
+                table.min_distance_km = val
 
         if 'min_delivery_fee' in data:
 
-            table.min_delivery_fee = float(data['min_delivery_fee'])
+            val = safe_float(data['min_delivery_fee'])
+
+            if val is not None:
+
+                table.min_delivery_fee = val
 
         if 'max_delivery_fee' in data:
 
-            table.max_delivery_fee = float(data['max_delivery_fee'])
+            val = safe_float(data['max_delivery_fee'])
+
+            if val is not None:
+
+                table.max_delivery_fee = val
 
         if 'driver_percentage' in data:
 
-            table.driver_percentage = float(data['driver_percentage'])
+            val = safe_float(data['driver_percentage'])
+
+            if val is not None:
+
+                table.driver_percentage = val
 
         if 'is_active' in data:
 
