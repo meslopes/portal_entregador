@@ -789,6 +789,19 @@ const AdminDashboardPage = () => {
         {/* Lista de Empresas */}
         {activeTab === 'empresas' && (
           <div style={{ padding: '0.5rem' }}>
+            <div style={{ padding: '0.5rem', marginBottom: '0.5rem' }}>
+              <a
+                href="/admin/squares"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  padding: '0.5rem', borderRadius: '0.375rem',
+                  background: '#2563eb', color: 'white',
+                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none'
+                }}
+              >
+                <Plus size={14} /> Gerenciar Praças
+              </a>
+            </div>
             {squares.map(sq => (
               <div
                 key={sq.id}
