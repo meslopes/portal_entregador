@@ -25,7 +25,7 @@ const STATUS_CONFIG = {
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { squareId, selectedSquare } = useSquare();
+  const { squareId, selectedSquare, setSelectedSquare } = useSquare();
   const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
