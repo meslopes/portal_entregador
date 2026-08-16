@@ -91,6 +91,40 @@ def create_admin():
         return jsonify({'error': str(e)}), 500
 
 
+# Endpoint temporario para setup inicial (funciona apenas com banco vazio)
+@auth_bp.route('/setup-initial', methods=['POST'])
+def setup_initial():
+    try:
+        # So funciona se nao existir nenhum usuario no banco
+        if User.query.count() > 0:
+            return jsonify({'error': 'Setup ja realizado. Use /create-admin.'}), 403
+
+        import uuid
+        data = request.get_json() or {}
+        email = data.get('email', 'admin@muvlog.com')
+        password = data.get('password', 'admin123')
+
+        unique_cpf = f"ADMIN{uuid.uuid4().hex[:8].upper()}"
+        unique_phone = f"119{uuid.uuid4().hex[:8]}"
+
+        user = User(
+            email=email,
+            password_hash=generate_password_hash(password),
+            first_name='Admin',
+            last_name='MUV',
+            phone=unique_phone,
+            cpf=unique_cpf,
+            user_type=UserType.ADMIN,
+            status=UserStatus.ACTIVE
+        )
+        db.session.add(user)
+        db.session.commit()
+        return jsonify({'message': 'Admin criado com sucesso', 'email': email}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 # Endpoint para registro de entregador
 @auth_bp.route('/register', methods=['POST'])
 def register():
