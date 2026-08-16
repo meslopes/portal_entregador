@@ -152,6 +152,7 @@ def create_admin():
         last_name = data.get('last_name', '')
         phone = data.get('phone', '')
         company_name = data.get('company_name', '')
+        tenant_id = data.get('tenant_id')
         
         if not email or not password:
             return jsonify({'error': 'Email e senha são obrigatórios'}), 400
@@ -163,25 +164,30 @@ def create_admin():
         if User.query.filter_by(email=email).first():
             return jsonify({'error': 'Email já cadastrado'}), 400
         
-        # Criar tenant para o admin
         from src.models.portal_models import Tenant
         import uuid
         
-        # Gerar slug único para o tenant
-        slug = company_name.lower().replace(' ', '-') if company_name else f"tenant-{uuid.uuid4().hex[:8]}"
-        
-        # Verificar se slug já existe
-        existing_tenant = Tenant.query.filter_by(slug=slug).first()
-        if existing_tenant:
-            slug = f"{slug}-{uuid.uuid4().hex[:4]}"
-        
-        tenant = Tenant(
-            name=company_name or f"Empresa de {first_name}",
-            slug=slug,
-            is_active=True
-        )
-        db.session.add(tenant)
-        db.session.flush()
+        # Se tenant_id foi fornecido, usar tenant existente
+        if tenant_id:
+            tenant = Tenant.query.get(tenant_id)
+            if not tenant:
+                return jsonify({'error': 'Tenant não encontrado'}), 404
+        else:
+            # Criar novo tenant
+            slug = company_name.lower().replace(' ', '-') if company_name else f"tenant-{uuid.uuid4().hex[:8]}"
+            
+            # Verificar se slug já existe
+            existing_tenant = Tenant.query.filter_by(slug=slug).first()
+            if existing_tenant:
+                slug = f"{slug}-{uuid.uuid4().hex[:4]}"
+            
+            tenant = Tenant(
+                name=company_name or f"Empresa de {first_name}",
+                slug=slug,
+                is_active=True
+            )
+            db.session.add(tenant)
+            db.session.flush()
         
         # Criar user admin
         user = User(
@@ -494,4 +500,173 @@ def get_platform_users():
         
     except Exception as e:
         logger.error(f"Erro ao listar usuários: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants', methods=['POST'])
+@jwt_required()
+@platform_admin_required
+def create_tenant():
+    """Cria um novo tenant (organização)"""
+    try:
+        from src.models.portal_models import Tenant
+        import uuid
+        
+        data = request.get_json()
+        
+        name = data.get('name')
+        slug = data.get('slug')
+        plan = data.get('plan', 'basic')
+        
+        if not name:
+            return jsonify({'error': 'Nome é obrigatório'}), 400
+        
+        # Gerar slug se não fornecido
+        if not slug:
+            slug = name.lower().replace(' ', '-').replace('ã', 'a').replace('ç', 'c').replace('é', 'e').replace('ó', 'o')
+        
+        # Verificar se slug já existe
+        existing = Tenant.query.filter_by(slug=slug).first()
+        if existing:
+            slug = f"{slug}-{uuid.uuid4().hex[:4]}"
+        
+        tenant = Tenant(
+            name=name,
+            slug=slug,
+            plan=plan,
+            is_active=True,
+            primary_color=data.get('primary_color', '#6366f1'),
+            secondary_color=data.get('secondary_color', '#ffffff'),
+            phone=data.get('phone', ''),
+            email=data.get('email', ''),
+            address=data.get('address', ''),
+            cnpj=data.get('cnpj', '')
+        )
+        db.session.add(tenant)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Tenant criado com sucesso',
+            'tenant': {
+                'id': tenant.id,
+                'name': tenant.name,
+                'slug': tenant.slug,
+                'plan': tenant.plan,
+                'is_active': tenant.is_active
+            }
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao criar tenant: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/<int:tenant_id>', methods=['PUT'])
+@jwt_required()
+@platform_admin_required
+def update_tenant(tenant_id):
+    """Atualiza dados de um tenant"""
+    try:
+        from src.models.portal_models import Tenant
+        
+        tenant = Tenant.query.get(tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Tenant não encontrado'}), 404
+        
+        data = request.get_json()
+        
+        if 'name' in data:
+            tenant.name = data['name']
+        if 'slug' in data:
+            # Verificar se novo slug já existe
+            existing = Tenant.query.filter(Tenant.slug == data['slug'], Tenant.id != tenant_id).first()
+            if existing:
+                return jsonify({'error': 'Slug já em uso'}), 400
+            tenant.slug = data['slug']
+        if 'plan' in data:
+            tenant.plan = data['plan']
+        if 'primary_color' in data:
+            tenant.primary_color = data['primary_color']
+        if 'secondary_color' in data:
+            tenant.secondary_color = data['secondary_color']
+        if 'phone' in data:
+            tenant.phone = data['phone']
+        if 'email' in data:
+            tenant.email = data['email']
+        if 'address' in data:
+            tenant.address = data['address']
+        if 'cnpj' in data:
+            tenant.cnpj = data['cnpj']
+        if 'max_deliveries_month' in data:
+            tenant.max_deliveries_month = data['max_deliveries_month']
+        if 'max_drivers' in data:
+            tenant.max_drivers = data['max_drivers']
+        if 'max_clients' in data:
+            tenant.max_clients = data['max_clients']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Tenant atualizado com sucesso',
+            'tenant': {
+                'id': tenant.id,
+                'name': tenant.name,
+                'slug': tenant.slug,
+                'plan': tenant.plan,
+                'is_active': tenant.is_active
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar tenant: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/<int:tenant_id>', methods=['DELETE'])
+@jwt_required()
+@platform_admin_required
+def delete_tenant(tenant_id):
+    """Exclui um tenant"""
+    try:
+        from src.models.portal_models import Tenant, Driver, Restaurant, Order
+        
+        tenant = Tenant.query.get(tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Tenant não encontrado'}), 404
+        
+        # Verificar se tem dados vinculados
+        drivers = Driver.query.filter_by(tenant_id=tenant_id).count()
+        restaurants = Restaurant.query.filter_by(tenant_id=tenant_id).count()
+        orders = Order.query.filter_by(tenant_id=tenant_id).count()
+        users = User.query.filter_by(tenant_id=tenant_id).count()
+        
+        force = request.args.get('force', 'false').lower() == 'true'
+        
+        if (drivers > 0 or restaurants > 0 or orders > 0 or users > 0) and not force:
+            return jsonify({
+                'error': 'Tenant possui dados vinculados',
+                'drivers': drivers,
+                'restaurants': restaurants,
+                'orders': orders,
+                'users': users,
+                'suggestion': 'Use ?force=true para excluir mesmo assim'
+            }), 400
+        
+        # Excluir dados vinculados se force=true
+        if force:
+            db.session.execute(db.text("DELETE FROM orders WHERE tenant_id = :tid"), {"tid": tenant_id})
+            db.session.execute(db.text("DELETE FROM drivers WHERE tenant_id = :tid"), {"tid": tenant_id})
+            db.session.execute(db.text("DELETE FROM restaurants WHERE tenant_id = :tid"), {"tid": tenant_id})
+            db.session.execute(db.text("UPDATE users SET tenant_id = NULL WHERE tenant_id = :tid"), {"tid": tenant_id})
+        
+        db.session.delete(tenant)
+        db.session.commit()
+        
+        return jsonify({'message': 'Tenant excluído com sucesso'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao excluir tenant: {e}")
         return jsonify({'error': str(e)}), 500

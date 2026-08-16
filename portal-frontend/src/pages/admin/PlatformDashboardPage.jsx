@@ -19,6 +19,9 @@ const PlatformDashboardPage = () => {
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [showTenantModal, setShowTenantModal] = useState(false);
+  const [showCreateTenantModal, setShowCreateTenantModal] = useState(false);
+  const [createTenantLoading, setCreateTenantLoading] = useState(false);
+  const [tenantFormData, setTenantFormData] = useState({ name: '', slug: '', plan: 'basic', phone: '', email: '', cnpj: '' });
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -88,6 +91,22 @@ const PlatformDashboardPage = () => {
       setShowTenantModal(true);
     } catch (err) {
       alert('Erro ao carregar detalhes do tenant');
+    }
+  };
+
+  const handleCreateTenant = async (e) => {
+    e.preventDefault();
+    setCreateTenantLoading(true);
+    try {
+      await api.post('/api/platform/tenants', tenantFormData);
+      setShowCreateTenantModal(false);
+      setTenantFormData({ name: '', slug: '', plan: 'basic', phone: '', email: '', cnpj: '' });
+      loadTenants();
+      loadDashboard();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao criar tenant');
+    } finally {
+      setCreateTenantLoading(false);
     }
   };
 
@@ -268,6 +287,17 @@ const PlatformDashboardPage = () => {
             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>
               Todos os Tenants
             </h2>
+            <button
+              onClick={() => setShowCreateTenantModal(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
+                border: 'none', background: '#2563eb', color: 'white',
+                fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              <Plus size={18} /> Novo Tenant
+            </button>
           </div>
 
           <div style={{ overflowX: 'auto' }}>
@@ -559,6 +589,145 @@ const PlatformDashboardPage = () => {
         </>
       )}
 
+      {/* Create Tenant Modal */}
+      {showCreateTenantModal && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999 }}
+            onClick={() => setShowCreateTenantModal(false)}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '500px',
+            maxHeight: '80vh', overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 100000
+          }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+                Criar Novo Tenant
+              </h2>
+              <button
+                onClick={() => setShowCreateTenantModal(false)}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.5rem' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTenant} style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                  Nome da Organização *
+                </label>
+                <input
+                  type="text"
+                  value={tenantFormData.name}
+                  onChange={(e) => setTenantFormData(prev => ({ ...prev, name: e.target.value }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="Entregas Porto Alegre"
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                  Slug (identificador único)
+                </label>
+                <input
+                  type="text"
+                  value={tenantFormData.slug}
+                  onChange={(e) => setTenantFormData(prev => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="entregas-porto-alegre"
+                />
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Deixe em branco para gerar automaticamente</p>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                  Plano
+                </label>
+                <select
+                  value={tenantFormData.plan}
+                  onChange={(e) => setTenantFormData(prev => ({ ...prev, plan: e.target.value }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box', background: 'white' }}
+                >
+                  <option value="basic">Básico</option>
+                  <option value="premium">Premium</option>
+                  <option value="platinum">Platinum</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                    Telefone
+                  </label>
+                  <input
+                    type="text"
+                    value={tenantFormData.phone}
+                    onChange={(e) => setTenantFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    placeholder="(51) 99999-9999"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                    CNPJ
+                  </label>
+                  <input
+                    type="text"
+                    value={tenantFormData.cnpj}
+                    onChange={(e) => setTenantFormData(prev => ({ ...prev, cnpj: e.target.value }))}
+                    style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    placeholder="00.000.000/0000-00"
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={tenantFormData.email}
+                  onChange={(e) => setTenantFormData(prev => ({ ...prev, email: e.target.value }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="contato@empresa.com"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateTenantModal(false)}
+                  style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                    border: '1px solid #e2e8f0', background: 'white',
+                    fontSize: '0.875rem', cursor: 'pointer'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createTenantLoading}
+                  style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                    border: 'none', background: createTenantLoading ? '#93c5fd' : '#2563eb',
+                    color: 'white', fontSize: '0.875rem', fontWeight: 600,
+                    cursor: createTenantLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {createTenantLoading ? 'Criando...' : 'Criar Tenant'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
+
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
@@ -571,18 +740,30 @@ const AdminsTab = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [tenants, setTenants] = useState([]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     first_name: '',
     last_name: '',
     phone: '',
-    company_name: ''
+    company_name: '',
+    tenant_id: ''
   });
 
   useEffect(() => {
     loadAdmins();
+    loadTenants();
   }, []);
+
+  const loadTenants = async () => {
+    try {
+      const response = await api.get('/api/platform/tenants');
+      setTenants(response.data.tenants || []);
+    } catch (err) {
+      console.error('Erro ao carregar tenants:', err);
+    }
+  };
 
   const loadAdmins = async () => {
     try {
@@ -601,7 +782,13 @@ const AdminsTab = () => {
     setCreateLoading(true);
 
     try {
-      await api.post('/api/platform/admins', formData);
+      const payload = { ...formData };
+      if (payload.tenant_id) {
+        payload.tenant_id = parseInt(payload.tenant_id);
+      } else {
+        delete payload.tenant_id;
+      }
+      await api.post('/api/platform/admins', payload);
       setShowCreateModal(false);
       setFormData({
         email: '',
@@ -609,7 +796,8 @@ const AdminsTab = () => {
         first_name: '',
         last_name: '',
         phone: '',
-        company_name: ''
+        company_name: '',
+        tenant_id: ''
       });
       loadAdmins();
     } catch (err) {
@@ -769,16 +957,35 @@ const AdminsTab = () => {
             <form onSubmit={handleCreateAdmin} style={{ padding: '1.5rem' }}>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                  Nome da Empresa
+                  Vincular a Tenant Existente
                 </label>
-                <input
-                  type="text"
-                  value={formData.company_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
-                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
-                  placeholder="Restaurante XYZ"
-                />
+                <select
+                  value={formData.tenant_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tenant_id: e.target.value }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box', background: 'white' }}
+                >
+                  <option value="">Criar novo tenant (preencha abaixo)</option>
+                  {tenants.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.slug})</option>
+                  ))}
+                </select>
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>Selecione um tenant existente ou deixe em branco para criar um novo</p>
               </div>
+
+              {!formData.tenant_id && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                    Nome da Empresa (para novo tenant)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
+                    style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    placeholder="Restaurante XYZ"
+                  />
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
