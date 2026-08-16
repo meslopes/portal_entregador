@@ -412,8 +412,8 @@ def login():
             return jsonify({'error': 'Credenciais inválidas'}), 401
 
     except Exception as e:
-        logger.error(f"Erro no login: {e}")
-        return jsonify({'error': 'Erro interno do servidor'}), 500
+        logger.error(f"Erro no login: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 
 # Endpoint para obter perfil do usuário autenticado
