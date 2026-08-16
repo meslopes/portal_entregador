@@ -41,17 +41,18 @@ const Layout = ({ children }) => {
 
   const adminNavigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'Pracas', href: '/admin/squares', icon: MapPin },
     { name: 'Clientes', href: '/admin/establishments', icon: Store },
     { name: 'Entregadores', href: '/admin/drivers', icon: Users },
     { name: 'Pedidos', href: '/admin/orders', icon: Package },
     { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
-    { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
+    { name: 'Precos', href: '/admin/pricing', icon: DollarSign },
     { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
-    { name: 'Integrações', href: '/admin/integrations', icon: Globe },
+    { name: 'Integracoes', href: '/admin/integrations', icon: Globe },
     { name: 'Saques', href: '/admin/withdrawals', icon: CreditCard },
     { name: 'Faturas', href: '/admin/invoices', icon: FileText },
-    { name: 'Relatórios', href: '/admin/reports', icon: FileText },
-    { name: 'Configurações', href: '/admin/settings', icon: Settings },
+    { name: 'Relatorios', href: '/admin/reports', icon: FileText },
+    { name: 'Configuracoes', href: '/admin/settings', icon: Settings },
   ];
 
   const platformNavigation = [
@@ -72,14 +73,15 @@ const Layout = ({ children }) => {
     : user?.email ? user.email[0].toUpperCase() : 'U';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+    <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <header style={{
         background: 'white',
         borderBottom: '1px solid #e2e8f0',
         position: 'sticky',
         top: 0,
-        zIndex: 100
+        zIndex: 100,
+        flexShrink: 0
       }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '4.5rem' }}>
@@ -92,7 +94,7 @@ const Layout = ({ children }) => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {navigation.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
@@ -239,7 +241,7 @@ const Layout = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main style={{ minHeight: 'calc(100vh - 3.5rem)', overflowY: 'auto' }}>
+      <main style={{ flex: 1, overflowY: 'auto' }}>
         {children}
       </main>
 
@@ -248,6 +250,19 @@ const Layout = ({ children }) => {
         @media (max-width: 768px) {
           .mobile-menu-btn { display: block !important; }
           nav { display: none !important; }
+        }
+        nav::-webkit-scrollbar {
+          height: 4px;
+        }
+        nav::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        nav::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 2px;
+        }
+        nav::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
         }
       `}</style>
     </div>
