@@ -252,7 +252,7 @@ const Layout = ({ children }) => {
           nav { display: none !important; }
         }
         nav::-webkit-scrollbar {
-          height: 4px;
+          height: 8px;
         }
         nav::-webkit-scrollbar-track {
           background: transparent;
