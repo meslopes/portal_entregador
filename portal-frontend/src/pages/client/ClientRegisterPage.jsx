@@ -182,19 +182,21 @@ const ClientRegisterPage = () => {
           </div>
 
           <div className="auth-form-card">
-            {currentError && (
-              <div className="auth-error">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 1C4.1 1 1 4.1 1 8s3.1 7 7 7 7-3.1 7-7-3.1-7-7-7zm-.5 3h1v5h-1V4zm.5 7.5c-.4 0-.7-.3-.7-.7s.3-.7.7-.7.7.3.7.7-.3.7-.7.7z"/>
-                </svg>
-                {currentError}
-              </div>
-            )}
+            <div style={{ minHeight: currentError ? 'auto' : '0' }}>
+              {currentError && (
+                <div className="auth-error">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1C4.1 1 1 4.1 1 8s3.1 7 7 7 7-3.1 7-7-3.1-7-7-7zm-.5 3h1v5h-1V4zm.5 7.5c-.4 0-.7-.3-.7-.7s.3-.7.7-.7.7.3.7.7-.3.7-.7.7z"/>
+                  </svg>
+                  {currentError}
+                </div>
+              )}
+            </div>
 
             <form onSubmit={handleSubmit}>
               {/* Etapa 1 - Dados Pessoais */}
               {step === 1 && (
-                <div className="auth-animate-in">
+                <div className="auth-animate-in" key="step1">
                   <div style={{ marginBottom: '1rem' }}>
                     <label className="auth-form-label">Nome *</label>
                     <input name="first_name" className="auth-form-input" placeholder="Seu nome"
@@ -218,7 +220,7 @@ const ClientRegisterPage = () => {
 
               {/* Etapa 2 - Acesso */}
               {step === 2 && (
-                <div className="auth-animate-in">
+                <div className="auth-animate-in" key="step2">
                   <div style={{ marginBottom: '1rem' }}>
                     <label className="auth-form-label">Email *</label>
                     <input type="email" name="email" className="auth-form-input" placeholder="seu@email.com"
@@ -259,7 +261,7 @@ const ClientRegisterPage = () => {
 
               {/* Etapa 3 - Endereço */}
               {step === 3 && (
-                <div className="auth-animate-in">
+                <div className="auth-animate-in" key="step3">
                   <div style={{ marginBottom: '1rem' }}>
                     <label className="auth-form-label">Rua/Avenida *</label>
                     <input name="address_street" className="auth-form-input" placeholder="Ex: Rua das Flores"
@@ -300,18 +302,21 @@ const ClientRegisterPage = () => {
                     </button>
                     <button type="submit" className="auth-btn-primary" disabled={isLoading} style={{ flex: 2 }}>
                       {isLoading ? (
-                        <>
-                          <div style={{
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                          <span style={{
                             width: '1rem', height: '1rem',
                             border: '2px solid rgba(255,255,255,0.3)',
                             borderTopColor: 'white',
                             borderRadius: '50%',
-                            animation: 'spin 0.6s linear infinite'
+                            animation: 'spin 0.6s linear infinite',
+                            display: 'inline-block'
                           }} />
                           Criando conta...
-                        </>
+                        </span>
                       ) : (
-                        <>Criar Conta <Check size={18} /></>
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                          Criar Conta <Check size={18} />
+                        </span>
                       )}
                     </button>
                   </div>
