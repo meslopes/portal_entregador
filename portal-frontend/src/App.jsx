@@ -331,7 +331,9 @@ function App() {
             path="/platform"
             element={
               <ProtectedRoute requiredRole="ADMIN">
-                <PlatformDashboardPage />
+                <Layout>
+                  <PlatformDashboardPage />
+                </Layout>
               </ProtectedRoute>
             }
           />

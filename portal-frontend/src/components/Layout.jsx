@@ -239,7 +239,7 @@ const Layout = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main style={{ minHeight: 'calc(100vh - 3.5rem)' }}>
+      <main style={{ minHeight: 'calc(100vh - 3.5rem)', overflowY: 'auto' }}>
         {children}
       </main>
 

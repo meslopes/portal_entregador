@@ -130,21 +130,23 @@ const PlatformDashboardPage = () => {
             Gerencie todos os tenants e monitore o sistema
           </p>
         </div>
-        <button
-          onClick={() => { loadDashboard(); loadTenants(); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.5rem 1rem', borderRadius: '0.5rem',
-            border: '1px solid #e2e8f0', background: 'white',
-            cursor: 'pointer', fontSize: '0.875rem', color: '#64748b'
-          }}
-        >
-          <RefreshCw size={16} /> Atualizar
-        </button>
+        {activeTab === 'overview' && (
+          <button
+            onClick={() => { loadDashboard(); loadTenants(); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.5rem 1rem', borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0', background: 'white',
+              cursor: 'pointer', fontSize: '0.875rem', color: '#64748b'
+            }}
+          >
+            <RefreshCw size={16} /> Atualizar
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', overflowX: 'auto', flexWrap: 'nowrap' }}>
         {[
           { key: 'overview', label: 'Visão Geral', icon: BarChart3 },
           { key: 'tenants', label: 'Tenants', icon: Building2 },
