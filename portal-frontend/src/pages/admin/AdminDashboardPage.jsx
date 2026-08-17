@@ -71,6 +71,12 @@ const AdminDashboardPage = () => {
   useEffect(() => {
     loadTracking();
     loadDashboard();
+    // Invalidar tamanho do mapa apos trocar de praca
+    setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 300);
   }, [selectedSquare]);
 
   // Auto-refresh tracking e pedidos
