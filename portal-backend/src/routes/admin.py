@@ -1208,6 +1208,8 @@ def get_dashboard():
 
     except Exception as e:
 
+        logger.error(f"Erro no dashboard: {e}", exc_info=True)
+
         return jsonify({'error': str(e)}), 500
 
 
