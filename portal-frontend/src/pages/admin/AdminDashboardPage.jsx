@@ -82,7 +82,11 @@ const AdminDashboardPage = () => {
       
       // Destroi mapa existente
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {
+          console.warn('Erro ao remover mapa:', e);
+        }
         mapInstanceRef.current = null;
         markersRef.current = [];
       }
@@ -94,18 +98,29 @@ const AdminDashboardPage = () => {
       setTimeout(() => {
         if (!mapRef.current || !window.L) return;
         
-        const L = window.L;
-        const map = L.map(mapRef.current, { 
-          zoomControl: true, 
-          scrollWheelZoom: true 
-        }).setView([-29.72, -50.00], 12);
+        // Verificar se o container tem dimensoes
+        if (mapRef.current.offsetWidth === 0 || mapRef.current.offsetHeight === 0) {
+          console.warn('Container do mapa sem dimensoes, tentando novamente...');
+          setTimeout(recreateMap, 300);
+          return;
+        }
         
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(map);
-        
-        mapInstanceRef.current = map;
-        setMapReady(true);
+        try {
+          const L = window.L;
+          const map = L.map(mapRef.current, { 
+            zoomControl: true, 
+            scrollWheelZoom: true 
+          }).setView([-29.72, -50.00], 12);
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+          }).addTo(map);
+          
+          mapInstanceRef.current = map;
+          setMapReady(true);
+        } catch (e) {
+          console.error('Erro ao criar mapa:', e);
+        }
       }, 200);
     };
     
@@ -410,8 +425,17 @@ const AdminDashboardPage = () => {
     }
 
     if (allPoints.length > 0) {
-      const group = L.featureGroup(markersRef.current);
-      map.fitBounds(group.getBounds().pad(0.1));
+      try {
+        const group = L.featureGroup(markersRef.current);
+        map.fitBounds(group.getBounds().pad(0.1));
+      } catch (e) {
+        console.warn('Erro ao ajustar bounds do mapa:', e);
+        // Fallback para coordenadas padrao
+        map.setView([-29.72, -50.00], 12);
+      }
+    } else {
+      // Sem pontos, usar coordenadas padrao
+      map.setView([-29.72, -50.00], 12);
     }
   }, [tracking]);
 
