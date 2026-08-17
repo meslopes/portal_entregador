@@ -62,10 +62,21 @@ const RegisterPage = () => {
     setIsLoading(true);
     try {
       const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
-      navigate('/dashboard');
+      // Chamar API diretamente sem fazer login
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registerData),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setLocalError(data.error || 'Erro ao criar conta');
+        return;
+      }
+      // Nao fazer login - redirecionar para tela de aguardo
+      navigate('/pending-approval');
     } catch (err) {
-      // erro tratado no contexto
+      setLocalError('Erro ao conectar com o servidor');
     } finally {
       setIsLoading(false);
     }

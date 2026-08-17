@@ -94,11 +94,8 @@ const ClientRegisterPage = () => {
         return;
       }
 
-      // Salva no localStorage
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      navigate('/client', { replace: true });
+      // Nao fazer login - redirecionar para tela de aguardo
+      navigate('/pending-approval');
     } catch (err) {
       setLocalError('Erro ao conectar com o servidor');
     } finally {

@@ -18,6 +18,14 @@ const ProtectedRoute = ({ children, requireAuth = true, requiredRole = null, red
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
+  // Verificar se o usuario esta pendente de aprovacao
+  if (isAuthenticated && user?.status === 'INACTIVE') {
+    // Nao redirecionar se ja estiver na pagina de pendente
+    if (location.pathname !== '/pending-approval') {
+      return <Navigate to="/pending-approval" replace />;
+    }
+  }
+
   // Verifica se o usuario tem o papel necessario
   if (requiredRole && user?.user_type !== requiredRole) {
     // Redireciona para a rota correta baseada no tipo de usuario

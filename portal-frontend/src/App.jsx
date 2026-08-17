@@ -58,6 +58,7 @@ import TrackPage from '@/pages/TrackPage';
 import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
+import PendingApprovalPage from '@/pages/PendingApprovalPage';
 import './App.css';
 
 // Componente de redirecionamento inteligente baseado no tipo de usuario
@@ -66,6 +67,11 @@ function SmartRedirect() {
   const userType = user?.user_type;
   const superAdminEmails = ['plataform@muv.log.br', 'muvy.log@gmail.com'];
   const isSuperAdmin = !user?.tenant_id || superAdminEmails.includes(user?.email);
+
+  // Usuario pendente de aprovacao
+  if (user?.status === 'INACTIVE') {
+    return <Navigate to="/pending-approval" replace />;
+  }
 
   // Super admin vai para /platform
   if (userType === 'ADMIN' && isSuperAdmin) {
@@ -107,6 +113,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
           {/* Rotas do entregador */}
           <Route 
