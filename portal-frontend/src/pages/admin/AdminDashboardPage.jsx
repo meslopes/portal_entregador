@@ -71,12 +71,52 @@ const AdminDashboardPage = () => {
   useEffect(() => {
     loadTracking();
     loadDashboard();
-    // Invalidar tamanho do mapa apos trocar de praca
-    setTimeout(() => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.invalidateSize();
+    
+    // Funcao para invalidar e redesenhar o mapa
+    const refreshMap = () => {
+      if (!mapInstanceRef.current || !mapRef.current) return;
+      
+      const map = mapInstanceRef.current;
+      const container = mapRef.current;
+      
+      // Verificar se o container tem dimensoes
+      if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+        // Container nao visivel, tentar novamente
+        setTimeout(refreshMap, 200);
+        return;
       }
-    }, 300);
+      
+      // Invalidar tamanho e forcar redesenho
+      map.invalidateSize({ animate: false, pan: false });
+      
+      // Se houver tracking, ajustar bounds
+      if (tracking) {
+        const allPoints = [];
+        if (tracking.drivers) {
+          tracking.drivers.forEach(d => {
+            if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
+          });
+        }
+        if (tracking.establishments) {
+          tracking.establishments.forEach(e => {
+            if (e.latitude && e.longitude) allPoints.push([e.latitude, e.longitude]);
+          });
+        }
+        if (allPoints.length > 0) {
+          const L = window.L;
+          if (L) {
+            const bounds = L.latLngBounds(allPoints);
+            map.fitBounds(bounds.pad(0.1), { animate: false });
+          }
+        }
+      }
+    };
+    
+    // Executar apos o DOM ser atualizado
+    requestAnimationFrame(() => {
+      setTimeout(refreshMap, 150);
+      setTimeout(refreshMap, 500);
+    });
   }, [selectedSquare]);
 
   // Auto-refresh tracking e pedidos
