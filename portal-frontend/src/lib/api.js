@@ -535,9 +535,10 @@ export const adminService = {
   },
 
   // Pedidos
-  getOrders: async (page = 1, perPage = 20, status = '') => {
+  getOrders: async (page = 1, perPage = 20, status = '', squareId = null) => {
     const params = { page, per_page: perPage };
     if (status) params.status = status;
+    if (squareId) params.square_id = squareId;
     const response = await api.get('/api/admin/orders', { params });
     return response.data;
   },

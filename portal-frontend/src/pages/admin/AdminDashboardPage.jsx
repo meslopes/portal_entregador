@@ -47,6 +47,7 @@ const AdminDashboardPage = () => {
   const [allDrivers, setAllDrivers] = useState([]);
   const [allEstablishments, setAllEstablishments] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -67,55 +68,50 @@ const AdminDashboardPage = () => {
     }
   }, [tracking]);
 
-  // Recarrega tracking e dashboard quando muda a praça
+  // Recarrega tracking, dashboard e pedidos quando muda a praça
   useEffect(() => {
     loadTracking();
     loadDashboard();
+    loadOrders();
+    loadPendingUsers();
+    loadAllDrivers();
     
-    // Funcao para invalidar e redesenhar o mapa
-    const refreshMap = () => {
-      if (!mapInstanceRef.current || !mapRef.current) return;
+    // Destruir mapa existente e recriar
+    const recreateMap = () => {
+      if (!mapRef.current) return;
       
-      const map = mapInstanceRef.current;
-      const container = mapRef.current;
-      
-      // Verificar se o container tem dimensoes
-      if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-        // Container nao visivel, tentar novamente
-        setTimeout(refreshMap, 200);
-        return;
+      // Destroi mapa existente
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        markersRef.current = [];
       }
       
-      // Invalidar tamanho e forcar redesenho
-      map.invalidateSize({ animate: false, pan: false });
+      // Limpar container
+      mapRef.current.innerHTML = '';
       
-      // Se houver tracking, ajustar bounds
-      if (tracking) {
-        const allPoints = [];
-        if (tracking.drivers) {
-          tracking.drivers.forEach(d => {
-            if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
-          });
-        }
-        if (tracking.establishments) {
-          tracking.establishments.forEach(e => {
-            if (e.latitude && e.longitude) allPoints.push([e.latitude, e.longitude]);
-          });
-        }
-        if (allPoints.length > 0) {
-          const L = window.L;
-          if (L) {
-            const bounds = L.latLngBounds(allPoints);
-            map.fitBounds(bounds.pad(0.1), { animate: false });
-          }
-        }
-      }
+      // Recriar mapa apos um pequeno delay
+      setTimeout(() => {
+        if (!mapRef.current || !window.L) return;
+        
+        const L = window.L;
+        const map = L.map(mapRef.current, { 
+          zoomControl: true, 
+          scrollWheelZoom: true 
+        }).setView([-29.72, -50.00], 12);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+        
+        mapInstanceRef.current = map;
+        setMapReady(true);
+      }, 200);
     };
     
     // Executar apos o DOM ser atualizado
     requestAnimationFrame(() => {
-      setTimeout(refreshMap, 150);
-      setTimeout(refreshMap, 500);
+      recreateMap();
     });
   }, [selectedSquare]);
 
@@ -153,7 +149,7 @@ const AdminDashboardPage = () => {
 
   const loadOrders = async () => {
     try {
-      const data = await adminService.getOrders(1, 20);
+      const data = await adminService.getOrders(1, 20, '', squareId);
       setOrders(data.orders || []);
     } catch (err) {
       console.error('Erro ao carregar pedidos:', err);
@@ -252,27 +248,27 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Initialize map
-  const mapCallbackRef = useCallback((node) => {
-    if (!node) return;
-    mapRef.current = node;
-
-    if (mapInstanceRef.current) return;
-
+  // Initialize map on mount
+  useEffect(() => {
     const initMap = () => {
-      if (!node || mapInstanceRef.current) return;
+      if (!mapRef.current || mapInstanceRef.current || !window.L) return;
+      
       const L = window.L;
-      if (!L) return;
-      mapInstanceRef.current = L.map(node, { zoomControl: true, scrollWheelZoom: true })
-        .setView([-29.72, -50.00], 12);
+      const map = L.map(mapRef.current, { 
+        zoomControl: true, 
+        scrollWheelZoom: true 
+      }).setView([-29.72, -50.00], 12);
+      
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
-      }).addTo(mapInstanceRef.current);
+      }).addTo(map);
+      
+      mapInstanceRef.current = map;
+      setMapReady(true);
     };
 
-    if (window.L) {
-      initMap();
-    } else {
+    // Carregar Leaflet se nao estiver disponivel
+    if (!window.L) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -280,9 +276,23 @@ const AdminDashboardPage = () => {
 
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = initMap;
+      script.onload = () => {
+        // Aguardar um pouco para garantir que o Leaflet foi carregado
+        setTimeout(initMap, 100);
+      };
       document.head.appendChild(script);
+    } else {
+      // Aguardar o DOM ser renderizado
+      setTimeout(initMap, 100);
     }
+    
+    // Cleanup
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
   }, []);
 
   // Update markers
@@ -900,7 +910,7 @@ const AdminDashboardPage = () => {
 
         {/* Mapa */}
         <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
-          <div ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
+          <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
           
           {/* Botão Centralizar dentro do mapa */}
           <button
