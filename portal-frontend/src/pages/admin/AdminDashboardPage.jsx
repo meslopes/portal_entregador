@@ -76,57 +76,33 @@ const AdminDashboardPage = () => {
     loadPendingUsers();
     loadAllDrivers();
     
-    // Destruir mapa existente e recriar
-    const recreateMap = () => {
-      if (!mapRef.current) return;
+    // Atualizar mapa apos trocar de praca
+    const refreshMap = () => {
+      if (!mapInstanceRef.current || !mapRef.current) return;
       
-      // Destroi mapa existente
-      if (mapInstanceRef.current) {
-        try {
-          mapInstanceRef.current.remove();
-        } catch (e) {
-          console.warn('Erro ao remover mapa:', e);
-        }
-        mapInstanceRef.current = null;
-        markersRef.current = [];
+      const map = mapInstanceRef.current;
+      const container = mapRef.current;
+      
+      // Verificar se o container tem dimensoes
+      if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+        // Container nao visivel, tentar novamente
+        setTimeout(refreshMap, 200);
+        return;
       }
       
-      // Limpar container
-      mapRef.current.innerHTML = '';
-      
-      // Recriar mapa apos um pequeno delay
-      setTimeout(() => {
-        if (!mapRef.current || !window.L) return;
-        
-        // Verificar se o container tem dimensoes
-        if (mapRef.current.offsetWidth === 0 || mapRef.current.offsetHeight === 0) {
-          console.warn('Container do mapa sem dimensoes, tentando novamente...');
-          setTimeout(recreateMap, 300);
-          return;
-        }
-        
-        try {
-          const L = window.L;
-          const map = L.map(mapRef.current, { 
-            zoomControl: true, 
-            scrollWheelZoom: true 
-          }).setView([-29.72, -50.00], 12);
-          
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-          }).addTo(map);
-          
-          mapInstanceRef.current = map;
-          setMapReady(true);
-        } catch (e) {
-          console.error('Erro ao criar mapa:', e);
-        }
-      }, 200);
+      try {
+        // Invalidar tamanho e resetar visao
+        map.invalidateSize({ animate: false, pan: false });
+        map.setView([-29.72, -50.00], 12, { animate: false });
+      } catch (e) {
+        console.warn('Erro ao atualizar mapa:', e);
+      }
     };
     
     // Executar apos o DOM ser atualizado
     requestAnimationFrame(() => {
-      recreateMap();
+      setTimeout(refreshMap, 100);
+      setTimeout(refreshMap, 500);
     });
   }, [selectedSquare]);
 
@@ -263,27 +239,37 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Initialize map on mount
-  useEffect(() => {
+  // Initialize map using callback ref
+  const mapCallbackRef = useCallback((node) => {
+    if (!node) return;
+    mapRef.current = node;
+
+    if (mapInstanceRef.current) return;
+
     const initMap = () => {
-      if (!mapRef.current || mapInstanceRef.current || !window.L) return;
+      if (!node || mapInstanceRef.current || !window.L) return;
       
-      const L = window.L;
-      const map = L.map(mapRef.current, { 
-        zoomControl: true, 
-        scrollWheelZoom: true 
-      }).setView([-29.72, -50.00], 12);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
-      
-      mapInstanceRef.current = map;
-      setMapReady(true);
+      try {
+        const L = window.L;
+        const map = L.map(node, { 
+          zoomControl: true, 
+          scrollWheelZoom: true 
+        }).setView([-29.72, -50.00], 12);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+        
+        mapInstanceRef.current = map;
+        setMapReady(true);
+      } catch (e) {
+        console.error('Erro ao inicializar mapa:', e);
+      }
     };
 
-    // Carregar Leaflet se nao estiver disponivel
-    if (!window.L) {
+    if (window.L) {
+      setTimeout(initMap, 100);
+    } else {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -291,23 +277,9 @@ const AdminDashboardPage = () => {
 
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => {
-        // Aguardar um pouco para garantir que o Leaflet foi carregado
-        setTimeout(initMap, 100);
-      };
+      script.onload = () => setTimeout(initMap, 100);
       document.head.appendChild(script);
-    } else {
-      // Aguardar o DOM ser renderizado
-      setTimeout(initMap, 100);
     }
-    
-    // Cleanup
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
   }, []);
 
   // Update markers
@@ -934,7 +906,7 @@ const AdminDashboardPage = () => {
 
         {/* Mapa */}
         <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
-          <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+          <div ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
           
           {/* Botão Centralizar dentro do mapa */}
           <button
