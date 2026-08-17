@@ -130,7 +130,7 @@ const AdminDashboardPage = () => {
 
   const loadTracking = async () => {
     try {
-      const data = await adminService.getLiveTracking(selectedSquare || null);
+      const data = await adminService.getLiveTracking(squareId || null);
       setTracking(data);
     } catch (err) {
       console.error('Erro ao carregar tracking:', err);
