@@ -39,7 +39,10 @@ const DashboardPage = () => {
         const L = window.L;
         if (!L) return;
         
-        const map = L.map('driver-map').setView([location.latitude, location.longitude], 15);
+        const container = document.getElementById('driver-map');
+        if (!container) return;
+        
+        const map = L.map(container).setView([location.latitude, location.longitude], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap'
         }).addTo(map);
