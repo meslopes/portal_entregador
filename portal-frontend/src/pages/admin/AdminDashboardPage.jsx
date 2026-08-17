@@ -69,41 +69,13 @@ const AdminDashboardPage = () => {
   }, [tracking]);
 
   // Recarrega tracking, dashboard e pedidos quando muda a praça
+  // O mapa e recriado automaticamente pelo key prop no container
   useEffect(() => {
     loadTracking();
     loadDashboard();
     loadOrders();
     loadPendingUsers();
     loadAllDrivers();
-    
-    // Atualizar mapa apos trocar de praca
-    const refreshMap = () => {
-      if (!mapInstanceRef.current || !mapRef.current) return;
-      
-      const map = mapInstanceRef.current;
-      const container = mapRef.current;
-      
-      // Verificar se o container tem dimensoes
-      if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-        // Container nao visivel, tentar novamente
-        setTimeout(refreshMap, 200);
-        return;
-      }
-      
-      try {
-        // Invalidar tamanho e resetar visao
-        map.invalidateSize({ animate: false, pan: false });
-        map.setView([-29.72, -50.00], 12, { animate: false });
-      } catch (e) {
-        console.warn('Erro ao atualizar mapa:', e);
-      }
-    };
-    
-    // Executar apos o DOM ser atualizado
-    requestAnimationFrame(() => {
-      setTimeout(refreshMap, 100);
-      setTimeout(refreshMap, 500);
-    });
   }, [selectedSquare]);
 
   // Auto-refresh tracking e pedidos
@@ -241,13 +213,31 @@ const AdminDashboardPage = () => {
 
   // Initialize map using callback ref
   const mapCallbackRef = useCallback((node) => {
-    if (!node) return;
+    // Cleanup old map when ref is detached (key prop changes)
+    if (!node) {
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {}
+        mapInstanceRef.current = null;
+        markersRef.current = [];
+      }
+      return;
+    }
+    
     mapRef.current = node;
 
-    if (mapInstanceRef.current) return;
-
     const initMap = () => {
-      if (!node || mapInstanceRef.current || !window.L) return;
+      if (!node || !window.L) return;
+      
+      // Cleanup any existing map
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {}
+        mapInstanceRef.current = null;
+        markersRef.current = [];
+      }
       
       try {
         const L = window.L;
@@ -268,7 +258,7 @@ const AdminDashboardPage = () => {
     };
 
     if (window.L) {
-      setTimeout(initMap, 100);
+      setTimeout(initMap, 150);
     } else {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
@@ -277,7 +267,7 @@ const AdminDashboardPage = () => {
 
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setTimeout(initMap, 100);
+      script.onload = () => setTimeout(initMap, 150);
       document.head.appendChild(script);
     }
   }, []);
@@ -906,7 +896,7 @@ const AdminDashboardPage = () => {
 
         {/* Mapa */}
         <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
-          <div ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
+          <div key={`map-${selectedSquare || 'all'}`} ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
           
           {/* Botão Centralizar dentro do mapa */}
           <button
