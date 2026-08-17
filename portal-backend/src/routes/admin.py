@@ -3926,6 +3926,8 @@ def report_orders_by_date():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         query = db.session.query(
@@ -3949,6 +3951,10 @@ def report_orders_by_date():
         if tenant_id:
 
             query = query.filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            query = query.filter(Order.square_id == square_id)
 
         
 
@@ -4010,6 +4016,8 @@ def report_drivers_performance():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         query = db.session.query(
@@ -4045,6 +4053,10 @@ def report_drivers_performance():
         if tenant_id:
 
             query = query.filter(Driver.tenant_id == tenant_id)
+
+        if square_id:
+
+            query = query.filter(Driver.square_id == square_id)
 
         
 
@@ -4108,6 +4120,8 @@ def report_establishments_ranking():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         query = db.session.query(
@@ -4141,6 +4155,10 @@ def report_establishments_ranking():
         if tenant_id:
 
             query = query.filter(Restaurant.tenant_id == tenant_id)
+
+        if square_id:
+
+            query = query.filter(Restaurant.square_id == square_id)
 
         
 
@@ -4206,6 +4224,8 @@ def report_financial_summary():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         # Receita total
@@ -4221,6 +4241,10 @@ def report_financial_summary():
         if tenant_id:
 
             revenue_query = revenue_query.filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            revenue_query = revenue_query.filter(Order.square_id == square_id)
 
         total_revenue = revenue_query.scalar() or 0
 
@@ -4240,6 +4264,10 @@ def report_financial_summary():
 
             fees_query = fees_query.filter(Order.tenant_id == tenant_id)
 
+        if square_id:
+
+            fees_query = fees_query.filter(Order.square_id == square_id)
+
         total_fees = fees_query.scalar() or 0
 
 
@@ -4258,6 +4286,14 @@ def report_financial_summary():
 
             payments_query = payments_query.join(Driver).filter(Driver.tenant_id == tenant_id)
 
+        if square_id:
+
+            if not tenant_id:
+
+                payments_query = payments_query.join(Driver)
+
+            payments_query = payments_query.filter(Driver.square_id == square_id)
+
         driver_payments = payments_query.scalar() or 0
 
 
@@ -4269,6 +4305,10 @@ def report_financial_summary():
         if tenant_id:
 
             orders_query = orders_query.filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            orders_query = orders_query.filter(Order.square_id == square_id)
 
         total_orders = orders_query.count()
 
@@ -4285,6 +4325,10 @@ def report_financial_summary():
         if tenant_id:
 
             delivered_query = delivered_query.filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            delivered_query = delivered_query.filter(Order.square_id == square_id)
 
         delivered_orders = delivered_query.count()
 
@@ -4346,6 +4390,8 @@ def report_cancellations():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         # Cancelamentos por dia
@@ -4368,6 +4414,10 @@ def report_cancellations():
 
             cancel_query = cancel_query.filter(Order.tenant_id == tenant_id)
 
+        if square_id:
+
+            cancel_query = cancel_query.filter(Order.square_id == square_id)
+
         
 
         daily_cancellations = cancel_query.group_by(func.date(Order.updated_at)).order_by(
@@ -4387,6 +4437,10 @@ def report_cancellations():
         if tenant_id:
 
             orders_query = orders_query.filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            orders_query = orders_query.filter(Order.square_id == square_id)
 
         total_orders = orders_query.count()
 
@@ -4436,6 +4490,8 @@ def report_ratings():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         # Avaliacoes por entregador
@@ -4468,6 +4524,10 @@ def report_ratings():
 
             ratings_query = ratings_query.filter(Driver.tenant_id == tenant_id)
 
+        if square_id:
+
+            ratings_query = ratings_query.filter(Driver.square_id == square_id)
+
         
 
         ratings = ratings_query.group_by(Driver.id, User.first_name, User.last_name).order_by(
@@ -4497,6 +4557,10 @@ def report_ratings():
         if tenant_id:
 
             dist_query = dist_query.join(Order).filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            dist_query = dist_query.join(Driver, Delivery.driver_id == Driver.id).filter(Driver.square_id == square_id)
 
         
 
@@ -4560,6 +4624,8 @@ def report_peak_hours():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         # Pedidos por hora do dia
@@ -4579,6 +4645,10 @@ def report_peak_hours():
         if tenant_id:
 
             hourly_query = hourly_query.filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            hourly_query = hourly_query.filter(Order.square_id == square_id)
 
         
 
@@ -4607,6 +4677,10 @@ def report_peak_hours():
         if tenant_id:
 
             daily_query = daily_query.filter(Order.tenant_id == tenant_id)
+
+        if square_id:
+
+            daily_query = daily_query.filter(Order.square_id == square_id)
 
         
 
@@ -4658,6 +4732,8 @@ def report_deliveries_by_driver():
 
         tenant_id = get_current_tenant_id()
 
+        square_id = get_square_filter()
+
 
 
         query = db.session.query(
@@ -4695,6 +4771,10 @@ def report_deliveries_by_driver():
         if tenant_id:
 
             query = query.filter(Driver.tenant_id == tenant_id)
+
+        if square_id:
+
+            query = query.filter(Driver.square_id == square_id)
 
         
 
