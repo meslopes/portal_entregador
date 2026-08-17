@@ -85,7 +85,7 @@ const AdminDashboardPage = () => {
       loadOrders();
     }, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedSquare]);
 
   const loadDashboard = async () => {
     try {
@@ -848,12 +848,12 @@ const AdminDashboardPage = () => {
             {squares.map(sq => (
               <div
                 key={sq.id}
-                onClick={() => setSelectedSquare(selectedSquare === sq.id ? '' : sq.id)}
+                onClick={() => setSelectedSquare(selectedSquare?.id === sq.id ? null : sq)}
                 style={{
                   padding: '0.75rem', borderRadius: '0.375rem',
-                  background: selectedSquare === sq.id ? '#eff6ff' : 'transparent',
+                  background: selectedSquare?.id === sq.id ? '#eff6ff' : 'transparent',
                   cursor: 'pointer', marginBottom: '0.25rem',
-                  border: selectedSquare === sq.id ? '1px solid #bfdbfe' : '1px solid transparent'
+                  border: selectedSquare?.id === sq.id ? '1px solid #bfdbfe' : '1px solid transparent'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -882,8 +882,11 @@ const AdminDashboardPage = () => {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <select
-              value={selectedSquare}
-              onChange={(e) => setSelectedSquare(e.target.value)}
+              value={selectedSquare?.id || ''}
+              onChange={(e) => {
+                const sq = squares.find(s => s.id === parseInt(e.target.value));
+                setSelectedSquare(sq || null);
+              }}
               style={{ padding: '0.375rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }}
             >
               <option value="">Todas as Praças</option>
@@ -896,7 +899,7 @@ const AdminDashboardPage = () => {
 
         {/* Mapa */}
         <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
-          <div key={`map-${selectedSquare || 'all'}`} ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
+          <div key={`map-${selectedSquare?.id || 'all'}`} ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
           
           {/* Botão Centralizar dentro do mapa */}
           <button
