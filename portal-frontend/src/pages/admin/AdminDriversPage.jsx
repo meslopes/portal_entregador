@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, AlertCircle, Truck, Phone, Mail,
-  Star, X, Edit, Eye, MapPin, User, Trash2, Clock
+  Star, X, Edit, Eye, MapPin, User, Trash2, Clock, Link, Copy
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
@@ -111,6 +111,22 @@ const AdminDriversPage = () => {
     setShowForm(true);
   };
 
+  const copyRegistrationLink = () => {
+    const link = `${window.location.origin}/register`;
+    navigator.clipboard.writeText(link).then(() => {
+      alert('Link copiado!\n\nEnvie para o entregador se cadastrar:\n' + link);
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = link;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Link copiado!\n\nEnvie para o entregador se cadastrar:\n' + link);
+    });
+  };
+
   const handleFormChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setFormError('');
@@ -153,13 +169,22 @@ const AdminDriversPage = () => {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Entregadores</h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>{total} entregador(es) cadastrado(s)</p>
         </div>
-        <button onClick={openCreateForm} style={{
-          display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem',
-          borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white',
-          fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
-        }}>
-          <Plus size={18} /> NOVO ENTREGADOR
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button onClick={copyRegistrationLink} style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem',
+            borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', color: '#374151',
+            fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer'
+          }}>
+            <Copy size={16} /> LINK DE CADASTRO
+          </button>
+          <button onClick={openCreateForm} style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem',
+            borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white',
+            fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
+          }}>
+            <Plus size={18} /> NOVO ENTREGADOR
+          </button>
+        </div>
       </div>
 
       {error && (

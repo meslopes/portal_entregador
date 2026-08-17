@@ -529,6 +529,28 @@ const AdminDashboardPage = () => {
           >
             Praças
           </button>
+          {pendingUsers.length > 0 && (
+            <button
+              onClick={() => setActiveTab('pending')}
+              style={{
+                padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
+                fontWeight: 600, whiteSpace: 'nowrap',
+                color: activeTab === 'pending' ? '#2563eb' : '#64748b',
+                borderBottom: activeTab === 'pending' ? '2px solid #2563eb' : '2px solid transparent',
+                cursor: 'pointer', fontSize: '0.75rem',
+                display: 'flex', alignItems: 'center', gap: '0.25rem'
+              }}
+            >
+              Pendentes
+              <span style={{
+                background: '#ef4444', color: 'white', borderRadius: '9999px',
+                padding: '0 0.375rem', fontSize: '0.625rem', fontWeight: 700,
+                minWidth: '1.25rem', textAlign: 'center'
+              }}>
+                {pendingUsers.length}
+              </span>
+            </button>
+          )}
           <button
             onClick={() => {
               console.log('Settings clicked, showSettings:', showSettings);
@@ -865,6 +887,72 @@ const AdminDashboardPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Lista de Pendentes */}
+        {activeTab === 'pending' && (
+          <div style={{ padding: '0.5rem' }}>
+            {pendingUsers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.75rem' }}>
+                Nenhum cadastro pendente
+              </div>
+            ) : (
+              pendingUsers.map(user => (
+                <div
+                  key={user.id}
+                  style={{
+                    padding: '0.75rem', borderRadius: '0.375rem',
+                    background: 'white', marginBottom: '0.5rem',
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                    <div>
+                      <div style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>
+                        {user.first_name} {user.last_name}
+                      </div>
+                      <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                        {user.email}
+                      </div>
+                      <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                        {user.phone || 'Sem telefone'}
+                      </div>
+                    </div>
+                    <span style={{
+                      padding: '0.125rem 0.5rem', borderRadius: '9999px',
+                      background: user.user_type === 'DRIVER' ? '#dbeafe' : '#fef3c7',
+                      color: user.user_type === 'DRIVER' ? '#2563eb' : '#d97706',
+                      fontSize: '0.625rem', fontWeight: 600
+                    }}>
+                      {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => handleApprove(user.id)}
+                      style={{
+                        flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
+                        border: 'none', background: '#16a34a', color: 'white',
+                        fontSize: '0.6875rem', fontWeight: 600, cursor: 'pointer'
+                      }}
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      onClick={() => handleReject(user.id)}
+                      style={{
+                        flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
+                        border: '1px solid #e2e8f0', background: 'white', color: '#dc2626',
+                        fontSize: '0.6875rem', fontWeight: 600, cursor: 'pointer'
+                      }}
+                    >
+                      Rejeitar
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
