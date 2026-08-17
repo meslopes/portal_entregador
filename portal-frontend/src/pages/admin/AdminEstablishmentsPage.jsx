@@ -62,9 +62,7 @@ const AdminEstablishmentsPage = () => {
   const loadEstablishments = async () => {
     try {
       setLoading(true);
-      const params = { page, per_page: 20, search };
-      if (squareId) params.square_id = squareId;
-      const data = await adminService.getEstablishments(page, 20, search);
+      const data = await adminService.getEstablishments(page, 20, search, squareId);
       setEstablishments(data.establishments);
       setTotalPages(data.pages);
       setTotal(data.total);

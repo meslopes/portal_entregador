@@ -268,11 +268,12 @@ export const adminService = {
     return response.data;
   },
 
-  getAllOrders: async (page = 1, perPage = 20, status, dateFrom, dateTo) => {
+  getAllOrders: async (page = 1, perPage = 20, status, dateFrom, dateTo, squareId = null) => {
     const params = { page, per_page: perPage };
     if (status) params.status = status;
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
+    if (squareId) params.square_id = squareId;
     
     const response = await api.get('/api/admin/orders', { params });
     return response.data;

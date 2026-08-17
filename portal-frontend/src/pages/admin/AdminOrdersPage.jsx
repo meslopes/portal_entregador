@@ -46,13 +46,7 @@ const AdminOrdersPage = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const params = { page, per_page: 20, status: statusFilter };
-      if (squareId) params.square_id = squareId;
-      if (dateRange) {
-        params.start_date = dateRange.startDate;
-        params.end_date = dateRange.endDate;
-      }
-      const response = await adminService.getAllOrders(page, 20, statusFilter, dateRange?.startDate, dateRange?.endDate);
+      const response = await adminService.getAllOrders(page, 20, statusFilter, dateRange?.startDate, dateRange?.endDate, squareId);
       setOrders(response.orders || []);
       setTotalPages(response.pages || 1);
     } catch (err) {

@@ -40,7 +40,7 @@ const AdminDriversPage = () => {
   const loadDrivers = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getDrivers(page, 20, search, statusFilter);
+      const response = await adminService.getDrivers(page, 20, search, statusFilter, squareId);
       setDrivers(response.drivers || []);
       setTotalPages(response.pages || 1);
       setTotal(response.total || 0);
