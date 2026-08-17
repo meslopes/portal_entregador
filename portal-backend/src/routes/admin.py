@@ -1017,19 +1017,6 @@ def get_dashboard():
 
     try:
 
-        # Processa pedidos agendados e ofertas expiradas (throttle: a cada 5 min)
-        import time
-        global _last_scheduled_process, _last_expired_process
-        now = time.time()
-        if now - _last_scheduled_process > 300:
-            from src.routes.order import process_scheduled_orders
-            process_scheduled_orders()
-            _last_scheduled_process = now
-        if now - _last_expired_process > 300:
-            from src.routes.order import process_expired_offers
-            process_expired_offers()
-            _last_expired_process = now
-
         tenant_id = get_current_tenant_id()
         square_id = get_square_filter()
 
@@ -1959,15 +1946,6 @@ def get_all_orders():
     """Lista todos os pedidos"""
 
     try:
-
-        # Processa ofertas expiradas (throttle: a cada 5 min)
-        import time
-        global _last_expired_process
-        now = time.time()
-        if now - _last_expired_process > 300:
-            from src.routes.order import process_expired_offers
-            process_expired_offers()
-            _last_expired_process = now
 
 
 
