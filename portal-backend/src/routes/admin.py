@@ -148,15 +148,14 @@ def get_pending_users():
 
         
 
-        query = User.query.filter_by(status=UserStatus.INACTIVE)
-
-        
-
-        # Filtrar por tenant
-
+        # Mostrar usuarios do mesmo tenant OU sem tenant (cadastros publicos)
         if tenant_id:
-
-            query = query.filter(User.tenant_id == tenant_id)
+            query = User.query.filter(
+                User.status == UserStatus.INACTIVE,
+                (User.tenant_id == tenant_id) | (User.tenant_id.is_(None))
+            )
+        else:
+            query = User.query.filter_by(status=UserStatus.INACTIVE)
 
         
 
@@ -222,11 +221,23 @@ def approve_user(user_id):
 
             return jsonify({'error': 'Usuário não está pendente'}), 400
 
-
+        # Atribuir tenant do admin se usuario nao tiver tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and not user.tenant_id:
+            user.tenant_id = tenant_id
 
         user.status = UserStatus.ACTIVE
 
         user.updated_at = datetime.utcnow()
+
+        # Atribuir praca se fornecida
+        data = request.get_json() or {}
+        square_id = data.get('square_id')
+        if square_id and user.user_type == UserType.DRIVER:
+            driver = Driver.query.filter_by(user_id=user.id).first()
+            if driver:
+                driver.square_id = square_id
+                driver.tenant_id = tenant_id
 
         db.session.commit()
 
@@ -1492,11 +1503,9 @@ def get_drivers():
 
             query = query.filter(Driver.tenant_id == tenant_id)
 
-        # Filtrar por praça
-
+        # Filtrar por praca (incluir drivers sem praca definida)
         if square_id:
-
-            query = query.filter(Driver.square_id == square_id)
+            query = query.filter((Driver.square_id == square_id) | (Driver.square_id.is_(None)))
 
 
 

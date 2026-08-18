@@ -495,8 +495,10 @@ export const adminService = {
     return response.data;
   },
 
-  approveUser: async (userId) => {
-    const response = await api.post(`/api/admin/users/${userId}/approve`);
+  approveUser: async (userId, squareId = null) => {
+    const data = {};
+    if (squareId) data.square_id = squareId;
+    const response = await api.post(`/api/admin/users/${userId}/approve`, data);
     return response.data;
   },
 

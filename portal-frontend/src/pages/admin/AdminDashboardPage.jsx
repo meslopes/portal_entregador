@@ -190,11 +190,13 @@ const AdminDashboardPage = () => {
     loadOnlineDrivers();
   };
 
-  const handleApprove = async (userId) => {
+  const handleApprove = async (userId, squareId = null) => {
     try {
-      await adminService.approveUser(userId);
+      await adminService.approveUser(userId, squareId);
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
       loadDashboard();
+      loadOrders();
+      loadPendingUsers();
     } catch (err) {
       alert('Erro ao aprovar: ' + (err.response?.data?.error || err.message));
     }
@@ -928,9 +930,32 @@ const AdminDashboardPage = () => {
                       {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}
                     </span>
                   </div>
+                  {/* Seletor de praca */}
+                  {squares.length > 0 && (
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <select
+                        id={`square-${user.id}`}
+                        style={{
+                          width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
+                          border: '1px solid #e2e8f0', fontSize: '0.6875rem',
+                          outline: 'none', background: 'white'
+                        }}
+                        defaultValue={selectedSquare?.id || ''}
+                      >
+                        <option value="">Selecionar praca...</option>
+                        {squares.map(sq => (
+                          <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
-                      onClick={() => handleApprove(user.id)}
+                      onClick={() => {
+                        const select = document.getElementById(`square-${user.id}`);
+                        const squareId = select ? parseInt(select.value) || null : null;
+                        handleApprove(user.id, squareId);
+                      }}
                       style={{
                         flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
                         border: 'none', background: '#16a34a', color: 'white',
