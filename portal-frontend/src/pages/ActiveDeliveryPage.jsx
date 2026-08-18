@@ -133,26 +133,62 @@ const ActiveDeliveryPage = () => {
     const action = STATUS_ACTIONS[order.status];
     if (!action) return;
 
-    // Se for coleta e tem pickup_code, pede o codigo
-    if (action.next === 'PICKED_UP' && order.pickup_code) {
-      setPendingStatus(action.next);
-      setShowCodeModal(true);
-      setCodeInput('');
-      return;
-    }
+    // Obter tipo de confirmacao do estabelecimento
+    const restaurant = order.restaurant || {};
+    const pickupConfirmation = restaurant.pickup_confirmation_type || 'code';
+    const deliveryConfirmation = restaurant.delivery_confirmation_type || 'code';
+    const confirmationType = action.next === 'PICKED_UP' ? pickupConfirmation : deliveryConfirmation;
 
-    // Se for entrega e tem delivery_code, pede o codigo
-    if (action.next === 'DELIVERED' && order.delivery_code) {
-      setPendingStatus(action.next);
-      setShowCodeModal(true);
-      setCodeInput('');
-      return;
-    }
-
-    // Se for entrega sem codigo, pede foto
-    if (action.next === 'DELIVERED' && !proofPhoto) {
-      setShowCamera(true);
-      return;
+    // Logica baseada no tipo de confirmacao
+    switch (confirmationType) {
+      case 'code':
+        // Apenas codigo
+        if (action.next === 'PICKED_UP' && order.pickup_code) {
+          setPendingStatus(action.next);
+          setShowCodeModal(true);
+          setCodeInput('');
+          return;
+        }
+        if (action.next === 'DELIVERED' && order.delivery_code) {
+          setPendingStatus(action.next);
+          setShowCodeModal(true);
+          setCodeInput('');
+          return;
+        }
+        break;
+        
+      case 'photo':
+        // Apenas foto
+        if (action.next === 'DELIVERED' && !proofPhoto) {
+          setShowCamera(true);
+          return;
+        }
+        break;
+        
+      case 'code_and_photo':
+        // Codigo e foto
+        if (action.next === 'PICKED_UP' && order.pickup_code) {
+          setPendingStatus(action.next);
+          setShowCodeModal(true);
+          setCodeInput('');
+          return;
+        }
+        if (action.next === 'DELIVERED' && order.delivery_code) {
+          setPendingStatus(action.next);
+          setShowCodeModal(true);
+          setCodeInput('');
+          return;
+        }
+        if (action.next === 'DELIVERED' && !proofPhoto) {
+          setShowCamera(true);
+          return;
+        }
+        break;
+        
+      case 'none':
+      default:
+        // Sem confirmacao - prossegue direto
+        break;
     }
 
     await confirmStatusUpdate(action.next);

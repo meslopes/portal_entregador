@@ -781,6 +781,18 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tipo de confirmacao de entrega nos estabelecimentos
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'pickup_confirmation_type') THEN ALTER TABLE restaurants ADD COLUMN pickup_confirmation_type VARCHAR(20) DEFAULT 'code'; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'delivery_confirmation_type') THEN ALTER TABLE restaurants ADD COLUMN delivery_confirmation_type VARCHAR(20) DEFAULT 'code'; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Iniciar background tasks (process_expired_offers, process_scheduled_orders)
     from src.utils.background_tasks import start_background_tasks
     start_background_tasks(app)

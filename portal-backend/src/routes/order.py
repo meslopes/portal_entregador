@@ -1594,8 +1594,13 @@ def create_order():
 
         # Gerar tracking_token único e códigos anti-fraude
         tracking_token = str(uuid.uuid4())
-        pickup_code = str(random.randint(100000, 999999))
-        delivery_code = str(random.randint(100000, 999999))
+        
+        # Gerar codigos apenas se o estabelecimento usar confirmacao por codigo
+        pickup_confirmation = restaurant.pickup_confirmation_type or 'code'
+        delivery_confirmation = restaurant.delivery_confirmation_type or 'code'
+        
+        pickup_code = str(random.randint(100000, 999999)) if pickup_confirmation in ['code', 'code_and_photo'] else None
+        delivery_code = str(random.randint(100000, 999999)) if delivery_confirmation in ['code', 'code_and_photo'] else None
 
         # Calcular subtotal dos itens
         items = data.get('items', [])

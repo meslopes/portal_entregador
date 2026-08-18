@@ -37,7 +37,8 @@ const AdminEstablishmentsPage = () => {
     name: '', cnpj: '', phone: '', email: '', password: '123456',
     address_street: '', address_number: '', address_neighborhood: '',
     address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-    latitude: '', longitude: '', square_id: '', pricing_table_id: ''
+    latitude: '', longitude: '', square_id: '', pricing_table_id: '',
+    pickup_confirmation_type: 'code', delivery_confirmation_type: 'code'
   });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -214,7 +215,9 @@ const AdminEstablishmentsPage = () => {
       longitude: est.longitude || '',
       square_id: est.square_id || '',
       pricing_table_id: est.pricing_table_id || '',
-      preparation_minutes: est.preparation_minutes || '10'
+      preparation_minutes: est.preparation_minutes || '10',
+      pickup_confirmation_type: est.pickup_confirmation_type || 'code',
+      delivery_confirmation_type: est.delivery_confirmation_type || 'code'
     });
     // Carregar tabelas de preços da praça selecionada
     if (est.square_id) {
@@ -257,6 +260,8 @@ const AdminEstablishmentsPage = () => {
         square_id: formData.square_id || null,
         pricing_table_id: formData.pricing_table_id || null,
         preparation_minutes: parseInt(formData.preparation_minutes) || 10,
+        pickup_confirmation_type: formData.pickup_confirmation_type || 'code',
+        delivery_confirmation_type: formData.delivery_confirmation_type || 'code',
       };
 
       if (!editing && formData.password) {
@@ -640,6 +645,32 @@ const AdminEstablishmentsPage = () => {
                 Tempo estimado entre aceite e pedido pronto. O entregador é notificado após este tempo.
               </p>
             </FormField>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <FormField label="Confirmação de Coleta">
+                <select name="pickup_confirmation_type" value={formData.pickup_confirmation_type} onChange={handleFormChange} style={inputStyle}>
+                  <option value="code">Código 6 dígitos</option>
+                  <option value="photo">Foto</option>
+                  <option value="code_and_photo">Código + Foto</option>
+                  <option value="none">Nenhuma</option>
+                </select>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Como o entregador confirma que coletou o pedido
+                </p>
+              </FormField>
+
+              <FormField label="Confirmação de Entrega">
+                <select name="delivery_confirmation_type" value={formData.delivery_confirmation_type} onChange={handleFormChange} style={inputStyle}>
+                  <option value="code">Código 6 dígitos</option>
+                  <option value="photo">Foto</option>
+                  <option value="code_and_photo">Código + Foto</option>
+                  <option value="none">Nenhuma</option>
+                </select>
+                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Como o entregador confirma que entregou ao cliente
+                </p>
+              </FormField>
+            </div>
 
             <FormField label="Rua/Avenida *">
               <input type="text" name="address_street" value={formData.address_street} onChange={handleFormChange} style={inputStyle} placeholder="Ex: Rua das Flores" />

@@ -431,6 +431,9 @@ class Restaurant(db.Model):
     bank_pix_key = db.Column(db.String(100))
     # Integração Asaas
     asaas_customer_id = db.Column(db.String(50))
+    # Tipo de confirmacao de entrega
+    pickup_confirmation_type = db.Column(db.String(20), default='code')  # code, photo, none
+    delivery_confirmation_type = db.Column(db.String(20), default='code')  # code, photo, none
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -465,6 +468,8 @@ class Restaurant(db.Model):
             'own_driver_percentage': float(self.own_driver_percentage) if self.own_driver_percentage else 70.0,
             'subscription_type': self.subscription_type,
             'subscription_expires_at': self.subscription_expires_at.isoformat() if self.subscription_expires_at else None,
+            'pickup_confirmation_type': self.pickup_confirmation_type or 'code',
+            'delivery_confirmation_type': self.delivery_confirmation_type or 'code',
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
