@@ -23,9 +23,9 @@ const DashboardPage = () => {
 
   useEffect(() => {
     loadDashboardData();
-    // Solicitar localização apenas se o usuário estiver online ou se já tiver dado permissão
+    // Solicitar localização apenas se o usuário estiver online
     if (user?.driver?.is_online) {
-      getCurrentLocation();
+      getCurrentLocation().catch(() => {}); // Ignorar erro silenciosamente
     }
   }, []);
 
@@ -121,24 +121,25 @@ const DashboardPage = () => {
   };
 
   const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      console.log('Geolocalização não suportada pelo navegador');
-      return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-      },
-      (err) => {
-        console.warn('Erro ao obter localização:', err.message);
-        // Não mostrar erro se a permissão foi negada - é uma escolha do usuário
-        if (err.code === 1) { // PERMISSION_DENIED
-          setError('Para ficar online, permita o acesso à localização nas configurações do navegador');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocalização não suportada pelo navegador'));
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          setLocation(loc);
+          resolve(loc);
+        },
+        (err) => {
+          console.warn('Erro ao obter localização:', err.message);
+          reject(err);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+      );
+    });
   };
 
   const handleToggleOnline = async () => {
@@ -148,15 +149,27 @@ const DashboardPage = () => {
       // Se vai ficar online, solicitar localização primeiro
       if (newStatus && !location) {
         setError('Solicitando localização...');
-        getCurrentLocation();
-        // Aguardar um pouco para obter a localização
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        if (!location) {
-          setError('Não foi possível obter sua localização. Verifique as permissões do navegador.');
-          return;
+        try {
+          const loc = await getCurrentLocation();
+          const response = await driverService.toggleOnlineStatus(true, loc.latitude, loc.longitude);
+          setIsOnline(true);
+          updateUser({ ...user, driver: response.driver });
+          setError('');
+        } catch (locErr) {
+          if (locErr.code === 1) { // PERMISSION_DENIED
+            setError('Permissão de localização negada. Clique no ícone 🔒 na barra de endereço e permita o acesso à localização.');
+          } else if (locErr.code === 2) { // POSITION_UNAVAILABLE
+            setError('Localização indisponível. Verifique se o GPS está ativado.');
+          } else if (locErr.code === 3) { // TIMEOUT
+            setError('Tempo esgotado ao obter localização. Tente novamente.');
+          } else {
+            setError('Erro ao obter localização: ' + locErr.message);
+          }
         }
+        return;
       }
       
+      // Se já tem localização ou vai ficar offline
       const response = await driverService.toggleOnlineStatus(newStatus, location?.latitude, location?.longitude);
       setIsOnline(newStatus);
       updateUser({ ...user, driver: response.driver });
