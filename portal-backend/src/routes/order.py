@@ -522,10 +522,11 @@ def get_available_orders():
         )
 
         # Para distribuição 'nearest': só mostra pedidos oferecidos a este entregador
-        offer_pattern = f"|OFFERED_TO_{driver.id}|"
+        # Usa LIKE com % para匹配 OFFERED_TO_{id} ou OFFERED_TO_{id}_{timestamp}
+        offer_pattern = f"OFFERED_TO_{driver.id}"
         query = query.filter(
             (Order.distribution_method != 'nearest') | 
-            (Order.special_instructions.contains(offer_pattern))
+            (Order.special_instructions.like(f'%{offer_pattern}%'))
         )
 
         available_orders = query.join(Restaurant).all()
