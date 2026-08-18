@@ -26,15 +26,23 @@ const PlatformDashboardPage = () => {
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [selectedTenantFilter, setSelectedTenantFilter] = useState('');
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  const [squares, setSquares] = useState([]);
 
   useEffect(() => {
     loadDashboard();
     loadTenants();
+    loadPendingUsers();
+    loadSquares();
   }, []);
 
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers();
+    }
+    if (activeTab === 'pending') {
+      loadPendingUsers();
     }
   }, [activeTab, selectedTenantFilter]);
 
@@ -71,6 +79,52 @@ const PlatformDashboardPage = () => {
       console.error('Erro ao carregar usuários:', err);
     } finally {
       setUsersLoading(false);
+    }
+  };
+
+  const loadPendingUsers = async () => {
+    try {
+      setPendingLoading(true);
+      const response = await api.get('/api/admin/pending-users');
+      setPendingUsers(response.data.users || []);
+    } catch (err) {
+      console.error('Erro ao carregar pendentes:', err);
+    } finally {
+      setPendingLoading(false);
+    }
+  };
+
+  const loadSquares = async () => {
+    try {
+      const response = await api.get('/api/admin/squares');
+      setSquares(response.data.squares || []);
+    } catch (err) {
+      console.error('Erro ao carregar praças:', err);
+    }
+  };
+
+  const handleApprove = async (userId, squareId = null, tenantId = null) => {
+    try {
+      const data = {};
+      if (squareId) data.square_id = squareId;
+      if (tenantId) data.tenant_id = tenantId;
+      await api.post(`/api/admin/users/${userId}/approve`, data);
+      setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+      loadDashboard();
+      loadUsers();
+    } catch (err) {
+      alert('Erro ao aprovar: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleReject = async (userId) => {
+    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    try {
+      await api.post(`/api/admin/users/${userId}/reject`);
+      setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+      loadDashboard();
+    } catch (err) {
+      alert('Erro ao rejeitar: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -151,7 +205,8 @@ const PlatformDashboardPage = () => {
           { key: 'overview', label: 'Visão Geral', icon: BarChart3 },
           { key: 'tenants', label: 'Tenants', icon: Building2 },
           { key: 'users', label: 'Usuários', icon: Users },
-          { key: 'admins', label: 'Admins', icon: Shield }
+          { key: 'admins', label: 'Admins', icon: Shield },
+          { key: 'pending', label: 'Pendentes', icon: Users }
         ].map(tab => (
           <button
             key={tab.key}
@@ -490,6 +545,131 @@ const PlatformDashboardPage = () => {
       {/* Admins Tab */}
       {activeTab === 'admins' && (
         <AdminsTab />
+      )}
+
+      {/* Pending Users Tab */}
+      {activeTab === 'pending' && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>
+              Cadastros Pendentes
+            </h2>
+            <button
+              onClick={loadPendingUsers}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                border: '1px solid #e2e8f0', background: 'white',
+                cursor: 'pointer', fontSize: '0.875rem', color: '#64748b'
+              }}
+            >
+              <RefreshCw size={14} /> Atualizar
+            </button>
+          </div>
+
+          {pendingLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: '#6366f1' }} />
+            </div>
+          ) : pendingUsers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              <Users size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+              <p style={{ fontSize: '0.875rem' }}>Nenhum cadastro pendente</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+              {pendingUsers.map(user => (
+                <div key={user.id} style={{
+                  background: 'white', borderRadius: '0.75rem', padding: '1rem',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>
+                        {user.first_name} {user.last_name}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{user.email}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{user.phone || 'Sem telefone'}</div>
+                    </div>
+                    <span style={{
+                      padding: '0.25rem 0.5rem', borderRadius: '9999px',
+                      background: user.user_type === 'DRIVER' ? '#dbeafe' : '#fef3c7',
+                      color: user.user_type === 'DRIVER' ? '#2563eb' : '#d97706',
+                      fontSize: '0.6875rem', fontWeight: 600
+                    }}>
+                      {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}
+                    </span>
+                  </div>
+
+                  {/* Tenant selector */}
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <select
+                      id={`platform-tenant-${user.id}`}
+                      style={{
+                        width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
+                        border: '1px solid #e2e8f0', fontSize: '0.75rem',
+                        outline: 'none', background: 'white'
+                      }}
+                    >
+                      <option value="">Selecionar organizacao...</option>
+                      {tenants.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Square selector */}
+                  {squares.length > 0 && (
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <select
+                        id={`platform-square-${user.id}`}
+                        style={{
+                          width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
+                          border: '1px solid #e2e8f0', fontSize: '0.75rem',
+                          outline: 'none', background: 'white'
+                        }}
+                      >
+                        <option value="">Selecionar praca...</option>
+                        {squares.map(sq => (
+                          <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        const tenantSelect = document.getElementById(`platform-tenant-${user.id}`);
+                        const squareSelect = document.getElementById(`platform-square-${user.id}`);
+                        const tenantId = tenantSelect ? parseInt(tenantSelect.value) || null : null;
+                        const squareId = squareSelect ? parseInt(squareSelect.value) || null : null;
+                        handleApprove(user.id, squareId, tenantId);
+                      }}
+                      style={{
+                        flex: 1, padding: '0.5rem', borderRadius: '0.375rem',
+                        border: 'none', background: '#16a34a', color: 'white',
+                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
+                      }}
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      onClick={() => handleReject(user.id)}
+                      style={{
+                        flex: 1, padding: '0.5rem', borderRadius: '0.375rem',
+                        border: '1px solid #e2e8f0', background: 'white', color: '#dc2626',
+                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
+                      }}
+                    >
+                      Rejeitar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Tenant Details Modal */}

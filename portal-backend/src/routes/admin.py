@@ -221,8 +221,12 @@ def approve_user(user_id):
 
             return jsonify({'error': 'Usuário não está pendente'}), 400
 
-        # Atribuir tenant do admin se usuario nao tiver tenant
-        tenant_id = get_current_tenant_id()
+        data = request.get_json() or {}
+
+        # Determinar tenant_id: usar do request ou do admin atual
+        tenant_id = data.get('tenant_id') or get_current_tenant_id()
+        
+        # Atribuir tenant se usuario nao tiver
         if tenant_id and not user.tenant_id:
             user.tenant_id = tenant_id
 
@@ -231,13 +235,13 @@ def approve_user(user_id):
         user.updated_at = datetime.utcnow()
 
         # Atribuir praca se fornecida
-        data = request.get_json() or {}
         square_id = data.get('square_id')
         if square_id and user.user_type == UserType.DRIVER:
             driver = Driver.query.filter_by(user_id=user.id).first()
             if driver:
                 driver.square_id = square_id
-                driver.tenant_id = tenant_id
+                if tenant_id:
+                    driver.tenant_id = tenant_id
 
         db.session.commit()
 

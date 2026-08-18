@@ -38,6 +38,7 @@ const AdminDashboardPage = () => {
   const [filterClient, setFilterClient] = useState('');
   const [filterDriver, setFilterDriver] = useState('');
   const [squares, setSquares] = useState([]);
+  const [tenants, setTenants] = useState([]);
   const [timeInterval, setTimeInterval] = useState(60); // minutos
   const [showSettings, setShowSettings] = useState(false);
   const [selectedOrderMenu, setSelectedOrderMenu] = useState(null);
@@ -59,6 +60,7 @@ const AdminDashboardPage = () => {
     loadOrders();
     loadSquares();
     loadAllDrivers();
+    loadTenants();
   }, []);
 
   // Atualiza establishments quando tracking muda
@@ -128,6 +130,16 @@ const AdminDashboardPage = () => {
     }
   };
 
+  const loadTenants = async () => {
+    try {
+      const response = await api.get('/api/platform/tenants');
+      setTenants(response.data.tenants || []);
+    } catch (err) {
+      // Normal admin may not have access to platform endpoints
+      console.log('Tenants not available');
+    }
+  };
+
   const loadTracking = async () => {
     try {
       const data = await adminService.getLiveTracking(squareId || null);
@@ -190,13 +202,14 @@ const AdminDashboardPage = () => {
     loadOnlineDrivers();
   };
 
-  const handleApprove = async (userId, squareId = null) => {
+  const handleApprove = async (userId, squareId = null, tenantId = null) => {
     try {
-      await adminService.approveUser(userId, squareId);
+      await adminService.approveUser(userId, squareId, tenantId);
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
       loadDashboard();
       loadOrders();
       loadPendingUsers();
+      loadAllDrivers();
     } catch (err) {
       alert('Erro ao aprovar: ' + (err.response?.data?.error || err.message));
     }
@@ -930,6 +943,24 @@ const AdminDashboardPage = () => {
                       {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}
                     </span>
                   </div>
+                  {/* Seletor de tenant (apenas para super admin com tenants disponiveis) */}
+                  {tenants.length > 0 && !user.tenant_id && (
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <select
+                        id={`tenant-${user.id}`}
+                        style={{
+                          width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
+                          border: '1px solid #e2e8f0', fontSize: '0.6875rem',
+                          outline: 'none', background: 'white'
+                        }}
+                      >
+                        <option value="">Selecionar organizacao...</option>
+                        {tenants.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   {/* Seletor de praca */}
                   {squares.length > 0 && (
                     <div style={{ marginBottom: '0.5rem' }}>
@@ -952,9 +983,11 @@ const AdminDashboardPage = () => {
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
                       onClick={() => {
-                        const select = document.getElementById(`square-${user.id}`);
-                        const squareId = select ? parseInt(select.value) || null : null;
-                        handleApprove(user.id, squareId);
+                        const tenantSelect = document.getElementById(`tenant-${user.id}`);
+                        const squareSelect = document.getElementById(`square-${user.id}`);
+                        const tenantId = tenantSelect ? parseInt(tenantSelect.value) || null : null;
+                        const squareId = squareSelect ? parseInt(squareSelect.value) || null : null;
+                        handleApprove(user.id, squareId, tenantId);
                       }}
                       style={{
                         flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
