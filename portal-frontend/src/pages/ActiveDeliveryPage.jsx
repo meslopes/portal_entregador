@@ -48,6 +48,9 @@ const ActiveDeliveryPage = () => {
   const [ratingValue, setRatingValue] = useState(0);
   const [ratingFeedback, setRatingFeedback] = useState('');
   const [isRating, setIsRating] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [pendingStatus, setPendingStatus] = useState(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -130,28 +133,54 @@ const ActiveDeliveryPage = () => {
     const action = STATUS_ACTIONS[order.status];
     if (!action) return;
 
-    // Se for entrega, pede foto
+    // Se for coleta e tem pickup_code, pede o codigo
+    if (action.next === 'PICKED_UP' && order.pickup_code) {
+      setPendingStatus(action.next);
+      setShowCodeModal(true);
+      setCodeInput('');
+      return;
+    }
+
+    // Se for entrega e tem delivery_code, pede o codigo
+    if (action.next === 'DELIVERED' && order.delivery_code) {
+      setPendingStatus(action.next);
+      setShowCodeModal(true);
+      setCodeInput('');
+      return;
+    }
+
+    // Se for entrega sem codigo, pede foto
     if (action.next === 'DELIVERED' && !proofPhoto) {
       setShowCamera(true);
       return;
     }
 
+    await confirmStatusUpdate(action.next);
+  };
+
+  const confirmStatusUpdate = async (status, code) => {
     try {
       setIsUpdating(true);
       setError('');
 
-      const payload = { status: action.next };
-      if (action.next === 'DELIVERED' && proofPhoto) {
+      const payload = { status };
+      if (code) {
+        if (status === 'PICKED_UP') payload.pickup_code = code;
+        if (status === 'DELIVERED') payload.delivery_code = code;
+      }
+      if (status === 'DELIVERED' && proofPhoto) {
         payload.proof_of_delivery = proofPhoto;
       }
 
-      const response = await orderService.updateOrderStatus(order.id, action.next, payload);
+      const response = await orderService.updateOrderStatus(order.id, status, payload);
 
       // Atualiza o status localmente
-      setOrder(prev => prev ? { ...prev, status: action.next } : prev);
+      setOrder(prev => prev ? { ...prev, status } : prev);
+      setShowCodeModal(false);
+      setCodeInput('');
 
       // Se entregue, mostra modal de avaliação
-      if (action.next === 'DELIVERED') {
+      if (status === 'DELIVERED') {
         setShowRating(true);
       }
     } catch (err) {
@@ -682,6 +711,85 @@ const ActiveDeliveryPage = () => {
           </div>
 
           <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelect} />
+        </div>
+      )}
+
+      {/* Modal de Codigo (Coleta/Entrega) */}
+      {showCodeModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 10000, padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '1rem', padding: '2rem',
+            maxWidth: '400px', width: '100%', textAlign: 'center'
+          }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: pendingStatus === 'PICKED_UP' ? '#dbeafe' : '#dcfce7',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 1rem'
+            }}>
+              <Package size={32} style={{ color: pendingStatus === 'PICKED_UP' ? '#2563eb' : '#16a34a' }} />
+            </div>
+
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>
+              {pendingStatus === 'PICKED_UP' ? 'Código de Coleta' : 'Código de Entrega'}
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Peça o código ao {pendingStatus === 'PICKED_UP' ? 'estabelecimento' : 'cliente'}
+            </p>
+
+            {/* Input do codigo */}
+            <input
+              type="text"
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              maxLength={6}
+              style={{
+                width: '100%', padding: '1rem', borderRadius: '0.75rem',
+                border: '2px solid #e2e8f0', fontSize: '1.5rem',
+                textAlign: 'center', letterSpacing: '0.5rem',
+                fontWeight: 700, outline: 'none',
+                fontFamily: 'monospace'
+              }}
+              autoFocus
+            />
+
+            {/* Botoes */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <button
+                onClick={() => { setShowCodeModal(false); setCodeInput(''); setPendingStatus(null); }}
+                style={{
+                  flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                  border: '1px solid #e2e8f0', background: 'white',
+                  color: '#64748b', cursor: 'pointer', fontSize: '0.875rem'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (codeInput.length === 6) {
+                    confirmStatusUpdate(pendingStatus, codeInput);
+                  } else {
+                    setError('Digite o código de 6 dígitos');
+                  }
+                }}
+                disabled={codeInput.length !== 6 || isUpdating}
+                style={{
+                  flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                  border: 'none', background: codeInput.length === 6 ? '#2563eb' : '#94a3b8',
+                  color: 'white', cursor: codeInput.length === 6 ? 'pointer' : 'not-allowed',
+                  fontSize: '0.875rem', fontWeight: 600
+                }}
+              >
+                {isUpdating ? 'Confirmando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
