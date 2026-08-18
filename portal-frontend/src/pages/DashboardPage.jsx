@@ -23,7 +23,10 @@ const DashboardPage = () => {
 
   useEffect(() => {
     loadDashboardData();
-    getCurrentLocation();
+    // Solicitar localização apenas se o usuário estiver online ou se já tiver dado permissão
+    if (user?.driver?.is_online) {
+      getCurrentLocation();
+    }
   }, []);
 
   useEffect(() => {
@@ -118,21 +121,42 @@ const DashboardPage = () => {
   };
 
   const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-        (err) => console.error('Erro ao obter localização:', err)
-      );
+    if (!navigator.geolocation) {
+      console.log('Geolocalização não suportada pelo navegador');
+      return;
     }
+    
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      },
+      (err) => {
+        console.warn('Erro ao obter localização:', err.message);
+        // Não mostrar erro se a permissão foi negada - é uma escolha do usuário
+        if (err.code === 1) { // PERMISSION_DENIED
+          setError('Para ficar online, permita o acesso à localização nas configurações do navegador');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
   };
 
   const handleToggleOnline = async () => {
     try {
       const newStatus = !isOnline;
+      
+      // Se vai ficar online, solicitar localização primeiro
       if (newStatus && !location) {
-        setError('Localização necessária para ficar online');
-        return;
+        setError('Solicitando localização...');
+        getCurrentLocation();
+        // Aguardar um pouco para obter a localização
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (!location) {
+          setError('Não foi possível obter sua localização. Verifique as permissões do navegador.');
+          return;
+        }
       }
+      
       const response = await driverService.toggleOnlineStatus(newStatus, location?.latitude, location?.longitude);
       setIsOnline(newStatus);
       updateUser({ ...user, driver: response.driver });
