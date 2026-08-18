@@ -781,6 +781,10 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+    # Iniciar background tasks (process_expired_offers, process_scheduled_orders)
+    from src.utils.background_tasks import start_background_tasks
+    start_background_tasks(app)
+
     # Endpoint de health check
     @app.route('/api/health', methods=['GET'])
     def health_check():

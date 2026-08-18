@@ -1001,10 +1001,6 @@ def create_admin_user():
 
 
 
-# Throttle para process_scheduled_orders e process_expired_offers
-_last_scheduled_process = 0
-_last_expired_process = 0
-
 @admin_bp.route('/dashboard', methods=['GET'])
 
 @jwt_required()

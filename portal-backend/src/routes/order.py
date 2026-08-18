@@ -497,12 +497,6 @@ order_bp = Blueprint('order', __name__)
 def get_available_orders():
     """Obtém pedidos disponíveis para o entregador"""
     try:
-        # Primeiro processa pedidos agendados que expiraram
-        process_scheduled_orders()
-        
-        # Processa ofertas expiradas (timeout)
-        process_expired_offers()
-
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
 
@@ -1866,9 +1860,6 @@ def assign_own_driver(order_id):
 def get_order_details(order_id):
     """Obtém detalhes de um pedido específico"""
     try:
-        # Processa ofertas expiradas antes de retornar detalhes
-        process_expired_offers()
-        
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
