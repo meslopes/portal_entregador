@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 import SquareSelector from '@/components/SquareSelector';
+import OrderOfferPopup from '@/components/OrderOfferPopup';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -244,6 +245,9 @@ const Layout = ({ children }) => {
       <main style={{ flex: 1, overflowY: 'auto' }}>
         {children}
       </main>
+
+      {/* Order Offer Popup (apenas para entregadores) */}
+      {!isAdmin && !isSuperAdmin && <OrderOfferPopup />}
 
       <style>{`
         .mobile-menu-btn { display: none; }
