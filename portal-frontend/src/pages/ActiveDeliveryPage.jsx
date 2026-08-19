@@ -47,6 +47,7 @@ const ActiveDeliveryPage = () => {
   const [showRating, setShowRating] = useState(false);
   const [ratingValue, setRatingValue] = useState(0);
   const [ratingFeedback, setRatingFeedback] = useState('');
+  const [pendingCode, setPendingCode] = useState(null); // Codigo pendente para code_and_photo
   const [isRating, setIsRating] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [codeInput, setCodeInput] = useState('');
@@ -345,6 +346,15 @@ const ActiveDeliveryPage = () => {
     setProofPhoto(previewUrl);
     setShowCamera(false);
     setPreviewUrl(null);
+    
+    // Se tem codigo pendente (code_and_photo), confirmar com ambos
+    if (pendingCode) {
+      const action = STATUS_ACTIONS[order.status];
+      if (action) {
+        confirmStatusUpdate(action.next, pendingCode);
+        setPendingCode(null);
+      }
+    }
   };
 
   const skipPhoto = () => {
@@ -809,7 +819,20 @@ const ActiveDeliveryPage = () => {
               <button
                 onClick={() => {
                   if (codeInput.length === 6) {
-                    confirmStatusUpdate(pendingStatus, codeInput);
+                    // Verificar se precisa de foto alem do codigo
+                    const restaurant = order?.restaurant || {};
+                    const confirmationType = pendingStatus === 'PICKED_UP' 
+                      ? (restaurant.pickup_confirmation_type || 'code')
+                      : (restaurant.delivery_confirmation_type || 'code');
+                    
+                    if (confirmationType === 'code_and_photo' && pendingStatus === 'DELIVERED' && !proofPhoto) {
+                      // Salvar codigo e pedir foto
+                      setPendingCode(codeInput);
+                      setShowCodeModal(false);
+                      setShowCamera(true);
+                    } else {
+                      confirmStatusUpdate(pendingStatus, codeInput);
+                    }
                   } else {
                     setError('Digite o código de 6 dígitos');
                   }
