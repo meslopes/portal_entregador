@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Package, MapPin, DollarSign, Clock, CheckCircle, X, Navigation } from 'lucide-react';
+import { Package, MapPin, DollarSign, Clock, CheckCircle, X, Navigation, Store } from 'lucide-react';
 import api from '@/lib/api';
 import { startSiren, stopSiren } from '@/lib/notify';
 
