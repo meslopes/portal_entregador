@@ -2203,7 +2203,37 @@ def get_my_tracking():
                     'is_own': True
                 })
 
-        return jsonify({'drivers': drivers_data}), 200
+        # Dados do estabelecimento para o mapa
+        restaurant_data = {
+            'id': restaurant.id,
+            'name': restaurant.name,
+            'latitude': float(restaurant.latitude) if restaurant.latitude else None,
+            'longitude': float(restaurant.longitude) if restaurant.longitude else None,
+            'address': restaurant.address
+        } if restaurant else None
+
+        # Enderecos de entrega dos pedidos ativos
+        delivery_addresses = []
+        for order in active_orders:
+            if order.delivery_address:
+                addr = order.delivery_address
+                if addr.latitude and addr.longitude:
+                    delivery_addresses.append({
+                        'order_id': order.id,
+                        'order_number': order.order_number,
+                        'order_status': order.status.value,
+                        'latitude': float(addr.latitude),
+                        'longitude': float(addr.longitude),
+                        'street': addr.street,
+                        'neighborhood': addr.neighborhood,
+                        'customer_name': order.customer.name if order.customer else 'Cliente'
+                    })
+
+        return jsonify({
+            'drivers': drivers_data,
+            'restaurant': restaurant_data,
+            'delivery_addresses': delivery_addresses
+        }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

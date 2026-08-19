@@ -36,6 +36,8 @@ const ClientDashboardPage = () => {
   const [feedback, setFeedback] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
   const [trackingDrivers, setTrackingDrivers] = useState([]);
+  const [restaurantData, setRestaurantData] = useState(null);
+  const [deliveryAddresses, setDeliveryAddresses] = useState([]);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -56,6 +58,8 @@ const ClientDashboardPage = () => {
       setTotalPages(ordersData.pages || 1);
       setStats(statsData);
       setTrackingDrivers(trackingData.drivers || []);
+      setRestaurantData(trackingData.restaurant || null);
+      setDeliveryAddresses(trackingData.delivery_addresses || []);
     } catch (err) {
       setError('Erro ao carregar dados');
       console.error(err);
@@ -70,6 +74,8 @@ const ClientDashboardPage = () => {
       try {
         const data = await orderService.getMyTracking();
         setTrackingDrivers(data.drivers || []);
+        setRestaurantData(data.restaurant || null);
+        setDeliveryAddresses(data.delivery_addresses || []);
       } catch (e) {}
     }, 10000);
     return () => clearInterval(interval);
@@ -115,9 +121,48 @@ const ClientDashboardPage = () => {
     markersRef.current.forEach(m => map.removeLayer(m));
     markersRef.current = [];
 
-    if (trackingDrivers.length === 0) return;
-
     const bounds = [];
+
+    // Marcador do estabelecimento (fixo)
+    if (restaurantData && restaurantData.latitude && restaurantData.longitude) {
+      const restaurantIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="width:40px;height:40px;border-radius:8px;background:#f59e0b;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:18px;">🏪</div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+
+      const restaurantMarker = L.marker([restaurantData.latitude, restaurantData.longitude], { icon: restaurantIcon })
+        .addTo(map)
+        .bindPopup(`<div style="min-width:160px"><strong>${restaurantData.name}</strong><br><small>${restaurantData.address || ''}</small><br><span style="color:#f59e0b;font-weight:600">Seu Estabelecimento</span></div>`);
+
+      markersRef.current.push(restaurantMarker);
+      bounds.push([restaurantData.latitude, restaurantData.longitude]);
+    }
+
+    // Marcadores dos enderecos de entrega
+    deliveryAddresses.forEach(addr => {
+      const statusColors = {
+        ACCEPTED: '#f59e0b', PREPARING: '#8b5cf6', READY: '#06b6d4', PICKED_UP: '#2563eb'
+      };
+      const color = statusColors[addr.order_status] || '#22c55e';
+
+      const deliveryIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div style="width:32px;height:32px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">📍</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const deliveryMarker = L.marker([addr.latitude, addr.longitude], { icon: deliveryIcon })
+        .addTo(map)
+        .bindPopup(`<div style="min-width:160px"><strong>Pedido #${addr.order_number}</strong><br><small>${addr.customer_name}</small><br><small>${addr.street || ''}, ${addr.neighborhood || ''}</small><br><span style="color:${color};font-weight:600">${addr.order_status}</span></div>`);
+
+      markersRef.current.push(deliveryMarker);
+      bounds.push([addr.latitude, addr.longitude]);
+    });
+
+    // Marcadores dos entregadores
     trackingDrivers.forEach(driver => {
       const statusColors = {
         ACCEPTED: '#f59e0b', PREPARING: '#8b5cf6', READY: '#06b6d4', PICKED_UP: '#2563eb'
@@ -140,7 +185,7 @@ const ClientDashboardPage = () => {
     });
 
     if (bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-  }, [trackingDrivers]);
+  }, [trackingDrivers, restaurantData, deliveryAddresses]);
 
   const openOrderDetails = async (orderId) => {
     try {
