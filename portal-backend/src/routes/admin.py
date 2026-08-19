@@ -3435,6 +3435,10 @@ def create_establishment():
 
             bank_pix_key=data.get('bank_pix_key') or None,
 
+            pickup_confirmation_type=data.get('pickup_confirmation_type', 'code'),
+
+            delivery_confirmation_type=data.get('delivery_confirmation_type', 'code'),
+
             tenant_id=tenant_id
 
         )
@@ -3614,6 +3618,14 @@ def update_establishment(establishment_id):
         if 'preparation_minutes' in data:
 
             est.preparation_minutes = int(data['preparation_minutes']) if data['preparation_minutes'] else 10
+
+        if 'pickup_confirmation_type' in data:
+
+            est.pickup_confirmation_type = data['pickup_confirmation_type']
+
+        if 'delivery_confirmation_type' in data:
+
+            est.delivery_confirmation_type = data['delivery_confirmation_type']
 
 
 
