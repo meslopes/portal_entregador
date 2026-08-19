@@ -65,8 +65,8 @@ import './App.css';
 function SmartRedirect() {
   const { user } = useAuth();
   const userType = user?.user_type;
-  const superAdminEmails = ['plataform@muv.log.br', 'muvy.log@gmail.com'];
-  const isSuperAdmin = !user?.tenant_id || superAdminEmails.includes(user?.email);
+  // Super admin: qualquer ADMIN sem tenant_id
+  const isSuperAdmin = user?.user_type === 'ADMIN' && !user?.tenant_id;
 
   // Usuario pendente de aprovacao
   if (user?.status === 'INACTIVE') {

@@ -29,7 +29,8 @@ const Layout = ({ children }) => {
   };
 
   const isAdmin = user?.user_type === 'ADMIN';
-  const isSuperAdmin = !user?.tenant_id || ['plataform@muv.log.br', 'muvy.log@gmail.com'].includes(user?.email);
+  // Super admin: qualquer ADMIN sem tenant_id
+  const isSuperAdmin = user?.user_type === 'ADMIN' && !user?.tenant_id;
 
   const driverNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },

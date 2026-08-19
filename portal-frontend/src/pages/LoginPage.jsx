@@ -25,11 +25,8 @@ const LoginPage = () => {
       const response = await login(formData.email, formData.password);
       const userType = response?.user?.user_type;
       const tenantId = response?.user?.tenant_id;
-      const userEmail = response?.user?.email;
-      // Super admin emails from environment variable (comma-separated)
-      const superAdminEmailsEnv = import.meta.env.VITE_SUPER_ADMIN_EMAILS || '';
-      const superAdminEmails = superAdminEmailsEnv.split(',').map(e => e.trim()).filter(Boolean);
-      const isSuperAdmin = !tenantId || superAdminEmails.includes(userEmail);
+      // Super admin: qualquer ADMIN sem tenant_id
+      const isSuperAdmin = userType === 'ADMIN' && !tenantId;
 
       let target;
       if (userType === 'ADMIN' && isSuperAdmin) {
