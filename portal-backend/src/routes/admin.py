@@ -9727,24 +9727,55 @@ def database_map():
         squares = Square.query.order_by(Square.id).all()
         result['squares'] = [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id, 'is_active': s.is_active} for s in squares]
 
-        # Users (com info de praça quando aplicável)
+        # Users (com TODOS os dados de perfil)
         users = User.query.order_by(User.id).all()
         result['users'] = []
         for u in users:
-            user_data = {'id': u.id, 'email': u.email, 'first_name': u.first_name, 'last_name': u.last_name, 'user_type': u.user_type.value if u.user_type else None, 'status': u.status.value if u.status else None, 'tenant_id': u.tenant_id, 'phone': u.phone, 'square_id': None, 'square_name': None, 'linked_name': None}
-            # DRIVER: praça direta no driver
+            user_data = {
+                'id': u.id, 'email': u.email, 'first_name': u.first_name, 'last_name': u.last_name,
+                'user_type': u.user_type.value if u.user_type else None,
+                'status': u.status.value if u.status else None,
+                'tenant_id': u.tenant_id, 'phone': u.phone, 'cpf': u.cpf,
+                'birth_date': u.birth_date.isoformat() if u.birth_date else None,
+                'square_id': None, 'square_name': None, 'linked_name': None,
+                # Driver fields
+                'driver_id': None, 'vehicle_type': None, 'vehicle_plate': None,
+                'vehicle_model': None, 'vehicle_year': None, 'driver_license': None,
+                'pix_key': None, 'bank_account': None, 'max_concurrent_orders': None,
+                'is_online': None, 'is_blocked': None, 'rating': None, 'total_deliveries': None,
+                # Client fields
+                'customer_id': None, 'restaurant_id': None, 'restaurant_name': None
+            }
+            # DRIVER: todos os campos do driver
             if u.user_type and u.user_type.value == 'DRIVER' and u.driver:
-                user_data['square_id'] = u.driver.square_id
-                if u.driver.square_id:
-                    sq = Square.query.get(u.driver.square_id)
+                d = u.driver
+                user_data['driver_id'] = d.id
+                user_data['vehicle_type'] = d.vehicle_type.value if d.vehicle_type else None
+                user_data['vehicle_plate'] = d.vehicle_plate
+                user_data['vehicle_model'] = d.vehicle_model
+                user_data['vehicle_year'] = d.vehicle_year
+                user_data['driver_license'] = d.driver_license
+                user_data['pix_key'] = d.pix_key
+                user_data['bank_account'] = d.bank_account
+                user_data['max_concurrent_orders'] = d.max_concurrent_orders
+                user_data['is_online'] = d.is_online
+                user_data['is_blocked'] = d.is_blocked
+                user_data['rating'] = float(d.rating) if d.rating else None
+                user_data['total_deliveries'] = d.total_deliveries
+                user_data['square_id'] = d.square_id
+                if d.square_id:
+                    sq = Square.query.get(d.square_id)
                     if sq: user_data['square_name'] = sq.name
-            # CLIENT: praça via restaurante
+            # CLIENT: campos do customer + restaurante
             elif u.user_type and u.user_type.value == 'CLIENT':
                 cust = Customer.query.filter_by(user_id=u.id).first()
                 if cust:
+                    user_data['customer_id'] = cust.id
                     user_data['linked_name'] = cust.name
                     rest = Restaurant.query.filter_by(name=cust.name).first()
                     if rest:
+                        user_data['restaurant_id'] = rest.id
+                        user_data['restaurant_name'] = rest.name
                         user_data['square_id'] = rest.square_id
                         if rest.square_id:
                             sq = Square.query.get(rest.square_id)
