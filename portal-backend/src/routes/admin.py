@@ -617,7 +617,13 @@ def update_user(user_id):
 
                 return jsonify({'error': 'Tipo de usuário inválido'}), 400
 
+        # tenant_id (permite alterar para redistribuir)
+        if 'tenant_id' in data:
+            user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
+        # cpf
+        if 'cpf' in data:
+            user.cpf = data['cpf'] if data['cpf'] else None
 
         # Atualiza dados especificos do tipo
 
@@ -659,6 +665,10 @@ def update_user(user_id):
 
                     driver.max_concurrent_orders = data['max_concurrent_orders']
 
+                # square_id do entregador
+                if 'square_id' in data:
+                    driver.square_id = data['square_id'] if data['square_id'] else None
+
 
 
         # Atualiza Customer se for CLIENT
@@ -676,6 +686,19 @@ def update_user(user_id):
                 if data.get('phone'):
 
                     customer.phone = data['phone']
+
+                # Atualizar tenant_id do customer tambem
+                if 'tenant_id' in data:
+                    customer.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+
+                # Atualizar restaurante vinculado (praça, tenant)
+                if 'restaurant_id' in data and data['restaurant_id']:
+                    restaurant = Restaurant.query.get(int(data['restaurant_id']))
+                    if restaurant:
+                        if 'square_id' in data:
+                            restaurant.square_id = data['square_id'] if data['square_id'] else None
+                        if 'tenant_id' in data:
+                            restaurant.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
 
 

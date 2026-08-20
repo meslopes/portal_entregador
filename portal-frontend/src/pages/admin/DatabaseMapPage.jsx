@@ -77,7 +77,7 @@ const DatabaseMapPage = () => {
     try {
       setSaving(true);
 
-      // Prepare user data
+      // Prepare user data (campos comuns + tenant_id para TODOS)
       const userData = {
         first_name: editForm.first_name,
         last_name: editForm.last_name,
@@ -85,11 +85,12 @@ const DatabaseMapPage = () => {
         phone: editForm.phone,
         cpf: editForm.cpf,
         status: editForm.status,
-        user_type: editForm.user_type
+        user_type: editForm.user_type,
+        tenant_id: editForm.tenant_id ? parseInt(editForm.tenant_id) : null
       };
 
       // Add driver-specific fields
-      if (editingUser.user_type === 'DRIVER') {
+      if (editingUser.user_type === 'DRIVER' || editForm.user_type === 'DRIVER') {
         userData.vehicle_type = editForm.vehicle_type;
         userData.vehicle_plate = editForm.vehicle_plate;
         userData.vehicle_model = editForm.vehicle_model;
@@ -102,8 +103,10 @@ const DatabaseMapPage = () => {
       }
 
       // Add client-specific fields
-      if (editingUser.user_type === 'CLIENT') {
+      if (editingUser.user_type === 'CLIENT' || editForm.user_type === 'CLIENT') {
         userData.customer_name = editForm.customer_name;
+        userData.restaurant_id = editForm.restaurant_id || editingUser.restaurant_id;
+        userData.square_id = editForm.square_id ? parseInt(editForm.square_id) : null;
       }
 
       await adminService.updateUser(editingUser.id, userData);
@@ -384,15 +387,19 @@ const DatabaseMapPage = () => {
                 </div>
                 <div>
                   <label style={labelStyle}>Tenant ID</label>
-                  <input value={editForm.tenant_id} onChange={e => setEditForm(p => ({ ...p, tenant_id: e.target.value }))} style={inputStyle} placeholder="null = super admin" />
+                  <input value={editForm.tenant_id} onChange={e => setEditForm(p => ({ ...p, tenant_id: e.target.value }))} style={inputStyle} placeholder="vazio = sem tenant" />
                 </div>
-                {editingUser.user_type === 'DRIVER' && (
+                <div>
+                  <label style={labelStyle}>Praça</label>
+                  <select value={editForm.square_id} onChange={e => setEditForm(p => ({ ...p, square_id: e.target.value }))} style={inputStyle}>
+                    <option value="">Nenhuma</option>
+                    {squares.map(s => <option key={s.id} value={s.id}>{s.name} - {s.city}/{s.state}</option>)}
+                  </select>
+                </div>
+                {editingUser.user_type === 'CLIENT' && editingUser.restaurant_id && (
                   <div>
-                    <label style={labelStyle}>Praça</label>
-                    <select value={editForm.square_id} onChange={e => setEditForm(p => ({ ...p, square_id: e.target.value }))} style={inputStyle}>
-                      <option value="">Nenhuma</option>
-                      {squares.map(s => <option key={s.id} value={s.id}>{s.name} - {s.city}/{s.state}</option>)}
-                    </select>
+                    <label style={labelStyle}>Restaurante Vinculado</label>
+                    <input value={`${editingUser.restaurant_name} (ID:${editingUser.restaurant_id})`} disabled style={{ ...inputStyle, background: '#f8fafc', color: '#64748b' }} />
                   </div>
                 )}
               </div>
