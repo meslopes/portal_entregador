@@ -9758,7 +9758,7 @@ def database_map():
         # Orders summary
         from sqlalchemy import func as sqlfunc
         order_stats = db.session.query(Order.status, sqlfunc.count(Order.id)).group_by(Order.status).all()
-        result['order_summary'] = [{'status': s[0], 'count': s[1]} for s in order_stats]
+        result['order_summary'] = [{'status': s[0].value if hasattr(s[0], 'value') else str(s[0]), 'count': s[1]} for s in order_stats]
 
         # Last 15 orders
         last_orders = Order.query.order_by(Order.id.desc()).limit(15).all()
