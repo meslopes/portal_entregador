@@ -406,9 +406,27 @@ const DatabaseMapPage = () => {
       {/* Tenants */}
       {section(`Tenants (${data.tenants?.length || 0})`,
         data.tenants?.length ? data.tenants.map(t => card(
-          <div key={t.id}>
-            <strong>ID:{t.id}</strong> {t.name} {badge(t.plan, '#1e40af', '#dbeafe')} {t.is_active ? badge('Ativo', '#166534', '#dcfce7') : badge('Inativo', '#dc2626', '#fee2e2')}
-            <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>slug: {t.slug}</span>
+          <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <strong>ID:{t.id}</strong> {t.name} {badge(t.plan, '#1e40af', '#dbeafe')} {t.is_active ? badge('Ativo', '#166534', '#dcfce7') : badge('Inativo', '#dc2626', '#fee2e2')}
+              <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>slug: {t.slug}</span>
+            </div>
+            <div>
+              {actionBtn(
+                t.is_active ? 'Desativar' : 'Ativar',
+                t.is_active ? '#dc2626' : '#166534',
+                t.is_active ? '#fee2e2' : '#dcfce7',
+                async () => {
+                  try {
+                    await api.put(`/api/admin/tenants/${t.id}/toggle-active`, { is_active: !t.is_active });
+                    showMsg(`Tenant ${t.name} ${t.is_active ? 'desativado' : 'ativado'}`);
+                    loadData();
+                  } catch (err) {
+                    showMsg(err.response?.data?.error || 'Erro ao alterar status', true);
+                  }
+                }
+              )}
+            </div>
           </div>
         )) : <p style={{ color: '#64748b' }}>Nenhum tenant cadastrado</p>
       )}
