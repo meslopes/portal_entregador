@@ -203,7 +203,7 @@ class Driver(db.Model):
     payments = db.relationship('Payment', backref='driver')
 
     def to_dict(self):
-        return {
+        data = {
             'id': self.id,
             'tenant_id': self.tenant_id,
             'user_id': self.user_id,
@@ -231,9 +231,15 @@ class Driver(db.Model):
             'blocked_until': self.blocked_until.isoformat() if self.blocked_until else None,
             'balance': float(self.balance) if self.balance else 0,
             'locked_balance': float(self.locked_balance) if self.locked_balance else 0,
+            'driver_type': 'PLATFORM',
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+        # Incluir dados da praça se disponível
+        if self.square:
+            data['square_name'] = self.square.name
+            data['square_city'] = self.square.city
+        return data
 
 
 class DriverRestaurant(db.Model):
@@ -330,7 +336,7 @@ class EstablishmentDriver(db.Model):
         return check_password_hash(self.pin_hash, pin)
 
     def to_dict(self):
-        return {
+        data = {
             'id': self.id,
             'restaurant_id': self.restaurant_id,
             'name': self.name,
@@ -346,9 +352,20 @@ class EstablishmentDriver(db.Model):
             'total_deliveries': self.total_deliveries or 0,
             'total_ratings': self.total_ratings or 0,
             'has_pin': bool(self.pin_hash),
+            'driver_type': 'OWN',
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+        # Incluir dados do restaurante/praça/tenant se disponível
+        if self.restaurant:
+            data['restaurant_name'] = self.restaurant.name
+            if self.restaurant.square:
+                data['square_id'] = self.restaurant.square_id
+                data['square_name'] = self.restaurant.square.name
+                data['square_city'] = self.restaurant.square.city
+            if self.restaurant.tenant_id:
+                data['tenant_id'] = self.restaurant.tenant_id
+        return data
 
 
 class OwnDriverEarning(db.Model):

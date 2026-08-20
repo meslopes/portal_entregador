@@ -80,21 +80,24 @@ const EstablishmentDriversPage = () => {
         setSuccess('Entregador cadastrado!');
       }
 
-      // Definir PIN se fornecido
-      if (form.pin && form.pin.length === 4) {
-        const driverId = editingId || (await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`)).data.drivers.find(d => d.phone === form.phone)?.id;
-        if (driverId) {
+      // Definir PIN se fornecido (não bloqueia o cadastro se falhar)
+      if (form.pin && form.pin.length === 4 && form.phone) {
+        try {
           await api.post('/api/own-driver/register-pin', {
             phone: form.phone,
             pin: form.pin,
             restaurant_id: restaurantId
           });
+          setSuccess(prev => prev + ' PIN definido com sucesso!');
+        } catch (pinErr) {
+          console.error('Erro ao definir PIN:', pinErr);
+          setSuccess(prev => prev + ' Atenção: PIN não foi definido - ' + (pinErr.response?.data?.error || 'erro desconhecido'));
         }
       }
 
       resetForm();
       loadDrivers();
-      setTimeout(() => setSuccess(''), 3000);
+      setTimeout(() => setSuccess(''), 5000);
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao salvar');
     }
@@ -245,7 +248,7 @@ const EstablishmentDriversPage = () => {
                     {getVehicleIcon(driver.vehicle_type)}
                   </div>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '1rem' }}>{driver.name}</span>
                       <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: driver.is_online ? '#dcfce7' : '#f1f5f9', color: driver.is_online ? '#166534' : '#64748b' }}>
                         {driver.is_online ? 'Online' : 'Offline'}
@@ -255,12 +258,20 @@ const EstablishmentDriversPage = () => {
                           PIN ✓
                         </span>
                       )}
+                      <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>
+                        Próprio
+                      </span>
                     </div>
                     <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>
                       {driver.vehicle_type} {driver.vehicle_plate ? `• ${driver.vehicle_plate}` : ''} {driver.vehicle_model ? `• ${driver.vehicle_model}` : ''}
                     </p>
                     {driver.phone && (
                       <p style={{ color: '#64748b', fontSize: '0.75rem' }}>{driver.phone}</p>
+                    )}
+                    {driver.square_name && (
+                      <p style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                        Praça: {driver.square_name} {driver.square_city ? `- ${driver.square_city}` : ''}
+                      </p>
                     )}
                   </div>
                 </div>

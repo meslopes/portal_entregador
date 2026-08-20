@@ -2875,6 +2875,52 @@ def get_live_tracking():
 
         
 
+        # Entregadores próprios online
+
+        own_driver_query = EstablishmentDriver.query.filter(
+            EstablishmentDriver.is_online == True,
+            EstablishmentDriver.is_active == True,
+            EstablishmentDriver.current_latitude.isnot(None),
+            EstablishmentDriver.current_longitude.isnot(None)
+        )
+
+        if tenant_id:
+            own_driver_query = own_driver_query.join(Restaurant).filter(Restaurant.tenant_id == tenant_id)
+
+        if square_id:
+            own_driver_query = own_driver_query.join(Restaurant).filter(Restaurant.square_id == square_id)
+
+        online_own_drivers = own_driver_query.all()
+
+        for est_driver in online_own_drivers:
+            current_order = Order.query.filter(
+                Order.establishment_driver_id == est_driver.id,
+                Order.assigned_to_own_driver == True,
+                Order.status.in_([
+                    OrderStatus.ACCEPTED,
+                    OrderStatus.PREPARING,
+                    OrderStatus.READY,
+                    OrderStatus.PICKED_UP
+                ])
+            ).first()
+
+            own_driver_data = {
+                'type': 'driver',
+                'driver_id': f"own_{est_driver.id}",
+                'name': est_driver.name,
+                'latitude': float(est_driver.current_latitude),
+                'longitude': float(est_driver.current_longitude),
+                'last_update': est_driver.updated_at.isoformat() if est_driver.updated_at else None,
+                'vehicle_type': est_driver.vehicle_type,
+                'is_own': True,
+                'restaurant_name': est_driver.restaurant.name if est_driver.restaurant else None,
+                'current_order': current_order.to_dict() if current_order else None
+            }
+
+            tracking_data.append(own_driver_data)
+
+        
+
         # Pedidos ativos (filtrados por tenant)
 
         order_query = Order.query.filter(
@@ -9661,4 +9707,80 @@ def cleanup_clients_drivers():
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/database-map', methods=['GET'])
+@jwt_required()
+@admin_required
+def database_map():
+    """Retorna mapa completo de todos os cadastros e relacionamentos"""
+    try:
+        result = {}
+
+        # Tenants
+        tenants = Tenant.query.order_by(Tenant.id).all()
+        result['tenants'] = [{'id': t.id, 'name': t.name, 'slug': t.slug, 'plan': t.plan, 'is_active': t.is_active} for t in tenants]
+
+        # Squares
+        from src.models.portal_models import Square
+        squares = Square.query.order_by(Square.id).all()
+        result['squares'] = [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id, 'is_active': s.is_active} for s in squares]
+
+        # Users
+        users = User.query.order_by(User.id).all()
+        result['users'] = [{'id': u.id, 'email': u.email, 'first_name': u.first_name, 'last_name': u.last_name, 'user_type': u.user_type.value if u.user_type else None, 'status': u.status.value if u.status else None, 'tenant_id': u.tenant_id, 'phone': u.phone} for u in users]
+
+        # Restaurants
+        restaurants = Restaurant.query.order_by(Restaurant.id).all()
+        result['restaurants'] = [{'id': r.id, 'name': r.name, 'address': r.address, 'tenant_id': r.tenant_id, 'square_id': r.square_id, 'has_own_drivers': r.has_own_drivers, 'is_active': r.is_active} for r in restaurants]
+
+        # Customers
+        customers = Customer.query.order_by(Customer.id).all()
+        result['customers'] = [{'id': c.id, 'name': c.name, 'phone': c.phone, 'user_id': c.user_id, 'tenant_id': c.tenant_id} for c in customers]
+
+        # Platform Drivers
+        drivers = Driver.query.order_by(Driver.id).all()
+        drivers_data = []
+        for d in drivers:
+            user = User.query.get(d.user_id) if d.user_id else None
+            drivers_data.append({'id': d.id, 'user_id': d.user_id, 'name': f"{user.first_name} {user.last_name}" if user else 'SEM USER', 'email': user.email if user else None, 'vehicle_type': d.vehicle_type.value if d.vehicle_type else None, 'vehicle_plate': d.vehicle_plate, 'square_id': d.square_id, 'tenant_id': d.tenant_id, 'is_online': d.is_online, 'is_blocked': d.is_blocked, 'total_deliveries': d.total_deliveries, 'rating': float(d.rating) if d.rating else None})
+        result['platform_drivers'] = drivers_data
+
+        # Own Drivers
+        own_drivers = EstablishmentDriver.query.order_by(EstablishmentDriver.id).all()
+        result['own_drivers'] = []
+        for od in own_drivers:
+            restaurant = Restaurant.query.get(od.restaurant_id)
+            square = restaurant.square if restaurant else None
+            result['own_drivers'].append({'id': od.id, 'name': od.name, 'phone': od.phone, 'vehicle_type': od.vehicle_type, 'vehicle_plate': od.vehicle_plate, 'restaurant_id': od.restaurant_id, 'restaurant_name': restaurant.name if restaurant else None, 'square_id': restaurant.square_id if restaurant else None, 'square_name': square.name if square else None, 'tenant_id': restaurant.tenant_id if restaurant else None, 'is_online': od.is_online, 'is_active': od.is_active, 'has_pin': bool(od.pin_hash), 'total_deliveries': od.total_deliveries})
+
+        # Orders summary
+        from sqlalchemy import func as sqlfunc
+        order_stats = db.session.query(Order.status, sqlfunc.count(Order.id)).group_by(Order.status).all()
+        result['order_summary'] = [{'status': s[0], 'count': s[1]} for s in order_stats]
+
+        # Last 15 orders
+        last_orders = Order.query.order_by(Order.id.desc()).limit(15).all()
+        result['recent_orders'] = []
+        for o in last_orders:
+            restaurant = Restaurant.query.get(o.restaurant_id)
+            customer = Customer.query.get(o.customer_id)
+            if o.assigned_to_own_driver:
+                driver_type = 'OWN'
+                est_driver = EstablishmentDriver.query.get(o.establishment_driver_id) if o.establishment_driver_id else None
+                driver_name = est_driver.name if est_driver else None
+            elif o.driver_id:
+                driver_type = 'PLATFORM'
+                drv = Driver.query.get(o.driver_id)
+                usr = User.query.get(drv.user_id) if drv else None
+                driver_name = f"{usr.first_name} {usr.last_name}" if usr else None
+            else:
+                driver_type = 'NONE'
+                driver_name = None
+            result['recent_orders'].append({'id': o.id, 'order_number': o.order_number, 'status': o.status.value if o.status else None, 'restaurant_name': restaurant.name if restaurant else None, 'customer_name': customer.name if customer else None, 'driver_type': driver_type, 'driver_name': driver_name, 'created_at': o.created_at.isoformat() if o.created_at else None})
+
+        return jsonify(result), 200
+
+    except Exception as e:
         return jsonify({'error': str(e)}), 500

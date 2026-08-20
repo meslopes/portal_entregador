@@ -75,6 +75,39 @@ INTERNAL_TO_IFOOD_MAP = {
 }
 
 
+def find_nearest_own_driver(order):
+    """Encontra o entregador próprio online mais próximo do restaurante"""
+    restaurant = order.restaurant
+    if not restaurant or not restaurant.has_own_drivers:
+        return None
+
+    online_drivers = EstablishmentDriver.query.filter(
+        EstablishmentDriver.restaurant_id == restaurant.id,
+        EstablishmentDriver.is_online == True,
+        EstablishmentDriver.is_active == True
+    ).all()
+
+    if not online_drivers:
+        return None
+
+    # Se o restaurante tem coordenadas, encontra o mais próximo
+    if restaurant.latitude and restaurant.longitude and order.delivery_address and order.delivery_address.latitude:
+        # Ordena por distância até o restaurante (para pegada rápida)
+        # Se o entregador tem localização, usa distância real; senão, pega o primeiro disponível
+        drivers_with_location = [d for d in online_drivers if d.current_latitude and d.current_longitude]
+        if drivers_with_location:
+            def driver_distance(d):
+                return haversine_distance(
+                    float(restaurant.latitude), float(restaurant.longitude),
+                    float(d.current_latitude), float(d.current_longitude)
+                )
+            drivers_with_location.sort(key=driver_distance)
+            return drivers_with_location[0]
+
+    # Fallback: retorna o primeiro online disponível
+    return online_drivers[0]
+
+
 def process_scheduled_orders():
     """Converte pedidos SCHEDULED para PENDING quando o tempo de preparo expirou"""
     try:
@@ -111,7 +144,38 @@ def process_scheduled_orders():
                 'driver_earnings': driver_earnings
             }
             
-            # Distribuição baseada no método configurado
+            # === HÍBRIDO: Tenta entregadores próprios primeiro ===
+            own_driver = find_nearest_own_driver(order)
+            if own_driver:
+                # Atribui ao entregador próprio
+                order.assigned_to_own_driver = True
+                order.establishment_driver_id = own_driver.id
+                order.status = OrderStatus.ACCEPTED  # Já aceito pelo sistema
+                order.accepted_at = now
+                
+                logger.info(f"[HYBRID] Pedido {order.order_number} atribuído ao entregador próprio {own_driver.name}")
+                
+                # Cálculo de ganhos do entregador próprio
+                restaurant = order.restaurant
+                own_driver_earning_value = float(restaurant.own_driver_fixed_value or 5.00)
+                if restaurant.own_driver_payment_type == 'PER_KM':
+                    own_driver_earning_value = km_total * float(restaurant.own_driver_km_value or 1.50)
+                elif restaurant.own_driver_payment_type == 'PERCENTAGE':
+                    own_driver_earning_value = float(order.delivery_fee) * (float(restaurant.own_driver_percentage or 70) / 100.0)
+                
+                earning = OwnDriverEarning(
+                    restaurant_id=restaurant.id,
+                    establishment_driver_id=own_driver.id,
+                    order_id=order.id,
+                    delivery_fee=order.delivery_fee,
+                    driver_earning=own_driver_earning_value,
+                    payment_type=restaurant.own_driver_payment_type or 'PER_DELIVERY',
+                    distance_km=km_total
+                )
+                db.session.add(earning)
+                continue  # Próximo pedido
+            
+            # === FALLBACK: Sem entregadores próprios online, distribui para plataforma ===
             if order.distribution_method == 'broadcast':
                 # Broadcast: notifica TODOS os drivers online
                 notify_all_drivers(order, order_info)
@@ -2212,9 +2276,34 @@ def get_my_tracking():
             'address': restaurant.address
         } if restaurant else None
 
-        # Enderecos de entrega dos pedidos ativos
+        # Enderecos de entrega dos pedidos ativos (plataforma + próprios)
         delivery_addresses = []
+        seen_order_ids = set()
+
+        # Pedidos com entregadores da plataforma
         for order in active_orders:
+            if order.id in seen_order_ids:
+                continue
+            seen_order_ids.add(order.id)
+            if order.delivery_address:
+                addr = order.delivery_address
+                if addr.latitude and addr.longitude:
+                    delivery_addresses.append({
+                        'order_id': order.id,
+                        'order_number': order.order_number,
+                        'order_status': order.status.value,
+                        'latitude': float(addr.latitude),
+                        'longitude': float(addr.longitude),
+                        'street': addr.street,
+                        'neighborhood': addr.neighborhood,
+                        'customer_name': order.customer.name if order.customer else 'Cliente'
+                    })
+
+        # Pedidos com entregadores próprios
+        for order in own_active_orders:
+            if order.id in seen_order_ids:
+                continue
+            seen_order_ids.add(order.id)
             if order.delivery_address:
                 addr = order.delivery_address
                 if addr.latitude and addr.longitude:

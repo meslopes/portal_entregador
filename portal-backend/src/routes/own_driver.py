@@ -64,10 +64,15 @@ def login():
     # Normalizar telefone (remover caracteres especiais)
     phone_normalized = ''.join(filter(str.isdigit, phone))
 
-    # Buscar entregador por telefone
-    driver = EstablishmentDriver.query.filter(
-        db.func.regexp_replace(EstablishmentDriver.phone, '[^0-9]', '', 'g') == phone_normalized
-    ).first()
+    # Buscar entregador por telefone (normalização via Python para compatibilidade)
+    all_drivers = EstablishmentDriver.query.filter_by(is_active=True).all()
+    driver = None
+    for d in all_drivers:
+        if d.phone:
+            d_phone_normalized = ''.join(filter(str.isdigit, d.phone))
+            if d_phone_normalized == phone_normalized:
+                driver = d
+                break
 
     if not driver:
         return jsonify({'error': 'Telefone não cadastrado como entregador próprio'}), 404
@@ -95,36 +100,50 @@ def login():
 @jwt_required()
 def register_pin():
     """Registra ou atualiza PIN do entregador próprio (apenas admin/client)"""
-    user_id = int(get_jwt_identity())
-    user = User.query.get(user_id)
-    if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
-        return jsonify({'error': 'Apenas administradores ou estabelecimentos podem definir PIN'}), 403
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Apenas administradores ou estabelecimentos podem definir PIN'}), 403
 
-    data = request.get_json()
-    phone = data.get('phone', '').strip()
-    pin = data.get('pin', '').strip()
-    restaurant_id = data.get('restaurant_id')
+        data = request.get_json()
+        phone = data.get('phone', '').strip()
+        pin = data.get('pin', '').strip()
+        restaurant_id = data.get('restaurant_id')
 
-    if not phone or not pin or not restaurant_id:
-        return jsonify({'error': 'Telefone, PIN e restaurante são obrigatórios'}), 400
+        if not phone or not pin or not restaurant_id:
+            return jsonify({'error': 'Telefone, PIN e restaurante são obrigatórios'}), 400
 
-    if len(pin) != 4 or not pin.isdigit():
-        return jsonify({'error': 'PIN deve ter 4 dígitos numéricos'}), 400
+        if len(pin) != 4 or not pin.isdigit():
+            return jsonify({'error': 'PIN deve ter 4 dígitos numéricos'}), 400
 
-    phone_normalized = ''.join(filter(str.isdigit, phone))
+        phone_normalized = ''.join(filter(str.isdigit, phone))
+        restaurant_id = int(restaurant_id)
 
-    driver = EstablishmentDriver.query.filter(
-        EstablishmentDriver.restaurant_id == restaurant_id,
-        db.func.regexp_replace(EstablishmentDriver.phone, '[^0-9]', '', 'g') == phone_normalized
-    ).first()
+        # Buscar por phone normalizado (compatível com SQLite e PostgreSQL)
+        drivers = EstablishmentDriver.query.filter_by(
+            restaurant_id=restaurant_id
+        ).all()
 
-    if not driver:
-        return jsonify({'error': 'Entregador não encontrado neste estabelecimento'}), 404
+        driver = None
+        for d in drivers:
+            if d.phone:
+                d_phone_normalized = ''.join(filter(str.isdigit, d.phone))
+                if d_phone_normalized == phone_normalized:
+                    driver = d
+                    break
 
-    driver.set_pin(pin)
-    db.session.commit()
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado neste estabelecimento'}), 404
 
-    return jsonify({'message': 'PIN registrado com sucesso'}), 200
+        driver.set_pin(pin)
+        db.session.commit()
+
+        return jsonify({'message': 'PIN registrado com sucesso'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Erro ao registrar PIN: {str(e)}'}), 500
 
 
 # ==================== STATUS ====================

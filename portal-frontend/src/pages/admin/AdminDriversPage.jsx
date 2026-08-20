@@ -227,7 +227,7 @@ const AdminDriversPage = () => {
         <>
           <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px', padding: '0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }} className="table-header">
-              <span>Entregador</span><span style={{ textAlign: 'center' }}>VeÃ­culo</span><span style={{ textAlign: 'center' }}>Status</span><span style={{ textAlign: 'center' }}>AvaliaÃ§Ã£o</span><span style={{ textAlign: 'center' }}>Entregas</span><span style={{ textAlign: 'center' }}>AÃ§Ãµes</span>
+              <span>Entregador</span><span style={{ textAlign: 'center' }}>VeÃ­culo</span><span style={{ textAlign: 'center' }}>Status</span><span style={{ textAlign: 'center' }}>PraÃ§a</span><span style={{ textAlign: 'center' }}>Entregas</span><span style={{ textAlign: 'center' }}>AÃ§Ãµes</span>
             </div>
             {drivers.map(driver => (
               <div key={driver.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px', padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc', alignItems: 'center', cursor: 'pointer' }} className="table-row" onClick={() => openDetails(driver)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetails(driver); } }}>
@@ -241,8 +241,8 @@ const AdminDriversPage = () => {
                     {driver.is_online ? 'Online' : 'Offline'}
                   </span>
                 </span>
-                <span style={{ textAlign: 'center' }}>
-                  {driver.rating ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}><Star size={14} fill="#f59e0b" stroke="#f59e0b" /> <span style={{ fontSize: '0.8125rem' }}>{driver.rating}</span></span> : '-'}
+                <span style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
+                  {driver.square_name || '-'}
                 </span>
                 <span style={{ textAlign: 'center', fontWeight: 600, color: '#2563eb' }}>{driver.total_deliveries}</span>
                 <div style={{ textAlign: 'center', display: 'flex', gap: '0.25rem', justifyContent: 'center' }} onClick={e => e.stopPropagation()}>

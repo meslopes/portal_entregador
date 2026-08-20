@@ -6,7 +6,7 @@ import {
   TrendingUp, Truck, CheckCircle, XCircle, Eye, Star, Navigation
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { orderService, utils, API_BASE_URL } from '@/lib/api';
+import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
 
@@ -439,6 +439,56 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
 
   const canRate = order.status === 'DELIVERED' && !order.delivery?.customer_rating;
   const canCancel = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status);
+  const canAssign = order.status === 'PENDING' && !order.driver && !order.assigned_to_own_driver;
+
+  // State for own drivers list
+  const [ownDrivers, setOwnDrivers] = React.useState([]);
+  const [assigning, setAssigning] = React.useState(false);
+  const [callingPlatform, setCallingPlatform] = React.useState(false);
+
+  // Load own drivers when modal opens and order can be assigned
+  React.useEffect(() => {
+    if (canAssign) {
+      loadOwnDrivers();
+    }
+  }, []);
+
+  const loadOwnDrivers = async () => {
+    try {
+      const userRes = await api.get('/api/user/profile');
+      const restaurantId = userRes.data.restaurant_id;
+      if (restaurantId) {
+        const res = await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`);
+        setOwnDrivers(res.data.drivers || []);
+      }
+    } catch (e) {}
+  };
+
+  const handleAssignOwn = async (driverId) => {
+    try {
+      setAssigning(true);
+      await api.post(`/api/orders/${order.id}/assign-own`, { establishment_driver_id: driverId });
+      onClose();
+      window.location.reload();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao atribuir entregador');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleCallPlatform = async () => {
+    try {
+      setCallingPlatform(true);
+      const res = await api.post(`/api/orders/${order.id}/call-platform`);
+      alert(res.data.message || 'Solicitação enviada');
+      onClose();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao chamar plataforma');
+    } finally {
+      setCallingPlatform(false);
+    }
+  };
 
   return (
     <div style={{
@@ -538,6 +588,74 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                   <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.driver.phone}</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Entregador Próprio (se atribuído) */}
+          {order.assigned_to_own_driver && order.establishment_driver_id && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregador Próprio</p>
+              <div style={{ background: '#f0fdf4', borderRadius: '0.5rem', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid #bbf7d0' }}>
+                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Truck size={16} style={{ color: '#16a34a' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>Entregador próprio atribuído</p>
+                  <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dcfce7', color: '#166534' }}>Próprio</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Ações: Atribuir entregador (apenas pedidos PENDING sem entregador) */}
+          {canAssign && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Atribuir Entregador</p>
+
+              {/* Entregadores próprios */}
+              {ownDrivers.filter(d => d.is_online).length > 0 && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#475569', marginBottom: '0.5rem' }}>Entregadores Próprios Online:</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {ownDrivers.filter(d => d.is_online).map(driver => (
+                      <button
+                        key={driver.id}
+                        onClick={() => handleAssignOwn(driver.id)}
+                        disabled={assigning}
+                        style={{
+                          padding: '0.75rem 1rem', borderRadius: '0.5rem',
+                          border: '1.5px solid #bbf7d0', background: '#f0fdf4',
+                          cursor: assigning ? 'not-allowed' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          fontSize: '0.875rem', opacity: assigning ? 0.7 : 1
+                        }}
+                      >
+                        <span style={{ fontWeight: 500, color: '#166534' }}>
+                          {driver.vehicle_type === 'MOTO' ? '🏍️' : driver.vehicle_type === 'BIKE' ? '🚲' : '🚗'} {driver.name}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>Atribuir</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Chamar plataforma */}
+              <button
+                onClick={handleCallPlatform}
+                disabled={callingPlatform}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                  border: '1.5px solid #bfdbfe', background: '#eff6ff',
+                  cursor: callingPlatform ? 'not-allowed' : 'pointer',
+                  fontSize: '0.875rem', fontWeight: 600, color: '#1e40af',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  opacity: callingPlatform ? 0.7 : 1
+                }}
+              >
+                <Truck size={16} />
+                {callingPlatform ? 'Chamando...' : 'Chamar Entregador da Plataforma'}
+              </button>
             </div>
           )}
 

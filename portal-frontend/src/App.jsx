@@ -53,6 +53,7 @@ import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminWhiteLabelPage from '@/pages/admin/AdminWhiteLabelPage';
 import PlatformDashboardPage from '@/pages/admin/PlatformDashboardPage';
+import DatabaseMapPage from '@/pages/admin/DatabaseMapPage';
 import PlatformLoginPage from '@/pages/platform/PlatformLoginPage';
 import TrackPage from '@/pages/TrackPage';
 import SupportPage from '@/pages/SupportPage';
@@ -512,6 +513,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminUsersPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/database-map"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <DatabaseMapPage />
                 </Layout>
               </ProtectedRoute>
             }
