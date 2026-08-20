@@ -2900,7 +2900,7 @@ def get_live_tracking():
 
         # Entregadores próprios online
 
-        own_driver_query = EstablishmentDriver.query.filter(
+        own_driver_query = EstablishmentDriver.query.join(Restaurant).filter(
             EstablishmentDriver.is_online == True,
             EstablishmentDriver.is_active == True,
             EstablishmentDriver.current_latitude.isnot(None),
@@ -2908,10 +2908,10 @@ def get_live_tracking():
         )
 
         if tenant_id:
-            own_driver_query = own_driver_query.join(Restaurant).filter(Restaurant.tenant_id == tenant_id)
+            own_driver_query = own_driver_query.filter(Restaurant.tenant_id == tenant_id)
 
         if square_id:
-            own_driver_query = own_driver_query.join(Restaurant).filter(Restaurant.square_id == square_id)
+            own_driver_query = own_driver_query.filter(Restaurant.square_id == square_id)
 
         online_own_drivers = own_driver_query.all()
 
