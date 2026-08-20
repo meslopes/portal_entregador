@@ -9727,9 +9727,29 @@ def database_map():
         squares = Square.query.order_by(Square.id).all()
         result['squares'] = [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id, 'is_active': s.is_active} for s in squares]
 
-        # Users
+        # Users (com info de praça quando aplicável)
         users = User.query.order_by(User.id).all()
-        result['users'] = [{'id': u.id, 'email': u.email, 'first_name': u.first_name, 'last_name': u.last_name, 'user_type': u.user_type.value if u.user_type else None, 'status': u.status.value if u.status else None, 'tenant_id': u.tenant_id, 'phone': u.phone} for u in users]
+        result['users'] = []
+        for u in users:
+            user_data = {'id': u.id, 'email': u.email, 'first_name': u.first_name, 'last_name': u.last_name, 'user_type': u.user_type.value if u.user_type else None, 'status': u.status.value if u.status else None, 'tenant_id': u.tenant_id, 'phone': u.phone, 'square_id': None, 'square_name': None, 'linked_name': None}
+            # DRIVER: praça direta no driver
+            if u.user_type and u.user_type.value == 'DRIVER' and u.driver:
+                user_data['square_id'] = u.driver.square_id
+                if u.driver.square_id:
+                    sq = Square.query.get(u.driver.square_id)
+                    if sq: user_data['square_name'] = sq.name
+            # CLIENT: praça via restaurante
+            elif u.user_type and u.user_type.value == 'CLIENT':
+                cust = Customer.query.filter_by(user_id=u.id).first()
+                if cust:
+                    user_data['linked_name'] = cust.name
+                    rest = Restaurant.query.filter_by(name=cust.name).first()
+                    if rest:
+                        user_data['square_id'] = rest.square_id
+                        if rest.square_id:
+                            sq = Square.query.get(rest.square_id)
+                            if sq: user_data['square_name'] = sq.name
+            result['users'].append(user_data)
 
         # Restaurants
         restaurants = Restaurant.query.order_by(Restaurant.id).all()
