@@ -125,6 +125,7 @@ const DatabaseMapPage = () => {
       }
 
       showMsg(`${editForm.first_name} ${editForm.last_name} atualizado com sucesso`);
+      setEditForm(prev => ({ ...prev, new_password: '' }));
       setEditingUser(null);
       loadData();
     } catch (err) {
