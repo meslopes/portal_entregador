@@ -211,13 +211,17 @@ def register_client():
         email = data.get('email')
         password = data.get('password')
         first_name = data.get('first_name')
-        last_name = data.get('last_name')
+        last_name = data.get('last_name', '')
         phone = data.get('phone')
         address = data.get('address')
-        tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
+        cnpj = data.get('cnpj')
+        establishment_name = data.get('establishment_name') or first_name
+        preparation_minutes = data.get('preparation_minutes', 10)
+        pickup_confirmation_type = data.get('pickup_confirmation_type', 'code')
+        delivery_confirmation_type = data.get('delivery_confirmation_type', 'code')
 
-        if not email or not password or not first_name or not last_name or not phone:
-            return jsonify({'error': 'Email, senha, nome, sobrenome e telefone são obrigatórios'}), 400
+        if not email or not password or not establishment_name or not phone:
+            return jsonify({'error': 'Email, senha, nome do estabelecimento e telefone são obrigatórios'}), 400
 
         # Validar formato de email
         import re
@@ -229,47 +233,38 @@ def register_client():
         if len(password) < 6:
             return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
 
-        # Buscar tenant se fornecido
-        tenant_id = None
-        if tenant_slug:
-            tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
-            if tenant:
-                tenant_id = tenant.id
+        # Verificar se email já existe
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Email já cadastrado'}), 400
 
-        # Verificar se email já existe no tenant
-        if tenant_id:
-            if User.query.filter_by(email=email, tenant_id=tenant_id).first():
-                return jsonify({'error': 'Email já cadastrado nesta organização'}), 400
-        else:
-            if User.query.filter_by(email=email).first():
-                return jsonify({'error': 'Email já cadastrado'}), 400
-
+        # Criar usuário
         user = User(
             email=email,
-            tenant_id=tenant_id,
-            first_name=first_name,
+            tenant_id=None,
+            first_name=establishment_name,
             last_name=last_name,
             phone=phone,
             user_type=UserType.CLIENT,
-            status=UserStatus.INACTIVE  # Pendente de aprovacao
+            status=UserStatus.INACTIVE
         )
         user.set_password(password)
         db.session.add(user)
         db.session.flush()
 
+        # Criar customer
         customer = Customer(
             user_id=user.id,
-            tenant_id=tenant_id,
-            name=f"{first_name} {last_name}",
+            tenant_id=None,
+            name=establishment_name,
             phone=phone,
             email=email
         )
         db.session.add(customer)
 
-        # Cria restaurante/estabelecimento se endereco fornecido
+        # Criar restaurante
+        latitude = None
+        longitude = None
         if address:
-            latitude = None
-            longitude = None
             try:
                 from src.services.geocoding import geocode_address
                 geo = geocode_address(address)
@@ -279,25 +274,31 @@ def register_client():
             except Exception:
                 pass
 
-            restaurant = Restaurant(
-                name=f"{first_name} {last_name}",
-                address=address,
-                latitude=latitude or -29.95,
-                longitude=longitude or -50.45,
-                phone=phone,
-                email=email,
-                tenant_id=tenant_id
-            )
-            db.session.add(restaurant)
+        restaurant = Restaurant(
+            name=establishment_name,
+            cnpj=cnpj,
+            address=address,
+            latitude=latitude or -29.95,
+            longitude=longitude or -50.45,
+            phone=phone,
+            email=email,
+            tenant_id=None,
+            is_active=False,
+            preparation_minutes=int(preparation_minutes) if preparation_minutes else 10,
+            pickup_confirmation_type=pickup_confirmation_type,
+            delivery_confirmation_type=delivery_confirmation_type,
+        )
+        db.session.add(restaurant)
+        db.session.flush()
+
+        # Associar customer ao restaurante
+        customer.restaurant_id = restaurant.id
 
         db.session.commit()
 
-        access_token = create_access_token(identity=str(user.id))
-        user_data = _build_user_response(user)
-
         return jsonify({
-            'access_token': access_token,
-            'user': user_data
+            'message': 'Conta criada com sucesso. Aguarde aprovação do administrador.',
+            'user_id': user.id
         }), 201
 
     except Exception as e:

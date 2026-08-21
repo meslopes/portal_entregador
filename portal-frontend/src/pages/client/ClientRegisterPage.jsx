@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, ShoppingBag, Shield } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ClientRegisterPage = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    first_name: '', last_name: '', email: '', phone: '',
+    // Dados do estabelecimento
+    name: '', cnpj: '', phone: '', email: '',
+    // Acesso
     password: '', confirmPassword: '',
+    // Endereço
     address_street: '', address_number: '', address_neighborhood: '',
     address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
+    // Configurações
+    preparation_minutes: '10',
+    pickup_confirmation_type: 'code',
+    delivery_confirmation_type: 'code',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const { register, error, clearError } = useAuth();
+  const { error, clearError } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -27,8 +34,8 @@ const ClientRegisterPage = () => {
 
   const validateStep = () => {
     if (step === 1) {
-      if (!formData.first_name || !formData.last_name || !formData.phone) {
-        setLocalError('Preencha todos os campos obrigatórios');
+      if (!formData.name || !formData.phone) {
+        setLocalError('Nome do estabelecimento e telefone são obrigatórios');
         return false;
       }
     }
@@ -73,17 +80,21 @@ const ClientRegisterPage = () => {
 
     setIsLoading(true);
     try {
-      // Registra via API do cliente
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/auth/register-client`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
+          first_name: formData.name,
+          last_name: '',
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
+          cnpj: formData.cnpj || null,
+          establishment_name: formData.name,
           address: `${formData.address_street}, ${formData.address_number} - ${formData.address_neighborhood}, ${formData.address_city} - ${formData.address_state}, ${formData.address_zip}`,
+          preparation_minutes: parseInt(formData.preparation_minutes) || 10,
+          pickup_confirmation_type: formData.pickup_confirmation_type,
+          delivery_confirmation_type: formData.delivery_confirmation_type,
         }),
       });
 
@@ -94,7 +105,6 @@ const ClientRegisterPage = () => {
         return;
       }
 
-      // Nao fazer login - redirecionar para tela de aguardo
       navigate('/pending-approval');
     } catch (err) {
       setLocalError('Erro ao conectar com o servidor');
@@ -104,6 +114,16 @@ const ClientRegisterPage = () => {
   };
 
   const currentError = localError || error;
+
+  const inputStyle = {
+    width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem',
+    border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none',
+    boxSizing: 'border-box', fontFamily: 'inherit'
+  };
+
+  const labelStyle = {
+    display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem'
+  };
 
   return (
     <div className="auth-split-layout">
@@ -119,22 +139,12 @@ const ClientRegisterPage = () => {
             muv.log
           </h1>
           <p style={{ fontSize: '1.125rem', opacity: 0.9, marginBottom: '2.5rem', lineHeight: 1.6 }}>
-            Crie sua conta e comece a pedir
+            Cadastre seu estabelecimento
           </p>
-
           <div style={{ textAlign: 'left' }}>
-            <div className="feature-item">
-              <div className="feature-icon"><Check size={20} /></div>
-              <span>Cadastro rápido e simples</span>
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon"><Check size={20} /></div>
-              <span>Acompanhe suas entregas</span>
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon"><Check size={20} /></div>
-              <span>Pague como preferir</span>
-            </div>
+            <div className="feature-item"><div className="feature-icon"><Check size={20} /></div><span>Cadastro completo em minutos</span></div>
+            <div className="feature-item"><div className="feature-icon"><Check size={20} /></div><span>Gerencie suas entregas</span></div>
+            <div className="feature-item"><div className="feature-icon"><Check size={20} /></div><span>Acompanhe em tempo real</span></div>
           </div>
         </div>
       </div>
@@ -144,19 +154,20 @@ const ClientRegisterPage = () => {
         <div className="auth-form-container auth-animate-in">
           <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
             <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.5rem' }}>
-              Criar Conta
+              Cadastro de Estabelecimento
             </h2>
             <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-              Preencha seus dados para se cadastrar
+              Preencha os dados do seu estabelecimento
             </p>
           </div>
 
           {/* Indicador de progresso */}
           <div className="step-indicator">
             {[
-              { num: 1, label: 'Dados Pessoais' },
+              { num: 1, label: 'Estabelecimento' },
               { num: 2, label: 'Acesso' },
               { num: 3, label: 'Endereço' },
+              { num: 4, label: 'Configurações' },
             ].map((s, i) => (
               <React.Fragment key={s.num}>
                 <div style={{ textAlign: 'center' }}>
@@ -168,11 +179,8 @@ const ClientRegisterPage = () => {
                     {s.label}
                   </span>
                 </div>
-                {i < 2 && (
-                  <div style={{
-                    width: '2rem', height: '2px', background: step > s.num ? '#22c55e' : '#e2e8f0',
-                    marginBottom: '1.25rem', transition: 'background 0.3s'
-                  }} />
+                {i < 3 && (
+                  <div style={{ width: '2rem', height: '2px', background: step > s.num ? '#22c55e' : '#e2e8f0', marginBottom: '1.25rem', transition: 'background 0.3s' }} />
                 )}
               </React.Fragment>
             ))}
@@ -191,23 +199,28 @@ const ClientRegisterPage = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
-              {/* Etapa 1 - Dados Pessoais */}
+              {/* Etapa 1 - Dados do Estabelecimento */}
               {step === 1 && (
                 <div className="auth-animate-in" key="step1">
                   <div style={{ marginBottom: '1rem' }}>
-                    <label className="auth-form-label">Nome *</label>
-                    <input name="first_name" className="auth-form-input" placeholder="Seu nome"
-                      value={formData.first_name} onChange={handleChange} required />
+                    <label style={labelStyle}>Nome do Estabelecimento *</label>
+                    <input name="name" style={inputStyle} placeholder="Ex: Farmácia da Esquina"
+                      value={formData.name} onChange={handleChange} required />
                   </div>
                   <div style={{ marginBottom: '1rem' }}>
-                    <label className="auth-form-label">Sobrenome *</label>
-                    <input name="last_name" className="auth-form-input" placeholder="Seu sobrenome"
-                      value={formData.last_name} onChange={handleChange} required />
+                    <label style={labelStyle}>CNPJ</label>
+                    <input name="cnpj" style={inputStyle} placeholder="00.000.000/0001-00"
+                      value={formData.cnpj} onChange={handleChange} />
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={labelStyle}>Telefone *</label>
+                    <input name="phone" style={inputStyle} placeholder="(51) 99999-9999"
+                      value={formData.phone} onChange={handleChange} required />
                   </div>
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <label className="auth-form-label">Telefone *</label>
-                    <input name="phone" className="auth-form-input" placeholder="(11) 99999-9999"
-                      value={formData.phone} onChange={handleChange} required />
+                    <label style={labelStyle}>Email *</label>
+                    <input type="email" name="email" style={inputStyle} placeholder="contato@estabelecimento.com"
+                      value={formData.email} onChange={handleChange} required />
                   </div>
                   <button type="button" className="auth-btn-primary" onClick={nextStep}>
                     Próximo <ArrowRight size={18} />
@@ -219,27 +232,20 @@ const ClientRegisterPage = () => {
               {step === 2 && (
                 <div className="auth-animate-in" key="step2">
                   <div style={{ marginBottom: '1rem' }}>
-                    <label className="auth-form-label">Email *</label>
-                    <input type="email" name="email" className="auth-form-input" placeholder="seu@email.com"
-                      value={formData.email} onChange={handleChange} required />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label className="auth-form-label">Senha *</label>
+                    <label style={labelStyle}>Senha *</label>
                     <div className="password-wrapper">
-                      <input type={showPassword ? 'text' : 'password'} name="password" className="auth-form-input"
-                        placeholder="Mínimo 6 caracteres" value={formData.password} onChange={handleChange}
-                        required style={{ paddingRight: '2.75rem' }} />
+                      <input type={showPassword ? 'text' : 'password'} name="password" style={{ ...inputStyle, paddingRight: '2.75rem' }}
+                        placeholder="Mínimo 6 caracteres" value={formData.password} onChange={handleChange} required />
                       <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
                   </div>
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <label className="auth-form-label">Confirmar Senha *</label>
+                    <label style={labelStyle}>Confirmar Senha *</label>
                     <div className="password-wrapper">
-                      <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" className="auth-form-input"
-                        placeholder="Confirme sua senha" value={formData.confirmPassword} onChange={handleChange}
-                        required style={{ paddingRight: '2.75rem' }} />
+                      <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" style={{ ...inputStyle, paddingRight: '2.75rem' }}
+                        placeholder="Confirme sua senha" value={formData.confirmPassword} onChange={handleChange} required />
                       <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -260,38 +266,82 @@ const ClientRegisterPage = () => {
               {step === 3 && (
                 <div className="auth-animate-in" key="step3">
                   <div style={{ marginBottom: '1rem' }}>
-                    <label className="auth-form-label">Rua/Avenida *</label>
-                    <input name="address_street" className="auth-form-input" placeholder="Ex: Rua das Flores"
+                    <label style={labelStyle}>Rua/Avenida *</label>
+                    <input name="address_street" style={inputStyle} placeholder="Ex: Rua das Flores"
                       value={formData.address_street} onChange={handleChange} required />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
-                      <label className="auth-form-label">Número *</label>
-                      <input name="address_number" className="auth-form-input" placeholder="123"
+                      <label style={labelStyle}>Número *</label>
+                      <input name="address_number" style={inputStyle} placeholder="123"
                         value={formData.address_number} onChange={handleChange} required />
                     </div>
                     <div>
-                      <label className="auth-form-label">Bairro *</label>
-                      <input name="address_neighborhood" className="auth-form-input" placeholder="Centro"
+                      <label style={labelStyle}>Bairro *</label>
+                      <input name="address_neighborhood" style={inputStyle} placeholder="Centro"
                         value={formData.address_neighborhood} onChange={handleChange} required />
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
-                      <label className="auth-form-label">Cidade</label>
-                      <input name="address_city" className="auth-form-input" placeholder="Capão da Canoa"
+                      <label style={labelStyle}>Cidade</label>
+                      <input name="address_city" style={inputStyle} placeholder="Capão da Canoa"
                         value={formData.address_city} onChange={handleChange} />
                     </div>
                     <div>
-                      <label className="auth-form-label">UF</label>
-                      <input name="address_state" className="auth-form-input" placeholder="RS"
+                      <label style={labelStyle}>UF</label>
+                      <input name="address_state" style={inputStyle} placeholder="RS"
                         value={formData.address_state} onChange={handleChange} />
                     </div>
                   </div>
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <label className="auth-form-label">CEP</label>
-                    <input name="address_zip" className="auth-form-input" placeholder="95555-000"
+                    <label style={labelStyle}>CEP</label>
+                    <input name="address_zip" style={inputStyle} placeholder="95555-000"
                       value={formData.address_zip} onChange={handleChange} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button type="button" className="auth-btn-secondary" onClick={prevStep} style={{ flex: 1 }}>
+                      <ArrowLeft size={18} /> Voltar
+                    </button>
+                    <button type="button" className="auth-btn-primary" onClick={nextStep} style={{ flex: 2 }}>
+                      Próximo <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Etapa 4 - Configurações */}
+              {step === 4 && (
+                <div className="auth-animate-in" key="step4">
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={labelStyle}>Tempo de Preparo (minutos)</label>
+                    <input type="number" name="preparation_minutes" style={inputStyle} placeholder="10"
+                      value={formData.preparation_minutes} onChange={handleChange} min="1" max="120" />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label style={labelStyle}>Confirmação de Coleta</label>
+                      <select name="pickup_confirmation_type" value={formData.pickup_confirmation_type} onChange={handleChange} style={inputStyle}>
+                        <option value="code">Código</option>
+                        <option value="photo">Foto</option>
+                        <option value="code_and_photo">Código + Foto</option>
+                        <option value="none">Nenhuma</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Confirmação de Entrega</label>
+                      <select name="delivery_confirmation_type" value={formData.delivery_confirmation_type} onChange={handleChange} style={inputStyle}>
+                        <option value="code">Código</option>
+                        <option value="photo">Foto</option>
+                        <option value="code_and_photo">Código + Foto</option>
+                        <option value="none">Nenhuma</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ padding: '0.75rem', background: '#f0fdf4', borderRadius: '0.5rem', border: '1px solid #bbf7d0', marginBottom: '1.5rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#166534' }}>
+                      <strong>Praça e Tabela de Preços</strong> serão definidos pelo administrador após aprovação do cadastro.
+                    </p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button type="button" className="auth-btn-secondary" onClick={prevStep} style={{ flex: 1 }}>
@@ -300,14 +350,7 @@ const ClientRegisterPage = () => {
                     <button type="submit" className="auth-btn-primary" disabled={isLoading} style={{ flex: 2 }}>
                       {isLoading ? (
                         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                          <span style={{
-                            width: '1rem', height: '1rem',
-                            border: '2px solid rgba(255,255,255,0.3)',
-                            borderTopColor: 'white',
-                            borderRadius: '50%',
-                            animation: 'spin 0.6s linear infinite',
-                            display: 'inline-block'
-                          }} />
+                          <span style={{ width: '1rem', height: '1rem', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} />
                           Criando conta...
                         </span>
                       ) : (
@@ -325,17 +368,13 @@ const ClientRegisterPage = () => {
           <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
             <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
               Já tem uma conta?{' '}
-              <Link to="/client/login" className="auth-footer-link">
-                Faça login
-              </Link>
+              <Link to="/client/login" className="auth-footer-link">Faça login</Link>
             </p>
           </div>
         </div>
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
