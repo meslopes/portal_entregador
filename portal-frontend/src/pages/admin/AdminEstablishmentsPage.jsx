@@ -453,6 +453,15 @@ const AdminEstablishmentsPage = () => {
                           Próprios
                         </span>
                       )}
+                      {!est.square_id && (
+                        <span style={{
+                          padding: '0.0625rem 0.375rem', borderRadius: '9999px',
+                          fontSize: '0.5625rem', fontWeight: 600,
+                          background: '#fef3c7', color: '#92400e'
+                        }}>
+                          Sem Praça
+                        </span>
+                      )}
                     </div>
                     <p style={{ fontSize: '0.6875rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <MapPin size={10} /> {est.address?.length > 30 ? est.address.substring(0, 30) + '...' : est.address}

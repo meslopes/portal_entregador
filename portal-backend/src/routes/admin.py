@@ -3175,11 +3175,11 @@ def get_establishments():
 
             query = query.filter((Restaurant.tenant_id == tenant_id) | (Restaurant.tenant_id.is_(None)))
 
-        # Filtrar por praça
+        # Filtrar por praça (incluir sem praça = pendentes de definição)
 
         if square_id:
 
-            query = query.filter(Restaurant.square_id == square_id)
+            query = query.filter((Restaurant.square_id == square_id) | (Restaurant.square_id.is_(None)))
 
 
 
