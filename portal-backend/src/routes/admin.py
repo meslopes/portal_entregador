@@ -6296,19 +6296,17 @@ def delete_square(square_id):
 
             return jsonify({'error': 'Praça não encontrada'}), 404
 
-
-
-        # Verificar se tem estabelecimentos ou entregadores
+        force = request.args.get('force', 'false').lower() == 'true'
 
         has_restaurants = Restaurant.query.filter_by(square_id=square_id).first()
-
         has_drivers = Driver.query.filter_by(square_id=square_id).first()
 
-        if has_restaurants or has_drivers:
+        if (has_restaurants or has_drivers) and not force:
+            return jsonify({'error': 'Praça tem restaurantes/entregadores vinculados. Use ?force=true para desvincular e excluir'}), 400
 
-            return jsonify({'error': 'Não é possível excluir praça com estabelecimentos ou entregadores'}), 400
-
-
+        if force:
+            Restaurant.query.filter_by(square_id=square_id).update({'square_id': None})
+            Driver.query.filter_by(square_id=square_id).update({'square_id': None})
 
         db.session.delete(square)
 
@@ -9898,7 +9896,8 @@ def delete_restaurant(restaurant_id):
             return jsonify({'error': f'Restaurante tem {order_count} pedido(s) e {drv_count} entregador(es) proprio(s)', 'has_data': True, 'suggestion': 'Use ?force=true para desvincular e excluir'}), 400
 
         if force:
-            Order.query.filter_by(restaurant_id=restaurant_id).update({'restaurant_id': None})
+            # Deletar pedidos vinculados (restaurant_id é NOT NULL)
+            Order.query.filter_by(restaurant_id=restaurant_id).delete()
             EstablishmentDriver.query.filter_by(restaurant_id=restaurant_id).delete()
             from src.models.portal_models import OwnDriverEarning, PlatformCredential
             OwnDriverEarning.query.filter_by(restaurant_id=restaurant_id).delete()
