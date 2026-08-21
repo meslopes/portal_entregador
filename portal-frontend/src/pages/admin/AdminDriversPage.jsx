@@ -82,12 +82,12 @@ const AdminDriversPage = () => {
     e.preventDefault();
     try {
       setFormLoading(true);
-      const result = await api.post('/api/admin/drivers', formData);
-      setShowForm(false);
+      await api.put(`/api/admin/drivers/${editing.id}`, editData);
+      setEditing(null);
       loadDrivers();
-      alert('Entregador criado com sucesso! Email: ' + result.driver.email);
+      alert('Entregador atualizado com sucesso!');
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Erro ao criar entregador');
+      setFormError(err.response?.data?.error || 'Erro ao atualizar entregador');
     } finally {
       setFormLoading(false);
     }

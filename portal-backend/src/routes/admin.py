@@ -1858,6 +1858,116 @@ def create_driver():
 
 
 
+@admin_bp.route('/drivers/<int:driver_id>', methods=['PUT'])
+
+@jwt_required()
+
+@admin_required
+
+def update_driver(driver_id):
+
+    """Atualiza dados de um entregador"""
+
+    try:
+
+        driver = Driver.query.get(driver_id)
+
+        if not driver:
+
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        data = request.get_json() or {}
+
+        user = User.query.get(driver.user_id)
+
+        if not user:
+
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Atualizar dados do usuário
+
+        if 'first_name' in data:
+
+            user.first_name = data['first_name']
+
+        if 'last_name' in data:
+
+            user.last_name = data['last_name']
+
+        if 'phone' in data:
+
+            user.phone = data['phone']
+
+        if 'email' in data:
+
+            # Verificar se o novo email já existe
+
+            existing = User.query.filter(User.email == data['email'], User.id != user.id).first()
+
+            if existing:
+
+                return jsonify({'error': 'Email já cadastrado'}), 400
+
+            user.email = data['email']
+
+        # Atualizar dados do driver
+
+        if 'cpf' in data:
+
+            driver.cpf = data['cpf'] or None
+
+        if 'vehicle_type' in data:
+
+            driver.vehicle_type = data['vehicle_type']
+
+        if 'vehicle_plate' in data:
+
+            driver.vehicle_plate = data['vehicle_plate'] or None
+
+        if 'vehicle_model' in data:
+
+            driver.vehicle_model = data['vehicle_model'] or None
+
+        if 'vehicle_year' in data:
+
+            driver.vehicle_year = data['vehicle_year'] or None
+
+        if 'driver_license' in data:
+
+            driver.driver_license = data['driver_license'] or None
+
+        if 'pix_key' in data:
+
+            driver.pix_key = data['pix_key'] or None
+
+        if 'bank_account' in data:
+
+            driver.bank_account = data['bank_account'] or None
+
+        if 'square_id' in data:
+
+            driver.square_id = data['square_id'] or None
+
+        if 'max_concurrent_orders' in data:
+
+            driver.max_concurrent_orders = int(data['max_concurrent_orders'])
+
+        if 'password' in data and data['password']:
+
+            user.set_password(data['password'])
+
+        db.session.commit()
+
+        return jsonify({'message': 'Entregador atualizado com sucesso'}), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        return jsonify({'error': str(e)}), 500
+
+
+
 @admin_bp.route('/drivers/<int:driver_id>/status', methods=['PUT'])
 
 @jwt_required()
