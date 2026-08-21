@@ -9938,65 +9938,69 @@ def toggle_tenant_active(tenant_id):
 @jwt_required()
 @admin_required
 def cleanup_test_data():
-    """Limpa TODOS os dados exceto admins. SQL direto, ordem correta de FK."""
+    """Limpa dados em lotes para evitar timeout."""
     try:
         user = get_current_user()
         if not user or user.tenant_id is not None:
-            return jsonify({'error': 'Apenas super admin pode executar limpeza'}), 403
+            return jsonify({'error': 'Apenas super admin'}), 403
 
         deleted = {}
 
-        # Ordem: tabelas filhas primeiro, pais depois
-        tables_in_order = [
-            'own_driver_earnings',
-            'deliveries',
-            'payments',
-            'driver_scores',
-            'driver_bonuses',
-            'driver_achievements',
-            'driver_penalties',
-            'driver_restaurants',
-            'orders',
-            'addresses',
-            'notifications',
-            'platform_credentials',
-            'invoices',
-            'establishment_drivers',
-            'drivers',
-            'customers',
-            'system_configs',
-            'dynamic_pricing',
+        # Deletar em ordem de dependencia (filhos primeiro)
+        # Lotes de 5000 para evitar timeout
+        batch = 5000
+
+        tables = [
+            'own_driver_earnings', 'deliveries', 'payments',
+            'driver_scores', 'driver_bonuses', 'driver_achievements',
+            'driver_penalties', 'driver_restaurants',
+            'orders', 'addresses', 'notifications',
+            'platform_credentials', 'invoices',
+            'establishment_drivers', 'drivers',
+            'customers', 'system_configs', 'dynamic_pricing',
         ]
 
-        for tbl in tables_in_order:
+        for tbl in tables:
             try:
-                r = db.session.execute(db.text(f"DELETE FROM {tbl}"))
-                deleted[tbl] = r.rowcount
+                total = 0
+                while True:
+                    r = db.session.execute(db.text(f"DELETE FROM {tbl} WHERE id IN (SELECT id FROM {tbl} LIMIT {batch})"))
+                    db.session.commit()
+                    total += r.rowcount
+                    if r.rowcount < batch:
+                        break
+                deleted[tbl] = total
             except Exception as e:
-                deleted[tbl] = f'erro: {str(e)[:80]}'
+                db.session.rollback()
+                deleted[tbl] = f'erro: {str(e)[:60]}'
 
-        # Deletar users que nao sao admins
+        # Users nao-admin
         try:
             r = db.session.execute(db.text("DELETE FROM users WHERE user_type != 'ADMIN'"))
+            db.session.commit()
             deleted['non_admin_users'] = r.rowcount
         except Exception as e:
-            deleted['non_admin_users'] = f'erro: {str(e)[:80]}'
+            db.session.rollback()
+            deleted['non_admin_users'] = f'erro: {str(e)[:60]}'
 
-        # Deletar restaurantes
+        # Restaurantes
         try:
             r = db.session.execute(db.text("DELETE FROM restaurants"))
+            db.session.commit()
             deleted['restaurants'] = r.rowcount
         except Exception as e:
-            deleted['restaurants'] = f'erro: {str(e)[:80]}'
+            db.session.rollback()
+            deleted['restaurants'] = f'erro: {str(e)[:60]}'
 
-        # Deletar praça Tramandaí
+        # Tramandai
         try:
             r = db.session.execute(db.text("DELETE FROM squares WHERE city = 'Tramandai'"))
-            deleted['tramandai_square'] = r.rowcount
+            db.session.commit()
+            deleted['tramandai'] = r.rowcount
         except Exception as e:
-            deleted['tramandai_square'] = f'erro: {str(e)[:80]}'
+            db.session.rollback()
+            deleted['tramandai'] = f'erro: {str(e)[:60]}'
 
-        db.session.commit()
         return jsonify({'message': 'Limpeza concluida', 'deleted': deleted}), 200
 
     except Exception as e:
