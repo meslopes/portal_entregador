@@ -395,6 +395,16 @@ const DatabaseMapPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b' }}>Mapa do Banco de Dados</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={async () => {
+            if (!window.confirm('ATENÇÃO: Isso vai excluir TODOS os dados de teste (pedidos iFood, clientes iFood, restaurantes de teste, entregadores de teste, faturas). Restaurantes reais (FORA DE HORA, BASTA DRINKS) serão mantidos.\n\nContinuar?')) return;
+            try {
+              const res = await api.post('/api/admin/cleanup-test-data', { action: 'all' });
+              showMsg('Limpeza concluída: ' + JSON.stringify(res.data.deleted));
+              loadData();
+            } catch (err) {
+              showMsg(err.response?.data?.error || 'Erro na limpeza', true);
+            }
+          }} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontWeight: 600 }}>🧹 Limpar Testes</button>
           <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(data, null, 2)); showMsg('JSON copiado! Cole no chat para gerar o PDF.'); }} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#7c3aed', color: 'white', cursor: 'pointer', fontWeight: 600 }}>📋 Copiar JSON</button>
           <button onClick={handleGeneratePDF} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', cursor: 'pointer', fontWeight: 600 }}>📄 Gerar PDF</button>
           <button onClick={loadData} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Atualizar</button>
