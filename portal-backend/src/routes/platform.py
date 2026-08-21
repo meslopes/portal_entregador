@@ -92,6 +92,12 @@ def get_platform_dashboard():
 def get_admins():
     """Lista todos os admins da plataforma"""
     try:
+        from src.models.portal_models import Tenant, Restaurant, Driver, Order
+        from datetime import datetime
+
+        # Pre-load tenants
+        tenants_map = {t.id: t.name for t in Tenant.query.all()}
+
         # Buscar admins com tenant_id (clientes da plataforma)
         admins = User.query.filter(
             User.user_type == UserType.ADMIN,
@@ -100,17 +106,8 @@ def get_admins():
         
         result = []
         for admin in admins:
-            # Contar estabelecimentos do admin
-            from src.models.portal_models import Restaurant
             establishments = Restaurant.query.filter_by(tenant_id=admin.tenant_id).count()
-            
-            # Contar entregadores do admin
-            from src.models.portal_models import Driver
             drivers = Driver.query.filter_by(tenant_id=admin.tenant_id).count()
-            
-            # Contar pedidos do mês
-            from src.models.portal_models import Order
-            from datetime import datetime
             first_day = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             orders_month = Order.query.filter(
                 Order.tenant_id == admin.tenant_id,
@@ -125,6 +122,7 @@ def get_admins():
                 'phone': admin.phone,
                 'status': admin.status.value if admin.status else 'UNKNOWN',
                 'tenant_id': admin.tenant_id,
+                'tenant_name': tenants_map.get(admin.tenant_id),
                 'establishments': establishments,
                 'drivers': drivers,
                 'orders_month': orders_month,
@@ -483,6 +481,10 @@ def get_platform_users():
         
         users = query.order_by(User.created_at.desc()).all()
         
+        # Pre-load tenants for name lookup
+        from src.models.portal_models import Tenant
+        tenants_map = {t.id: t.name for t in Tenant.query.all()}
+        
         result = []
         for user in users:
             result.append({
@@ -493,6 +495,7 @@ def get_platform_users():
                 'user_type': user.user_type.value if user.user_type else 'UNKNOWN',
                 'status': user.status.value if user.status else 'UNKNOWN',
                 'tenant_id': user.tenant_id,
+                'tenant_name': tenants_map.get(user.tenant_id) if user.tenant_id else None,
                 'created_at': user.created_at.isoformat() if user.created_at else None
             })
         
