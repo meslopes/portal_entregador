@@ -3169,11 +3169,11 @@ def get_establishments():
 
 
 
-        # Filtrar por tenant
+        # Filtrar por tenant (incluir sem tenant = pendentes de aprovação)
 
         if tenant_id:
 
-            query = query.filter(Restaurant.tenant_id == tenant_id)
+            query = query.filter((Restaurant.tenant_id == tenant_id) | (Restaurant.tenant_id.is_(None)))
 
         # Filtrar por praça
 
