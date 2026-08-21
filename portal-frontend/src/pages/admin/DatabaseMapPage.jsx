@@ -146,9 +146,9 @@ const DatabaseMapPage = () => {
   };
 
   const handleDeleteRestaurant = async (restaurant) => {
-    if (!window.confirm(`Excluir restaurante "${restaurant.name}"?`)) return;
+    if (!window.confirm(`Excluir restaurante "${restaurant.name}"?\n\nPedidos e entregadores vinculados serão desvinculados automaticamente.`)) return;
     try {
-      await api.delete(`/api/admin/restaurants/${restaurant.id}`);
+      await api.delete(`/api/admin/restaurants/${restaurant.id}?force=true`);
       showMsg(`Restaurante ${restaurant.name} excluído`);
       loadData();
     } catch (err) {

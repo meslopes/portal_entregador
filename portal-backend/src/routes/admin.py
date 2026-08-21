@@ -868,11 +868,17 @@ def delete_user(user_id):
 
                     }), 400
 
-                if force and has_orders:
-
-                    # Limpar referências nos pedidos
-
+                if force:
+                    # Limpar TODAS as referências ao driver
                     Order.query.filter_by(driver_id=driver.id).update({'driver_id': None})
+                    from src.models.portal_models import Payment, Delivery, DriverScore, DriverBonus, DriverAchievement, DriverPenalty, DriverRestaurant
+                    Payment.query.filter_by(driver_id=driver.id).delete()
+                    Delivery.query.filter_by(driver_id=driver.id).update({'driver_id': None})
+                    DriverScore.query.filter_by(driver_id=driver.id).delete()
+                    DriverBonus.query.filter_by(driver_id=driver.id).delete()
+                    DriverAchievement.query.filter_by(driver_id=driver.id).delete()
+                    DriverPenalty.query.filter_by(driver_id=driver.id).delete()
+                    DriverRestaurant.query.filter_by(driver_id=driver.id).delete()
 
                 db.session.delete(driver)
 
@@ -902,11 +908,10 @@ def delete_user(user_id):
 
                     }), 400
 
-                if force and has_orders:
-
-                    # Limpar referências nos pedidos
-
+                if force:
+                    # Limpar TODAS as referências ao customer
                     Order.query.filter_by(customer_id=customer.id).update({'customer_id': None})
+                    Address.query.filter_by(customer_id=customer.id).delete()
 
                 db.session.delete(customer)
 
@@ -9859,6 +9864,42 @@ def database_map():
         return jsonify(result), 200
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+@admin_bp.route('/restaurants/<int:restaurant_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_restaurant(restaurant_id):
+    """Exclui um restaurante"""
+    try:
+        restaurant = Restaurant.query.get(restaurant_id)
+        if not restaurant:
+            return jsonify({'error': 'Restaurante nao encontrado'}), 404
+
+        force = request.args.get('force', 'false').lower() == 'true'
+
+        has_orders = Order.query.filter_by(restaurant_id=restaurant_id).first()
+        has_drivers = EstablishmentDriver.query.filter_by(restaurant_id=restaurant_id).first()
+
+        if (has_orders or has_drivers) and not force:
+            order_count = Order.query.filter_by(restaurant_id=restaurant_id).count()
+            drv_count = EstablishmentDriver.query.filter_by(restaurant_id=restaurant_id).count()
+            return jsonify({'error': f'Restaurante tem {order_count} pedido(s) e {drv_count} entregador(es) proprio(s)', 'has_data': True, 'suggestion': 'Use ?force=true para desvincular e excluir'}), 400
+
+        if force:
+            Order.query.filter_by(restaurant_id=restaurant_id).update({'restaurant_id': None})
+            EstablishmentDriver.query.filter_by(restaurant_id=restaurant_id).delete()
+            from src.models.portal_models import OwnDriverEarning, PlatformCredential
+            OwnDriverEarning.query.filter_by(restaurant_id=restaurant_id).delete()
+            PlatformCredential.query.filter_by(restaurant_id=restaurant_id).delete()
+
+        db.session.delete(restaurant)
+        db.session.commit()
+        return jsonify({'message': 'Restaurante excluido com sucesso'}), 200
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/tenants/<int:tenant_id>/toggle-active', methods=['PUT'])
