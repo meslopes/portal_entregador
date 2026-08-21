@@ -243,15 +243,6 @@ def approve_user(user_id):
                 if tenant_id:
                     driver.tenant_id = tenant_id
 
-        # 5. Excluir praça Tramandaí (ID:3)
-        if action in ('all', 'squares'):
-            tramandai = Square.query.get(3)
-            if tramandai:
-                Restaurant.query.filter_by(square_id=3).update({'square_id': None})
-                Driver.query.filter_by(square_id=3).update({'square_id': None})
-                db.session.delete(tramandai)
-                deleted['squares'] = 'Tramandaí excluída'
-
         db.session.commit()
 
 
