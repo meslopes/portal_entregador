@@ -9938,114 +9938,85 @@ def toggle_tenant_active(tenant_id):
 @jwt_required()
 @admin_required
 def cleanup_test_data():
-    """Limpa dados de teste do banco. Apenas super admin."""
+    """Limpa TODOS os dados exceto admins. Usa SQL direto para velocidade."""
     try:
         user = get_current_user()
         if not user or user.tenant_id is not None:
             return jsonify({'error': 'Apenas super admin pode executar limpeza'}), 403
 
-        data = request.get_json() or {}
-        action = data.get('action', 'all')
+        admin_ids = [u.id for u in User.query.filter_by(user_type=UserType.ADMIN).all()]
+        admin_ids_str = ','.join(str(i) for i in admin_ids) if admin_ids else '0'
+
         deleted = {}
 
-        # 1. Limpar pedidos de teste (iFood e sem restaurante valido)
-        if action in ('all', 'orders'):
-            from src.models.portal_models import Delivery, OwnDriverEarning
-            # Deletar deliveries de pedidos que serao excluidos
-            test_order_ids = [o.id for o in Order.query.filter(
-                (Order.restaurant_id == 1) | (Order.restaurant_id == 2) |
-                (Order.restaurant_id == 7) | (Order.restaurant_id == 8)
-            ).all()]
-            if test_order_ids:
-                Delivery.query.filter(Delivery.order_id.in_(test_order_ids)).delete(synchronize_session=False)
-                OwnDriverEarning.query.filter(OwnDriverEarning.order_id.in_(test_order_ids)).delete(synchronize_session=False)
-                Order.query.filter(Order.id.in_(test_order_ids)).delete(synchronize_session=False)
-            # Pedidos sem restaurante
-            orphan_orders = Order.query.filter(Order.restaurant_id.notin_([r.id for r in Restaurant.query.all()])).all()
-            for o in orphan_orders:
-                Delivery.query.filter_by(order_id=o.id).delete()
-                db.session.delete(o)
-            deleted['orders'] = len(test_order_ids) + len(orphan_orders)
+        # 1. Deletar deliveries
+        r = db.session.execute(db.text("DELETE FROM deliveries"))
+        deleted['deliveries'] = r.rowcount
 
-        # 2. Excluir restaurantes de teste
-        if action in ('all', 'restaurants'):
-            test_rest_ids = [1, 2, 7, 8]  # Restaurante iFood, Emmanuel Boes, A PIPOQUEIRA, A PANQUEQUEIRA
-            for rid in test_rest_ids:
-                rest = Restaurant.query.get(rid)
-                if rest:
-                    # Limpar entregadores proprios
-                    EstablishmentDriver.query.filter_by(restaurant_id=rid).delete()
-                    OwnDriverEarning.query.filter_by(restaurant_id=rid).delete()
-                    # Limpar pedidos restantes
-                    Order.query.filter_by(restaurant_id=rid).update({'restaurant_id': None})
-                    db.session.delete(rest)
-            deleted['restaurants'] = len(test_rest_ids)
+        # 2. Deletar own_driver_earnings
+        r = db.session.execute(db.text("DELETE FROM own_driver_earnings"))
+        deleted['own_driver_earnings'] = r.rowcount
 
-        # 3. Excluir TODOS os usuarios exceto admins e super admin
-        if action in ('all', 'users'):
-            all_users = User.query.all()
-            test_user_ids = []
-            for u in all_users:
-                # Manter admins e super admin
-                if u.user_type == UserType.ADMIN:
-                    continue
-                # Manter o proprio usuario logado
-                if u.id == user.id:
-                    continue
-                test_user_ids.append(u.id)
-            for uid in test_user_ids:
-                u = User.query.get(uid)
-                if u and not (u.user_type == UserType.ADMIN and not u.tenant_id):
-                    # Limpar driver
-                    driver = Driver.query.filter_by(user_id=uid).first()
-                    if driver:
-                        Payment.query.filter_by(driver_id=driver.id).delete()
-                        Delivery.query.filter_by(driver_id=driver.id).update({'driver_id': None})
-                        from src.models.portal_models import DriverScore, DriverBonus, DriverAchievement, DriverPenalty, DriverRestaurant
-                        DriverScore.query.filter_by(driver_id=driver.id).delete()
-                        DriverBonus.query.filter_by(driver_id=driver.id).delete()
-                        DriverAchievement.query.filter_by(driver_id=driver.id).delete()
-                        DriverPenalty.query.filter_by(driver_id=driver.id).delete()
-                        DriverRestaurant.query.filter_by(driver_id=driver.id).delete()
-                        Order.query.filter_by(driver_id=driver.id).update({'driver_id': None})
-                        db.session.delete(driver)
-                    Notification.query.filter_by(user_id=uid).delete()
-                    db.session.delete(u)
-            deleted['users'] = len(test_user_ids)
+        # 3. Deletar payments
+        r = db.session.execute(db.text("DELETE FROM payments"))
+        deleted['payments'] = r.rowcount
 
-        # 4. Limpar customers iFood (genéricos)
-        if action in ('all', 'customers'):
-            ifood_customers = Customer.query.filter(
-                Customer.name == 'Cliente iFood',
-                Customer.user_id.is_(None)
-            ).all()
-            count = len(ifood_customers)
-            for c in ifood_customers:
-                Address.query.filter_by(customer_id=c.id).delete()
-                db.session.delete(c)
-            # Outros customers de teste
-            test_customers = Customer.query.filter(Customer.name.in_([
-                'jair bolsonaro', 'aquela cliente', 'Pamela', 'claudete boes',
-                'cliente capao', 'seu joaquim nabuco donossor', 'luis inacio ladrao',
-                'codigo e foto', 'opiniao'
-            ])).all()
-            for c in test_customers:
-                Address.query.filter_by(customer_id=c.id).delete()
-                db.session.delete(c)
-            deleted['customers'] = count + len(test_customers)
+        # 4. Deletar orders
+        r = db.session.execute(db.text("DELETE FROM orders"))
+        deleted['orders'] = r.rowcount
 
-        # 5. Limpar faturas e invoices
-        if action in ('all', 'invoices'):
-            Invoice.query.delete()
-            deleted['invoices'] = 'all'
+        # 5. Deletar addresses
+        r = db.session.execute(db.text("DELETE FROM addresses"))
+        deleted['addresses'] = r.rowcount
 
-        # 6. Limpar platform credentials de teste
-        if action in ('all', 'credentials'):
-            PlatformCredential.query.filter_by(restaurant_id=1).delete()
-            deleted['credentials'] = 'test entries'
+        # 6. Deletar notifications
+        r = db.session.execute(db.text("DELETE FROM notifications"))
+        deleted['notifications'] = r.rowcount
+
+        # 7. Deletar driver_scores, driver_bonuses, driver_achievements, driver_penalties
+        for tbl in ['driver_scores', 'driver_bonuses', 'driver_achievements', 'driver_penalties', 'driver_restaurants']:
+            r = db.session.execute(db.text(f"DELETE FROM {tbl}"))
+            deleted[tbl] = r.rowcount
+
+        # 8. Deletar platform_credentials
+        r = db.session.execute(db.text("DELETE FROM platform_credentials"))
+        deleted['platform_credentials'] = r.rowcount
+
+        # 9. Deletar invoices
+        r = db.session.execute(db.text("DELETE FROM invoices"))
+        deleted['invoices'] = r.rowcount
+
+        # 10. Deletar establishment_drivers
+        r = db.session.execute(db.text("DELETE FROM establishment_drivers"))
+        deleted['establishment_drivers'] = r.rowcount
+
+        # 11. Deletar drivers
+        r = db.session.execute(db.text("DELETE FROM drivers"))
+        deleted['drivers'] = r.rowcount
+
+        # 12. Deletar customers (exceto os que são users admins)
+        r = db.session.execute(db.text("DELETE FROM customers"))
+        deleted['customers'] = r.rowcount
+
+        # 13. Deletar users que não são admins
+        r = db.session.execute(db.text(f"DELETE FROM users WHERE user_type != 'ADMIN'"))
+        deleted['non_admin_users'] = r.rowcount
+
+        # 14. Deletar restaurantes
+        r = db.session.execute(db.text("DELETE FROM restaurants"))
+        deleted['restaurants'] = r.rowcount
+
+        # 15. Deletar praça Tramandaí (se existir)
+        r = db.session.execute(db.text("DELETE FROM squares WHERE name = 'Tramandai' OR city = 'Tramandai'"))
+        deleted['tramandai_square'] = r.rowcount
+
+        # 16. Limpar system_configs de teste
+        r = db.session.execute(db.text("DELETE FROM system_configs"))
+        deleted['system_configs'] = r.rowcount
 
         db.session.commit()
-        return jsonify({'message': 'Limpeza concluida', 'deleted': deleted}), 200
+
+        return jsonify({'message': 'Limpeza massiva concluida', 'deleted': deleted}), 200
 
     except Exception as e:
         db.session.rollback()
