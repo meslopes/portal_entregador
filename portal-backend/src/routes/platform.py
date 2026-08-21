@@ -381,6 +381,7 @@ def get_tenants():
         result = []
         
         for tenant in tenants:
+            users_count = User.query.filter_by(tenant_id=tenant.id).count()
             drivers_count = Driver.query.filter_by(tenant_id=tenant.id).count()
             restaurants_count = Restaurant.query.filter_by(tenant_id=tenant.id).count()
             orders_count = Order.query.filter_by(tenant_id=tenant.id).count()
@@ -392,6 +393,7 @@ def get_tenants():
                 'plan': tenant.plan or 'basic',
                 'is_active': tenant.is_active,
                 'created_at': tenant.created_at.isoformat() if tenant.created_at else None,
+                'users_count': users_count,
                 'drivers_count': drivers_count,
                 'restaurants_count': restaurants_count,
                 'orders_count': orders_count
