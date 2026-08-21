@@ -243,6 +243,15 @@ def approve_user(user_id):
                 if tenant_id:
                     driver.tenant_id = tenant_id
 
+        # 5. Excluir praça Tramandaí (ID:3)
+        if action in ('all', 'squares'):
+            tramandai = Square.query.get(3)
+            if tramandai:
+                Restaurant.query.filter_by(square_id=3).update({'square_id': None})
+                Driver.query.filter_by(square_id=3).update({'square_id': None})
+                db.session.delete(tramandai)
+                deleted['squares'] = 'Tramandaí excluída'
+
         db.session.commit()
 
 
@@ -9972,12 +9981,18 @@ def cleanup_test_data():
                     db.session.delete(rest)
             deleted['restaurants'] = len(test_rest_ids)
 
-        # 3. Excluir usuarios de teste
+        # 3. Excluir TODOS os usuarios exceto admins e super admin
         if action in ('all', 'users'):
-            test_user_ids = [
-                8,   # Gabriel entregador
-                16,  # Enilton (sem tenant)
-            ]
+            all_users = User.query.all()
+            test_user_ids = []
+            for u in all_users:
+                # Manter admins e super admin
+                if u.user_type == UserType.ADMIN:
+                    continue
+                # Manter o proprio usuario logado
+                if u.id == user.id:
+                    continue
+                test_user_ids.append(u.id)
             for uid in test_user_ids:
                 u = User.query.get(uid)
                 if u and not (u.user_type == UserType.ADMIN and not u.tenant_id):
