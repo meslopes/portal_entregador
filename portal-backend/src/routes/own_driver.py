@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 from functools import wraps
 import jwt
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 own_driver_bp = Blueprint('own_driver', __name__, url_prefix='/api/own-driver')
 
@@ -249,7 +252,7 @@ def accept_order(order_id):
 def update_order_status(order_id):
     """Atualiza status do pedido (entregador próprio)"""
     driver = request.own_driver
-    data = request.get_json()
+    data = request.get_json() or {}
 
     order = Order.query.get(order_id)
     if not order:

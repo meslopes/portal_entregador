@@ -28,20 +28,6 @@ def create_app(config_name=None):
     # Carrega configuração ANTES de qualquer handler que dependa dela
     app.config.from_object(config[config_name])
 
-    # Endpoint temporário para listar todas as rotas do app Flask (fora de Blueprint)
-    @app.route('/rotas-teste', methods=['GET'])
-    def rotas_teste():
-        from flask import current_app
-        app_ = current_app._get_current_object()
-        rotas = []
-        for rule in app_.url_map.iter_rules():
-            rotas.append({
-                'endpoint': rule.endpoint,
-                'methods': list(rule.methods),
-                'rule': str(rule)
-            })
-        return jsonify(rotas=rotas)
-
     # Handler global para garantir headers CORS em todas as respostas
     from flask import request
     @app.after_request
@@ -56,8 +42,7 @@ def create_app(config_name=None):
 
     # Inicializar extensões
     db.init_app(app)
-    # Configurar CORS para todos os métodos e headers, e logar o valor em produção
-    print('CORS_ORIGINS:', app.config['CORS_ORIGINS'])
+    # Configurar CORS
     CORS(
         app,
         origins=app.config['CORS_ORIGINS'],

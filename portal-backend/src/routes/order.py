@@ -124,22 +124,23 @@ def process_scheduled_orders():
             # Calcula distância e ganhos
             km_total = 0
             driver_pct = get_driver_percentage(order)
-            driver_earnings = float(order.delivery_fee) * driver_pct
-            if order.delivery_address.latitude and order.restaurant.latitude:
+            delivery_fee = float(order.delivery_fee or 0)
+            driver_earnings = delivery_fee * driver_pct
+            if order.delivery_address and order.restaurant and order.delivery_address.latitude and order.restaurant.latitude:
                 km_total = haversine_distance(
                     order.restaurant.latitude, order.restaurant.longitude,
                     order.delivery_address.latitude, order.delivery_address.longitude
                 )
-                driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
+                driver_earnings = delivery_fee * driver_pct + (km_total * 0.5)
             
             order_info = {
                 'order_number': order.order_number,
-                'restaurant': order.restaurant.name,
-                'restaurant_address': order.restaurant.address,
-                'customer_name': order.customer.name,
-                'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}",
-                'total_amount': float(order.total_amount),
-                'delivery_fee': float(order.delivery_fee),
+                'restaurant': order.restaurant.name if order.restaurant else 'N/A',
+                'restaurant_address': order.restaurant.address if order.restaurant else 'N/A',
+                'customer_name': order.customer.name if order.customer else 'N/A',
+                'delivery_address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}" if order.delivery_address else 'N/A',
+                'total_amount': float(order.total_amount or 0),
+                'delivery_fee': delivery_fee,
                 'distance_km': km_total,
                 'driver_earnings': driver_earnings
             }
@@ -216,6 +217,7 @@ def process_scheduled_orders():
             
     except Exception as e:
         logger.error(f"Erro ao processar pedidos agendados: {e}")
+        db.session.rollback()
 
 
 def process_expired_offers():

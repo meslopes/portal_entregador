@@ -3100,9 +3100,9 @@ def get_live_tracking():
 
         
 
-        # Commit único após processar todos os geocodings
+        # Limpar estado pendente (endpoint é GET/read-only)
 
-        db.session.commit()
+        db.session.rollback()
 
         return jsonify({
 
@@ -3151,6 +3151,8 @@ def get_establishments():
         per_page = request.args.get('per_page', 20, type=int)
 
         search = request.args.get('search', '')
+
+        search_escaped = search.replace('%', '\\%').replace('_', '\\_') if search else ''
 
         square_id = request.args.get('square_id', type=int)
 
