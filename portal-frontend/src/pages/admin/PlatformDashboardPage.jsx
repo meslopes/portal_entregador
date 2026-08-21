@@ -1064,7 +1064,7 @@ const AdminsTab = () => {
                       </div>
                     </td>
                     <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>
-                      {admin.company_name || '-'}
+                      {admin.tenant_name || admin.company_name || '-'}
                     </td>
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center', color: '#64748b' }}>
                       {admin.establishments}
