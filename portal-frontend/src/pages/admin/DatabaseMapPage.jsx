@@ -32,9 +32,9 @@ const DatabaseMapPage = () => {
   const handleDeleteUser = async (user) => {
     const isSuperAdmin = user.user_type === 'ADMIN' && !user.tenant_id;
     if (isSuperAdmin) { alert('Não é possível excluir o super admin.'); return; }
-    if (!window.confirm(`Excluir ${user.first_name} ${user.last_name} (${user.email})?`)) return;
+    if (!window.confirm(`Excluir ${user.first_name} ${user.last_name} (${user.email})?\n\nSe tiver pedidos ou dados vinculados, serão desvinculados automaticamente.`)) return;
     try {
-      await adminService.deleteUser(user.id);
+      await api.delete(`/api/admin/users/${user.id}?force=true`);
       showMsg(`${user.first_name} ${user.last_name} excluído`);
       loadData();
     } catch (err) {
