@@ -57,7 +57,9 @@ const OwnDriverDashboardPage = () => {
       setIsOnline(statsRes.data.driver?.is_online || false);
 
       const storedRestaurant = localStorage.getItem('own_driver_restaurant');
-      if (storedRestaurant) setRestaurant(JSON.parse(storedRestaurant));
+      if (storedRestaurant) {
+        try { setRestaurant(JSON.parse(storedRestaurant)); } catch (e) { /* corrupted data */ }
+      }
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem('own_driver_token');

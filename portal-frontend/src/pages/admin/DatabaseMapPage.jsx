@@ -347,6 +347,10 @@ const DatabaseMapPage = () => {
     html += `</body></html>`;
 
     const win = window.open('', '_blank');
+    if (!win) {
+      alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+      return;
+    }
     win.document.write(html);
     win.document.close();
   };
@@ -622,7 +626,7 @@ const DatabaseMapPage = () => {
               </div>
 
               {/* SEÇÃO: DADOS DO ENTREGADOR (DRIVER) */}
-              {editingUser.user_type === 'DRIVER' && (
+              {editForm.user_type === 'DRIVER' && (
                 <>
                   <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#2563eb', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dados do Entregador</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -646,7 +650,7 @@ const DatabaseMapPage = () => {
               )}
 
               {/* SEÇÃO: DADOS DO ESTABELECIMENTO (CLIENT) */}
-              {editingUser.user_type === 'CLIENT' && (
+              {editForm.user_type === 'CLIENT' && (
                 <>
                   <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0d9488', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dados do Estabelecimento</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginBottom: '1rem' }}>

@@ -142,6 +142,7 @@ const ClientDashboardPage = () => {
 
     // Marcadores dos enderecos de entrega
     deliveryAddresses.forEach(addr => {
+      if (!addr.latitude || !addr.longitude) return;
       const statusColors = {
         ACCEPTED: '#f59e0b', PREPARING: '#8b5cf6', READY: '#06b6d4', PICKED_UP: '#2563eb'
       };
@@ -164,6 +165,7 @@ const ClientDashboardPage = () => {
 
     // Marcadores dos entregadores
     trackingDrivers.forEach(driver => {
+      if (!driver.latitude || !driver.longitude) return;
       const statusColors = {
         ACCEPTED: '#f59e0b', PREPARING: '#8b5cf6', READY: '#06b6d4', PICKED_UP: '#2563eb'
       };
@@ -483,6 +485,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
       const res = await api.post(`/api/orders/${order.id}/call-platform`);
       alert(res.data.message || 'Solicitação enviada');
       onClose();
+      window.location.reload();
     } catch (err) {
       alert(err.response?.data?.error || 'Erro ao chamar plataforma');
     } finally {
