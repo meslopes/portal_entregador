@@ -2330,25 +2330,29 @@ def get_my_tracking():
 
         # Entregadores da plataforma
         for order in active_orders:
-            driver = order.driver
-            if not driver or driver.id in seen_drivers:
-                continue
-            seen_drivers.add(driver.id)
+            try:
+                driver = order.driver
+                if not driver or driver.id in seen_drivers:
+                    continue
+                seen_drivers.add(driver.id)
 
-            if driver.current_latitude and driver.current_longitude:
-                drivers_data.append({
-                    'driver_id': driver.id,
-                    'name': f"{driver.user.first_name} {driver.user.last_name}",
-                    'phone': driver.user.phone,
-                    'vehicle_type': driver.vehicle_type.value,
-                    'latitude': float(driver.current_latitude),
-                    'longitude': float(driver.current_longitude),
-                    'order_id': order.id,
-                    'order_number': order.order_number,
-                    'order_status': order.status.value,
-                    'last_update': driver.last_location_update.isoformat() if driver.last_location_update else None,
-                    'is_own': False
-                })
+                if driver.current_latitude and driver.current_longitude:
+                    drivers_data.append({
+                        'driver_id': driver.id,
+                        'name': f"{driver.user.first_name} {driver.user.last_name}" if driver.user else 'Entregador',
+                        'phone': driver.user.phone if driver.user else None,
+                        'vehicle_type': driver.vehicle_type.value if driver.vehicle_type else 'MOTORCYCLE',
+                        'latitude': float(driver.current_latitude),
+                        'longitude': float(driver.current_longitude),
+                        'order_id': order.id,
+                        'order_number': order.order_number,
+                        'order_status': order.status.value,
+                        'last_update': driver.last_location_update.isoformat() if driver.last_location_update else None,
+                        'is_own': False
+                    })
+            except Exception as e:
+                print(f"Erro ao processar driver do pedido {order.id}: {e}")
+                continue
 
         # Entregadores próprios com pedidos ativos
         own_active_orders = Order.query.filter(
@@ -2365,25 +2369,29 @@ def get_my_tracking():
 
         seen_own_drivers = set()
         for order in own_active_orders:
-            est_driver = order.establishment_driver
-            if not est_driver or est_driver.id in seen_own_drivers:
-                continue
-            seen_own_drivers.add(est_driver.id)
+            try:
+                est_driver = order.establishment_driver
+                if not est_driver or est_driver.id in seen_own_drivers:
+                    continue
+                seen_own_drivers.add(est_driver.id)
 
-            if est_driver.current_latitude and est_driver.current_longitude:
-                drivers_data.append({
-                    'driver_id': f"own_{est_driver.id}",
-                    'name': est_driver.name,
-                    'phone': est_driver.phone,
-                    'vehicle_type': est_driver.vehicle_type,
-                    'latitude': float(est_driver.current_latitude),
-                    'longitude': float(est_driver.current_longitude),
-                    'order_id': order.id,
-                    'order_number': order.order_number,
-                    'order_status': order.status.value,
-                    'last_update': est_driver.updated_at.isoformat() if est_driver.updated_at else None,
-                    'is_own': True
-                })
+                if est_driver.current_latitude and est_driver.current_longitude:
+                    drivers_data.append({
+                        'driver_id': f"own_{est_driver.id}",
+                        'name': est_driver.name,
+                        'phone': est_driver.phone,
+                        'vehicle_type': est_driver.vehicle_type,
+                        'latitude': float(est_driver.current_latitude),
+                        'longitude': float(est_driver.current_longitude),
+                        'order_id': order.id,
+                        'order_number': order.order_number,
+                        'order_status': order.status.value,
+                        'last_update': est_driver.updated_at.isoformat() if est_driver.updated_at else None,
+                        'is_own': True
+                    })
+            except Exception as e:
+                print(f"Erro ao processar own driver do pedido {order.id}: {e}")
+                continue
 
         # Dados do estabelecimento para o mapa
         restaurant_data = {
@@ -2400,41 +2408,49 @@ def get_my_tracking():
 
         # Pedidos com entregadores da plataforma
         for order in active_orders:
-            if order.id in seen_order_ids:
+            try:
+                if order.id in seen_order_ids:
+                    continue
+                seen_order_ids.add(order.id)
+                if order.delivery_address:
+                    addr = order.delivery_address
+                    if addr.latitude and addr.longitude:
+                        delivery_addresses.append({
+                            'order_id': order.id,
+                            'order_number': order.order_number,
+                            'order_status': order.status.value,
+                            'latitude': float(addr.latitude),
+                            'longitude': float(addr.longitude),
+                            'street': addr.street,
+                            'neighborhood': addr.neighborhood,
+                            'customer_name': order.customer.name if order.customer else 'Cliente'
+                        })
+            except Exception as e:
+                print(f"Erro ao processar endereço do pedido {order.id}: {e}")
                 continue
-            seen_order_ids.add(order.id)
-            if order.delivery_address:
-                addr = order.delivery_address
-                if addr.latitude and addr.longitude:
-                    delivery_addresses.append({
-                        'order_id': order.id,
-                        'order_number': order.order_number,
-                        'order_status': order.status.value,
-                        'latitude': float(addr.latitude),
-                        'longitude': float(addr.longitude),
-                        'street': addr.street,
-                        'neighborhood': addr.neighborhood,
-                        'customer_name': order.customer.name if order.customer else 'Cliente'
-                    })
 
         # Pedidos com entregadores próprios
         for order in own_active_orders:
-            if order.id in seen_order_ids:
+            try:
+                if order.id in seen_order_ids:
+                    continue
+                seen_order_ids.add(order.id)
+                if order.delivery_address:
+                    addr = order.delivery_address
+                    if addr.latitude and addr.longitude:
+                        delivery_addresses.append({
+                            'order_id': order.id,
+                            'order_number': order.order_number,
+                            'order_status': order.status.value,
+                            'latitude': float(addr.latitude),
+                            'longitude': float(addr.longitude),
+                            'street': addr.street,
+                            'neighborhood': addr.neighborhood,
+                            'customer_name': order.customer.name if order.customer else 'Cliente'
+                        })
+            except Exception as e:
+                print(f"Erro ao processar endereço own do pedido {order.id}: {e}")
                 continue
-            seen_order_ids.add(order.id)
-            if order.delivery_address:
-                addr = order.delivery_address
-                if addr.latitude and addr.longitude:
-                    delivery_addresses.append({
-                        'order_id': order.id,
-                        'order_number': order.order_number,
-                        'order_status': order.status.value,
-                        'latitude': float(addr.latitude),
-                        'longitude': float(addr.longitude),
-                        'street': addr.street,
-                        'neighborhood': addr.neighborhood,
-                        'customer_name': order.customer.name if order.customer else 'Cliente'
-                    })
 
         return jsonify({
             'drivers': drivers_data,
