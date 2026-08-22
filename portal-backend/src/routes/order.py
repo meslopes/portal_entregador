@@ -1522,7 +1522,7 @@ def estimate_fee():
             return jsonify({'error': 'Restaurante não encontrado'}), 400
 
         # Geocodificar endereço de entrega
-        from src.services.geocoding import geocode_address
+        from src.services.geocoding import geocode_address, get_route_distance_with_fallback
         city_hint = None
         if restaurant.square_id:
             from src.models.portal_models import Square
@@ -1534,13 +1534,19 @@ def estimate_fee():
         del_lat = geo_del['latitude'] if geo_del else None
         del_lng = geo_del['longitude'] if geo_del else None
 
-        # Calcular distância
+        # Calcular distância REAL (rota) com fallback para Haversine
         distance_km = 0
+        duration_min = 0
+        distance_source = 'none'
+        
         if del_lat and del_lng and restaurant.latitude and restaurant.longitude:
-            distance_km = haversine_distance(
+            route_info = get_route_distance_with_fallback(
                 float(restaurant.latitude), float(restaurant.longitude),
                 float(del_lat), float(del_lng)
             )
+            distance_km = route_info['distance_km']
+            duration_min = route_info['duration_min']
+            distance_source = route_info['source']
 
         # Calcular frete
         delivery_fee = 0
@@ -1570,9 +1576,11 @@ def estimate_fee():
 
         return jsonify({
             'distance_km': round(distance_km, 2),
+            'duration_min': round(duration_min, 1),
             'delivery_fee': delivery_fee,
             'price_per_km': price_per_km,
-            'min_distance_km': min_km
+            'min_distance_km': min_km,
+            'distance_source': distance_source
         }), 200
 
     except Exception as e:

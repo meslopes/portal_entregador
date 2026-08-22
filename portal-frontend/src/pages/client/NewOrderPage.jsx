@@ -291,9 +291,18 @@ const NewOrderPage = () => {
                     <span>Distância calculada</span>
                     <span>{estimatedFee.distance_km?.toFixed(1)} km</span>
                   </div>
+                  {estimatedFee.duration_min > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Tempo estimado</span>
+                      <span>{Math.round(estimatedFee.duration_min)} min</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.5rem', marginTop: '0.25rem', fontSize: '1rem' }}>
                     <span>Frete</span>
                     <span>R$ {estimatedFee.delivery_fee?.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  <div style={{ fontSize: '0.625rem', color: '#94a3b8', textAlign: 'right', marginTop: '0.25rem' }}>
+                    {estimatedFee.distance_source === 'osrm' ? 'Distância real (rota)' : 'Distância estimada (linha reta)'}
                   </div>
                 </>
               ) : (

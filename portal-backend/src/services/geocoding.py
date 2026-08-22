@@ -1,8 +1,84 @@
 """
 Servico de geocodificacao usando Nominatim (OpenStreetMap).
 Converte enderecos em coordenadas geograficas (latitude/longitude).
+Servico de roteirizacao usando OSRM para distancia real.
 """
 import requests
+
+# OSRM public server
+OSRM_URL = "http://router.project-osrm.org/route/v1/driving"
+
+
+def get_route_distance(lat1, lng1, lat2, lng2):
+    """
+    Calcula a distancia real de direção entre dois pontos usando OSRM.
+    
+    Args:
+        lat1, lng1: Coordenadas de origem
+        lat2, lng2: Coordenadas de destino
+    
+    Returns:
+        dict: {'distance_km': float, 'duration_min': float, 'geometry': list} ou None
+    """
+    try:
+        # OSRM espera lng,lat (não lat,lng)
+        url = f"{OSRM_URL}/{lng1},{lat1};{lng2},{lat2}"
+        params = {
+            'overview': 'false',
+            'geometries': 'geojson'
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+        
+        if data.get('code') == 'Ok' and data.get('routes'):
+            route = data['routes'][0]
+            distance_km = route['distance'] / 1000  # metros para km
+            duration_min = route['duration'] / 60  # segundos para minutos
+            
+            return {
+                'distance_km': round(distance_km, 2),
+                'duration_min': round(duration_min, 1),
+                'geometry': route.get('geometry', {}).get('coordinates', [])
+            }
+        
+        return None
+    except Exception as e:
+        print(f"Erro ao calcular rota OSRM: {e}")
+        return None
+
+
+def get_route_distance_with_fallback(lat1, lng1, lat2, lng2):
+    """
+    Calcula distancia real com fallback para Haversine.
+    
+    Returns:
+        dict: {'distance_km': float, 'duration_min': float, 'source': str}
+    """
+    # Tentar OSRM primeiro
+    route = get_route_distance(lat1, lng1, lat2, lng2)
+    if route:
+        route['source'] = 'osrm'
+        return route
+    
+    # Fallback: Haversine
+    from math import radians, sin, cos, sqrt, atan2
+    
+    R = 6371  # Raio da Terra em km
+    lat1_r, lat2_r = radians(lat1), radians(lat2)
+    dlat = radians(lat2 - lat1)
+    dlng = radians(lng2 - lng1)
+    
+    a = sin(dlat/2)**2 + cos(lat1_r) * cos(lat2_r) * sin(dlng/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    distance_km = R * c
+    
+    return {
+        'distance_km': round(distance_km, 2),
+        'duration_min': round(distance_km / 30 * 60, 1),  # Estimativa: 30km/h média
+        'source': 'haversine'
+    }
+
 
 # Coordenadas de fallback para cidades conhecidas
 CITY_COORDS = {
