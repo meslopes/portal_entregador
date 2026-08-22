@@ -1097,3 +1097,74 @@ class PlatformCredential(db.Model):
             'updated_at': self.updated_at.isoformat()
         }
 
+
+class DeliveryRoute(db.Model):
+    """Rota de entrega com múltiplos pedidos para entregadores próprios"""
+    __tablename__ = 'delivery_routes'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=False)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, COMPLETED, CANCELLED
+    total_distance_km = db.Column(db.Numeric(10, 2))
+    total_duration_min = db.Column(db.Numeric(10, 2))
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('EstablishmentDriver', backref='routes')
+    restaurant = db.relationship('Restaurant', backref='delivery_routes')
+    stops = db.relationship('DeliveryStop', backref='route', order_by='DeliveryStop.stop_order')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'establishment_driver_id': self.establishment_driver_id,
+            'restaurant_id': self.restaurant_id,
+            'status': self.status,
+            'total_distance_km': float(self.total_distance_km) if self.total_distance_km else None,
+            'total_duration_min': float(self.total_duration_min) if self.total_duration_min else None,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'created_at': self.created_at.isoformat(),
+            'stops': [s.to_dict() for s in self.stops]
+        }
+
+
+class DeliveryStop(db.Model):
+    """Parada individual em uma rota de entrega"""
+    __tablename__ = 'delivery_stops'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    route_id = db.Column(db.Integer, db.ForeignKey('delivery_routes.id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    stop_order = db.Column(db.Integer, nullable=False)  # Ordem na rota (1, 2, 3...)
+    stop_type = db.Column(db.String(20))  # PICKUP, DELIVERY
+    latitude = db.Column(db.Numeric(10, 8))
+    longitude = db.Column(db.Numeric(11, 8))
+    address = db.Column(db.String(500))
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, COMPLETED, SKIPPED
+    arrived_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    order = db.relationship('Order', backref='route_stops')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'route_id': self.route_id,
+            'order_id': self.order_id,
+            'stop_order': self.stop_order,
+            'stop_type': self.stop_type,
+            'latitude': float(self.latitude) if self.latitude else None,
+            'longitude': float(self.longitude) if self.longitude else None,
+            'address': self.address,
+            'status': self.status,
+            'arrived_at': self.arrived_at.isoformat() if self.arrived_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'created_at': self.created_at.isoformat()
+        }
+

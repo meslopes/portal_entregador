@@ -73,6 +73,9 @@ def create_app(config_name=None):
     from src.routes.own_driver import own_driver_bp
     app.register_blueprint(own_driver_bp)
 
+    from src.routes.route import route_bp
+    app.register_blueprint(route_bp)
+
     # Criar tabelas do banco de dados
     with app.app_context():
         _db_available = True
@@ -597,6 +600,41 @@ def create_app(config_name=None):
             db.session.execute(db.text(
                 "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'offer_attempts') THEN ALTER TABLE orders ADD COLUMN offer_attempts INTEGER DEFAULT 0; END IF; END $$"
             ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: tabelas de roteirização (delivery_routes e delivery_stops)
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS delivery_routes (
+                    id SERIAL PRIMARY KEY,
+                    establishment_driver_id INTEGER REFERENCES establishment_drivers(id),
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    status VARCHAR(20) DEFAULT 'ACTIVE',
+                    total_distance_km NUMERIC(10,2),
+                    total_duration_min NUMERIC(10,2),
+                    started_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS delivery_stops (
+                    id SERIAL PRIMARY KEY,
+                    route_id INTEGER REFERENCES delivery_routes(id),
+                    order_id INTEGER REFERENCES orders(id),
+                    stop_order INTEGER NOT NULL,
+                    stop_type VARCHAR(20),
+                    latitude NUMERIC(10,8),
+                    longitude NUMERIC(11,8),
+                    address VARCHAR(500),
+                    status VARCHAR(20) DEFAULT 'PENDING',
+                    arrived_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
             db.session.commit()
         except Exception:
             db.session.rollback()
