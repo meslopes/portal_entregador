@@ -155,22 +155,27 @@ def register_pin():
 @own_driver_required
 def toggle_status():
     """Toggle online/offline do entregador próprio"""
-    driver = request.own_driver
-    data = request.get_json() or {}
+    try:
+        driver = request.own_driver
+        data = request.get_json() or {}
 
-    driver.is_online = not driver.is_online
-    if 'latitude' in data:
-        driver.current_latitude = data['latitude']
-    if 'longitude' in data:
-        driver.current_longitude = data['longitude']
-    driver.updated_at = datetime.utcnow()
+        driver.is_online = not driver.is_online
+        if 'latitude' in data:
+            driver.current_latitude = data['latitude']
+        if 'longitude' in data:
+            driver.current_longitude = data['longitude']
+        driver.updated_at = datetime.utcnow()
 
-    db.session.commit()
+        db.session.commit()
 
-    return jsonify({
-        'is_online': driver.is_online,
-        'message': 'Online' if driver.is_online else 'Offline'
-    }), 200
+        return jsonify({
+            'is_online': driver.is_online,
+            'message': 'Online' if driver.is_online else 'Offline'
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao alterar status: {e}")
+        return jsonify({'error': f'Erro ao alterar status: {str(e)}'}), 500
 
 
 @own_driver_bp.route('/location', methods=['POST'])
