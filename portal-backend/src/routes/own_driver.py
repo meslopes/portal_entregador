@@ -444,7 +444,9 @@ def get_earnings():
     period = request.args.get('period', 'month')
 
     from datetime import timedelta
-    if period == 'week':
+    if period == 'day':
+        start_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == 'week':
         start_date = datetime.utcnow() - timedelta(days=7)
     else:
         start_date = datetime.utcnow() - timedelta(days=30)

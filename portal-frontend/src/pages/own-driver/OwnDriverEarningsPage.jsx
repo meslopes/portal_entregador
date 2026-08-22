@@ -85,6 +85,7 @@ const OwnDriverEarningsPage = () => {
           display: 'flex', gap: '0.5rem', marginBottom: '1rem'
         }}>
           {[
+            { key: 'day', label: 'Hoje' },
             { key: 'week', label: 'Semana' },
             { key: 'month', label: 'Mês' }
           ].map(f => (
