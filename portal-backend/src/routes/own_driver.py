@@ -489,7 +489,9 @@ def get_stats():
     period = request.args.get('period', 'month')
 
     from datetime import timedelta
-    if period == 'week':
+    if period == 'day':
+        start_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == 'week':
         start_date = datetime.utcnow() - timedelta(days=7)
     else:
         start_date = datetime.utcnow() - timedelta(days=30)
@@ -503,7 +505,7 @@ def get_stats():
 
     delivered = [o for o in orders if o.status == OrderStatus.DELIVERED]
     active = [o for o in orders if o.status in [
-        OrderStatus.ACCEPTED, OrderStatus.PREPARING,
+        OrderStatus.OFFERED, OrderStatus.ACCEPTED, OrderStatus.PREPARING,
         OrderStatus.READY, OrderStatus.PICKED_UP
     ]]
 
@@ -521,14 +523,21 @@ def get_stats():
         if o.accepted_at and o.delivery_time:
             diff = (o.delivery_time - o.accepted_at).total_seconds() / 60
             delivery_times.append(diff)
+        elif o.delivery_time and o.created_at:
+            # Fallback: usar created_at se accepted_at não existir
+            diff = (o.delivery_time - o.created_at).total_seconds() / 60
+            delivery_times.append(diff)
 
     avg_time = sum(delivery_times) / len(delivery_times) if delivery_times else 0
+
+    # Total de entregas (usar campo do driver como fallback)
+    total_deliveries = len(delivered) if delivered else (driver.total_deliveries or 0)
 
     return jsonify({
         'driver': driver.to_dict(),
         'period': period,
         'stats': {
-            'total_deliveries': len(delivered),
+            'total_deliveries': total_deliveries,
             'active_orders': len(active),
             'total_earning': total_earning,
             'total_paid': total_paid,
