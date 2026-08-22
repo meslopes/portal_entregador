@@ -8988,7 +8988,11 @@ def get_payment_config():
 
             'km_value': float(restaurant.own_driver_km_value) if restaurant.own_driver_km_value else 1.50,
 
-            'percentage': float(restaurant.own_driver_percentage) if restaurant.own_driver_percentage else 70.0
+            'percentage': float(restaurant.own_driver_percentage) if restaurant.own_driver_percentage else 70.0,
+
+            'delivery_value': float(restaurant.own_driver_delivery_value) if restaurant.own_driver_delivery_value else 3.00,
+
+            'max_deliveries': restaurant.own_driver_max_deliveries or 10
 
         }), 200
 
@@ -9064,6 +9068,14 @@ def update_payment_config():
 
             restaurant.own_driver_percentage = data['percentage']
 
+        if 'delivery_value' in data:
+
+            restaurant.own_driver_delivery_value = data['delivery_value']
+
+        if 'max_deliveries' in data:
+
+            restaurant.own_driver_max_deliveries = data['max_deliveries']
+
         
 
         db.session.commit()
@@ -9080,7 +9092,11 @@ def update_payment_config():
 
             'km_value': float(restaurant.own_driver_km_value) if restaurant.own_driver_km_value else 1.50,
 
-            'percentage': float(restaurant.own_driver_percentage) if restaurant.own_driver_percentage else 70.0
+            'percentage': float(restaurant.own_driver_percentage) if restaurant.own_driver_percentage else 70.0,
+
+            'delivery_value': float(restaurant.own_driver_delivery_value) if restaurant.own_driver_delivery_value else 3.00,
+
+            'max_deliveries': restaurant.own_driver_max_deliveries or 10
 
         }), 200
 

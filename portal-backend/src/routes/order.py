@@ -158,11 +158,34 @@ def process_scheduled_orders():
                 
                 # Cálculo de ganhos do entregador próprio
                 restaurant = order.restaurant
+                payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
                 own_driver_earning_value = float(restaurant.own_driver_fixed_value or 5.00)
-                if restaurant.own_driver_payment_type == 'PER_KM':
+                
+                if payment_type == 'PER_KM':
                     own_driver_earning_value = km_total * float(restaurant.own_driver_km_value or 1.50)
-                elif restaurant.own_driver_payment_type == 'PERCENTAGE':
+                elif payment_type == 'PERCENTAGE':
                     own_driver_earning_value = float(order.delivery_fee) * (float(restaurant.own_driver_percentage or 70) / 100.0)
+                elif payment_type == 'FIXED_PLUS_DELIVERY':
+                    # Valor fixo + valor por entrega
+                    delivery_value = float(restaurant.own_driver_delivery_value or 3.00)
+                    own_driver_earning_value = float(restaurant.own_driver_fixed_value or 5.00) + delivery_value
+                elif payment_type == 'FIXED_UP_TO_PLUS_DELIVERY':
+                    # Valor fixo (até X entregas) + valor por entrega extra
+                    # O cálculo do "excedente" é feito no pagamento, não por pedido
+                    # Aqui registramos apenas o valor por entrega extra
+                    delivery_value = float(restaurant.own_driver_delivery_value or 3.00)
+                    max_deliveries = restaurant.own_driver_max_deliveries or 10
+                    # Contar entregas do dia para saber se excedeu
+                    from datetime import datetime as dt
+                    today_start = dt.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                    deliveries_today = OwnDriverEarning.query.filter(
+                        OwnDriverEarning.establishment_driver_id == own_driver.id,
+                        OwnDriverEarning.created_at >= today_start
+                    ).count()
+                    if deliveries_today >= max_deliveries:
+                        own_driver_earning_value = delivery_value
+                    else:
+                        own_driver_earning_value = 0  # Dentro do pacote fixo
                 
                 earning = OwnDriverEarning(
                     restaurant_id=restaurant.id,

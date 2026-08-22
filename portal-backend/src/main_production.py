@@ -571,6 +571,21 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: novos campos de pagamento (FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY)
+        try:
+            db.session.execute(db.text(
+                "ALTER TABLE restaurants ALTER COLUMN own_driver_payment_type TYPE VARCHAR(30)"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'own_driver_delivery_value') THEN ALTER TABLE restaurants ADD COLUMN own_driver_delivery_value NUMERIC(10,2) DEFAULT 3.00; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'own_driver_max_deliveries') THEN ALTER TABLE restaurants ADD COLUMN own_driver_max_deliveries INTEGER DEFAULT 10; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabela own_driver_earnings
         try:
             db.session.execute(db.text("""

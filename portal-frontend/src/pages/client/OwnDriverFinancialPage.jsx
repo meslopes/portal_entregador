@@ -11,7 +11,9 @@ const PAYMENT_TYPES = {
   PER_KM: { label: 'Por Km', description: 'Valor por km rodado', icon: '🛣️' },
   PERCENTAGE: { label: 'Percentual', description: '% do frete cobrado', icon: '📊' },
   DAILY: { label: 'Diária', description: 'Valor fixo por dia', icon: '📅' },
-  FIXED: { label: 'Fixo', description: 'Valor fixo combinado', icon: '💰' }
+  FIXED: { label: 'Fixo', description: 'Valor fixo combinado', icon: '💰' },
+  FIXED_PLUS_DELIVERY: { label: 'Fixo + Entrega', description: 'Valor fixo + por entrega', icon: '📦💰' },
+  FIXED_UP_TO_PLUS_DELIVERY: { label: 'Fixo (até X) + Extra', description: 'Fixo até N entregas + extra', icon: '📦📊' }
 };
 
 const OwnDriverFinancialPage = () => {
@@ -38,7 +40,9 @@ const OwnDriverFinancialPage = () => {
     payment_type: 'PER_DELIVERY',
     fixed_value: 5.00,
     km_value: 1.50,
-    percentage: 70.0
+    percentage: 70.0,
+    delivery_value: 3.00,
+    max_deliveries: 10
   });
 
   useEffect(() => { loadData(); }, [period, driverFilter, paidFilter]);
@@ -117,6 +121,13 @@ const OwnDriverFinancialPage = () => {
         payload.km_value = configForm.km_value;
       } else if (configForm.payment_type === 'PERCENTAGE') {
         payload.percentage = configForm.percentage;
+      } else if (configForm.payment_type === 'FIXED_PLUS_DELIVERY') {
+        payload.fixed_value = configForm.fixed_value;
+        payload.delivery_value = configForm.delivery_value;
+      } else if (configForm.payment_type === 'FIXED_UP_TO_PLUS_DELIVERY') {
+        payload.fixed_value = configForm.fixed_value;
+        payload.delivery_value = configForm.delivery_value;
+        payload.max_deliveries = configForm.max_deliveries;
       } else {
         payload.fixed_value = configForm.fixed_value;
       }
@@ -376,9 +387,9 @@ const OwnDriverFinancialPage = () => {
 
           {/* Valores */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-            {(configForm.payment_type === 'PER_DELIVERY' || configForm.payment_type === 'DAILY' || configForm.payment_type === 'FIXED') && (
+            {(configForm.payment_type === 'PER_DELIVERY' || configForm.payment_type === 'DAILY' || configForm.payment_type === 'FIXED' || configForm.payment_type === 'FIXED_PLUS_DELIVERY' || configForm.payment_type === 'FIXED_UP_TO_PLUS_DELIVERY') && (
               <div>
-                <label style={labelStyle}>Valor (R$)</label>
+                <label style={labelStyle}>Valor Fixo (R$)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -408,6 +419,30 @@ const OwnDriverFinancialPage = () => {
                   step="1"
                   value={configForm.percentage}
                   onChange={e => setConfigForm({ ...configForm, percentage: parseFloat(e.target.value) })}
+                  style={inputStyle}
+                />
+              </div>
+            )}
+            {(configForm.payment_type === 'FIXED_PLUS_DELIVERY' || configForm.payment_type === 'FIXED_UP_TO_PLUS_DELIVERY') && (
+              <div>
+                <label style={labelStyle}>Valor por Entrega Extra (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={configForm.delivery_value}
+                  onChange={e => setConfigForm({ ...configForm, delivery_value: parseFloat(e.target.value) })}
+                  style={inputStyle}
+                />
+              </div>
+            )}
+            {configForm.payment_type === 'FIXED_UP_TO_PLUS_DELIVERY' && (
+              <div>
+                <label style={labelStyle}>Máx. Entregas Incluídas</label>
+                <input
+                  type="number"
+                  step="1"
+                  value={configForm.max_deliveries}
+                  onChange={e => setConfigForm({ ...configForm, max_deliveries: parseInt(e.target.value) })}
                   style={inputStyle}
                 />
               </div>

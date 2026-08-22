@@ -437,10 +437,12 @@ class Restaurant(db.Model):
     subscription_expires_at = db.Column(db.DateTime)  # Data de expiração da assinatura
     platform_pricing_table_id = db.Column(db.Integer, db.ForeignKey('pricing_tables.id'), nullable=True)  # Tabela diferenciada para plataforma
     # Configuração de pagamento para entregadores próprios
-    own_driver_payment_type = db.Column(db.String(20), default='PER_DELIVERY')  # PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED
+    own_driver_payment_type = db.Column(db.String(30), default='PER_DELIVERY')  # PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED, FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY
     own_driver_fixed_value = db.Column(db.Numeric(10, 2), default=5.00)  # Valor fixo por entrega/diária
     own_driver_km_value = db.Column(db.Numeric(10, 2), default=1.50)  # Valor por km
     own_driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)  # Percentual do frete
+    own_driver_delivery_value = db.Column(db.Numeric(10, 2), default=3.00)  # Valor por entrega (para FIXED_PLUS_DELIVERY)
+    own_driver_max_deliveries = db.Column(db.Integer, default=10)  # Máximo de entregas incluídas no valor fixo
     # Dados bancarios
     bank_name = db.Column(db.String(100))
     bank_agency = db.Column(db.String(20))
