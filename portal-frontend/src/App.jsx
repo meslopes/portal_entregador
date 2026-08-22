@@ -34,6 +34,7 @@ import OwnDriverDashboardPage from '@/pages/own-driver/OwnDriverDashboardPage';
 import OwnDriverDeliveryPage from '@/pages/own-driver/OwnDriverDeliveryPage';
 import OwnDriverOrdersPage from '@/pages/own-driver/OwnDriverOrdersPage';
 import OwnDriverEarningsPage from '@/pages/own-driver/OwnDriverEarningsPage';
+import OwnDriverRoutesPage from '@/pages/own-driver/OwnDriverRoutesPage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
@@ -332,6 +333,7 @@ function App() {
           <Route path="/own-driver/delivery/:orderId" element={<OwnDriverProtectedRoute><OwnDriverDeliveryPage /></OwnDriverProtectedRoute>} />
           <Route path="/own-driver/orders" element={<OwnDriverProtectedRoute><OwnDriverOrdersPage /></OwnDriverProtectedRoute>} />
           <Route path="/own-driver/earnings" element={<OwnDriverProtectedRoute><OwnDriverEarningsPage /></OwnDriverProtectedRoute>} />
+          <Route path="/own-driver/routes" element={<OwnDriverProtectedRoute><OwnDriverRoutesPage /></OwnDriverProtectedRoute>} />
 
           {/* Rotas do super admin (plataforma) */}
           <Route path="/platform/login" element={<PlatformLoginPage />} />

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Package, Clock, DollarSign, Star, TrendingUp,
   MapPin, Truck, CheckCircle, AlertCircle, Power,
-  Navigation, RefreshCw
+  Navigation, RefreshCw, Route
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
@@ -270,7 +270,7 @@ const OwnDriverDashboardPage = () => {
         </div>
 
         {/* Ações Rápidas */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
           <ActionButton
             icon={<Package size={20} />}
             label="Histórico"
@@ -282,6 +282,12 @@ const OwnDriverDashboardPage = () => {
             label="Ganhos"
             onClick={() => navigate('/own-driver/earnings')}
             color="#16a34a"
+          />
+          <ActionButton
+            icon={<Route size={20} />}
+            label="Rotas"
+            onClick={() => navigate('/own-driver/routes')}
+            color="#8b5cf6"
           />
         </div>
       </div>
