@@ -307,7 +307,7 @@ class EstablishmentDriver(db.Model):
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20))
-    pin_hash = db.Column(db.String(128))  # Hash do PIN de 4 dígitos para login no PWA
+    pin_hash = db.Column(db.String(512))  # Hash do PIN de 4 dígitos para login no PWA
     vehicle_type = db.Column(db.String(20))  # MOTO, BIKE, CAR
     vehicle_plate = db.Column(db.String(10))
     vehicle_model = db.Column(db.String(100))

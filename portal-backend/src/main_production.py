@@ -757,6 +757,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: aumentar pin_hash para 512 (scrypt hash é maior)
+        try:
+            db.session.execute(db.text(
+                "ALTER TABLE establishment_drivers ALTER COLUMN pin_hash TYPE VARCHAR(512)"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: square_id na tabela orders (Sistema Multi-Praça)
         try:
             db.session.execute(db.text(
