@@ -131,12 +131,14 @@ const NewOrderPage = () => {
     if (!form.delivery_address.trim()) { setError('Endereço é obrigatório'); return; }
     if (!form.delivery_number.trim()) { setError('Número é obrigatório'); return; }
     if (!form.delivery_neighborhood.trim()) { setError('Bairro é obrigatório'); return; }
+    if (!estimatedFee) { setError('Calcule o frete antes de enviar o pedido'); return; }
     // Valor dos itens só é obrigatório quando cobrança na entrega
     if (form.product_payment_type === 'DELIVERY' && !form.product_value) { setError('Valor dos itens é obrigatório para cobrança na entrega'); return; }
 
     try {
       setIsLoading(true);
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + (form.delivery_complement ? ' - ' + form.delivery_complement : '');
+      const DELIVERY_FEE = estimatedFee.delivery_fee || 0;
 
       const response = await orderService.createOrder({
         ...(isAdmin && { restaurant_id: form.selected_establishment }),
@@ -375,11 +377,15 @@ const NewOrderPage = () => {
             <Row label="Valor dos Itens (cobrar do cliente)" value={'R$ ' + PRODUCT_VALUE.toFixed(2).replace('.', ',')} />
           )}
           <div style={{ borderTop: '1px solid #f1f5f9', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
-            <Row label={'Frete (' + (DISTANCE_KM > 0 ? DISTANCE_KM + ' km' : '—') + ')'} value={'R$ ' + DELIVERY_FEE.toFixed(2).replace('.', ',')} bold />
+            <Row
+              label={'Frete' + (estimatedFee ? ' (' + estimatedFee.distance_km?.toFixed(1) + ' km' + (estimatedFee.duration_min ? ', ~' + Math.round(estimatedFee.duration_min) + ' min' : '') + ')' : '')}
+              value={estimatedFee ? 'R$ ' + estimatedFee.delivery_fee?.toFixed(2).replace('.', ',') : 'Calcule o frete primeiro'}
+              bold
+            />
           </div>
           <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px solid #0d9488', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.25rem', color: '#0f766e' }}>
             <span>Valor da Entrega</span>
-            <span>R$ {TOTAL.toFixed(2).replace('.', ',')}</span>
+            <span>R$ {(estimatedFee?.delivery_fee || 0).toFixed(2).replace('.', ',')}</span>
           </div>
         </div>
 
