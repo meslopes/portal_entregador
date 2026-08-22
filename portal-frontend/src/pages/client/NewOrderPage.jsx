@@ -26,6 +26,8 @@ const NewOrderPage = () => {
   const [establishments, setEstablishments] = useState([]);
   const [pricingTable, setPricingTable] = useState(null);
   const [hasOwnDrivers, setHasOwnDrivers] = useState(false);
+  const [estimatedFee, setEstimatedFee] = useState(null);
+  const [calculatingFee, setCalculatingFee] = useState(false);
   const isAdmin = user?.user_type === 'ADMIN';
 
   const [form, setForm] = useState({
@@ -80,6 +82,28 @@ const NewOrderPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.selected_establishment]);
+
+  const calculateFee = async () => {
+    if (!form.delivery_address || !form.delivery_number || !form.delivery_neighborhood) {
+      setError('Preencha o endereço completo para calcular o frete');
+      return;
+    }
+    try {
+      setCalculatingFee(true);
+      setError('');
+      const fullAddress = form.delivery_address + ', ' + form.delivery_number + ' - ' + form.delivery_neighborhood + ', ' + form.delivery_city + ' - ' + form.delivery_state;
+      const { default: api } = await import('@/lib/api');
+      const res = await api.post('/api/orders/estimate-fee', {
+        delivery_address: fullAddress,
+        restaurant_id: isAdmin ? form.selected_establishment : undefined
+      });
+      setEstimatedFee(res.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao calcular frete');
+    } finally {
+      setCalculatingFee(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -261,15 +285,36 @@ const NewOrderPage = () => {
                 <span>Distância mínima</span>
                 <span>{MIN_DISTANCE_KM} km</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6366f1', fontStyle: 'italic' }}>
-                <span>Distância real</span>
-                <span>Calculada automaticamente</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.25rem', marginTop: '0.25rem' }}>
-                <span>Frete</span>
-                <span>Calculado ao enviar</span>
-              </div>
+              {estimatedFee ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Distância calculada</span>
+                    <span>{estimatedFee.distance_km?.toFixed(1)} km</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.5rem', marginTop: '0.25rem', fontSize: '1rem' }}>
+                    <span>Frete</span>
+                    <span>R$ {estimatedFee.delivery_fee?.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.25rem', marginTop: '0.25rem' }}>
+                  <span>Frete</span>
+                  <span>Preencha o endereço e clique calcular</span>
+                </div>
+              )}
             </div>
+            <button
+              type="button"
+              onClick={calculateFee}
+              disabled={calculatingFee}
+              style={{
+                width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.375rem',
+                border: 'none', background: calculatingFee ? '#94a3b8' : '#0d9488', color: 'white',
+                fontSize: '0.8125rem', fontWeight: 600, cursor: calculatingFee ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {calculatingFee ? 'Calculando...' : 'Calcular Frete'}
+            </button>
           </div>
         </Card>
 

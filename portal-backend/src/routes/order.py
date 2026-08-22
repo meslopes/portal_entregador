@@ -1493,6 +1493,91 @@ def get_active_orders():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@order_bp.route('/estimate-fee', methods=['POST'])
+@jwt_required()
+def estimate_fee():
+    """Estima o frete de entrega sem criar o pedido"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+
+        delivery_address = data.get('delivery_address')
+        if not delivery_address:
+            return jsonify({'error': 'Endereço de entrega é obrigatório'}), 400
+
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        # Buscar restaurante
+        restaurant = None
+        if data.get('restaurant_id'):
+            restaurant = Restaurant.query.get(data['restaurant_id'])
+        elif user and user.user_type == UserType.CLIENT:
+            customer_profile = Customer.query.filter_by(user_id=user.id).first()
+            if customer_profile:
+                restaurant = find_restaurant_by_name(customer_profile.name)
+
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 400
+
+        # Geocodificar endereço de entrega
+        from src.services.geocoding import geocode_address
+        city_hint = None
+        if restaurant.square_id:
+            from src.models.portal_models import Square
+            square = Square.query.get(restaurant.square_id)
+            if square:
+                city_hint = square.city
+
+        geo_del = geocode_address(delivery_address, city_hint=city_hint)
+        del_lat = geo_del['latitude'] if geo_del else None
+        del_lng = geo_del['longitude'] if geo_del else None
+
+        # Calcular distância
+        distance_km = 0
+        if del_lat and del_lng and restaurant.latitude and restaurant.longitude:
+            distance_km = haversine_distance(
+                float(restaurant.latitude), float(restaurant.longitude),
+                float(del_lat), float(del_lng)
+            )
+
+        # Calcular frete
+        delivery_fee = 0
+        price_per_km = 2.95
+        min_km = 4.0
+
+        if restaurant.pricing_table_id:
+            from src.models.portal_models import PricingTable
+            pt = PricingTable.query.get(restaurant.pricing_table_id)
+            if pt and pt.price_per_km:
+                price_per_km = float(pt.price_per_km)
+                min_km = float(pt.min_distance_km or 4.0)
+                km_total = max(distance_km, min_km)
+                delivery_fee = round(km_total * price_per_km, 2)
+                if pt.min_delivery_fee:
+                    delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
+                if pt.max_delivery_fee:
+                    delivery_fee = min(delivery_fee, float(pt.max_delivery_fee))
+        elif restaurant.square_id:
+            from src.models.portal_models import Square
+            sq = Square.query.get(restaurant.square_id)
+            if sq and sq.price_per_km:
+                price_per_km = float(sq.price_per_km)
+                min_km = float(sq.min_distance_km or 4.0)
+                km_total = max(distance_km, min_km)
+                delivery_fee = round(km_total * price_per_km, 2)
+
+        return jsonify({
+            'distance_km': round(distance_km, 2),
+            'delivery_fee': delivery_fee,
+            'price_per_km': price_per_km,
+            'min_distance_km': min_km
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @order_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_order():
