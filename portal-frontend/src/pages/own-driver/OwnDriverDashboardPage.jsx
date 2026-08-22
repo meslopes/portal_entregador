@@ -213,7 +213,7 @@ const OwnDriverDashboardPage = () => {
               Pedidos Ativos ({activeOrders.length})
             </h2>
             <button
-              onClick={loadData}
+              onClick={() => loadData(true)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: '#0d9488', display: 'flex', alignItems: 'center', gap: '0.25rem',
@@ -320,6 +320,24 @@ const ActiveOrderCard = ({ order, onClick }) => {
       {order.customer && (
         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
           {order.customer.name} • {order.customer.phone}
+        </div>
+      )}
+
+      {/* Código de entrega */}
+      {order.delivery_code && (
+        <div style={{ marginTop: '0.5rem', padding: '0.375rem 0.75rem', background: '#f0fdf4', borderRadius: '0.375rem', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+          <span style={{ fontSize: '0.75rem', color: '#166534' }}>Código: <strong>{order.delivery_code}</strong></span>
+        </div>
+      )}
+
+      {/* Prova de entrega */}
+      {order.proof_of_delivery_url && (
+        <div style={{ marginTop: '0.5rem' }}>
+          <img
+            src={`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}${order.proof_of_delivery_url}`}
+            alt="Prova de entrega"
+            style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '0.375rem', border: '1px solid #e2e8f0' }}
+          />
         </div>
       )}
     </div>

@@ -111,7 +111,16 @@ const OwnDriverFinancialPage = () => {
 
   const handleSaveConfig = async () => {
     try {
-      await api.put('/api/admin/establishment-drivers/payment-config', configForm);
+      // Enviar apenas o valor relevante para o tipo selecionado
+      const payload = { payment_type: configForm.payment_type };
+      if (configForm.payment_type === 'PER_KM') {
+        payload.km_value = configForm.km_value;
+      } else if (configForm.payment_type === 'PERCENTAGE') {
+        payload.percentage = configForm.percentage;
+      } else {
+        payload.fixed_value = configForm.fixed_value;
+      }
+      await api.put('/api/admin/establishment-drivers/payment-config', payload);
       setPaymentConfig(configForm);
       setEditingConfig(false);
       setSuccess('Configuração salva!');

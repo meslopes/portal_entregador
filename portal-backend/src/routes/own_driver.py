@@ -521,4 +521,8 @@ def _format_order_for_driver(order):
     # Itens
     result['items'] = order.items
 
+    # Prova de entrega
+    if order.delivery and order.delivery.proof_of_delivery_url:
+        result['proof_of_delivery_url'] = order.delivery.proof_of_delivery_url
+
     return result
