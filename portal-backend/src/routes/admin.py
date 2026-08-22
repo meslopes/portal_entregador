@@ -243,6 +243,16 @@ def approve_user(user_id):
                 if tenant_id:
                     driver.tenant_id = tenant_id
 
+        # Se for CLIENT, atualizar tenant do restaurante e customer
+        if user.user_type == UserType.CLIENT and tenant_id:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                customer.tenant_id = tenant_id
+                if customer.restaurant_id:
+                    restaurant = Restaurant.query.get(customer.restaurant_id)
+                    if restaurant and not restaurant.tenant_id:
+                        restaurant.tenant_id = tenant_id
+
         db.session.commit()
 
 

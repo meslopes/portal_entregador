@@ -40,6 +40,34 @@ const OwnDriverDashboardPage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Enviar localização a cada 15 segundos quando online
+  useEffect(() => {
+    if (!isOnline) return;
+
+    const sendLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const token = localStorage.getItem('own_driver_token');
+            await api.post('/api/own-driver/location', {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude
+            }, { headers: { Authorization: `Bearer ${token}` } });
+          } catch (e) { /* silent */ }
+        },
+        () => { /* geolocation error - silent */ },
+        { timeout: 10000, maximumAge: 15000 }
+      );
+    };
+
+    // Enviar imediatamente
+    sendLocation();
+
+    // Depois a cada 15 segundos
+    const interval = setInterval(sendLocation, 15000);
+    return () => clearInterval(interval);
+  }, [isOnline]);
+
   const loadData = async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
