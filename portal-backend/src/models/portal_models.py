@@ -379,7 +379,7 @@ class OwnDriverEarning(db.Model):
     # Valores calculados
     delivery_fee = db.Column(db.Numeric(10, 2), nullable=False)  # Frete cobrado do cliente
     driver_earning = db.Column(db.Numeric(10, 2), nullable=False)  # Valor a pagar ao entregador
-    payment_type = db.Column(db.String(20))  # Tipo de pagamento aplicado
+    payment_type = db.Column(db.String(30))  # Tipo de pagamento aplicado
     distance_km = db.Column(db.Numeric(10, 2))  # Distância percorrida
     # Status do pagamento
     is_paid = db.Column(db.Boolean, default=False)  # Se já foi pago
