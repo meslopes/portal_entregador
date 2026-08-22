@@ -75,7 +75,7 @@ INTERNAL_TO_IFOOD_MAP = {
 }
 
 
-def find_nearest_own_driver(order):
+def find_nearest_own_driver(order, exclude_driver_id=None):
     """Encontra o entregador próprio online mais próximo do restaurante"""
     restaurant = order.restaurant
     if not restaurant or not restaurant.has_own_drivers:
@@ -86,6 +86,10 @@ def find_nearest_own_driver(order):
         EstablishmentDriver.is_online == True,
         EstablishmentDriver.is_active == True
     ).all()
+
+    # Excluir entregador que rejeitou
+    if exclude_driver_id:
+        online_drivers = [d for d in online_drivers if d.id != exclude_driver_id]
 
     if not online_drivers:
         return None
@@ -148,13 +152,14 @@ def process_scheduled_orders():
             # === HÍBRIDO: Tenta entregadores próprios primeiro ===
             own_driver = find_nearest_own_driver(order)
             if own_driver:
-                # Atribui ao entregador próprio
+                # Oferece ao entregador próprio (não aceita automaticamente)
                 order.assigned_to_own_driver = True
                 order.establishment_driver_id = own_driver.id
-                order.status = OrderStatus.ACCEPTED  # Já aceito pelo sistema
-                order.accepted_at = now
+                order.status = OrderStatus.OFFERED  # Aguardando aceite
+                order.offered_at = now
+                order.offer_attempts = 1
                 
-                logger.info(f"[HYBRID] Pedido {order.order_number} atribuído ao entregador próprio {own_driver.name}")
+                logger.info(f"[HYBRID] Pedido {order.order_number} oferecido ao entregador próprio {own_driver.name}")
                 
                 # Cálculo de ganhos do entregador próprio
                 restaurant = order.restaurant

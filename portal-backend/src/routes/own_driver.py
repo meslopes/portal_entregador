@@ -213,7 +213,7 @@ def get_orders():
 
     if status == 'active':
         query = query.filter(Order.status.in_([
-            OrderStatus.ACCEPTED, OrderStatus.PREPARING,
+            OrderStatus.OFFERED, OrderStatus.ACCEPTED, OrderStatus.PREPARING,
             OrderStatus.READY, OrderStatus.PICKED_UP
         ]))
     elif status == 'completed':
@@ -232,24 +232,127 @@ def get_orders():
 @own_driver_bp.route('/orders/<int:order_id>/accept', methods=['POST'])
 @own_driver_required
 def accept_order(order_id):
-    """Entregador próprio aceita pedido atribuído"""
-    driver = request.own_driver
+    """Entregador próprio aceita pedido oferecido"""
+    try:
+        driver = request.own_driver
 
-    order = Order.query.get(order_id)
-    if not order:
-        return jsonify({'error': 'Pedido não encontrado'}), 404
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
 
-    if order.establishment_driver_id != driver.id:
-        return jsonify({'error': 'Este pedido não foi atribuído a você'}), 403
+        if order.establishment_driver_id != driver.id:
+            return jsonify({'error': 'Este pedido não foi atribuído a você'}), 403
 
-    if order.status != OrderStatus.ACCEPTED:
-        return jsonify({'error': 'Pedido não está disponível para aceitar'}), 400
+        if order.status != OrderStatus.OFFERED:
+            return jsonify({'error': 'Pedido não está aguardando aceite'}), 400
 
-    # Já está ACCEPTED, apenas confirma
-    return jsonify({
-        'message': 'Pedido aceito',
-        'order': _format_order_for_driver(order)
-    }), 200
+        # Aceitar o pedido
+        order.status = OrderStatus.ACCEPTED
+        order.accepted_at = datetime.utcnow()
+        order.updated_at = datetime.utcnow()
+
+        # Criar registro de ganhos
+        restaurant = order.restaurant
+        if restaurant:
+            payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
+            delivery_fee = float(order.delivery_fee or 0)
+            
+            # Calcular distância
+            km_total = 0
+            if order.delivery_address and restaurant.latitude and order.delivery_address.latitude:
+                from src.utils.geo import haversine_distance
+                km_total = haversine_distance(
+                    float(restaurant.latitude), float(restaurant.longitude),
+                    float(order.delivery_address.latitude), float(order.delivery_address.longitude)
+                )
+            
+            # Calcular ganhos baseado no tipo de pagamento
+            earning_value = float(restaurant.own_driver_fixed_value or 5.00)
+            if payment_type == 'PER_KM':
+                earning_value = km_total * float(restaurant.own_driver_km_value or 1.50)
+            elif payment_type == 'PERCENTAGE':
+                earning_value = delivery_fee * (float(restaurant.own_driver_percentage or 70) / 100.0)
+            elif payment_type == 'FIXED_PLUS_DELIVERY':
+                earning_value = float(restaurant.own_driver_fixed_value or 5.00) + float(restaurant.own_driver_delivery_value or 3.00)
+            elif payment_type == 'FIXED_UP_TO_PLUS_DELIVERY':
+                from datetime import datetime as dt
+                today_start = dt.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                deliveries_today = OwnDriverEarning.query.filter(
+                    OwnDriverEarning.establishment_driver_id == driver.id,
+                    OwnDriverEarning.created_at >= today_start
+                ).count()
+                max_deliveries = restaurant.own_driver_max_deliveries or 10
+                if deliveries_today >= max_deliveries:
+                    earning_value = float(restaurant.own_driver_delivery_value or 3.00)
+                else:
+                    earning_value = 0
+
+            earning = OwnDriverEarning(
+                restaurant_id=restaurant.id,
+                establishment_driver_id=driver.id,
+                order_id=order.id,
+                delivery_fee=delivery_fee,
+                driver_earning=earning_value,
+                payment_type=payment_type,
+                distance_km=km_total
+            )
+            db.session.add(earning)
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Pedido aceito',
+            'order': _format_order_for_driver(order)
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@own_driver_bp.route('/orders/<int:order_id>/reject', methods=['POST'])
+@own_driver_required
+def reject_order(order_id):
+    """Entregador próprio rejeita pedido oferecido"""
+    try:
+        driver = request.own_driver
+
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
+        if order.establishment_driver_id != driver.id:
+            return jsonify({'error': 'Este pedido não foi atribuído a você'}), 403
+
+        if order.status != OrderStatus.OFFERED:
+            return jsonify({'error': 'Pedido não está aguardando aceite'}), 400
+
+        # Limpar atribuição
+        order.assigned_to_own_driver = False
+        order.establishment_driver_id = None
+        order.status = OrderStatus.PENDING
+        order.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # Tentar próximo entregador próprio (em background)
+        try:
+            next_driver = find_nearest_own_driver(order, exclude_driver_id=driver.id)
+            if next_driver:
+                order.assigned_to_own_driver = True
+                order.establishment_driver_id = next_driver.id
+                order.status = OrderStatus.OFFERED
+                order.offered_at = datetime.utcnow()
+                order.offer_attempts = (order.offer_attempts or 0) + 1
+                db.session.commit()
+        except Exception as e:
+            logger.error(f"Erro ao tentar próximo entregador: {e}")
+
+        return jsonify({'message': 'Pedido rejeitado'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @own_driver_bp.route('/orders/<int:order_id>/status', methods=['PUT'])

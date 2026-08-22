@@ -589,6 +589,18 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: campos offered_at e offer_attempts para sistema de aceite
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'offered_at') THEN ALTER TABLE orders ADD COLUMN offered_at TIMESTAMP; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'offer_attempts') THEN ALTER TABLE orders ADD COLUMN offer_attempts INTEGER DEFAULT 0; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabela own_driver_earnings
         try:
             db.session.execute(db.text("""

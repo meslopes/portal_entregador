@@ -24,6 +24,7 @@ class VehicleType(Enum):
 class OrderStatus(Enum):
     SCHEDULED = "SCHEDULED"  # Pedido agendado (em preparo, visível apenas para admin)
     PENDING = "PENDING"      # Pedido tocando (visível para entregadores)
+    OFFERED = "OFFERED"      # Oferecido a entregador próprio, aguardando aceite
     ACCEPTED = "ACCEPTED"
     PREPARING = "PREPARING"
     READY = "READY"
@@ -586,6 +587,8 @@ class Order(db.Model):
     delivery_time = db.Column(db.DateTime)
     # Timestamps para timeline
     accepted_at = db.Column(db.DateTime)
+    offered_at = db.Column(db.DateTime)  # Quando foi oferecido ao entregador próprio
+    offer_attempts = db.Column(db.Integer, default=0)  # Quantas vezes foi oferecido
     preparing_at = db.Column(db.DateTime)
     ready_at = db.Column(db.DateTime)
     picked_up_at = db.Column(db.DateTime)

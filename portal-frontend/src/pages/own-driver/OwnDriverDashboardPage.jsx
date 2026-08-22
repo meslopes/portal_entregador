@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import { utils } from '@/lib/api';
 
 const STATUS_CONFIG = {
+  OFFERED: { color: '#f59e0b', bg: '#fef3c7', text: 'Oferecido', icon: Clock },
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
   READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
@@ -244,6 +245,24 @@ const OwnDriverDashboardPage = () => {
                   key={order.id}
                   order={order}
                   onClick={() => navigate(`/own-driver/delivery/${order.id}`)}
+                  onAccept={async (orderId) => {
+                    try {
+                      const token = localStorage.getItem('own_driver_token');
+                      await api.post(`/api/own-driver/orders/${orderId}/accept`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                      loadData(true);
+                    } catch (err) {
+                      setError(err.response?.data?.error || 'Erro ao aceitar pedido');
+                    }
+                  }}
+                  onReject={async (orderId) => {
+                    try {
+                      const token = localStorage.getItem('own_driver_token');
+                      await api.post(`/api/own-driver/orders/${orderId}/reject`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                      loadData(true);
+                    } catch (err) {
+                      setError(err.response?.data?.error || 'Erro ao rejeitar pedido');
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -283,17 +302,19 @@ const StatCard = ({ icon, label, value, color }) => (
   </div>
 );
 
-const ActiveOrderCard = ({ order, onClick }) => {
+const ActiveOrderCard = ({ order, onClick, onAccept, onReject }) => {
   const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.ACCEPTED;
   const StatusIcon = config.icon;
+  const isOffered = order.status === 'OFFERED';
 
   return (
     <div
-      onClick={onClick}
+      onClick={isOffered ? undefined : onClick}
       style={{
         background: 'white', borderRadius: '0.75rem', padding: '1rem',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer',
-        borderLeft: `4px solid ${config.color}`, transition: 'all 0.15s'
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: isOffered ? 'default' : 'pointer',
+        borderLeft: `4px solid ${config.color}`, transition: 'all 0.15s',
+        border: isOffered ? '2px solid #f59e0b' : undefined
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -320,6 +341,32 @@ const ActiveOrderCard = ({ order, onClick }) => {
       {order.customer && (
         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
           {order.customer.name} • {order.customer.phone}
+        </div>
+      )}
+
+      {/* Botões de aceite/recusa para pedidos oferecidos */}
+      {isOffered && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAccept(order.id); }}
+            style={{
+              flex: 1, padding: '0.5rem', borderRadius: '0.375rem', border: 'none',
+              background: '#16a34a', color: 'white', fontWeight: 600, fontSize: '0.8125rem',
+              cursor: 'pointer'
+            }}
+          >
+            Aceitar
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onReject(order.id); }}
+            style={{
+              flex: 1, padding: '0.5rem', borderRadius: '0.375rem', border: 'none',
+              background: '#dc2626', color: 'white', fontWeight: 600, fontSize: '0.8125rem',
+              cursor: 'pointer'
+            }}
+          >
+            Rejeitar
+          </button>
         </div>
       )}
 
