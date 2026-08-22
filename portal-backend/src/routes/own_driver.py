@@ -284,7 +284,7 @@ def update_order_status(order_id):
     }
 
     if order.status not in valid_transitions or new_status_enum not in valid_transitions.get(order.status, []):
-        return jsonify({'error': 'Transição de status inválida'}), 400
+        return jsonify({'error': f'Transição inválida: {order.status.value} → {new_status}. Status atual: {order.status.value}'}), 400
 
     # Validação GPS para PICKED_UP e DELIVERED
     if new_status_enum in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
