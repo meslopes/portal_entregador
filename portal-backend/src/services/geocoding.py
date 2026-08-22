@@ -150,17 +150,19 @@ def geocode_address(address, city_hint=None):
     # Remove virgulas duplas
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
 
-    # Lista de formatacoes para tentar
-    formats = [
-        clean,  # Formato original limpo
-        clean + ', Brasil',
-    ]
-
-    # Se tem city_hint, usa ele primeiro
+    # Lista de formatacoes para tentar (ordem importa)
+    formats = []
+    
+    # Se tem city_hint, usa ele primeiro (mais específico)
     if city_hint:
-        formats.insert(0, f"{clean}, {city_hint}, Brasil")
-        formats.insert(1, f"{clean}, {city_hint}, RS, Brasil")
-
+        formats.append(f"{clean}, {city_hint}, RS, Brasil")
+        formats.append(f"{clean}, {city_hint}, Brasil")
+        formats.append(f"{clean}, {city_hint}, Rio Grande do Sul, Brasil")
+    
+    # Formato original limpo
+    formats.append(clean)
+    formats.append(clean + ', Brasil')
+    
     # Se o endereco nao tem cidade/estado, adiciona Capão da Canoa como fallback
     if 'capão' not in clean.lower() and 'capao' not in clean.lower():
         formats.append(f"{clean}, Capão da Canoa, Rio Grande do Sul, Brasil")
@@ -172,7 +174,8 @@ def geocode_address(address, city_hint=None):
                 'q': fmt,
                 'format': 'json',
                 'limit': 1,
-                'countrycodes': 'br'
+                'countrycodes': 'br',
+                'addressdetails': 1
             }
 
             response = requests.get(url, params=params, headers=headers, timeout=5)
@@ -191,19 +194,9 @@ def geocode_address(address, city_hint=None):
             print(f"Erro na geocodificacao para '{fmt}': {e}")
             continue
 
-    # Fallback: tenta encontrar coordenadas da cidade no endereco ou city_hint
-    search_text = (clean + ' ' + (city_hint or '')).lower()
-    for city_name, coords in CITY_COORDS.items():
-        if city_name in search_text:
-            print(f"Geocodificacao fallback (cidade): '{city_name}' => {coords['lat']}, {coords['lng']}")
-            return {
-                'latitude': coords['lat'],
-                'longitude': coords['lng'],
-                'display_name': f"{city_name} (centro)"
-            }
-
-    # Sem fallback - retorna None se não conseguiu geocodificar
-    print(f"Geocodificacao falhou para: '{address}' (sem fallback)")
+    # Fallback: retorna None se não conseguiu geocodificar
+    # NÃO usa centro da cidade para endereços específicos
+    print(f"Geocodificacao falhou para: '{address}' (sem fallback de centro)")
     return None
 
 
