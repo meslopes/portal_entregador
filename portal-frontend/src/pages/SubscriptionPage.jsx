@@ -16,6 +16,7 @@ const SubscriptionPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [restaurants, setRestaurants] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   
   // Formulário de criação
   const [createForm, setCreateForm] = useState({
@@ -71,6 +72,7 @@ const SubscriptionPage = () => {
   const handleCreateSubscription = async (e) => {
     e.preventDefault();
     try {
+      setActionLoading(true);
       await api.post('/api/finance/subscriptions', createForm);
       setSuccess('Assinatura criada com sucesso!');
       setShowCreateModal(false);
@@ -79,22 +81,28 @@ const SubscriptionPage = () => {
       loadData();
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao criar assinatura');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleGenerateInvoice = async (subscriptionId) => {
     try {
+      setActionLoading(true);
       const res = await api.post(`/api/finance/subscriptions/${subscriptionId}/generate-invoice`);
       setSuccess(res.data.message);
       setTimeout(() => setSuccess(''), 3000);
       loadData();
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao gerar fatura');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handlePayInvoice = async (invoiceId) => {
     try {
+      setActionLoading(true);
       const res = await api.post(`/api/finance/invoices/${invoiceId}/pay`, {
         payment_method: 'PIX'
       });

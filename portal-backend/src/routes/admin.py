@@ -221,6 +221,11 @@ def approve_user(user_id):
 
             return jsonify({'error': 'Usuário não está pendente'}), 400
 
+        # Verificar tenant - admin só aprova usuários do seu tenant ou sem tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
         data = request.get_json() or {}
 
         # Determinar tenant_id: usar do request ou do admin atual
@@ -2012,7 +2017,7 @@ def update_driver_status(driver_id):
 
         tenant_id = get_current_tenant_id()
 
-        if tenant_id and driver.tenant_id != tenant_id:
+        if tenant_id and driver.tenant_id and driver.tenant_id != tenant_id:
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 

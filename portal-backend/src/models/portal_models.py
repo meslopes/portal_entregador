@@ -1328,10 +1328,15 @@ class PlatformDriverRoute(db.Model):
     stops = db.relationship('PlatformDriverStop', backref='route', order_by='PlatformDriverStop.stop_order')
 
     def to_dict(self):
+        driver_name = 'N/A'
+        if self.driver and self.driver.user:
+            first = self.driver.user.first_name or ''
+            last = self.driver.user.last_name or ''
+            driver_name = f"{first} {last}".strip() or 'N/A'
         return {
             'id': self.id,
             'driver_id': self.driver_id,
-            'driver_name': f"{self.driver.user.first_name} {self.driver.user.last_name}" if self.driver and self.driver.user else 'N/A',
+            'driver_name': driver_name,
             'restaurant_id': self.restaurant_id,
             'restaurant_name': self.restaurant.name if self.restaurant else 'N/A',
             'status': self.status,
