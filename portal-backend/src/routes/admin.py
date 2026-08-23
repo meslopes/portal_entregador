@@ -1588,7 +1588,7 @@ def get_drivers():
 
         for driver in drivers.items:
 
-            driver_dict = driver.to_dict()
+            driver_dict = driver.to_admin_dict()
 
             driver_dict['user'] = driver.user.to_dict()
 

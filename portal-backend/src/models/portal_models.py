@@ -216,8 +216,6 @@ class Driver(db.Model):
             'vehicle_plate': self.vehicle_plate,
             'vehicle_model': self.vehicle_model,
             'vehicle_year': self.vehicle_year,
-            'bank_account': self.bank_account,
-            'pix_key': self.pix_key,
             'is_online': self.is_online,
             'current_latitude': float(self.current_latitude) if self.current_latitude else None,
             'current_longitude': float(self.current_longitude) if self.current_longitude else None,
@@ -242,6 +240,13 @@ class Driver(db.Model):
         if self.square:
             data['square_name'] = self.square.name
             data['square_city'] = self.square.city
+        return data
+
+    def to_admin_dict(self):
+        """Inclui dados financeiros (apenas para admins)"""
+        data = self.to_dict()
+        data['bank_account'] = self.bank_account
+        data['pix_key'] = self.pix_key
         return data
 
 

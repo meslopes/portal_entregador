@@ -263,6 +263,12 @@ def get_delivery_history():
 def get_nearby_drivers():
     """Obtém entregadores próximos (para uso administrativo)"""
     try:
+        from src.utils.tenant import get_current_user
+        from src.models.portal_models import UserType
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
         latitude = request.args.get('latitude', type=float)
         longitude = request.args.get('longitude', type=float)
         radius_km = request.args.get('radius', 10, type=float)

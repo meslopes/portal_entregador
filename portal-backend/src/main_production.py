@@ -774,7 +774,7 @@ def create_app(config_name=None):
                     order_id INTEGER REFERENCES orders(id),
                     delivery_fee NUMERIC(10,2) NOT NULL,
                     driver_earning NUMERIC(10,2) NOT NULL,
-                    payment_type VARCHAR(20),
+                    payment_type VARCHAR(30),
                     distance_km NUMERIC(10,2),
                     is_paid BOOLEAN DEFAULT FALSE,
                     paid_at TIMESTAMP,

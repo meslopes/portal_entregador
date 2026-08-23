@@ -628,7 +628,8 @@ def get_available_orders():
         orders_data = []
         for order in available_orders:
             # Calcula distância aproximada do entregador ao restaurante
-            if driver.current_latitude and driver.current_longitude:
+            distance_to_restaurant = 0
+            if driver.current_latitude and driver.current_longitude and order.restaurant and order.restaurant.latitude and order.restaurant.longitude:
                 distance_to_restaurant = haversine_distance(
                     driver.current_latitude, driver.current_longitude,
                     order.restaurant.latitude, order.restaurant.longitude
@@ -637,8 +638,6 @@ def get_available_orders():
                 # Só mostra pedidos dentro de um raio de 200km
                 if distance_to_restaurant > 200:
                     continue
-            else:
-                distance_to_restaurant = 0
             
             order_dict = order.to_dict()
             order_dict['restaurant'] = order.restaurant.to_dict()
@@ -718,10 +717,10 @@ def accept_order(order_id):
         delivery = Delivery(
             order_id=order.id,
             driver_id=driver.id,
-            pickup_latitude=order.restaurant.latitude,
-            pickup_longitude=order.restaurant.longitude,
-            delivery_latitude=order.delivery_address.latitude,
-            delivery_longitude=order.delivery_address.longitude
+            pickup_latitude=order.restaurant.latitude if order.restaurant else None,
+            pickup_longitude=order.restaurant.longitude if order.restaurant else None,
+            delivery_latitude=order.delivery_address.latitude if order.delivery_address else None,
+            delivery_longitude=order.delivery_address.longitude if order.delivery_address else None
         )
         
         # Calcula ganhos estimados do entregador (% configurável + bônus por distância)
@@ -2087,7 +2086,7 @@ def get_order_details(order_id):
         
         # Verifica permissão
         if user.user_type == UserType.DRIVER:
-            if order.driver_id != user.driver.id:
+            if not user.driver or order.driver_id != user.driver.id:
                 return jsonify({'error': 'Acesso negado'}), 403
         
         order_dict = order.to_dict()
