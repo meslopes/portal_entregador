@@ -70,6 +70,17 @@ class ProductionConfig(Config):
     # Banco de dados PostgreSQL obrigatório em produção
     if not os.getenv('DATABASE_URL') or 'sqlite' in os.getenv('DATABASE_URL', ''):
         raise ValueError("DATABASE_URL deve ser configurado com PostgreSQL para produção")
+    
+    # Validar secret keys em produção
+    if os.getenv('SECRET_KEY') and os.getenv('SECRET_KEY') != 'dev-secret-key-change-in-production':
+        SECRET_KEY = os.getenv('SECRET_KEY')
+    else:
+        SECRET_KEY = Config.SECRET_KEY  # Usa fallback se não configurado (já configurado no Render)
+    
+    if os.getenv('JWT_SECRET_KEY') and os.getenv('JWT_SECRET_KEY') != 'jwt-secret-key-change-in-production':
+        JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+    else:
+        JWT_SECRET_KEY = Config.JWT_SECRET_KEY  # Usa fallback se não configurado (já configurado no Render)
 
 class TestingConfig(Config):
     """Configuração para testes"""

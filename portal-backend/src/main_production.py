@@ -582,9 +582,7 @@ def create_app(config_name=None):
             db.session.execute(db.text(
                 "ALTER TABLE restaurants ALTER COLUMN own_driver_payment_type TYPE VARCHAR(30)"
             ))
-            db.session.execute(db.text(
-                "ALTER TABLE own_driver_earnings ALTER COLUMN payment_type TYPE VARCHAR(30)"
-            ))
+            # own_driver_earnings.payment_type já é VARCHAR(30) no CREATE TABLE
             db.session.execute(db.text(
                 "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'own_driver_delivery_value') THEN ALTER TABLE restaurants ADD COLUMN own_driver_delivery_value NUMERIC(10,2) DEFAULT 3.00; END IF; END $$"
             ))

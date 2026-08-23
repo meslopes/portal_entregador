@@ -9897,8 +9897,8 @@ def database_map():
         squares = Square.query.order_by(Square.id).all()
         result['squares'] = [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id, 'is_active': s.is_active} for s in squares]
 
-        # Users (com TODOS os dados de perfil)
-        users = User.query.order_by(User.id).all()
+        # Users (limitar a 500 para performance)
+        users = User.query.order_by(User.id).limit(500).all()
         result['users'] = []
         for u in users:
             user_data = {
@@ -9952,11 +9952,11 @@ def database_map():
                             if sq: user_data['square_name'] = sq.name
             result['users'].append(user_data)
 
-        # Restaurants
-        restaurants = Restaurant.query.order_by(Restaurant.id).all()
+        # Restaurants (limitar a 200)
+        restaurants = Restaurant.query.order_by(Restaurant.id).limit(200).all()
         result['restaurants'] = [{'id': r.id, 'name': r.name, 'address': r.address, 'tenant_id': r.tenant_id, 'square_id': r.square_id, 'has_own_drivers': r.has_own_drivers, 'is_active': r.is_active} for r in restaurants]
 
-        # Customers
+        # Customers (limitar a 500)
         customers = Customer.query.order_by(Customer.id).all()
         result['customers'] = [{'id': c.id, 'name': c.name, 'phone': c.phone, 'user_id': c.user_id, 'tenant_id': c.tenant_id} for c in customers]
 
