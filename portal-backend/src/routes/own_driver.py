@@ -89,6 +89,9 @@ def login():
     # Criar token
     token = create_own_driver_token(driver.id, driver.restaurant_id)
 
+    if not driver.restaurant:
+        return jsonify({'error': 'Restaurante não encontrado'}), 404
+
     return jsonify({
         'token': token,
         'driver': driver.to_dict(),
@@ -636,17 +639,11 @@ def request_withdrawal():
         if not driver.pix_key:
             return jsonify({'error': 'Cadastre sua chave PIX antes de solicitar saque'}), 400
         
-        # Marcar todos os ganhos pendentes como "em processamento"
-        # (vamos usar is_paid=True e payment_method='WITHDRAWAL_PENDING')
-        for earning in pending_earnings:
-            earning.is_paid = True
-            earning.paid_at = datetime.utcnow()
-            earning.payment_method = 'WITHDRAWAL_REQUESTED'
-        
-        db.session.commit()
+        # NÃO marcar como pago aqui - o pagamento é processado pelo admin/estabelecimento
+        # Apenas retornar o valor pendente para o admin processar
         
         return jsonify({
-            'message': f'Solicitação de saque de R$ {pending_amount:.2f} enviada',
+            'message': f'Solicitação de saque de R$ {pending_amount:.2f} registrada',
             'amount': pending_amount,
             'pix_key': driver.pix_key,
             'earnings_count': len(pending_earnings)

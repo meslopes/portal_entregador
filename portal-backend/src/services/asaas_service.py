@@ -310,7 +310,10 @@ def verify_webhook_token(token):
             expected = config.config_value if config else ''
         except Exception:
             pass
-    return expected == token if expected else True
+    if not expected:
+        logger.warning("ASAAS_WEBHOOK_TOKEN não configurado - rejeitando webhook")
+        return False
+    return expected == token
 
 
 # ============================================

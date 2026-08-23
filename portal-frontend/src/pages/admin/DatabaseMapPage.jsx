@@ -158,6 +158,11 @@ const DatabaseMapPage = () => {
   };
 
   // === GERAR PDF (abre janela de impressão) ===
+  const escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  };
+
   const handleGeneratePDF = () => {
     if (!data) return;
     const d = data;
@@ -210,7 +215,7 @@ const DatabaseMapPage = () => {
 <table><tr><th>ID</th><th>Nome</th><th>Slug</th><th>Plano</th><th>Status</th></tr>`;
 
     (d.tenants || []).forEach(t => {
-      html += `<tr><td>${t.id}</td><td><strong>${t.name}</strong></td><td>${t.slug}</td><td>${t.plan}</td><td>${t.is_active ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">Inativo</span>'}</td></tr>`;
+      html += `<tr><td>${t.id}</td><td><strong>${escapeHtml(t.name)}</strong></td><td>${escapeHtml(t.slug)}</td><td>${escapeHtml(t.plan)}</td><td>${t.is_active ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">Inativo</span>'}</td></tr>`;
     });
     html += `</table>`;
 
@@ -218,7 +223,7 @@ const DatabaseMapPage = () => {
     html += `<h2>📍 Praças (${(d.squares||[]).length})</h2>
     <table><tr><th>ID</th><th>Nome</th><th>Cidade/UF</th><th>Tenant</th><th>Status</th></tr>`;
     (d.squares || []).forEach(s => {
-      html += `<tr><td>${s.id}</td><td><strong>${s.name}</strong></td><td>${s.city}/${s.state}</td><td>${s.tenant_id ? tenantMap[s.tenant_id] || s.tenant_id : '-'}</td><td>${s.is_active ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">Inativo</span>'}</td></tr>`;
+      html += `<tr><td>${s.id}</td><td><strong>${escapeHtml(s.name)}</strong></td><td>${escapeHtml(s.city)}/${escapeHtml(s.state)}</td><td>${s.tenant_id ? escapeHtml(tenantMap[s.tenant_id] || s.tenant_id) : '-'}</td><td>${s.is_active ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">Inativo</span>'}</td></tr>`;
     });
     html += `</table>`;
 
@@ -230,14 +235,14 @@ const DatabaseMapPage = () => {
       const isSuper = u.user_type === 'ADMIN' && !u.tenant_id;
       html += `<tr>
         <td>${u.id}</td>
-        <td><strong>${u.first_name} ${u.last_name}</strong></td>
-        <td><span class="badge ${typeClass}">${u.user_type}</span>${isSuper ? ' <span class="badge b-own">SUPER</span>' : ''}</td>
-        <td>${u.email}</td>
-        <td>${u.phone || '-'}</td>
-        <td>${u.tenant_id ? tenantMap[u.tenant_id] || u.tenant_id : '-'}</td>
-        <td>${u.square_name || '-'}</td>
-        <td>${u.status === 'ACTIVE' ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">' + u.status + '</span>'}</td>
-        <td>${u.linked_name || u.restaurant_name || '-'}</td>
+        <td><strong>${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</strong></td>
+        <td><span class="badge ${typeClass}">${escapeHtml(u.user_type)}</span>${isSuper ? ' <span class="badge b-own">SUPER</span>' : ''}</td>
+        <td>${escapeHtml(u.email)}</td>
+        <td>${escapeHtml(u.phone) || '-'}</td>
+        <td>${u.tenant_id ? escapeHtml(tenantMap[u.tenant_id] || u.tenant_id) : '-'}</td>
+        <td>${escapeHtml(u.square_name) || '-'}</td>
+        <td>${u.status === 'ACTIVE' ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">' + escapeHtml(u.status) + '</span>'}</td>
+        <td>${escapeHtml(u.linked_name || u.restaurant_name) || '-'}</td>
       </tr>`;
     });
     html += `</table>`;
@@ -246,7 +251,7 @@ const DatabaseMapPage = () => {
     html += `<h2>🏪 Restaurantes (${(d.restaurants||[]).length})</h2>
     <table><tr><th>ID</th><th>Nome</th><th>Endereço</th><th>Tenant</th><th>Praça</th><th>Próprios</th><th>Status</th></tr>`;
     (d.restaurants || []).forEach(r => {
-      html += `<tr><td>${r.id}</td><td><strong>${r.name}</strong></td><td style="font-size:9px">${r.address || '-'}</td><td>${r.tenant_id ? tenantMap[r.tenant_id] || r.tenant_id : '-'}</td><td>${r.square_id ? squareMap[r.square_id] || r.square_id : '-'}</td><td>${r.has_own_drivers ? '<span class="badge b-own">Sim</span>' : 'Não'}</td><td>${r.is_active ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">Inativo</span>'}</td></tr>`;
+      html += `<tr><td>${r.id}</td><td><strong>${escapeHtml(r.name)}</strong></td><td style="font-size:9px">${escapeHtml(r.address) || '-'}</td><td>${r.tenant_id ? escapeHtml(tenantMap[r.tenant_id] || r.tenant_id) : '-'}</td><td>${r.square_id ? escapeHtml(squareMap[r.square_id] || r.square_id) : '-'}</td><td>${r.has_own_drivers ? '<span class="badge b-own">Sim</span>' : 'Não'}</td><td>${r.is_active ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">Inativo</span>'}</td></tr>`;
     });
     html += `</table>`;
 
@@ -254,7 +259,7 @@ const DatabaseMapPage = () => {
     html += `<h2>🚚 Entregadores da Plataforma (${(d.platform_drivers||[]).length})</h2>
     <table><tr><th>ID</th><th>Nome</th><th>Email</th><th>Veículo</th><th>Placa</th><th>Tenant</th><th>Praça</th><th>Online</th><th>Entregas</th><th>Nota</th></tr>`;
     (d.platform_drivers || []).forEach(p => {
-      html += `<tr><td>${p.id}</td><td><strong>${p.name}</strong></td><td>${p.email || '-'}</td><td>${p.vehicle_type || '-'}</td><td>${p.vehicle_plate || '-'}</td><td>${p.tenant_id ? tenantMap[p.tenant_id] || p.tenant_id : '-'}</td><td>${p.square_id ? squareMap[p.square_id] || p.square_id : '-'}</td><td>${p.is_online ? '<span class="badge b-online">Online</span>' : '<span class="badge b-offline">Offline</span>'}</td><td>${p.total_deliveries || 0}</td><td>${p.rating || '-'}</td></tr>`;
+      html += `<tr><td>${p.id}</td><td><strong>${escapeHtml(p.name)}</strong></td><td>${escapeHtml(p.email) || '-'}</td><td>${escapeHtml(p.vehicle_type) || '-'}</td><td>${escapeHtml(p.vehicle_plate) || '-'}</td><td>${p.tenant_id ? escapeHtml(tenantMap[p.tenant_id] || p.tenant_id) : '-'}</td><td>${p.square_id ? escapeHtml(squareMap[p.square_id] || p.square_id) : '-'}</td><td>${p.is_online ? '<span class="badge b-online">Online</span>' : '<span class="badge b-offline">Offline</span>'}</td><td>${p.total_deliveries || 0}</td><td>${p.rating || '-'}</td></tr>`;
     });
     html += `</table>`;
 
@@ -262,7 +267,7 @@ const DatabaseMapPage = () => {
     html += `<h2>🏍️ Entregadores Próprios (${(d.own_drivers||[]).length})</h2>
     <table><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Veículo</th><th>Placa</th><th>Restaurante</th><th>Tenant</th><th>Praça</th><th>Online</th><th>PIN</th><th>Entregas</th></tr>`;
     (d.own_drivers || []).forEach(o => {
-      html += `<tr><td>${o.id}</td><td><strong>${o.name}</strong></td><td>${o.phone || '-'}</td><td>${o.vehicle_type || '-'}</td><td>${o.vehicle_plate || '-'}</td><td>${o.restaurant_name} (ID:${o.restaurant_id})</td><td>${o.tenant_id ? tenantMap[o.tenant_id] || o.tenant_id : '-'}</td><td>${o.square_name || '-'}</td><td>${o.is_online ? '<span class="badge b-online">Online</span>' : '<span class="badge b-offline">Offline</span>'}</td><td>${o.has_pin ? '<span class="badge b-pin">Sim</span>' : '<span class="badge b-nopin">Não</span>'}</td><td>${o.total_deliveries || 0}</td></tr>`;
+      html += `<tr><td>${o.id}</td><td><strong>${escapeHtml(o.name)}</strong></td><td>${escapeHtml(o.phone) || '-'}</td><td>${escapeHtml(o.vehicle_type) || '-'}</td><td>${escapeHtml(o.vehicle_plate) || '-'}</td><td>${escapeHtml(o.restaurant_name)} (ID:${o.restaurant_id})</td><td>${o.tenant_id ? escapeHtml(tenantMap[o.tenant_id] || o.tenant_id) : '-'}</td><td>${escapeHtml(o.square_name) || '-'}</td><td>${o.is_online ? '<span class="badge b-online">Online</span>' : '<span class="badge b-offline">Offline</span>'}</td><td>${o.has_pin ? '<span class="badge b-pin">Sim</span>' : '<span class="badge b-nopin">Não</span>'}</td><td>${o.total_deliveries || 0}</td></tr>`;
     });
     html += `</table>`;
 
