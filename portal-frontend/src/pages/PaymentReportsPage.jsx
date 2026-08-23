@@ -160,16 +160,71 @@ const PaymentReportsPage = () => {
     return `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
+  const exportCSV = () => {
+    if (!reports.length) return;
+    
+    // Cabeçalho
+    let csv = 'Entregador,Restaurante,Frequência,Total Ganhos,Total Pago,Pendente\n';
+    
+    // Dados
+    reports.forEach(r => {
+      csv += `"${r.driver_name}","${r.restaurant_name}","${r.payment_frequency}",${r.total_earning.toFixed(2)},${r.total_paid.toFixed(2)},${r.total_pending.toFixed(2)}\n`;
+    });
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relatorio_pagamentos_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportOverdueCSV = () => {
+    if (!overdueData.length) return;
+    
+    let csv = 'Restaurante,Fatura,Período,Vencimento,Valor,Dias Atrasado\n';
+    
+    overdueData.forEach(r => {
+      r.invoices.forEach(inv => {
+        const days = Math.floor((new Date() - new Date(inv.due_date)) / (1000 * 60 * 60 * 24));
+        csv += `"${r.restaurant_name}","${inv.invoice_number}","${formatDate(inv.period_start)} - ${formatDate(inv.period_end)}","${formatDate(inv.due_date)}",${inv.total_amount.toFixed(2)},${days}\n`;
+      });
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relatorio_inadimplencia_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
-          Financeiro - Entregadores Próprios
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-          Relatórios de pagamento por frequência e quitação por período
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
+            Financeiro - Entregadores Próprios
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
+            Relatórios de pagamento por frequência e quitação por período
+          </p>
+        </div>
+        <button
+          onClick={activeTab === 'reports' ? exportCSV : exportOverdueCSV}
+          style={{
+            padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
+            border: '1.5px solid #e2e8f0', background: 'white',
+            color: '#374151', fontSize: '0.875rem', fontWeight: 500,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
+          }}
+        >
+          <Download size={16} /> Exportar CSV
+        </button>
       </div>
 
       {/* Mensagens */}
