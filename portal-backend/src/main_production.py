@@ -660,6 +660,50 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tabelas de assinatura (establishment_subscriptions e subscription_invoices)
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS establishment_subscriptions (
+                    id SERIAL PRIMARY KEY,
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    billing_cycle VARCHAR(20) DEFAULT 'WEEKLY',
+                    price_per_driver NUMERIC(10,2) DEFAULT 50.00,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    last_billed_at TIMESTAMP,
+                    next_billing_at TIMESTAMP,
+                    total_billed NUMERIC(10,2) DEFAULT 0,
+                    total_paid NUMERIC(10,2) DEFAULT 0,
+                    asaas_subscription_id VARCHAR(100),
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS subscription_invoices (
+                    id SERIAL PRIMARY KEY,
+                    subscription_id INTEGER REFERENCES establishment_subscriptions(id),
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+                    period_start TIMESTAMP NOT NULL,
+                    period_end TIMESTAMP NOT NULL,
+                    drivers_count INTEGER DEFAULT 0,
+                    price_per_driver NUMERIC(10,2),
+                    total_amount NUMERIC(10,2) NOT NULL,
+                    status VARCHAR(20) DEFAULT 'PENDING',
+                    due_date TIMESTAMP,
+                    paid_at TIMESTAMP,
+                    payment_method VARCHAR(20),
+                    asaas_invoice_id VARCHAR(100),
+                    payment_url VARCHAR(500),
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabela own_driver_earnings
         try:
             db.session.execute(db.text("""

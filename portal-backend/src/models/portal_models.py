@@ -1171,3 +1171,108 @@ class OwnDriverStop(db.Model):
             'created_at': self.created_at.isoformat()
         }
 
+
+class EstablishmentSubscription(db.Model):
+    """Assinatura de entregadores próprios do estabelecimento"""
+    __tablename__ = 'establishment_subscriptions'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    
+    # Configuração da assinatura
+    billing_cycle = db.Column(db.String(20), default='WEEKLY')  # WEEKLY, MONTHLY
+    price_per_driver = db.Column(db.Numeric(10, 2), default=50.00)  # Preço por entregador por ciclo
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Controle de cobrança
+    last_billed_at = db.Column(db.DateTime)
+    next_billing_at = db.Column(db.DateTime)
+    total_billed = db.Column(db.Numeric(10, 2), default=0)
+    total_paid = db.Column(db.Numeric(10, 2), default=0)
+    
+    # Integração pagamento
+    asaas_subscription_id = db.Column(db.String(100))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    restaurant = db.relationship('Restaurant', backref='subscription')
+    tenant = db.relationship('Tenant', backref='subscriptions')
+    invoices = db.relationship('SubscriptionInvoice', backref='subscription', order_by='SubscriptionInvoice.created_at.desc()')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'restaurant_name': self.restaurant.name if self.restaurant else None,
+            'tenant_id': self.tenant_id,
+            'billing_cycle': self.billing_cycle,
+            'price_per_driver': float(self.price_per_driver) if self.price_per_driver else 50.00,
+            'is_active': self.is_active,
+            'last_billed_at': self.last_billed_at.isoformat() if self.last_billed_at else None,
+            'next_billing_at': self.next_billing_at.isoformat() if self.next_billing_at else None,
+            'total_billed': float(self.total_billed) if self.total_billed else 0,
+            'total_paid': float(self.total_paid) if self.total_paid else 0,
+            'pending_amount': float(self.total_billed or 0) - float(self.total_paid or 0),
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+
+class SubscriptionInvoice(db.Model):
+    """Fatura de assinatura de entregadores próprios"""
+    __tablename__ = 'subscription_invoices'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    subscription_id = db.Column(db.Integer, db.ForeignKey('establishment_subscriptions.id'), nullable=False)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    
+    # Dados da fatura
+    invoice_number = db.Column(db.String(50), unique=True, nullable=False)
+    period_start = db.Column(db.DateTime, nullable=False)
+    period_end = db.Column(db.DateTime, nullable=False)
+    
+    # Valores
+    drivers_count = db.Column(db.Integer, default=0)  # Quantidade de entregadores no período
+    price_per_driver = db.Column(db.Numeric(10, 2))
+    total_amount = db.Column(db.Numeric(10, 2), nullable=False)
+    
+    # Status
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, OVERDUE, CANCELLED
+    due_date = db.Column(db.DateTime)
+    paid_at = db.Column(db.DateTime)
+    payment_method = db.Column(db.String(20))
+    
+    # Integração pagamento
+    asaas_invoice_id = db.Column(db.String(100))
+    payment_url = db.Column(db.String(500))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    restaurant = db.relationship('Restaurant', backref='subscription_invoices')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'subscription_id': self.subscription_id,
+            'restaurant_id': self.restaurant_id,
+            'restaurant_name': self.restaurant.name if self.restaurant else None,
+            'invoice_number': self.invoice_number,
+            'period_start': self.period_start.isoformat() if self.period_start else None,
+            'period_end': self.period_end.isoformat() if self.period_end else None,
+            'drivers_count': self.drivers_count,
+            'price_per_driver': float(self.price_per_driver) if self.price_per_driver else 0,
+            'total_amount': float(self.total_amount) if self.total_amount else 0,
+            'status': self.status,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'paid_at': self.paid_at.isoformat() if self.paid_at else None,
+            'payment_method': self.payment_method,
+            'payment_url': self.payment_url,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+

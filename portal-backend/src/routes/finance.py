@@ -1,12 +1,13 @@
 """
 Endpoints de relatórios financeiros para entregadores próprios.
 Agrupamento por frequência de pagamento e quitação por período.
+Cobrança de assinatura para estabelecimentos com entregadores próprios.
 """
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     db, EstablishmentDriver, OwnDriverEarning, Restaurant,
-    User, UserType, Customer
+    User, UserType, Customer, EstablishmentSubscription, SubscriptionInvoice
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user
 from datetime import datetime, timedelta
@@ -335,4 +336,368 @@ def get_establishment_subscription():
         
     except Exception as e:
         logger.error(f"Erro ao buscar assinatura: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== ASSINATURA ====================
+
+@finance_bp.route('/subscriptions', methods=['GET'])
+@jwt_required()
+def get_subscriptions():
+    """Lista todas as assinaturas"""
+    try:
+        user = get_current_user()
+        tenant_id = get_current_tenant_id()
+        
+        query = EstablishmentSubscription.query
+        
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                restaurant = Restaurant.query.filter_by(name=customer.name).first()
+                if restaurant:
+                    query = query.filter_by(restaurant_id=restaurant.id)
+        elif user.user_type == UserType.ADMIN and tenant_id:
+            query = query.filter_by(tenant_id=tenant_id)
+        
+        subscriptions = query.order_by(EstablishmentSubscription.created_at.desc()).all()
+        
+        return jsonify({
+            'subscriptions': [s.to_dict() for s in subscriptions]
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar assinaturas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/subscriptions', methods=['POST'])
+@jwt_required()
+def create_subscription():
+    """Cria uma nova assinatura para um estabelecimento"""
+    try:
+        data = request.get_json()
+        restaurant_id = data.get('restaurant_id')
+        billing_cycle = data.get('billing_cycle', 'WEEKLY')
+        price_per_driver = data.get('price_per_driver', 50.00)
+        
+        if not restaurant_id:
+            return jsonify({'error': 'restaurant_id é obrigatório'}), 400
+        
+        # Verificar se já existe assinatura
+        existing = EstablishmentSubscription.query.filter_by(
+            restaurant_id=restaurant_id,
+            is_active=True
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'Estabelecimento já possui assinatura ativa'}), 400
+        
+        # Buscar restaurante
+        restaurant = Restaurant.query.get(restaurant_id)
+        if not restaurant:
+            return jsonify({'error': 'Restaurante não encontrado'}), 404
+        
+        # Calcular próxima data de cobrança
+        now = datetime.utcnow()
+        if billing_cycle == 'WEEKLY':
+            next_billing = now + timedelta(days=7)
+        else:  # MONTHLY
+            if now.month == 12:
+                next_billing = now.replace(year=now.year + 1, month=1, day=1)
+            else:
+                next_billing = now.replace(month=now.month + 1, day=1)
+        
+        # Criar assinatura
+        subscription = EstablishmentSubscription(
+            restaurant_id=restaurant_id,
+            tenant_id=restaurant.tenant_id,
+            billing_cycle=billing_cycle,
+            price_per_driver=price_per_driver,
+            is_active=True,
+            next_billing_at=next_billing
+        )
+        db.session.add(subscription)
+        
+        # Atualizar restaurante
+        restaurant.subscription_type = 'ACTIVE'
+        restaurant.subscription_expires_at = next_billing
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Assinatura criada com sucesso',
+            'subscription': subscription.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao criar assinatura: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/subscriptions/<int:subscription_id>', methods=['PUT'])
+@jwt_required()
+def update_subscription(subscription_id):
+    """Atualiza configuração da assinatura"""
+    try:
+        subscription = EstablishmentSubscription.query.get(subscription_id)
+        if not subscription:
+            return jsonify({'error': 'Assinatura não encontrada'}), 404
+        
+        data = request.get_json()
+        
+        if 'billing_cycle' in data:
+            subscription.billing_cycle = data['billing_cycle']
+        if 'price_per_driver' in data:
+            subscription.price_per_driver = data['price_per_driver']
+        if 'is_active' in data:
+            subscription.is_active = data['is_active']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Assinatura atualizada',
+            'subscription': subscription.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar assinatura: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/subscriptions/<int:subscription_id>/generate-invoice', methods=['POST'])
+@jwt_required()
+def generate_invoice(subscription_id):
+    """Gera fatura manual para uma assinatura"""
+    try:
+        subscription = EstablishmentSubscription.query.get(subscription_id)
+        if not subscription:
+            return jsonify({'error': 'Assinatura não encontrada'}), 404
+        
+        # Contar entregadores ativos no período
+        now = datetime.utcnow()
+        if subscription.billing_cycle == 'WEEKLY':
+            period_start = now - timedelta(days=7)
+        else:
+            period_start = now - timedelta(days=30)
+        
+        drivers_count = EstablishmentDriver.query.filter(
+            EstablishmentDriver.restaurant_id == subscription.restaurant_id,
+            EstablishmentDriver.is_active == True
+        ).count()
+        
+        if drivers_count == 0:
+            return jsonify({'error': 'Nenhum entregador ativo encontrado'}), 400
+        
+        # Calcular valor
+        total_amount = drivers_count * float(subscription.price_per_driver)
+        
+        # Gerar número da fatura
+        invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription_id).count()
+        invoice_number = f"SUB-{subscription.restaurant_id:04d}-{invoice_count + 1:04d}"
+        
+        # Calcular data de vencimento
+        if subscription.billing_cycle == 'WEEKLY':
+            due_date = now + timedelta(days=7)
+        else:
+            due_date = now + timedelta(days=30)
+        
+        # Criar fatura
+        invoice = SubscriptionInvoice(
+            subscription_id=subscription_id,
+            restaurant_id=subscription.restaurant_id,
+            invoice_number=invoice_number,
+            period_start=period_start,
+            period_end=now,
+            drivers_count=drivers_count,
+            price_per_driver=subscription.price_per_driver,
+            total_amount=total_amount,
+            status='PENDING',
+            due_date=due_date
+        )
+        db.session.add(invoice)
+        
+        # Atualizar assinatura
+        subscription.last_billed_at = now
+        subscription.total_billed = float(subscription.total_billed or 0) + total_amount
+        
+        if subscription.billing_cycle == 'WEEKLY':
+            subscription.next_billing_at = now + timedelta(days=7)
+        else:
+            if now.month == 12:
+                subscription.next_billing_at = now.replace(year=now.year + 1, month=1, day=1)
+            else:
+                subscription.next_billing_at = now.replace(month=now.month + 1, day=1)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Fatura {invoice_number} gerada com sucesso',
+            'invoice': invoice.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao gerar fatura: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/invoices', methods=['GET'])
+@jwt_required()
+def get_invoices():
+    """Lista faturas de assinatura"""
+    try:
+        user = get_current_user()
+        tenant_id = get_current_tenant_id()
+        
+        query = SubscriptionInvoice.query
+        
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                restaurant = Restaurant.query.filter_by(name=customer.name).first()
+                if restaurant:
+                    query = query.filter_by(restaurant_id=restaurant.id)
+        elif user.user_type == UserType.ADMIN and tenant_id:
+            restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
+            query = query.filter(SubscriptionInvoice.restaurant_id.in_(restaurant_ids))
+        
+        # Filtros
+        status = request.args.get('status')
+        if status:
+            query = query.filter_by(status=status)
+        
+        invoices = query.order_by(SubscriptionInvoice.created_at.desc()).all()
+        
+        return jsonify({
+            'invoices': [i.to_dict() for i in invoices]
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar faturas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/invoices/<int:invoice_id>/pay', methods=['POST'])
+@jwt_required()
+def pay_invoice(invoice_id):
+    """Marca uma fatura como paga"""
+    try:
+        invoice = SubscriptionInvoice.query.get(invoice_id)
+        if not invoice:
+            return jsonify({'error': 'Fatura não encontrada'}), 404
+        
+        data = request.get_json() or {}
+        payment_method = data.get('payment_method', 'PIX')
+        
+        invoice.status = 'PAID'
+        invoice.paid_at = datetime.utcnow()
+        invoice.payment_method = payment_method
+        
+        # Atualizar assinatura
+        subscription = EstablishmentSubscription.query.get(invoice.subscription_id)
+        if subscription:
+            subscription.total_paid = float(subscription.total_paid or 0) + float(invoice.total_amount)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Fatura quitada com sucesso',
+            'invoice': invoice.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao pagar fatura: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/generate-all-invoices', methods=['POST'])
+@jwt_required()
+def generate_all_invoices():
+    """Gera faturas para todas as assinaturas com cobrança pendente"""
+    try:
+        user = get_current_user()
+        if user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Apenas administradores podem gerar faturas em lote'}), 403
+        
+        now = datetime.utcnow()
+        
+        # Buscar assinaturas com cobrança pendente
+        subscriptions = EstablishmentSubscription.query.filter(
+            EstablishmentSubscription.is_active == True,
+            EstablishmentSubscription.next_billing_at <= now
+        ).all()
+        
+        generated = []
+        for subscription in subscriptions:
+            # Contar entregadores
+            drivers_count = EstablishmentDriver.query.filter(
+                EstablishmentDriver.restaurant_id == subscription.restaurant_id,
+                EstablishmentDriver.is_active == True
+            ).count()
+            
+            if drivers_count == 0:
+                continue
+            
+            # Calcular período
+            if subscription.billing_cycle == 'WEEKLY':
+                period_start = now - timedelta(days=7)
+            else:
+                period_start = now - timedelta(days=30)
+            
+            # Calcular valor
+            total_amount = drivers_count * float(subscription.price_per_driver)
+            
+            # Gerar número da fatura
+            invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription.id).count()
+            invoice_number = f"SUB-{subscription.restaurant_id:04d}-{invoice_count + 1:04d}"
+            
+            # Calcular vencimento
+            if subscription.billing_cycle == 'WEEKLY':
+                due_date = now + timedelta(days=7)
+            else:
+                due_date = now + timedelta(days=30)
+            
+            # Criar fatura
+            invoice = SubscriptionInvoice(
+                subscription_id=subscription.id,
+                restaurant_id=subscription.restaurant_id,
+                invoice_number=invoice_number,
+                period_start=period_start,
+                period_end=now,
+                drivers_count=drivers_count,
+                price_per_driver=subscription.price_per_driver,
+                total_amount=total_amount,
+                status='PENDING',
+                due_date=due_date
+            )
+            db.session.add(invoice)
+            
+            # Atualizar assinatura
+            subscription.last_billed_at = now
+            subscription.total_billed = float(subscription.total_billed or 0) + total_amount
+            
+            if subscription.billing_cycle == 'WEEKLY':
+                subscription.next_billing_at = now + timedelta(days=7)
+            else:
+                if now.month == 12:
+                    subscription.next_billing_at = now.replace(year=now.year + 1, month=1, day=1)
+                else:
+                    subscription.next_billing_at = now.replace(month=now.month + 1, day=1)
+            
+            generated.append(invoice_number)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'{len(generated)} fatura(s) gerada(s)',
+            'invoices': generated
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao gerar faturas em lote: {e}")
         return jsonify({'error': str(e)}), 500
