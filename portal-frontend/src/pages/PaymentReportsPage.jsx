@@ -21,6 +21,11 @@ const PaymentReportsPage = () => {
   const [success, setSuccess] = useState('');
   const [expandedDriver, setExpandedDriver] = useState(null);
   const [expandedPeriod, setExpandedPeriod] = useState(null);
+  const [activeTab, setActiveTab] = useState('reports');
+  
+  // Withdrawals
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [withdrawalSummary, setWithdrawalSummary] = useState(null);
   
   // Filtros
   const [period, setPeriod] = useState('month');
@@ -35,8 +40,9 @@ const PaymentReportsPage = () => {
   }, []);
 
   useEffect(() => {
-    loadReports();
-  }, [period, frequencyFilter, restaurantFilter]);
+    checkUserRole();
+    loadRestaurants();
+  }, []);
 
   const checkUserRole = async () => {
     try {
@@ -74,6 +80,40 @@ const PaymentReportsPage = () => {
       setLoading(false);
     }
   };
+
+  const loadWithdrawals = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/api/finance/own-driver-withdrawals');
+      setWithdrawals(res.data.drivers || []);
+      setWithdrawalSummary(res.data.summary || {});
+    } catch (err) {
+      console.error('Erro ao carregar saques:', err);
+      setError('Erro ao carregar saques');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProcessWithdrawal = async (driverId) => {
+    if (!window.confirm('Processar saque via PIX?')) return;
+    try {
+      const res = await api.post('/api/finance/process-withdrawal', {
+        driver_id: driverId,
+        payment_method: 'PIX'
+      });
+      setSuccess(res.data.message);
+      setTimeout(() => setSuccess(''), 5000);
+      loadWithdrawals();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao processar saque');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'reports') loadReports();
+    if (activeTab === 'withdrawals') loadWithdrawals();
+  }, [activeTab, period, frequencyFilter, restaurantFilter]);
 
   const handlePayPeriod = async (driverId, periodStart, paymentMethod = 'PIX') => {
     try {
@@ -144,7 +184,24 @@ const PaymentReportsPage = () => {
         </div>
       )}
 
-      {/* Filtros */}
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <button
+          onClick={() => setActiveTab('reports')}
+          style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: activeTab === 'reports' ? '#2563eb' : 'white', color: activeTab === 'reports' ? 'white' : '#64748b', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+        >
+          Relatórios
+        </button>
+        <button
+          onClick={() => setActiveTab('withdrawals')}
+          style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: activeTab === 'withdrawals' ? '#2563eb' : 'white', color: activeTab === 'withdrawals' ? 'white' : '#64748b', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer' }}
+        >
+          Saques
+        </button>
+      </div>
+
+      {/* Filtros (apenas para relatórios) */}
+      {activeTab === 'reports' && (
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <div>
           <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Período</label>
@@ -176,6 +233,7 @@ const PaymentReportsPage = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Resumo Geral */}
       {summary && (
@@ -205,12 +263,13 @@ const PaymentReportsPage = () => {
           <div style={{ width: '2rem', height: '2rem', border: '3px solid #e2e8f0', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
-      ) : reports.length === 0 ? (
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <DollarSign size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
-          <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum pagamento registrado</p>
-        </div>
-      ) : (
+      ) : activeTab === 'reports' ? (
+        reports.length === 0 ? (
+          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <DollarSign size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
+            <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum pagamento registrado</p>
+          </div>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {reports.map(report => {
             const freqConfig = PAYMENT_FREQUENCY_LABELS[report.payment_frequency] || PAYMENT_FREQUENCY_LABELS.WEEKLY;
@@ -354,6 +413,82 @@ const PaymentReportsPage = () => {
               </div>
             );
           })}
+        </div>
+        )
+      ) : (
+        /* Tab Saques */
+        <div>
+          {/* Resumo de Saques */}
+          {withdrawalSummary && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', borderRadius: '0.75rem', padding: '1.25rem', color: 'white' }}>
+                <p style={{ fontSize: '0.75rem', opacity: 0.8, marginBottom: '0.25rem' }}>Total Pendente</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>{formatCurrency(withdrawalSummary.total_pending)}</p>
+              </div>
+              <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Total Pago</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#059669' }}>{formatCurrency(withdrawalSummary.total_paid)}</p>
+              </div>
+              <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Entregadores c/ Pendência</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{withdrawalSummary.drivers_with_pending}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Lista de Entregadores com Saque Pendente */}
+          {withdrawals.length === 0 ? (
+            <div style={{ background: 'white', borderRadius: '0.75rem', padding: '2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <Wallet size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
+              <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum saque pendente</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {withdrawals.map(driver => (
+                <div key={driver.driver_id} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '1rem' }}>{driver.driver_name}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                        <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
+                          {driver.restaurant_name}
+                        </span>
+                        {driver.pix_key && (
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            PIX: {driver.pix_key.substring(0, 10)}...
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pendente</p>
+                        <p style={{ fontWeight: 700, color: driver.pending_amount > 0 ? '#d97706' : '#059669', fontSize: '1.25rem' }}>
+                          {formatCurrency(driver.pending_amount)}
+                        </p>
+                        <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{driver.pending_count} entrega(s)</p>
+                      </div>
+                      {driver.pending_amount > 0 && (
+                        <button
+                          onClick={() => handleProcessWithdrawal(driver.driver_id)}
+                          disabled={!driver.pix_key}
+                          style={{
+                            padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none',
+                            background: driver.pix_key ? '#059669' : '#94a3b8',
+                            color: 'white', fontWeight: 600, fontSize: '0.875rem',
+                            cursor: driver.pix_key ? 'pointer' : 'not-allowed'
+                          }}
+                          title={!driver.pix_key ? 'Entregador não possui PIX cadastrado' : ''}
+                        >
+                          Pagar via PIX
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  DollarSign, ArrowLeft, Clock, CheckCircle, Package, Filter, AlertCircle
+  DollarSign, ArrowLeft, Clock, CheckCircle, Package, Filter, AlertCircle,
+  Wallet, CreditCard, Settings
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
@@ -12,7 +13,11 @@ const OwnDriverEarningsPage = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [period, setPeriod] = useState('month');
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixKey, setPixKey] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => { loadEarnings(); }, [period]);
 
@@ -30,6 +35,39 @@ const OwnDriverEarningsPage = () => {
       setError('Erro ao carregar ganhos. Tente novamente.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!window.confirm('Solicitar saque de todos os ganhos pendentes?')) return;
+    
+    try {
+      setWithdrawing(true);
+      setError('');
+      const token = localStorage.getItem('own_driver_token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await api.post('/api/own-driver/withdraw', {}, { headers });
+      setSuccess(res.data.message);
+      setTimeout(() => setSuccess(''), 5000);
+      loadEarnings();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao solicitar saque');
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
+  const handleUpdatePix = async () => {
+    try {
+      setError('');
+      const token = localStorage.getItem('own_driver_token');
+      const headers = { Authorization: `Bearer ${token}` };
+      await api.put('/api/own-driver/pix-key', { pix_key: pixKey }, { headers });
+      setSuccess('Chave PIX atualizada!');
+      setShowPixModal(false);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao atualizar PIX');
     }
   };
 
@@ -57,6 +95,17 @@ const OwnDriverEarningsPage = () => {
             <AlertCircle size={16} /> {error}
           </div>
         )}
+        
+        {/* Sucesso */}
+        {success && (
+          <div style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534',
+            padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1rem',
+            display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem'
+          }}>
+            <CheckCircle size={16} /> {success}
+          </div>
+        )}
 
         {/* Cards de Resumo */}
         {summary && (
@@ -79,6 +128,35 @@ const OwnDriverEarningsPage = () => {
             </div>
           </div>
         )}
+
+        {/* Botões de Ação */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+          <button
+            onClick={handleWithdraw}
+            disabled={withdrawing || !summary?.pending || summary.pending <= 0}
+            style={{
+              flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: 'none',
+              background: summary?.pending > 0 ? '#059669' : '#94a3b8',
+              color: 'white', fontWeight: 600, fontSize: '0.875rem',
+              cursor: summary?.pending > 0 ? 'pointer' : 'not-allowed',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+            }}
+          >
+            <Wallet size={18} />
+            {withdrawing ? 'Processando...' : 'Solicitar Saque'}
+          </button>
+          <button
+            onClick={() => setShowPixModal(true)}
+            style={{
+              padding: '0.75rem 1rem', borderRadius: '0.5rem',
+              border: '1.5px solid #e2e8f0', background: 'white',
+              color: '#374151', fontWeight: 500, fontSize: '0.875rem',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
+            }}
+          >
+            <Settings size={18} /> PIX
+          </button>
+        </div>
 
         {/* Filtro de Período */}
         <div style={{
@@ -159,6 +237,45 @@ const OwnDriverEarningsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Modal PIX */}
+      {showPixModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.5rem', width: '100%', maxWidth: '400px', margin: '1rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
+              Configurar Chave PIX
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
+              Cadastre sua chave PIX para receber os saques.
+            </p>
+            <input
+              type="text"
+              value={pixKey}
+              onChange={e => setPixKey(e.target.value)}
+              placeholder="CPF, CNPJ, email, telefone ou chave aleatória"
+              style={{
+                width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                border: '1.5px solid #e2e8f0', fontSize: '0.875rem', marginBottom: '1rem',
+                boxSizing: 'border-box'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowPixModal(false)}
+                style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: '0.875rem', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdatePix}
+                style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

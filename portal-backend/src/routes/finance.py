@@ -795,3 +795,149 @@ def generate_all_invoices():
         db.session.rollback()
         logger.error(f"Erro ao gerar faturas em lote: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ==================== SAQUES DE ENTREGADORES PRÓPRIOS ====================
+
+@finance_bp.route('/own-driver-withdrawals', methods=['GET'])
+@jwt_required()
+def get_own_driver_withdrawals():
+    """Lista entregadores próprios com saldo pendente"""
+    try:
+        user = get_current_user()
+        tenant_id = get_current_tenant_id()
+        
+        # Buscar entregadores com ganhos pendentes
+        query = EstablishmentDriver.query
+        
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                restaurant = Restaurant.query.filter_by(name=customer.name).first()
+                if restaurant:
+                    query = query.filter_by(restaurant_id=restaurant.id)
+        elif user.user_type == UserType.ADMIN and tenant_id:
+            restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
+            query = query.filter(EstablishmentDriver.restaurant_id.in_(restaurant_ids))
+        
+        drivers = query.all()
+        
+        result = []
+        for driver in drivers:
+            # Calcular ganhos pendentes
+            pending_earnings = OwnDriverEarning.query.filter(
+                OwnDriverEarning.establishment_driver_id == driver.id,
+                OwnDriverEarning.is_paid == False
+            ).all()
+            
+            pending_amount = sum(float(e.driver_earning or 0) for e in pending_earnings)
+            
+            # Calcular total já pago
+            paid_earnings = OwnDriverEarning.query.filter(
+                OwnDriverEarning.establishment_driver_id == driver.id,
+                OwnDriverEarning.is_paid == True
+            ).all()
+            paid_amount = sum(float(e.driver_earning or 0) for e in paid_earnings)
+            
+            if pending_amount > 0 or paid_amount > 0:
+                result.append({
+                    'driver_id': driver.id,
+                    'driver_name': driver.name,
+                    'driver_phone': driver.phone,
+                    'pix_key': driver.pix_key,
+                    'restaurant_id': driver.restaurant_id,
+                    'restaurant_name': driver.restaurant.name if driver.restaurant else 'N/A',
+                    'pending_amount': pending_amount,
+                    'paid_amount': paid_amount,
+                    'pending_count': len(pending_earnings),
+                    'payment_frequency': driver.payment_frequency or 'WEEKLY'
+                })
+        
+        # Ordenar por valor pendente (maior primeiro)
+        result.sort(key=lambda x: x['pending_amount'], reverse=True)
+        
+        return jsonify({
+            'drivers': result,
+            'summary': {
+                'total_pending': sum(d['pending_amount'] for d in result),
+                'total_paid': sum(d['paid_amount'] for d in result),
+                'drivers_with_pending': len([d for d in result if d['pending_amount'] > 0])
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar saques: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/process-withdrawal', methods=['POST'])
+@jwt_required()
+def process_own_driver_withdrawal():
+    """Processa saque de entregador próprio via PIX"""
+    try:
+        data = request.get_json()
+        driver_id = data.get('driver_id')
+        payment_method = data.get('payment_method', 'PIX')
+        
+        if not driver_id:
+            return jsonify({'error': 'driver_id é obrigatório'}), 400
+        
+        # Buscar entregador
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        # Verificar PIX
+        if not driver.pix_key:
+            return jsonify({'error': 'Entregador não possui chave PIX cadastrada'}), 400
+        
+        # Buscar ganhos pendentes
+        pending_earnings = OwnDriverEarning.query.filter(
+            OwnDriverEarning.establishment_driver_id == driver_id,
+            OwnDriverEarning.is_paid == False
+        ).all()
+        
+        if not pending_earnings:
+            return jsonify({'error': 'Nenhum ganho pendente'}), 400
+        
+        total_amount = sum(float(e.driver_earning or 0) for e in pending_earnings)
+        
+        # Processar via Asaas se configurado
+        from src.services.asaas_service import is_configured, transfer_pix, detect_pix_key_type
+        
+        transfer_result = None
+        if is_configured() and payment_method == 'PIX':
+            pix_key_type = detect_pix_key_type(driver.pix_key)
+            transfer_result = transfer_pix(
+                value=total_amount,
+                pix_key=driver.pix_key,
+                pix_key_type=pix_key_type,
+                description=f"Saque muv.log - {driver.name}"
+            )
+            
+            if not transfer_result.get('success'):
+                return jsonify({
+                    'error': f'Erro ao processar PIX: {transfer_result.get("error")}'
+                }), 400
+        
+        # Marcar ganhos como pagos
+        for earning in pending_earnings:
+            earning.is_paid = True
+            earning.paid_at = datetime.utcnow()
+            earning.payment_method = payment_method
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Saque de R$ {total_amount:.2f} processado com sucesso',
+            'amount': total_amount,
+            'driver_name': driver.name,
+            'pix_key': driver.pix_key,
+            'payment_method': payment_method,
+            'transfer_id': transfer_result.get('transfer_id') if transfer_result else None
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao processar saque: {e}")
+        return jsonify({'error': str(e)}), 500

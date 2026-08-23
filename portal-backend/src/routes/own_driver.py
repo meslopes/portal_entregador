@@ -604,6 +604,119 @@ def get_earnings():
     }), 200
 
 
+# ==================== SAQUE ====================
+
+@own_driver_bp.route('/withdraw', methods=['POST'])
+@own_driver_required
+def request_withdrawal():
+    """Solicita saque dos ganhos pendentes"""
+    try:
+        driver = request.own_driver
+        data = request.get_json() or {}
+        
+        # Calcular saldo pendente
+        pending_earnings = OwnDriverEarning.query.filter(
+            OwnDriverEarning.establishment_driver_id == driver.id,
+            OwnDriverEarning.is_paid == False
+        ).all()
+        
+        pending_amount = sum(float(e.driver_earning or 0) for e in pending_earnings)
+        
+        if pending_amount <= 0:
+            return jsonify({'error': 'Nenhum ganho pendente para saque'}), 400
+        
+        # Verificar se tem PIX cadastrado
+        if not driver.pix_key:
+            return jsonify({'error': 'Cadastre sua chave PIX antes de solicitar saque'}), 400
+        
+        # Marcar todos os ganhos pendentes como "em processamento"
+        # (vamos usar is_paid=True e payment_method='WITHDRAWAL_PENDING')
+        for earning in pending_earnings:
+            earning.is_paid = True
+            earning.paid_at = datetime.utcnow()
+            earning.payment_method = 'WITHDRAWAL_REQUESTED'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Solicitação de saque de R$ {pending_amount:.2f} enviada',
+            'amount': pending_amount,
+            'pix_key': driver.pix_key,
+            'earnings_count': len(pending_earnings)
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao solicitar saque: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@own_driver_bp.route('/withdraw/history', methods=['GET'])
+@own_driver_required
+def get_withdrawal_history():
+    """Histórico de saques do entregador próprio"""
+    try:
+        driver = request.own_driver
+        
+        # Buscar ganhos que foram pagos (incluindo saques)
+        earnings = OwnDriverEarning.query.filter(
+            OwnDriverEarning.establishment_driver_id == driver.id,
+            OwnDriverEarning.is_paid == True
+        ).order_by(OwnDriverEarning.paid_at.desc()).limit(50).all()
+        
+        # Agrupar por data de pagamento
+        withdrawals = {}
+        for earning in earnings:
+            if earning.paid_at:
+                date_key = earning.paid_at.strftime('%Y-%m-%d')
+                if date_key not in withdrawals:
+                    withdrawals[date_key] = {
+                        'date': earning.paid_at.isoformat(),
+                        'amount': 0,
+                        'count': 0,
+                        'method': earning.payment_method or 'PIX'
+                    }
+                withdrawals[date_key]['amount'] += float(earning.driver_earning or 0)
+                withdrawals[date_key]['count'] += 1
+        
+        return jsonify({
+            'withdrawals': list(withdrawals.values()),
+            'pix_key': driver.pix_key
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar histórico: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@own_driver_bp.route('/pix-key', methods=['PUT'])
+@own_driver_required
+def update_pix_key():
+    """Atualiza a chave PIX do entregador próprio"""
+    try:
+        driver = request.own_driver
+        data = request.get_json() or {}
+        
+        pix_key = data.get('pix_key', '').strip()
+        if not pix_key:
+            return jsonify({'error': 'Chave PIX é obrigatória'}), 400
+        
+        driver.pix_key = pix_key
+        driver.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Chave PIX atualizada',
+            'pix_key': pix_key
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar PIX: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 # ==================== HELPERS ====================
 
 def _format_order_for_driver(order):
