@@ -380,6 +380,7 @@ def create_subscription():
         restaurant_id = data.get('restaurant_id')
         billing_cycle = data.get('billing_cycle', 'WEEKLY')
         price_per_driver = data.get('price_per_driver', 50.00)
+        fixed_price = data.get('fixed_price', 0)
         
         if not restaurant_id:
             return jsonify({'error': 'restaurant_id é obrigatório'}), 400
@@ -414,6 +415,7 @@ def create_subscription():
             tenant_id=restaurant.tenant_id,
             billing_cycle=billing_cycle,
             price_per_driver=price_per_driver,
+            fixed_price=fixed_price,
             is_active=True,
             next_billing_at=next_billing
         )
@@ -451,6 +453,8 @@ def update_subscription(subscription_id):
             subscription.billing_cycle = data['billing_cycle']
         if 'price_per_driver' in data:
             subscription.price_per_driver = data['price_per_driver']
+        if 'fixed_price' in data:
+            subscription.fixed_price = data['fixed_price']
         if 'is_active' in data:
             subscription.is_active = data['is_active']
         
@@ -470,7 +474,7 @@ def update_subscription(subscription_id):
 @finance_bp.route('/subscriptions/<int:subscription_id>/generate-invoice', methods=['POST'])
 @jwt_required()
 def generate_invoice(subscription_id):
-    """Gera fatura manual para uma assinatura"""
+    """Gera fatura manual para uma assinatura com integração Asaas"""
     try:
         subscription = EstablishmentSubscription.query.get(subscription_id)
         if not subscription:
@@ -488,11 +492,13 @@ def generate_invoice(subscription_id):
             EstablishmentDriver.is_active == True
         ).count()
         
-        if drivers_count == 0:
-            return jsonify({'error': 'Nenhum entregador ativo encontrado'}), 400
+        if drivers_count == 0 and not subscription.fixed_price:
+            return jsonify({'error': 'Nenhum entregador ativo encontrado e sem preço fixo'}), 400
         
-        # Calcular valor
-        total_amount = drivers_count * float(subscription.price_per_driver)
+        # Calcular valor: (preço por entregador * quantidade) + preço fixo
+        drivers_total = drivers_count * float(subscription.price_per_driver or 0)
+        fixed_total = float(subscription.fixed_price or 0)
+        total_amount = drivers_total + fixed_total
         
         # Gerar número da fatura
         invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription_id).count()
@@ -518,6 +524,56 @@ def generate_invoice(subscription_id):
             due_date=due_date
         )
         db.session.add(invoice)
+        db.session.flush()  # Para obter o ID da fatura
+        
+        # Integração Asaas: criar cobrança automaticamente
+        asaas_result = None
+        from src.services.asaas_service import is_configured, create_customer, create_charge
+        
+        if is_configured():
+            restaurant = Restaurant.query.get(subscription.restaurant_id)
+            
+            # Criar cliente no Asaas se não tiver
+            if not restaurant.asaas_customer_id:
+                customer_result = create_customer(
+                    name=restaurant.name,
+                    cpf_cnpj=restaurant.cnpj or '00000000000100',
+                    email=restaurant.email,
+                    phone=restaurant.phone
+                )
+                if customer_result.get('success'):
+                    restaurant.asaas_customer_id = customer_result.get('customer_id')
+                else:
+                    logger.warning(f"Erro ao criar cliente Asaas: {customer_result.get('error')}")
+            
+            # Criar cobrança no Asaas
+            if restaurant.asaas_customer_id:
+                description = f"Assinatura muv.log - {restaurant.name} - {invoice_number}"
+                if drivers_count > 0:
+                    description += f" ({drivers_count} entregador(es) x R${subscription.price_per_driver})"
+                if fixed_total > 0:
+                    description += f" + taxa fixa R${fixed_total}"
+                
+                charge_result = create_charge(
+                    customer_id=restaurant.asaas_customer_id,
+                    value=total_amount,
+                    billing_type='PIX',
+                    due_date=due_date.strftime('%Y-%m-%d'),
+                    description=description,
+                    external_reference=f"subscription_invoice_{invoice.id}"
+                )
+                
+                if charge_result.get('success'):
+                    invoice.asaas_invoice_id = charge_result.get('payment_id')
+                    invoice.payment_url = charge_result.get('invoice_url')
+                    asaas_result = {
+                        'payment_id': charge_result.get('payment_id'),
+                        'invoice_url': charge_result.get('invoice_url'),
+                        'pix_qr_code': charge_result.get('pix_qr_code')
+                    }
+                    logger.info(f"Cobrança Asaas criada para fatura {invoice_number}: {charge_result.get('payment_id')}")
+                else:
+                    logger.warning(f"Erro ao criar cobrança Asaas: {charge_result.get('error')}")
         
         # Atualizar assinatura
         subscription.last_billed_at = now
@@ -533,10 +589,14 @@ def generate_invoice(subscription_id):
         
         db.session.commit()
         
-        return jsonify({
+        response_data = {
             'message': f'Fatura {invoice_number} gerada com sucesso',
             'invoice': invoice.to_dict()
-        }), 201
+        }
+        if asaas_result:
+            response_data['asaas'] = asaas_result
+        
+        return jsonify(response_data), 201
         
     except Exception as e:
         db.session.rollback()
@@ -617,7 +677,7 @@ def pay_invoice(invoice_id):
 @finance_bp.route('/generate-all-invoices', methods=['POST'])
 @jwt_required()
 def generate_all_invoices():
-    """Gera faturas para todas as assinaturas com cobrança pendente"""
+    """Gera faturas para todas as assinaturas com cobrança pendente (com Asaas)"""
     try:
         user = get_current_user()
         if user.user_type != UserType.ADMIN:
@@ -631,6 +691,8 @@ def generate_all_invoices():
             EstablishmentSubscription.next_billing_at <= now
         ).all()
         
+        from src.services.asaas_service import is_configured, create_customer, create_charge
+        
         generated = []
         for subscription in subscriptions:
             # Contar entregadores
@@ -639,7 +701,8 @@ def generate_all_invoices():
                 EstablishmentDriver.is_active == True
             ).count()
             
-            if drivers_count == 0:
+            # Pular se não tem entregadores E não tem preço fixo
+            if drivers_count == 0 and not subscription.fixed_price:
                 continue
             
             # Calcular período
@@ -648,8 +711,10 @@ def generate_all_invoices():
             else:
                 period_start = now - timedelta(days=30)
             
-            # Calcular valor
-            total_amount = drivers_count * float(subscription.price_per_driver)
+            # Calcular valor: (preço por entregador * quantidade) + preço fixo
+            drivers_total = drivers_count * float(subscription.price_per_driver or 0)
+            fixed_total = float(subscription.fixed_price or 0)
+            total_amount = drivers_total + fixed_total
             
             # Gerar número da fatura
             invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription.id).count()
@@ -675,6 +740,35 @@ def generate_all_invoices():
                 due_date=due_date
             )
             db.session.add(invoice)
+            db.session.flush()
+            
+            # Integração Asaas
+            if is_configured():
+                restaurant = Restaurant.query.get(subscription.restaurant_id)
+                
+                if not restaurant.asaas_customer_id:
+                    customer_result = create_customer(
+                        name=restaurant.name,
+                        cpf_cnpj=restaurant.cnpj or '00000000000100',
+                        email=restaurant.email,
+                        phone=restaurant.phone
+                    )
+                    if customer_result.get('success'):
+                        restaurant.asaas_customer_id = customer_result.get('customer_id')
+                
+                if restaurant.asaas_customer_id:
+                    description = f"Assinatura muv.log - {restaurant.name} - {invoice_number}"
+                    charge_result = create_charge(
+                        customer_id=restaurant.asaas_customer_id,
+                        value=total_amount,
+                        billing_type='PIX',
+                        due_date=due_date.strftime('%Y-%m-%d'),
+                        description=description,
+                        external_reference=f"subscription_invoice_{invoice.id}"
+                    )
+                    if charge_result.get('success'):
+                        invoice.asaas_invoice_id = charge_result.get('payment_id')
+                        invoice.payment_url = charge_result.get('invoice_url')
             
             # Atualizar assinatura
             subscription.last_billed_at = now

@@ -669,6 +669,7 @@ def create_app(config_name=None):
                     tenant_id INTEGER REFERENCES tenants(id),
                     billing_cycle VARCHAR(20) DEFAULT 'WEEKLY',
                     price_per_driver NUMERIC(10,2) DEFAULT 50.00,
+                    fixed_price NUMERIC(10,2) DEFAULT 0,
                     is_active BOOLEAN DEFAULT TRUE,
                     last_billed_at TIMESTAMP,
                     next_billing_at TIMESTAMP,
@@ -700,6 +701,15 @@ def create_app(config_name=None):
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
             """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: fixed_price para establishment_subscriptions
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'establishment_subscriptions' AND column_name = 'fixed_price') THEN ALTER TABLE establishment_subscriptions ADD COLUMN fixed_price NUMERIC(10,2) DEFAULT 0; END IF; END $$"
+            ))
             db.session.commit()
         except Exception:
             db.session.rollback()

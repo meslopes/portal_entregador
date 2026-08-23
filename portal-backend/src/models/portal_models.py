@@ -1183,6 +1183,7 @@ class EstablishmentSubscription(db.Model):
     # Configuração da assinatura
     billing_cycle = db.Column(db.String(20), default='WEEKLY')  # WEEKLY, MONTHLY
     price_per_driver = db.Column(db.Numeric(10, 2), default=50.00)  # Preço por entregador por ciclo
+    fixed_price = db.Column(db.Numeric(10, 2), default=0)  # Preço fixo por estabelecimento (opcional)
     is_active = db.Column(db.Boolean, default=True)
     
     # Controle de cobrança
@@ -1210,6 +1211,7 @@ class EstablishmentSubscription(db.Model):
             'tenant_id': self.tenant_id,
             'billing_cycle': self.billing_cycle,
             'price_per_driver': float(self.price_per_driver) if self.price_per_driver else 50.00,
+            'fixed_price': float(self.fixed_price) if self.fixed_price else 0,
             'is_active': self.is_active,
             'last_billed_at': self.last_billed_at.isoformat() if self.last_billed_at else None,
             'next_billing_at': self.next_billing_at.isoformat() if self.next_billing_at else None,

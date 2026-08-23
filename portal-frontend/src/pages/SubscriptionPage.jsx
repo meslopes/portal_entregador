@@ -21,7 +21,8 @@ const SubscriptionPage = () => {
   const [createForm, setCreateForm] = useState({
     restaurant_id: '',
     billing_cycle: 'WEEKLY',
-    price_per_driver: 50.00
+    price_per_driver: 50.00,
+    fixed_price: 0
   });
 
   useEffect(() => {
@@ -232,6 +233,11 @@ const SubscriptionPage = () => {
                       <div style={{ textAlign: 'right' }}>
                         <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Por entregador/ciclo</p>
                         <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '1.25rem' }}>{formatCurrency(sub.price_per_driver)}</p>
+                        {sub.fixed_price > 0 && (
+                          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                            + {formatCurrency(sub.fixed_price)} fixo
+                          </p>
+                        )}
                       </div>
                     </div>
                     
@@ -305,12 +311,24 @@ const SubscriptionPage = () => {
                         <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>{getStatusBadge(invoice.status)}</td>
                         <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                           {invoice.status === 'PENDING' && (
-                            <button
-                              onClick={() => handlePayInvoice(invoice.id)}
-                              style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#059669', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
-                            >
-                              Pagar
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                              {invoice.payment_url && (
+                                <a
+                                  href={invoice.payment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'none' }}
+                                >
+                                  PIX
+                                </a>
+                              )}
+                              <button
+                                onClick={() => handlePayInvoice(invoice.id)}
+                                style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#059669', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                              >
+                                Pagar
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -369,6 +387,20 @@ const SubscriptionPage = () => {
                   onChange={e => setCreateForm({ ...createForm, price_per_driver: parseFloat(e.target.value) })}
                   style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem' }}
                 />
+              </div>
+              
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Preço Fixo por Estabelecimento (R$) <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(opcional)</span></label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={createForm.fixed_price}
+                  onChange={e => setCreateForm({ ...createForm, fixed_price: parseFloat(e.target.value) || 0 })}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem' }}
+                />
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                  Valor fixo cobrado por ciclo, independente da quantidade de entregadores
+                </p>
               </div>
               
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
