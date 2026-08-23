@@ -284,14 +284,29 @@ def accept_order(order_id):
             elif payment_type == 'FIXED_UP_TO_PLUS_DELIVERY':
                 from datetime import datetime as dt
                 today_start = dt.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                
+                # Verificar se já recebeu o valor fixo hoje
+                fixed_already_paid = OwnDriverEarning.query.filter(
+                    OwnDriverEarning.establishment_driver_id == driver.id,
+                    OwnDriverEarning.created_at >= today_start,
+                    OwnDriverEarning.payment_type == 'FIXED_UP_TO_PLUS_DELIVERY',
+                    OwnDriverEarning.driver_earning > 0
+                ).first()
+                
+                max_deliveries = restaurant.own_driver_max_deliveries or 10
                 deliveries_today = OwnDriverEarning.query.filter(
                     OwnDriverEarning.establishment_driver_id == driver.id,
                     OwnDriverEarning.created_at >= today_start
                 ).count()
-                max_deliveries = restaurant.own_driver_max_deliveries or 10
-                if deliveries_today >= max_deliveries:
+                
+                if not fixed_already_paid:
+                    # Primeira entrega do dia: aplicar valor fixo
+                    earning_value = float(restaurant.own_driver_fixed_value or 50.00)
+                elif deliveries_today >= max_deliveries:
+                    # Excedeu o limite: valor por entrega extra
                     earning_value = float(restaurant.own_driver_delivery_value or 3.00)
                 else:
+                    # Dentro do pacote fixo: sem ganho adicional
                     earning_value = 0
 
             earning = OwnDriverEarning(
