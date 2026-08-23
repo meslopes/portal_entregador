@@ -604,10 +604,10 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
-        # Migration: tabelas de roteirização (delivery_routes e delivery_stops)
+        # Migration: tabelas de roteirização (own_driver_routes e own_driver_stops)
         try:
             db.session.execute(db.text("""
-                CREATE TABLE IF NOT EXISTS delivery_routes (
+                CREATE TABLE IF NOT EXISTS own_driver_routes (
                     id SERIAL PRIMARY KEY,
                     establishment_driver_id INTEGER REFERENCES establishment_drivers(id),
                     restaurant_id INTEGER REFERENCES restaurants(id),
@@ -620,9 +620,9 @@ def create_app(config_name=None):
                 )
             """))
             db.session.execute(db.text("""
-                CREATE TABLE IF NOT EXISTS delivery_stops (
+                CREATE TABLE IF NOT EXISTS own_driver_stops (
                     id SERIAL PRIMARY KEY,
-                    route_id INTEGER REFERENCES delivery_routes(id),
+                    route_id INTEGER REFERENCES own_driver_routes(id),
                     order_id INTEGER REFERENCES orders(id),
                     stop_order INTEGER NOT NULL,
                     stop_type VARCHAR(20),

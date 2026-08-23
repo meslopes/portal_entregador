@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     db, Order, OrderStatus, EstablishmentDriver, Restaurant,
-    DeliveryRoute, DeliveryStop, OwnDriverEarning, User, UserType
+    OwnDriverRoute, OwnDriverStop, OwnDriverEarning, User, UserType
 )
 from src.routes.own_driver import own_driver_required
 from datetime import datetime
@@ -76,7 +76,7 @@ def create_route():
         restaurant_id = restaurant_ids.pop()
 
         # Criar rota
-        route = DeliveryRoute(
+        route = OwnDriverRoute(
             establishment_driver_id=driver_id,
             restaurant_id=restaurant_id,
             status='ACTIVE',
@@ -93,7 +93,7 @@ def create_route():
         restaurant = Restaurant.query.get(restaurant_id)
         if restaurant:
             for order in orders:
-                pickup_stop = DeliveryStop(
+                pickup_stop = OwnDriverStop(
                     route_id=route.id,
                     order_id=order.id,
                     stop_order=stop_order,
@@ -115,7 +115,7 @@ def create_route():
         # Paradas de delivery
         for order in orders:
             if order.delivery_address:
-                delivery_stop = DeliveryStop(
+                delivery_stop = OwnDriverStop(
                     route_id=route.id,
                     order_id=order.id,
                     stop_order=stop_order,
@@ -139,7 +139,7 @@ def create_route():
         
         # Atualizar ordem no banco
         for i, stop_data in enumerate(optimized_stops):
-            stop = DeliveryStop.query.filter_by(
+            stop = OwnDriverStop.query.filter_by(
                 route_id=route.id,
                 order_id=stop_data['order_id'],
                 stop_type=stop_data['stop_type']
@@ -180,7 +180,7 @@ def complete_stop(route_id):
         if not stop_id:
             return jsonify({'error': 'ID da parada é obrigatório'}), 400
 
-        stop = DeliveryStop.query.get(stop_id)
+        stop = OwnDriverStop.query.get(stop_id)
         if not stop or stop.route_id != route_id:
             return jsonify({'error': 'Parada não encontrada'}), 404
 
@@ -188,7 +188,7 @@ def complete_stop(route_id):
         stop.completed_at = datetime.utcnow()
 
         # Verificar se todas as paradas foram concluídas
-        route = DeliveryRoute.query.get(route_id)
+        route = OwnDriverRoute.query.get(route_id)
         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
         
         if all_completed:
@@ -213,7 +213,7 @@ def complete_stop(route_id):
 def get_route(route_id):
     """Obtém detalhes de uma rota"""
     try:
-        route = DeliveryRoute.query.get(route_id)
+        route = OwnDriverRoute.query.get(route_id)
         if not route:
             return jsonify({'error': 'Rota não encontrada'}), 404
 
@@ -239,9 +239,9 @@ def get_active_routes():
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        routes = DeliveryRoute.query.filter(
-            DeliveryRoute.establishment_driver_id == driver.id,
-            DeliveryRoute.status == 'ACTIVE'
+        routes = OwnDriverRoute.query.filter(
+            OwnDriverRoute.establishment_driver_id == driver.id,
+            OwnDriverRoute.status == 'ACTIVE'
         ).all()
 
         return jsonify({'routes': [r.to_dict() for r in routes]}), 200

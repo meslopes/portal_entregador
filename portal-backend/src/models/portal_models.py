@@ -1098,9 +1098,9 @@ class PlatformCredential(db.Model):
         }
 
 
-class DeliveryRoute(db.Model):
+class OwnDriverRoute(db.Model):
     """Rota de entrega com múltiplos pedidos para entregadores próprios"""
-    __tablename__ = 'delivery_routes'
+    __tablename__ = 'own_driver_routes'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=False)
@@ -1114,8 +1114,8 @@ class DeliveryRoute(db.Model):
 
     # Relacionamentos
     driver = db.relationship('EstablishmentDriver', backref='routes')
-    restaurant = db.relationship('Restaurant', backref='delivery_routes')
-    stops = db.relationship('DeliveryStop', backref='route', order_by='DeliveryStop.stop_order')
+    restaurant = db.relationship('Restaurant', backref='own_driver_routes')
+    stops = db.relationship('OwnDriverStop', backref='route', order_by='OwnDriverStop.stop_order')
 
     def to_dict(self):
         return {
@@ -1132,12 +1132,12 @@ class DeliveryRoute(db.Model):
         }
 
 
-class DeliveryStop(db.Model):
-    """Parada individual em uma rota de entrega"""
-    __tablename__ = 'delivery_stops'
+class OwnDriverStop(db.Model):
+    """Parada individual em uma rota de entrega de entregador próprio"""
+    __tablename__ = 'own_driver_stops'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    route_id = db.Column(db.Integer, db.ForeignKey('delivery_routes.id'), nullable=False)
+    route_id = db.Column(db.Integer, db.ForeignKey('own_driver_routes.id'), nullable=False)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
     stop_order = db.Column(db.Integer, nullable=False)  # Ordem na rota (1, 2, 3...)
     stop_type = db.Column(db.String(20))  # PICKUP, DELIVERY
@@ -1150,7 +1150,7 @@ class DeliveryStop(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relacionamentos
-    order = db.relationship('Order', backref='route_stops')
+    order = db.relationship('Order', backref='own_driver_stops')
 
     def to_dict(self):
         return {
