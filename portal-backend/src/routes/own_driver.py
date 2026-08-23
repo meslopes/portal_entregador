@@ -590,55 +590,64 @@ def get_earnings():
 
 def _format_order_for_driver(order):
     """Formata dados do pedido para o entregador"""
-    from src.models.portal_models import Address
+    try:
+        from src.models.portal_models import Address
 
-    result = {
-        'id': order.id,
-        'order_number': order.order_number,
-        'status': order.status.value if hasattr(order.status, 'value') else str(order.status),
-        'pickup_code': order.pickup_code,
-        'delivery_code': order.delivery_code,
-        'delivery_fee': float(order.delivery_fee or 0),
-        'created_at': order.created_at.isoformat() if order.created_at else None,
-        'accepted_at': order.accepted_at.isoformat() if order.accepted_at else None,
-        'pickup_time': order.pickup_time.isoformat() if order.pickup_time else None,
-        'delivery_time': order.delivery_time.isoformat() if order.delivery_time else None,
-        'special_instructions': order.special_instructions,
-    }
-
-    # Restaurante (coleta)
-    if order.restaurant:
-        result['restaurant'] = {
-            'name': order.restaurant.name,
-            'address': order.restaurant.address,
-            'latitude': float(order.restaurant.latitude) if order.restaurant.latitude else None,
-            'longitude': float(order.restaurant.longitude) if order.restaurant.longitude else None,
-            'phone': order.restaurant.phone
+        result = {
+            'id': order.id,
+            'order_number': order.order_number or 'N/A',
+            'status': order.status.value if hasattr(order.status, 'value') else str(order.status),
+            'pickup_code': order.pickup_code,
+            'delivery_code': order.delivery_code,
+            'delivery_fee': float(order.delivery_fee or 0),
+            'created_at': order.created_at.isoformat() if order.created_at else None,
+            'accepted_at': order.accepted_at.isoformat() if order.accepted_at else None,
+            'pickup_time': order.pickup_time.isoformat() if order.pickup_time else None,
+            'delivery_time': order.delivery_time.isoformat() if order.delivery_time else None,
+            'special_instructions': order.special_instructions,
         }
 
-    # Endereço de entrega
-    if order.delivery_address:
-        result['delivery_address'] = {
-            'street': order.delivery_address.street,
-            'neighborhood': order.delivery_address.neighborhood,
-            'city': order.delivery_address.city,
-            'state': order.delivery_address.state,
-            'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
-            'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
+        # Restaurante (coleta)
+        if order.restaurant:
+            result['restaurant'] = {
+                'name': order.restaurant.name or 'N/A',
+                'address': order.restaurant.address or 'N/A',
+                'latitude': float(order.restaurant.latitude) if order.restaurant.latitude else None,
+                'longitude': float(order.restaurant.longitude) if order.restaurant.longitude else None,
+                'phone': order.restaurant.phone
+            }
+
+        # Endereço de entrega
+        if order.delivery_address:
+            result['delivery_address'] = {
+                'street': order.delivery_address.street or 'N/A',
+                'neighborhood': order.delivery_address.neighborhood or 'N/A',
+                'city': order.delivery_address.city or 'N/A',
+                'state': order.delivery_state or 'N/A',
+                'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
+                'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
+            }
+
+        # Cliente
+        if order.customer:
+            result['customer'] = {
+                'name': order.customer.name or 'N/A',
+                'phone': order.customer.phone
+            }
+
+        # Itens
+        result['items'] = order.items
+
+        # Prova de entrega
+        if order.delivery and order.delivery.proof_of_delivery_url:
+            result['proof_of_delivery_url'] = order.delivery.proof_of_delivery_url
+
+        return result
+    except Exception as e:
+        logger.error(f"Erro ao formatar pedido {order.id}: {e}")
+        return {
+            'id': order.id,
+            'order_number': order.order_number or 'N/A',
+            'status': 'UNKNOWN',
+            'error': str(e)
         }
-
-    # Cliente
-    if order.customer:
-        result['customer'] = {
-            'name': order.customer.name,
-            'phone': order.customer.phone
-        }
-
-    # Itens
-    result['items'] = order.items
-
-    # Prova de entrega
-    if order.delivery and order.delivery.proof_of_delivery_url:
-        result['proof_of_delivery_url'] = order.delivery.proof_of_delivery_url
-
-    return result
