@@ -203,30 +203,34 @@ def update_location():
 @own_driver_required
 def get_orders():
     """Lista pedidos do entregador próprio (ativos e recentes)"""
-    driver = request.own_driver
-    status = request.args.get('status', 'active')  # active, completed, all
+    try:
+        driver = request.own_driver
+        status = request.args.get('status', 'active')  # active, completed, all
 
-    query = Order.query.filter(
-        Order.establishment_driver_id == driver.id,
-        Order.assigned_to_own_driver == True
-    )
+        query = Order.query.filter(
+            Order.establishment_driver_id == driver.id,
+            Order.assigned_to_own_driver == True
+        )
 
-    if status == 'active':
-        query = query.filter(Order.status.in_([
-            OrderStatus.OFFERED, OrderStatus.ACCEPTED, OrderStatus.PREPARING,
-            OrderStatus.READY, OrderStatus.PICKED_UP
-        ]))
-    elif status == 'completed':
-        query = query.filter(Order.status == OrderStatus.DELIVERED)
-        query = query.order_by(Order.delivery_time.desc())
-    else:  # all
-        query = query.filter(Order.status != OrderStatus.CANCELLED)
+        if status == 'active':
+            query = query.filter(Order.status.in_([
+                OrderStatus.OFFERED, OrderStatus.ACCEPTED, OrderStatus.PREPARING,
+                OrderStatus.READY, OrderStatus.PICKED_UP
+            ]))
+        elif status == 'completed':
+            query = query.filter(Order.status == OrderStatus.DELIVERED)
+            query = query.order_by(Order.delivery_time.desc())
+        else:  # all
+            query = query.filter(Order.status != OrderStatus.CANCELLED)
 
-    orders = query.order_by(Order.created_at.desc()).limit(50).all()
+        orders = query.order_by(Order.created_at.desc()).limit(50).all()
 
-    return jsonify({
-        'orders': [_format_order_for_driver(o) for o in orders]
-    }), 200
+        return jsonify({
+            'orders': [_format_order_for_driver(o) for o in orders]
+        }), 200
+    except Exception as e:
+        logger.error(f"Erro ao listar pedidos: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @own_driver_bp.route('/orders/<int:order_id>/accept', methods=['POST'])
@@ -591,7 +595,7 @@ def _format_order_for_driver(order):
     result = {
         'id': order.id,
         'order_number': order.order_number,
-        'status': order.status.value,
+        'status': order.status.value if hasattr(order.status, 'value') else str(order.status),
         'pickup_code': order.pickup_code,
         'delivery_code': order.delivery_code,
         'delivery_fee': float(order.delivery_fee or 0),
