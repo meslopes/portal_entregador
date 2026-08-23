@@ -60,7 +60,27 @@ const OrderDetailPage = () => {
 
   const handleChangeStatus = async (newStatus) => {
     try {
-      await orderService.updateOrderStatus(orderId, newStatus);
+      // Se for cancelamento, perguntar sobre estorno ao entregador
+      if (newStatus === 'CANCELLED') {
+        const hasDriver = order.driver_id || order.establishment_driver_id;
+        let refundDriver = false;
+        let reason = '';
+        
+        if (hasDriver) {
+          const confirmMsg = 'Deseja estornar o valor ao entregador?\n\n' +
+            'Clique "OK" para estornar ou "Cancelar" para apenas cancelar o pedido.';
+          refundDriver = window.confirm(confirmMsg);
+        }
+        
+        reason = window.prompt('Motivo do cancelamento (opcional):') || '';
+        
+        await api.put(`/api/orders/${orderId}/cancel`, {
+          refund_driver: refundDriver,
+          reason: reason
+        });
+      } else {
+        await orderService.updateOrderStatus(orderId, newStatus);
+      }
       loadOrder();
     } catch (err) {
       alert('Erro ao alterar status: ' + (err.response?.data?.error || err.message));

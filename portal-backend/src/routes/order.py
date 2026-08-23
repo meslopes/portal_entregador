@@ -1339,6 +1339,10 @@ def cancel_order(order_id):
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
 
+        data = request.get_json() or {}
+        refund_driver = data.get('refund_driver', False)
+        cancellation_reason = data.get('reason', '')
+
         order = Order.query.get(order_id)
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
@@ -1367,6 +1371,20 @@ def cancel_order(order_id):
         if order.status not in cancelable_statuses:
             return jsonify({'error': f'Não é possível cancelar pedido com status {order.status.value}'}), 400
 
+        # Verificar se tem entregador atribuído e se deve estornar
+        driver_refund = 0
+        if refund_driver and order.driver_id:
+            from decimal import Decimal
+            driver = Driver.query.get(order.driver_id)
+            if driver:
+                # Calcular valor a estornar (ganhos do entregador)
+                delivery = Delivery.query.filter_by(order_id=order.id).first()
+                if delivery and delivery.driver_earnings:
+                    driver_refund = float(delivery.driver_earnings)
+                    driver.balance = (driver.balance or Decimal('0')) + Decimal(str(driver_refund))
+                    driver.locked_balance = max(Decimal('0'), (driver.locked_balance or Decimal('0')) - Decimal(str(driver_refund)))
+                    driver.updated_at = datetime.utcnow()
+
         # Cancela
         order.status = OrderStatus.CANCELLED
         order.updated_at = datetime.utcnow()
@@ -1388,7 +1406,7 @@ def cancel_order(order_id):
             notification = Notification(
                 user_id=order.customer.user_id,
                 title="Pedido cancelado",
-                message=f"O pedido #{order.order_number} foi cancelado",
+                message=f"O pedido #{order.order_number} foi cancelado" + (f". Motivo: {cancellation_reason}" if cancellation_reason else ""),
                 type=NotificationType.ORDER_UPDATE,
                 related_id=order.id
             )
@@ -1406,6 +1424,9 @@ def cancel_order(order_id):
         if cancellation_fee > 0:
             response_data['cancellation_fee'] = cancellation_fee
             response_data['message'] = f'Pedido cancelado. Taxa de cancelamento: R$ {cancellation_fee:.2f}'
+        if driver_refund > 0:
+            response_data['driver_refund'] = driver_refund
+            response_data['message'] += f' | Estorno ao entregador: R$ {driver_refund:.2f}'
 
         return jsonify(response_data), 200
 
