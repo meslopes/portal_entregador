@@ -389,121 +389,121 @@ def update_order_status(order_id):
         driver = request.own_driver
         data = request.get_json() or {}
 
-    order = Order.query.get(order_id)
-    if not order:
-        return jsonify({'error': 'Pedido não encontrado'}), 404
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
 
-    if order.establishment_driver_id != driver.id:
-        return jsonify({'error': 'Este pedido não foi atribuído a você'}), 403
+        if order.establishment_driver_id != driver.id:
+            return jsonify({'error': 'Este pedido não foi atribuído a você'}), 403
 
-    new_status = data.get('status')
-    if not new_status:
-        return jsonify({'error': 'Status é obrigatório'}), 400
+        new_status = data.get('status')
+        if not new_status:
+            return jsonify({'error': 'Status é obrigatório'}), 400
 
-    try:
-        new_status_enum = OrderStatus(new_status)
-    except ValueError:
-        return jsonify({'error': 'Status inválido'}), 400
+        try:
+            new_status_enum = OrderStatus(new_status)
+        except ValueError:
+            return jsonify({'error': 'Status inválido'}), 400
 
-    # Transições válidas para entregador próprio
-    valid_transitions = {
-        OrderStatus.ACCEPTED: [OrderStatus.PICKED_UP, OrderStatus.PREPARING],
-        OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.PICKED_UP],
-        OrderStatus.READY: [OrderStatus.PICKED_UP],
-        OrderStatus.PICKED_UP: [OrderStatus.DELIVERED]
-    }
+        # Transições válidas para entregador próprio
+        valid_transitions = {
+            OrderStatus.ACCEPTED: [OrderStatus.PICKED_UP, OrderStatus.PREPARING],
+            OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.PICKED_UP],
+            OrderStatus.READY: [OrderStatus.PICKED_UP],
+            OrderStatus.PICKED_UP: [OrderStatus.DELIVERED]
+        }
 
-    if order.status not in valid_transitions or new_status_enum not in valid_transitions.get(order.status, []):
-        return jsonify({'error': f'Transição inválida: {order.status.value} → {new_status}. Status atual: {order.status.value}'}), 400
+        if order.status not in valid_transitions or new_status_enum not in valid_transitions.get(order.status, []):
+            return jsonify({'error': f'Transição inválida: {order.status.value} → {new_status}. Status atual: {order.status.value}'}), 400
 
-    # Validação GPS para PICKED_UP e DELIVERED
-    if new_status_enum in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
-        lat = data.get('latitude')
-        lng = data.get('longitude')
+        # Validação GPS para PICKED_UP e DELIVERED
+        if new_status_enum in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+            lat = data.get('latitude')
+            lng = data.get('longitude')
 
-        if lat and lng:
-            from src.utils.geo import haversine_distance
-            from src.models.portal_models import SystemConfig
+            if lat and lng:
+                from src.utils.geo import haversine_distance
+                from src.models.portal_models import SystemConfig
 
-            if new_status_enum == OrderStatus.PICKED_UP:
-                target_lat = float(order.restaurant.latitude) if order.restaurant else None
-                target_lng = float(order.restaurant.longitude) if order.restaurant else None
-                location_name = 'restaurante'
-            else:
-                target_lat = float(order.delivery_address.latitude) if order.delivery_address else None
-                target_lng = float(order.delivery_address.longitude) if order.delivery_address else None
-                location_name = 'endereço de entrega'
+                if new_status_enum == OrderStatus.PICKED_UP:
+                    target_lat = float(order.restaurant.latitude) if order.restaurant else None
+                    target_lng = float(order.restaurant.longitude) if order.restaurant else None
+                    location_name = 'restaurante'
+                else:
+                    target_lat = float(order.delivery_address.latitude) if order.delivery_address else None
+                    target_lng = float(order.delivery_address.longitude) if order.delivery_address else None
+                    location_name = 'endereço de entrega'
 
-            if target_lat and target_lng:
-                distance = haversine_distance(float(lat), float(lng), target_lat, target_lng)
-                distance_meters = distance * 1000
+                if target_lat and target_lng:
+                    distance = haversine_distance(float(lat), float(lng), target_lat, target_lng)
+                    distance_meters = distance * 1000
 
-                radius_config = SystemConfig.query.filter_by(config_key='gps_radius_meters').first()
-                max_radius = int(radius_config.config_value) if radius_config else 500
+                    radius_config = SystemConfig.query.filter_by(config_key='gps_radius_meters').first()
+                    max_radius = int(radius_config.config_value) if radius_config else 500
 
-                if distance_meters > max_radius:
-                    return jsonify({
-                        'error': f'Você está a {distance_meters:.0f}m do {location_name}. O máximo é {max_radius}m.',
-                        'distance_meters': round(distance_meters),
-                        'max_radius': max_radius
-                    }), 400
+                    if distance_meters > max_radius:
+                        return jsonify({
+                            'error': f'Você está a {distance_meters:.0f}m do {location_name}. O máximo é {max_radius}m.',
+                            'distance_meters': round(distance_meters),
+                            'max_radius': max_radius
+                        }), 400
 
-    # Validação de código anti-fraude
-    if new_status_enum == OrderStatus.PICKED_UP and order.pickup_code:
-        provided_code = data.get('pickup_code')
-        if not provided_code:
-            return jsonify({'error': 'Código de coleta é obrigatório', 'code_required': 'pickup_code'}), 400
-        if provided_code != order.pickup_code:
-            return jsonify({'error': 'Código de coleta inválido'}), 400
+        # Validação de código anti-fraude
+        if new_status_enum == OrderStatus.PICKED_UP and order.pickup_code:
+            provided_code = data.get('pickup_code')
+            if not provided_code:
+                return jsonify({'error': 'Código de coleta é obrigatório', 'code_required': 'pickup_code'}), 400
+            if provided_code != order.pickup_code:
+                return jsonify({'error': 'Código de coleta inválido'}), 400
 
-    if new_status_enum == OrderStatus.DELIVERED and order.delivery_code:
-        provided_code = data.get('delivery_code')
-        if not provided_code:
-            return jsonify({'error': 'Código de entrega é obrigatório', 'code_required': 'delivery_code'}), 400
-        if provided_code != order.delivery_code:
-            return jsonify({'error': 'Código de entrega inválido'}), 400
+        if new_status_enum == OrderStatus.DELIVERED and order.delivery_code:
+            provided_code = data.get('delivery_code')
+            if not provided_code:
+                return jsonify({'error': 'Código de entrega é obrigatório', 'code_required': 'delivery_code'}), 400
+            if provided_code != order.delivery_code:
+                return jsonify({'error': 'Código de entrega inválido'}), 400
 
-    # Atualizar status
-    order.status = new_status_enum
-    order.updated_at = datetime.utcnow()
+        # Atualizar status
+        order.status = new_status_enum
+        order.updated_at = datetime.utcnow()
 
-    if new_status_enum == OrderStatus.PICKED_UP:
-        order.pickup_time = datetime.utcnow()
-        order.picked_up_at = datetime.utcnow()
-    elif new_status_enum == OrderStatus.DELIVERED:
-        order.delivery_time = datetime.utcnow()
+        if new_status_enum == OrderStatus.PICKED_UP:
+            order.pickup_time = datetime.utcnow()
+            order.picked_up_at = datetime.utcnow()
+        elif new_status_enum == OrderStatus.DELIVERED:
+            order.delivery_time = datetime.utcnow()
 
-        # Salvar prova de entrega se fornecida
-        proof_data = data.get('proof_of_delivery')
-        if proof_data and order.delivery:
-            try:
-                import base64
-                uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'proofs')
-                os.makedirs(uploads_dir, exist_ok=True)
+            # Salvar prova de entrega se fornecida
+            proof_data = data.get('proof_of_delivery')
+            if proof_data and order.delivery:
+                try:
+                    import base64
+                    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'proofs')
+                    os.makedirs(uploads_dir, exist_ok=True)
 
-                if ',' in proof_data:
-                    proof_data = proof_data.split(',')[1]
+                    if ',' in proof_data:
+                        proof_data = proof_data.split(',')[1]
 
-                filename = f"proof_{order.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                filepath = os.path.join(uploads_dir, filename)
+                    filename = f"proof_{order.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                    filepath = os.path.join(uploads_dir, filename)
 
-                with open(filepath, 'wb') as f:
-                    f.write(base64.b64decode(proof_data))
+                    with open(filepath, 'wb') as f:
+                        f.write(base64.b64decode(proof_data))
 
-                order.delivery.proof_of_delivery_url = f"/uploads/proofs/{filename}"
-            except Exception as e:
-                logger.error(f"Erro ao salvar prova de entrega: {e}")
+                    order.delivery.proof_of_delivery_url = f"/uploads/proofs/{filename}"
+                except Exception as e:
+                    logger.error(f"Erro ao salvar prova de entrega: {e}")
 
-        # Incrementar entregas do entregador
-        driver.total_deliveries = (driver.total_deliveries or 0) + 1
-        driver.updated_at = datetime.utcnow()
+            # Incrementar entregas do entregador
+            driver.total_deliveries = (driver.total_deliveries or 0) + 1
+            driver.updated_at = datetime.utcnow()
 
-    db.session.commit()
+        db.session.commit()
 
-    return jsonify({
-        'message': f'Status atualizado para {new_status_enum.value}',
-        'order': _format_order_for_driver(order)
-    }), 200
+        return jsonify({
+            'message': f'Status atualizado para {new_status_enum.value}',
+            'order': _format_order_for_driver(order)
+        }), 200
 
     except Exception as e:
         db.session.rollback()
