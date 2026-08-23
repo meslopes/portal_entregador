@@ -126,6 +126,7 @@ const NewOrderPage = () => {
     e.preventDefault();
     setError('');
 
+    if (isAdmin && !form.selected_establishment) { setError('Selecione um estabelecimento'); return; }
     if (!form.customer_name.trim()) { setError('Nome do cliente é obrigatório'); return; }
     if (!form.customer_phone.trim()) { setError('Telefone do cliente é obrigatório'); return; }
     if (!form.delivery_address.trim()) { setError('Endereço é obrigatório'); return; }

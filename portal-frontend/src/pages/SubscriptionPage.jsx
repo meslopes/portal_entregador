@@ -74,7 +74,7 @@ const SubscriptionPage = () => {
       await api.post('/api/finance/subscriptions', createForm);
       setSuccess('Assinatura criada com sucesso!');
       setShowCreateModal(false);
-      setCreateForm({ restaurant_id: '', billing_cycle: 'WEEKLY', price_per_driver: 50.00 });
+      setCreateForm({ restaurant_id: '', billing_cycle: 'WEEKLY', price_per_driver: 50.00, fixed_price: 0 });
       setTimeout(() => setSuccess(''), 3000);
       loadData();
     } catch (err) {

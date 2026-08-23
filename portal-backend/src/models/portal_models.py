@@ -205,6 +205,12 @@ class Driver(db.Model):
     deliveries = db.relationship('Delivery', backref='driver')
     payments = db.relationship('Payment', backref='driver')
 
+    # Índices para performance
+    __table_args__ = (
+        db.Index('ix_drivers_tenant_online', 'tenant_id', 'is_online'),
+        db.Index('ix_drivers_square', 'square_id'),
+    )
+
     def to_dict(self):
         data = {
             'id': self.id,
@@ -523,6 +529,12 @@ class Customer(db.Model):
     addresses = db.relationship('Address', backref='customer', cascade='all, delete-orphan')
     orders = db.relationship('Order', backref='customer')
 
+    # Índices para performance
+    __table_args__ = (
+        db.Index('ix_customers_phone', 'phone'),
+        db.Index('ix_customers_tenant', 'tenant_id'),
+    )
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -620,6 +632,14 @@ class Order(db.Model):
     
     # Relacionamentos
     delivery = db.relationship('Delivery', backref='order', uselist=False, cascade='all, delete-orphan')
+
+    # Índices para performance
+    __table_args__ = (
+        db.Index('ix_orders_tenant_status', 'tenant_id', 'status'),
+        db.Index('ix_orders_restaurant_status', 'restaurant_id', 'status'),
+        db.Index('ix_orders_created_at', 'created_at'),
+        db.Index('ix_orders_driver_status', 'driver_id', 'status'),
+    )
 
     def to_dict(self):
         return {

@@ -889,6 +889,12 @@ def delete_user(user_id):
                     DriverAchievement.query.filter_by(driver_id=driver.id).delete()
                     DriverPenalty.query.filter_by(driver_id=driver.id).delete()
                     DriverRestaurant.query.filter_by(driver_id=driver.id).delete()
+                    # Limpar ganhos de entregadores próprios vinculados
+                    from src.models.portal_models import EstablishmentDriver, OwnDriverEarning
+                    est_drivers = EstablishmentDriver.query.filter_by(user_id=user.id).all()
+                    for ed in est_drivers:
+                        OwnDriverEarning.query.filter_by(establishment_driver_id=ed.id).delete()
+                        db.session.delete(ed)
 
                 db.session.delete(driver)
 
@@ -1928,7 +1934,11 @@ def update_driver(driver_id):
 
         if 'vehicle_type' in data:
 
-            driver.vehicle_type = data['vehicle_type']
+            try:
+                from src.models.portal_models import VehicleType
+                driver.vehicle_type = VehicleType(data['vehicle_type'])
+            except (ValueError, KeyError):
+                return jsonify({'error': 'Tipo de veículo inválido'}), 400
 
         if 'vehicle_plate' in data:
 
@@ -8734,7 +8744,11 @@ def update_establishment_driver(driver_id):
 
         if 'vehicle_type' in data:
 
-            driver.vehicle_type = data['vehicle_type']
+            try:
+                from src.models.portal_models import VehicleType
+                driver.vehicle_type = VehicleType(data['vehicle_type'])
+            except (ValueError, KeyError):
+                return jsonify({'error': 'Tipo de veículo inválido'}), 400
 
         if 'vehicle_plate' in data:
 

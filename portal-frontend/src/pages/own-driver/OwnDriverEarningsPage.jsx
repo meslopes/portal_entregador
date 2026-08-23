@@ -32,6 +32,11 @@ const OwnDriverEarningsPage = () => {
       setSummary(res.data.summary || {});
     } catch (err) {
       console.error('Erro ao carregar ganhos:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('own_driver_token');
+        navigate('/own-driver/login');
+        return;
+      }
       setError('Erro ao carregar ganhos. Tente novamente.');
     } finally {
       setLoading(false);
@@ -58,6 +63,10 @@ const OwnDriverEarningsPage = () => {
   };
 
   const handleUpdatePix = async () => {
+    if (!pixKey.trim()) {
+      setError('Informe uma chave PIX');
+      return;
+    }
     try {
       setError('');
       const token = localStorage.getItem('own_driver_token');
