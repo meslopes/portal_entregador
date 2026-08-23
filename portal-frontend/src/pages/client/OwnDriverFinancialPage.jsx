@@ -279,6 +279,7 @@ const OwnDriverFinancialPage = () => {
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                   <th style={thStyle}>Pedido</th>
+                  <th style={thStyle}>Data</th>
                   <th style={thStyle}>Entregador</th>
                   <th style={thStyle}>Frete</th>
                   <th style={thStyle}>Ganho</th>
@@ -290,7 +291,7 @@ const OwnDriverFinancialPage = () => {
               <tbody>
                 {earnings.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+                    <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
                       Nenhum ganho registrado
                     </td>
                   </tr>
@@ -298,6 +299,13 @@ const OwnDriverFinancialPage = () => {
                   earnings.map(earning => (
                     <tr key={earning.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={tdStyle}>#{earning.order_number}</td>
+                      <td style={tdStyle}>
+                        {earning.created_at ? new Date(earning.created_at).toLocaleDateString('pt-BR') : '-'}
+                        <br />
+                        <span style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
+                          {earning.created_at ? new Date(earning.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </td>
                       <td style={tdStyle}>{earning.driver_name}</td>
                       <td style={tdStyle}>{formatCurrency(earning.delivery_fee)}</td>
                       <td style={{ ...tdStyle, fontWeight: 600, color: '#059669' }}>
