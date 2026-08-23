@@ -941,3 +941,211 @@ def process_own_driver_withdrawal():
         db.session.rollback()
         logger.error(f"Erro ao processar saque: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ==================== NOTIFICAÇÕES DE VENCIMENTO ====================
+
+@finance_bp.route('/check-invoice-due-dates', methods=['POST'])
+@jwt_required()
+def check_invoice_due_dates():
+    """Verifica faturas próximas do vencimento e vencidas, cria notificações"""
+    try:
+        from src.models.portal_models import Notification, NotificationType, User, UserType
+        
+        user = get_current_user()
+        if user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Apenas administradores'}), 403
+        
+        now = datetime.utcnow()
+        tomorrow = now + timedelta(days=1)
+        three_days = now + timedelta(days=3)
+        
+        notifications_created = 0
+        
+        # 1. Faturas vencidas (status PENDING e due_date < agora)
+        overdue_invoices = SubscriptionInvoice.query.filter(
+            SubscriptionInvoice.status == 'PENDING',
+            SubscriptionInvoice.due_date < now
+        ).all()
+        
+        for invoice in overdue_invoices:
+            # Atualizar status para OVERDUE
+            invoice.status = 'OVERDUE'
+            
+            # Buscar admin do restaurante
+            restaurant = Restaurant.query.get(invoice.restaurant_id)
+            if restaurant and restaurant.tenant_id:
+                admin = User.query.filter_by(
+                    tenant_id=restaurant.tenant_id,
+                    user_type=UserType.ADMIN
+                ).first()
+                
+                if admin:
+                    # Verificar se já existe notificação recente
+                    existing = Notification.query.filter_by(
+                        user_id=admin.id,
+                        related_id=invoice.id,
+                        type=NotificationType.INVOICE_OVERDUE
+                    ).first()
+                    
+                    if not existing:
+                        notification = Notification(
+                            user_id=admin.id,
+                            title='Fatura Vencida',
+                            message=f'A fatura {invoice.invoice_number} de {restaurant.name} está vencida. Valor: R$ {float(invoice.total_amount):.2f}',
+                            type=NotificationType.INVOICE_OVERDUE,
+                            related_id=invoice.id
+                        )
+                        db.session.add(notification)
+                        notifications_created += 1
+        
+        # 2. Faturas vencendo em 3 dias
+        upcoming_invoices = SubscriptionInvoice.query.filter(
+            SubscriptionInvoice.status == 'PENDING',
+            SubscriptionInvoice.due_date >= now,
+            SubscriptionInvoice.due_date <= three_days
+        ).all()
+        
+        for invoice in upcoming_invoices:
+            restaurant = Restaurant.query.get(invoice.restaurant_id)
+            if restaurant and restaurant.tenant_id:
+                admin = User.query.filter_by(
+                    tenant_id=restaurant.tenant_id,
+                    user_type=UserType.ADMIN
+                ).first()
+                
+                if admin:
+                    # Verificar se já existe notificação recente
+                    existing = Notification.query.filter_by(
+                        user_id=admin.id,
+                        related_id=invoice.id,
+                        type=NotificationType.INVOICE_REMINDER
+                    ).first()
+                    
+                    if not existing:
+                        days_until = (invoice.due_date - now).days
+                        notification = Notification(
+                            user_id=admin.id,
+                            title='Fatura Vencendo',
+                            message=f'A fatura {invoice.invoice_number} de {restaurant.name} vence em {days_until} dia(s). Valor: R$ {float(invoice.total_amount):.2f}',
+                            type=NotificationType.INVOICE_REMINDER,
+                            related_id=invoice.id
+                        )
+                        db.session.add(notification)
+                        notifications_created += 1
+        
+        # 3. Notificar estabelecimentos sobre suas faturas
+        for invoice in upcoming_invoices + overdue_invoices:
+            restaurant = Restaurant.query.get(invoice.restaurant_id)
+            if restaurant:
+                # Buscar usuário CLIENT do restaurante
+                customer = Customer.query.filter_by(restaurant_id=restaurant.id).first()
+                if customer and customer.user_id:
+                    notif_type = NotificationType.INVOICE_OVERDUE if invoice.status == 'OVERDUE' else NotificationType.INVOICE_REMINDER
+                    
+                    existing = Notification.query.filter_by(
+                        user_id=customer.user_id,
+                        related_id=invoice.id,
+                        type=notif_type
+                    ).first()
+                    
+                    if not existing:
+                        if invoice.status == 'OVERDUE':
+                            title = 'Fatura Vencida'
+                            msg = f'Sua fatura {invoice.invoice_number} está vencida. Valor: R$ {float(invoice.total_amount):.2f}. Regularize o pagamento.'
+                        else:
+                            days_until = (invoice.due_date - now).days
+                            title = 'Fatura Vencendo'
+                            msg = f'Sua fatura {invoice.invoice_number} vence em {days_until} dia(s). Valor: R$ {float(invoice.total_amount):.2f}'
+                        
+                        notification = Notification(
+                            user_id=customer.user_id,
+                            title=title,
+                            message=msg,
+                            type=notif_type,
+                            related_id=invoice.id
+                        )
+                        db.session.add(notification)
+                        notifications_created += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'{notifications_created} notificação(ões) criada(s)',
+            'overdue_count': len(overdue_invoices),
+            'upcoming_count': len(upcoming_invoices),
+            'notifications_created': notifications_created
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao verificar vencimentos: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_bp.route('/overdue-report', methods=['GET'])
+@jwt_required()
+def get_overdue_report():
+    """Relatório de inadimplência - faturas vencidas"""
+    try:
+        user = get_current_user()
+        tenant_id = get_current_tenant_id()
+        
+        query = SubscriptionInvoice.query.filter(
+            SubscriptionInvoice.status.in_(['PENDING', 'OVERDUE'])
+        )
+        
+        # Filtrar por tenant se admin
+        if user.user_type == UserType.ADMIN and tenant_id:
+            restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
+            query = query.filter(SubscriptionInvoice.restaurant_id.in_(restaurant_ids))
+        elif user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                restaurant = Restaurant.query.filter_by(name=customer.name).first()
+                if restaurant:
+                    query = query.filter_by(restaurant_id=restaurant.id)
+        
+        # Filtrar apenas vencidas
+        now = datetime.utcnow()
+        overdue = query.filter(SubscriptionInvoice.due_date < now).order_by(
+            SubscriptionInvoice.due_date.asc()
+        ).all()
+        
+        # Agrupar por restaurante
+        by_restaurant = {}
+        for invoice in overdue:
+            restaurant = Restaurant.query.get(invoice.restaurant_id)
+            if not restaurant:
+                continue
+            
+            if restaurant.id not in by_restaurant:
+                by_restaurant[restaurant.id] = {
+                    'restaurant_id': restaurant.id,
+                    'restaurant_name': restaurant.name,
+                    'invoices': [],
+                    'total_overdue': 0,
+                    'oldest_due': None
+                }
+            
+            by_restaurant[restaurant.id]['invoices'].append(invoice.to_dict())
+            by_restaurant[restaurant.id]['total_overdue'] += float(invoice.total_amount or 0)
+            
+            if not by_restaurant[restaurant.id]['oldest_due'] or invoice.due_date < datetime.fromisoformat(by_restaurant[restaurant.id]['oldest_due']):
+                by_restaurant[restaurant.id]['oldest_due'] = invoice.due_date.isoformat()
+        
+        result = list(by_restaurant.values())
+        result.sort(key=lambda x: x['total_overdue'], reverse=True)
+        
+        return jsonify({
+            'overdue_restaurants': result,
+            'summary': {
+                'total_overdue': sum(r['total_overdue'] for r in result),
+                'restaurants_count': len(result),
+                'invoices_count': len(overdue)
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao gerar relatório de inadimplência: {e}")
+        return jsonify({'error': str(e)}), 500

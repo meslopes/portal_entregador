@@ -42,6 +42,7 @@ import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
 import AdminDriversPage from '@/pages/admin/AdminDriversPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
+import OverdueReportPage from '@/pages/admin/OverdueReportPage';
 import OrderDetailPage from '@/pages/admin/OrderDetailPage';
 import AdminFinancePage from '@/pages/admin/AdminFinancePage';
 import AdminWithdrawalsPage from '@/pages/admin/AdminWithdrawalsPage';
@@ -437,6 +438,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <SubscriptionPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/overdue-report"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <OverdueReportPage />
                 </Layout>
               </ProtectedRoute>
             }

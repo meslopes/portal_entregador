@@ -625,6 +625,18 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: novos tipos de notificação para faturas
+        try:
+            db.session.execute(db.text(
+                "ALTER TYPE notificationtype ADD VALUE IF NOT EXISTS 'INVOICE_REMINDER'"
+            ))
+            db.session.execute(db.text(
+                "ALTER TYPE notificationtype ADD VALUE IF NOT EXISTS 'INVOICE_OVERDUE'"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de roteirização (own_driver_routes e own_driver_stops)
         try:
             db.session.execute(db.text("""

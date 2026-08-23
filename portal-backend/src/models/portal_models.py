@@ -55,6 +55,8 @@ class NotificationType(Enum):
     ORDER_UPDATE = "ORDER_UPDATE"
     PAYMENT = "PAYMENT"
     SYSTEM = "SYSTEM"
+    INVOICE_REMINDER = "INVOICE_REMINDER"
+    INVOICE_OVERDUE = "INVOICE_OVERDUE"
 
 
 class Tenant(db.Model):
