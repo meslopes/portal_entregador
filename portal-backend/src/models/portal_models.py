@@ -442,6 +442,8 @@ class Restaurant(db.Model):
     subscription_type = db.Column(db.String(20))  # WEEKLY, NONE
     subscription_expires_at = db.Column(db.DateTime)  # Data de expiração da assinatura
     platform_pricing_table_id = db.Column(db.Integer, db.ForeignKey('pricing_tables.id'), nullable=True)  # Tabela diferenciada para plataforma
+    # Roteirização para entregadores da plataforma
+    enable_platform_routing = db.Column(db.Boolean, default=False)  # Se usa roteirização para plataforma
     # Configuração de pagamento para entregadores próprios
     own_driver_payment_type = db.Column(db.String(30), default='PER_DELIVERY')  # PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED, FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY
     own_driver_fixed_value = db.Column(db.Numeric(10, 2), default=5.00)  # Valor fixo por entrega/diária
@@ -1278,5 +1280,78 @@ class SubscriptionInvoice(db.Model):
             'payment_url': self.payment_url,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
+        }
+
+
+class PlatformDriverRoute(db.Model):
+    """Rota de entrega com múltiplos pedidos para entregadores da plataforma"""
+    __tablename__ = 'platform_driver_routes'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, COMPLETED, CANCELLED
+    total_distance_km = db.Column(db.Numeric(10, 2))
+    total_duration_min = db.Column(db.Numeric(10, 2))
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='routes')
+    restaurant = db.relationship('Restaurant', backref='platform_routes')
+    stops = db.relationship('PlatformDriverStop', backref='route', order_by='PlatformDriverStop.stop_order')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'driver_name': f"{self.driver.user.first_name} {self.driver.user.last_name}" if self.driver and self.driver.user else 'N/A',
+            'restaurant_id': self.restaurant_id,
+            'restaurant_name': self.restaurant.name if self.restaurant else 'N/A',
+            'status': self.status,
+            'total_distance_km': float(self.total_distance_km) if self.total_distance_km else None,
+            'total_duration_min': float(self.total_duration_min) if self.total_duration_min else None,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'created_at': self.created_at.isoformat(),
+            'stops': [s.to_dict() for s in self.stops]
+        }
+
+
+class PlatformDriverStop(db.Model):
+    """Parada individual em uma rota de entrega de entregador da plataforma"""
+    __tablename__ = 'platform_driver_stops'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    route_id = db.Column(db.Integer, db.ForeignKey('platform_driver_routes.id'), nullable=False)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    stop_order = db.Column(db.Integer, nullable=False)
+    stop_type = db.Column(db.String(20))  # PICKUP, DELIVERY
+    latitude = db.Column(db.Numeric(10, 8))
+    longitude = db.Column(db.Numeric(11, 8))
+    address = db.Column(db.String(500))
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, COMPLETED, SKIPPED
+    arrived_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    order = db.relationship('Order', backref='platform_route_stops')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'route_id': self.route_id,
+            'order_id': self.order_id,
+            'stop_order': self.stop_order,
+            'stop_type': self.stop_type,
+            'latitude': float(self.latitude) if self.latitude else None,
+            'longitude': float(self.longitude) if self.longitude else None,
+            'address': self.address,
+            'status': self.status,
+            'arrived_at': self.arrived_at.isoformat() if self.arrived_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'created_at': self.created_at.isoformat()
         }
 

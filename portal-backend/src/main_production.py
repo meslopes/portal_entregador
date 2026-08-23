@@ -672,6 +672,44 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tabelas de roteirização para plataforma (platform_driver_routes e platform_driver_stops)
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS platform_driver_routes (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER REFERENCES drivers(id),
+                    restaurant_id INTEGER REFERENCES restaurants(id),
+                    status VARCHAR(20) DEFAULT 'ACTIVE',
+                    total_distance_km NUMERIC(10,2),
+                    total_duration_min NUMERIC(10,2),
+                    started_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS platform_driver_stops (
+                    id SERIAL PRIMARY KEY,
+                    route_id INTEGER REFERENCES platform_driver_routes(id),
+                    order_id INTEGER REFERENCES orders(id),
+                    stop_order INTEGER NOT NULL,
+                    stop_type VARCHAR(20),
+                    latitude NUMERIC(10,8),
+                    longitude NUMERIC(11,8),
+                    address VARCHAR(500),
+                    status VARCHAR(20) DEFAULT 'PENDING',
+                    arrived_at TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'enable_platform_routing') THEN ALTER TABLE restaurants ADD COLUMN enable_platform_routing BOOLEAN DEFAULT FALSE; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de assinatura (establishment_subscriptions e subscription_invoices)
         try:
             db.session.execute(db.text("""

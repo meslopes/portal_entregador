@@ -867,6 +867,50 @@ const AdminEstablishmentsPage = () => {
               </div>
             </div>
 
+            {/* Roteirização para Plataforma */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Roteirização
+              </p>
+              <div style={{
+                padding: '1rem', borderRadius: '0.5rem',
+                background: showDetails.enable_platform_routing ? '#f0fdf4' : '#f8fafc',
+                border: `1px solid ${showDetails.enable_platform_routing ? '#86efac' : '#e2e8f0'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+              }}>
+                <div>
+                  <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
+                    Roteirização Multi-Parada
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    {showDetails.enable_platform_routing
+                      ? 'Entregadores podem sair com múltiplos pedidos'
+                      : 'Cada pedido é entregue individualmente'
+                    }
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.put(`/api/admin/establishments/${showDetails.id}`, {
+                        enable_platform_routing: !showDetails.enable_platform_routing
+                      });
+                      setShowDetails({ ...showDetails, enable_platform_routing: !showDetails.enable_platform_routing });
+                    } catch (err) {
+                      alert('Erro ao alterar configuração');
+                    }
+                  }}
+                  style={{
+                    padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
+                    background: showDetails.enable_platform_routing ? '#16a34a' : '#94a3b8',
+                    color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600
+                  }}
+                >
+                  {showDetails.enable_platform_routing ? 'Ativado' : 'Desativado'}
+                </button>
+              </div>
+            </div>
+
             {/* Contato */}
             <div style={{ marginBottom: '1.5rem' }}>
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contato</p>
