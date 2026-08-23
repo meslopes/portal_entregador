@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 # Carrega variáveis de ambiente baseado no ambiente
@@ -12,7 +13,7 @@ class Config:
     """Configuração base"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
-    JWT_ACCESS_TOKEN_EXPIRES = False  # Token não expira por padrão
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)  # Token expira em 24 horas
     
     # Configurações do banco de dados
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///src/database/app.db')

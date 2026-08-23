@@ -1298,8 +1298,26 @@ def asaas_webhook():
 def process_asaas_payment_received(payment_id, external_ref, payment_data):
     """Processa pagamento recebido via Asaas"""
     try:
-        from src.models.portal_models import Invoice, Payment, PaymentStatus, Driver, Delivery, Order, OrderStatus
+        from src.models.portal_models import Invoice, Payment, PaymentStatus, Driver, Delivery, Order, OrderStatus, SubscriptionInvoice, EstablishmentSubscription
         from decimal import Decimal
+
+        # Verificar se é pagamento de fatura de assinatura
+        if external_ref and external_ref.startswith('subscription_invoice_'):
+            invoice_id = external_ref.replace('subscription_invoice_', '')
+            invoice = SubscriptionInvoice.query.get(int(invoice_id))
+            if invoice and invoice.status != 'PAID':
+                invoice.status = 'PAID'
+                invoice.paid_at = datetime.utcnow()
+                invoice.payment_method = 'PIX'
+                
+                # Atualizar assinatura
+                subscription = EstablishmentSubscription.query.get(invoice.subscription_id)
+                if subscription:
+                    subscription.total_paid = float(subscription.total_paid or 0) + float(invoice.total_amount)
+                
+                db.session.commit()
+                logger.info(f"Fatura de assinatura #{invoice.id} marcada como paga via Asaas")
+                return
 
         # Verificar se é pagamento de fatura (invoice)
         if external_ref and external_ref.startswith('INV-'):
@@ -1346,7 +1364,19 @@ def process_asaas_payment_received(payment_id, external_ref, payment_data):
 def process_asaas_payment_overdue(payment_id, external_ref):
     """Processa pagamento vencido"""
     try:
-        from src.models.portal_models import Invoice
+        from src.models.portal_models import Invoice, SubscriptionInvoice
+        
+        # Fatura de assinatura
+        if external_ref and external_ref.startswith('subscription_invoice_'):
+            invoice_id = external_ref.replace('subscription_invoice_', '')
+            invoice = SubscriptionInvoice.query.get(int(invoice_id))
+            if invoice:
+                invoice.status = 'OVERDUE'
+                db.session.commit()
+                logger.info(f"Fatura de assinatura #{invoice.id} marcada como vencida")
+                return
+        
+        # Fatura regular
         if external_ref and external_ref.startswith('INV-'):
             invoice_id = external_ref.replace('INV-', '')
             invoice = Invoice.query.get(int(invoice_id))
@@ -1361,7 +1391,25 @@ def process_asaas_payment_overdue(payment_id, external_ref):
 def process_asaas_payment_refunded(payment_id, external_ref):
     """Processa estorno de pagamento"""
     try:
-        from src.models.portal_models import Invoice
+        from src.models.portal_models import Invoice, SubscriptionInvoice, EstablishmentSubscription
+        
+        # Fatura de assinatura
+        if external_ref and external_ref.startswith('subscription_invoice_'):
+            invoice_id = external_ref.replace('subscription_invoice_', '')
+            invoice = SubscriptionInvoice.query.get(int(invoice_id))
+            if invoice:
+                invoice.status = 'CANCELLED'
+                
+                # Reverter valor na assinatura
+                subscription = EstablishmentSubscription.query.get(invoice.subscription_id)
+                if subscription:
+                    subscription.total_paid = max(0, float(subscription.total_paid or 0) - float(invoice.total_amount))
+                
+                db.session.commit()
+                logger.info(f"Fatura de assinatura #{invoice.id} estornada")
+                return
+        
+        # Fatura regular
         if external_ref and external_ref.startswith('INV-'):
             invoice_id = external_ref.replace('INV-', '')
             invoice = Invoice.query.get(int(invoice_id))
