@@ -185,19 +185,24 @@ def toggle_status():
 @own_driver_required
 def update_location():
     """Atualiza localização do entregador"""
-    driver = request.own_driver
-    data = request.get_json()
+    try:
+        driver = request.own_driver
+        data = request.get_json()
 
-    if not data or 'latitude' not in data or 'longitude' not in data:
-        return jsonify({'error': 'Latitude e longitude são obrigatórios'}), 400
+        if not data or 'latitude' not in data or 'longitude' not in data:
+            return jsonify({'error': 'Latitude e longitude são obrigatórios'}), 400
 
-    driver.current_latitude = data['latitude']
-    driver.current_longitude = data['longitude']
-    driver.updated_at = datetime.utcnow()
+        driver.current_latitude = data['latitude']
+        driver.current_longitude = data['longitude']
+        driver.updated_at = datetime.utcnow()
 
-    db.session.commit()
+        db.session.commit()
 
-    return jsonify({'message': 'Localização atualizada'}), 200
+        return jsonify({'message': 'Localização atualizada'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar localização: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 # ==================== ORDERS ====================

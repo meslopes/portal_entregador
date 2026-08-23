@@ -581,6 +581,7 @@ def update_driver_queue(driver, action):
         
         db.session.commit()
     except Exception as e:
+        db.session.rollback()
         logger.error(f"Erro ao atualizar fila: {e}")
 
 
@@ -998,7 +999,7 @@ def notify_admin_no_drivers(order):
                         admin_phone_config.config_value,
                         f"🚨 *ALERTA: Pedido sem entregador!*\n\n"
                         f"Pedido: #{order.order_number}\n"
-                        f"Restaurante: {order.restaurant.name}\n"
+                        f"Restaurante: {order.restaurant.name if order.restaurant else 'N/A'}\n"
                         f"Recusado por: {reject_count} entregador(es)\n"
                         f"Tempo sem atendimento: {int(time_elapsed)}s\n"
                         f"Timeout configurado: {timeout_seconds}s\n\n"
@@ -1155,7 +1156,7 @@ def update_order_status(order_id):
             
             # Lógica específica do entregador (só quando entregador muda status)
             if driver:
-                driver.total_deliveries += 1
+                driver.total_deliveries = (driver.total_deliveries or 0) + 1
                 
                 # Salva prova de entrega (foto) se fornecida
                 proof_url = None

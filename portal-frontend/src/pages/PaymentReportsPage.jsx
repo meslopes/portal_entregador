@@ -36,18 +36,16 @@ const PaymentReportsPage = () => {
 
   useEffect(() => {
     checkUserRole();
-    loadRestaurants();
-  }, []);
-
-  useEffect(() => {
-    checkUserRole();
-    loadRestaurants();
   }, []);
 
   const checkUserRole = async () => {
     try {
       const res = await api.get('/api/user/profile');
-      setIsAdmin(res.data.user_type === 'ADMIN');
+      const isAdminUser = res.data.user_type === 'ADMIN';
+      setIsAdmin(isAdminUser);
+      if (isAdminUser) {
+        loadRestaurants();
+      }
     } catch (err) {
       console.error(err);
     }

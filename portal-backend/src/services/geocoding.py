@@ -4,6 +4,9 @@ Converte enderecos em coordenadas geograficas (latitude/longitude).
 Servico de roteirizacao usando OSRM para distancia real.
 """
 import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 # OSRM public server
 OSRM_URL = "https://router.project-osrm.org/route/v1/driving"
@@ -44,7 +47,7 @@ def get_route_distance(lat1, lng1, lat2, lng2):
         
         return None
     except Exception as e:
-        print(f"Erro ao calcular rota OSRM: {e}")
+        logger.error(f"Erro ao calcular rota OSRM: {e}")
         return None
 
 
@@ -162,10 +165,6 @@ def geocode_address(address, city_hint=None):
     # Formato original limpo
     formats.append(clean)
     formats.append(clean + ', Brasil')
-    
-    # Se o endereco nao tem cidade/estado, adiciona Capão da Canoa como fallback
-    if 'capão' not in clean.lower() and 'capao' not in clean.lower():
-        formats.append(f"{clean}, Capão da Canoa, Rio Grande do Sul, Brasil")
 
     for fmt in formats:
         try:
@@ -187,16 +186,16 @@ def geocode_address(address, city_hint=None):
                     'longitude': float(data[0]['lon']),
                     'display_name': data[0].get('display_name', '')
                 }
-                print(f"Geocodificacao OK: '{fmt}' => {result['latitude']}, {result['longitude']}")
+                logger.info(f"Geocodificacao OK: '{fmt}' => {result['latitude']}, {result['longitude']}")
                 return result
 
         except Exception as e:
-            print(f"Erro na geocodificacao para '{fmt}': {e}")
+            logger.error(f"Erro na geocodificacao para '{fmt}': {e}")
             continue
 
     # Fallback: retorna None se não conseguiu geocodificar
     # NÃO usa centro da cidade para endereços específicos
-    print(f"Geocodificacao falhou para: '{address}' (sem fallback de centro)")
+    logger.warning(f"Geocodificacao falhou para: '{address}' (sem fallback de centro)")
     return None
 
 

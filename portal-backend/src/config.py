@@ -58,6 +58,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Configuração para produção"""
     DEBUG = False
+    LOG_LEVEL = os.getenv('LOG_LEVEL', 'WARNING')  # WARNING em produção, não DEBUG
     
     # Força HTTPS em produção
     PREFERRED_URL_SCHEME = 'https'
