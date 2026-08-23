@@ -8660,6 +8660,8 @@ def create_establishment_driver():
 
             vehicle_model=data.get('vehicle_model'),
 
+            payment_frequency=data.get('payment_frequency', 'WEEKLY'),
+
             is_active=True
 
         )
@@ -8741,6 +8743,10 @@ def update_establishment_driver(driver_id):
         if 'vehicle_model' in data:
 
             driver.vehicle_model = data['vehicle_model']
+
+        if 'payment_frequency' in data:
+
+            driver.payment_frequency = data['payment_frequency']
 
         if 'is_active' in data:
 

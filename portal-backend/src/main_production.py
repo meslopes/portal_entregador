@@ -613,6 +613,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: payment_frequency para entregadores próprios
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'establishment_drivers' AND column_name = 'payment_frequency') THEN ALTER TABLE establishment_drivers ADD COLUMN payment_frequency VARCHAR(20) DEFAULT 'WEEKLY'; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de roteirização (own_driver_routes e own_driver_stops)
         try:
             db.session.execute(db.text("""

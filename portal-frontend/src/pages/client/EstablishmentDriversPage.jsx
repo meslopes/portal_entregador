@@ -18,7 +18,8 @@ const EstablishmentDriversPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     name: '', phone: '', vehicle_type: 'MOTO',
-    vehicle_plate: '', vehicle_model: '', pin: ''
+    vehicle_plate: '', vehicle_model: '', pin: '',
+    payment_frequency: 'WEEKLY'
   });
 
   useEffect(() => { loadDrivers(); }, []);
@@ -55,7 +56,8 @@ const EstablishmentDriversPage = () => {
       vehicle_type: driver.vehicle_type || 'MOTO',
       vehicle_plate: driver.vehicle_plate || '',
       vehicle_model: driver.vehicle_model || '',
-      pin: ''
+      pin: '',
+      payment_frequency: driver.payment_frequency || 'WEEKLY'
     });
     setEditingId(driver.id);
     setShowForm(true);
@@ -219,6 +221,22 @@ const EstablishmentDriversPage = () => {
                 />
               </div>
 
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Frequência de Pagamento</label>
+                <select value={form.payment_frequency} onChange={e => setForm(p => ({ ...p, payment_frequency: e.target.value }))} style={inputStyle}>
+                  <option value="DAILY">📅 Diário</option>
+                  <option value="WEEKLY">📆 Semanal</option>
+                  <option value="MONTHLY">🗓️ Mensal</option>
+                  <option value="ON_DEMAND">⚡ Sob Demanda</option>
+                </select>
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                  {form.payment_frequency === 'DAILY' && 'Pagamento realizado todo dia'}
+                  {form.payment_frequency === 'WEEKLY' && 'Pagamento realizado toda semana'}
+                  {form.payment_frequency === 'MONTHLY' && 'Pagamento realizado todo mês'}
+                  {form.payment_frequency === 'ON_DEMAND' && 'Pagamento sob demanda (ocasional, finais de semana, alta demanda)'}
+                </p>
+              </div>
+
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={resetForm} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>
                 <button type="submit" style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
@@ -261,6 +279,15 @@ const EstablishmentDriversPage = () => {
                       <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>
                         Próprio
                       </span>
+                      {driver.payment_frequency && (
+                        <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#ede9fe', color: '#6d28d9' }}>
+                          {driver.payment_frequency === 'DAILY' ? '📅 Diário' :
+                           driver.payment_frequency === 'WEEKLY' ? '📆 Semanal' :
+                           driver.payment_frequency === 'MONTHLY' ? '🗓️ Mensal' :
+                           driver.payment_frequency === 'ON_DEMAND' ? '⚡ Sob Demanda' :
+                           driver.payment_frequency}
+                        </span>
+                      )}
                     </div>
                     <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>
                       {driver.vehicle_type} {driver.vehicle_plate ? `• ${driver.vehicle_plate}` : ''} {driver.vehicle_model ? `• ${driver.vehicle_model}` : ''}

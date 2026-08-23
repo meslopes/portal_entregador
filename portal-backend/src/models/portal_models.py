@@ -316,6 +316,8 @@ class EstablishmentDriver(db.Model):
     current_latitude = db.Column(db.Numeric(10, 8))
     current_longitude = db.Column(db.Numeric(11, 8))
     is_active = db.Column(db.Boolean, default=True)
+    # Frequência de pagamento
+    payment_frequency = db.Column(db.String(20), default='WEEKLY')  # DAILY, WEEKLY, MONTHLY, ON_DEMAND
     # Métricas de desempenho
     rating = db.Column(db.Numeric(3, 2), default=5.00)
     total_deliveries = db.Column(db.Integer, default=0)
@@ -349,6 +351,7 @@ class EstablishmentDriver(db.Model):
             'current_latitude': float(self.current_latitude) if self.current_latitude else None,
             'current_longitude': float(self.current_longitude) if self.current_longitude else None,
             'is_active': self.is_active,
+            'payment_frequency': self.payment_frequency or 'WEEKLY',
             'rating': float(self.rating) if self.rating else 5.0,
             'total_deliveries': self.total_deliveries or 0,
             'total_ratings': self.total_ratings or 0,
