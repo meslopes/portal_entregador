@@ -207,6 +207,9 @@ def get_orders():
         driver = request.own_driver
         status = request.args.get('status', 'active')  # active, completed, all
 
+        # Limpar estado pendente da sessão
+        db.session.rollback()
+
         query = Order.query.filter(
             Order.establishment_driver_id == driver.id,
             Order.assigned_to_own_driver == True
