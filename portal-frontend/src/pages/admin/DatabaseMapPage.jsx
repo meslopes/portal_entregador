@@ -618,8 +618,13 @@ const DatabaseMapPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Tenant ID</label>
-                  <input value={editForm.tenant_id} onChange={e => setEditForm(p => ({ ...p, tenant_id: e.target.value }))} style={inputStyle} placeholder="vazio = sem tenant" />
+                  <label style={labelStyle}>Tenant</label>
+                  <select value={editForm.tenant_id} onChange={e => setEditForm(p => ({ ...p, tenant_id: e.target.value }))} style={inputStyle}>
+                    <option value="">Nenhum (Super Admin)</option>
+                    {(data.tenants || []).map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label style={labelStyle}>Praça</label>

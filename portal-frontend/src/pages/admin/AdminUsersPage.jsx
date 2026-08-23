@@ -1,9 +1,9 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, Edit, Trash2, AlertCircle, X,
   Truck, Store, Shield, Mail, Phone, CheckCircle
 } from 'lucide-react';
-import { adminService, utils } from '@/lib/api';
+import api, { adminService, utils } from '@/lib/api';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -14,17 +14,27 @@ const AdminUsersPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [tenants, setTenants] = useState([]);
 
   // Modais
   const [showForm, setShowForm] = useState(false);
   const [showEdit, setShowEdit] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
-  const [formData, setFormData] = useState({ email: '', password: 'admin123', first_name: '', last_name: '' });
+  const [formData, setFormData] = useState({ email: '', password: 'admin123', first_name: '', last_name: '', tenant_id: '' });
   const [editData, setEditData] = useState({});
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadUsers(); }, [page, typeFilter]);
+  useEffect(() => { loadUsers(); loadTenants(); }, [page, typeFilter]);
+
+  const loadTenants = async () => {
+    try {
+      const res = await api.get('/api/platform/tenants');
+      setTenants(res.data.tenants || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -222,6 +232,14 @@ const AdminUsersPage = () => {
               <FormField label="Nome *"><input type="text" name="first_name" value={formData.first_name} onChange={e => setFormData(p => ({ ...p, first_name: e.target.value }))} style={inputStyle} /></FormField>
               <FormField label="Sobrenome"><input type="text" name="last_name" value={formData.last_name} onChange={e => setFormData(p => ({ ...p, last_name: e.target.value }))} style={inputStyle} /></FormField>
               <FormField label="Senha"><input type="text" name="password" value={formData.password} onChange={e => setFormData(p => ({ ...p, password: e.target.value }))} style={inputStyle} /></FormField>
+              <FormField label="Tenant">
+                <select name="tenant_id" value={formData.tenant_id} onChange={e => setFormData(p => ({ ...p, tenant_id: e.target.value }))} style={inputStyle}>
+                  <option value="">Nenhum (Super Admin)</option>
+                  {tenants.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </FormField>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowForm(false)} style={btnSecondary}>Cancelar</button>
                 <button type="submit" disabled={formLoading} style={{ ...btnPrimary, opacity: formLoading ? 0.7 : 1 }}>{formLoading ? 'Criando...' : 'Criar Admin'}</button>
