@@ -68,7 +68,12 @@ def login():
     phone_normalized = ''.join(filter(str.isdigit, phone))
 
     # Buscar entregador por telefone (normalização via Python para compatibilidade)
-    all_drivers = EstablishmentDriver.query.filter_by(is_active=True).all()
+    # Otimização: filtrar por prefixo do telefone primeiro
+    phone_prefix = phone_normalized[:6] if len(phone_normalized) >= 6 else phone_normalized
+    all_drivers = EstablishmentDriver.query.filter(
+        EstablishmentDriver.is_active == True,
+        EstablishmentDriver.phone.like(f'%{phone_prefix}%')
+    ).all()
     driver = None
     for d in all_drivers:
         if d.phone:

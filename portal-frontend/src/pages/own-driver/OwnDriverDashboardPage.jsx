@@ -45,9 +45,11 @@ const OwnDriverDashboardPage = () => {
   useEffect(() => {
     if (!isOnline) return;
 
+    let cancelled = false;
     const sendLocation = () => {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
+          if (cancelled) return;
           try {
             const token = localStorage.getItem('own_driver_token');
             await api.post('/api/own-driver/location', {
@@ -66,7 +68,10 @@ const OwnDriverDashboardPage = () => {
 
     // Depois a cada 15 segundos
     const interval = setInterval(sendLocation, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [isOnline]);
 
   const loadData = async (isRefresh = false) => {

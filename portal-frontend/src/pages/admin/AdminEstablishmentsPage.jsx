@@ -106,7 +106,9 @@ const AdminEstablishmentsPage = () => {
       name: '', cnpj: '', phone: '', email: '', password: '123456',
       address_street: '', address_number: '', address_neighborhood: '',
       address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-      latitude: '', longitude: '', square_id: '', preparation_minutes: '10'
+      latitude: '', longitude: '', square_id: '', pricing_table_id: '',
+      preparation_minutes: '10',
+      pickup_confirmation_type: 'code', delivery_confirmation_type: 'code'
     });
     setFormError('');
     setShowForm(true);
@@ -240,8 +242,8 @@ const AdminEstablishmentsPage = () => {
 
   const handleSubmitForm = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.address_street) {
-      setFormError('Nome e rua são obrigatórios');
+    if (!formData.name || !formData.address_street || !formData.address_number || !formData.address_neighborhood) {
+      setFormError('Nome, rua, número e bairro são obrigatórios');
       return;
     }
 
