@@ -6,7 +6,7 @@ Servico de roteirizacao usando OSRM para distancia real.
 import requests
 
 # OSRM public server
-OSRM_URL = "http://router.project-osrm.org/route/v1/driving"
+OSRM_URL = "https://router.project-osrm.org/route/v1/driving"
 
 
 def get_route_distance(lat1, lng1, lat2, lng2):

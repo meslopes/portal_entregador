@@ -196,6 +196,10 @@ def get_payment_reports():
 def pay_period():
     """Marca ganhos de um período como pagos"""
     try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
         data = request.get_json()
         driver_id = data.get('driver_id')
         period_start = data.get('period_start')
@@ -252,6 +256,10 @@ def pay_period():
 def pay_all():
     """Marca todos os ganhos pendentes de um entregador como pagos"""
     try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
         data = request.get_json()
         driver_id = data.get('driver_id')
         payment_method = data.get('payment_method', 'PIX')
@@ -875,6 +883,10 @@ def get_own_driver_withdrawals():
 def process_own_driver_withdrawal():
     """Processa saque de entregador próprio via PIX"""
     try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
         data = request.get_json()
         driver_id = data.get('driver_id')
         payment_method = data.get('payment_method', 'PIX')

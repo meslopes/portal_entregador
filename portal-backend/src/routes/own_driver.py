@@ -359,6 +359,7 @@ def reject_order(order_id):
 
         # Tentar próximo entregador próprio (em background)
         try:
+            from src.routes.order import find_nearest_own_driver
             next_driver = find_nearest_own_driver(order, exclude_driver_id=driver.id)
             if next_driver:
                 order.assigned_to_own_driver = True
@@ -381,8 +382,9 @@ def reject_order(order_id):
 @own_driver_required
 def update_order_status(order_id):
     """Atualiza status do pedido (entregador próprio)"""
-    driver = request.own_driver
-    data = request.get_json() or {}
+    try:
+        driver = request.own_driver
+        data = request.get_json() or {}
 
     order = Order.query.get(order_id)
     if not order:
@@ -499,6 +501,11 @@ def update_order_status(order_id):
         'message': f'Status atualizado para {new_status_enum.value}',
         'order': _format_order_for_driver(order)
     }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar status: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 # ==================== STATS ====================

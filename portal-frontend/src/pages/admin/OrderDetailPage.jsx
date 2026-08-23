@@ -4,7 +4,7 @@ import {
   ArrowLeft, Package, Clock, Truck, CheckCircle, XCircle,
   MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle
 } from 'lucide-react';
-import { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
+import api, { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
 
 const STATUS_CONFIG = {
   SCHEDULED: { color: '#6366f1', bg: '#e0e7ff', text: 'Agendado', icon: '⏰' },

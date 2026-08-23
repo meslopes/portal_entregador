@@ -1338,6 +1338,8 @@ def cancel_order(order_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
 
         data = request.get_json() or {}
         refund_driver = data.get('refund_driver', False)
@@ -1462,9 +1464,9 @@ def get_current_order():
             return jsonify({'message': 'Nenhum pedido em andamento'}), 200
         
         order_dict = current_order.to_dict()
-        order_dict['restaurant'] = current_order.restaurant.to_dict()
-        order_dict['customer'] = current_order.customer.to_dict()
-        order_dict['delivery_address'] = current_order.delivery_address.to_dict()
+        order_dict['restaurant'] = current_order.restaurant.to_dict() if current_order.restaurant else None
+        order_dict['customer'] = current_order.customer.to_dict() if current_order.customer else None
+        order_dict['delivery_address'] = current_order.delivery_address.to_dict() if current_order.delivery_address else None
         
         if current_order.delivery:
             order_dict['delivery'] = current_order.delivery.to_dict()
@@ -1504,9 +1506,9 @@ def get_active_orders():
         orders_data = []
         for order in active_orders:
             order_dict = order.to_dict()
-            order_dict['restaurant'] = order.restaurant.to_dict()
-            order_dict['customer'] = order.customer.to_dict()
-            order_dict['delivery_address'] = order.delivery_address.to_dict()
+            order_dict['restaurant'] = order.restaurant.to_dict() if order.restaurant else None
+            order_dict['customer'] = order.customer.to_dict() if order.customer else None
+            order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
             if order.delivery:
                 order_dict['delivery'] = order.delivery.to_dict()
             orders_data.append(order_dict)
@@ -1619,6 +1621,8 @@ def create_order():
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
 
         data = request.get_json()
         if not data:
@@ -2087,9 +2091,9 @@ def get_order_details(order_id):
                 return jsonify({'error': 'Acesso negado'}), 403
         
         order_dict = order.to_dict()
-        order_dict['restaurant'] = order.restaurant.to_dict()
-        order_dict['customer'] = order.customer.to_dict()
-        order_dict['delivery_address'] = order.delivery_address.to_dict()
+        order_dict['restaurant'] = order.restaurant.to_dict() if order.restaurant else None
+        order_dict['customer'] = order.customer.to_dict() if order.customer else None
+        order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
         
         if order.delivery:
             order_dict['delivery'] = order.delivery.to_dict()
@@ -2097,9 +2101,9 @@ def get_order_details(order_id):
         if order.driver:
             order_dict['driver'] = {
                 'id': order.driver.id,
-                'name': f"{order.driver.user.first_name} {order.driver.user.last_name}",
-                'phone': order.driver.user.phone,
-                'vehicle_type': order.driver.vehicle_type.value,
+                'name': f"{order.driver.user.first_name} {order.driver.user.last_name}" if order.driver.user else 'N/A',
+                'phone': order.driver.user.phone if order.driver.user else None,
+                'vehicle_type': order.driver.vehicle_type.value if order.driver.vehicle_type else None,
                 'vehicle_plate': order.driver.vehicle_plate,
                 'rating': float(order.driver.rating)
             }

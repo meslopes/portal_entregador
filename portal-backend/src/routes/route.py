@@ -51,6 +51,10 @@ def optimize_stop_order(stops):
 def create_route():
     """Cria uma rota com múltiplos pedidos para um entregador próprio"""
     try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
@@ -260,6 +264,10 @@ def get_active_routes():
 def create_platform_route():
     """Cria uma rota com múltiplos pedidos para um entregador da plataforma"""
     try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400

@@ -161,45 +161,39 @@ const PaymentReportsPage = () => {
   };
 
   const exportCSV = () => {
-    if (!reports.length) return;
-    
-    // Cabeçalho
-    let csv = 'Entregador,Restaurante,Frequência,Total Ganhos,Total Pago,Pendente\n';
-    
-    // Dados
-    reports.forEach(r => {
-      csv += `"${r.driver_name}","${r.restaurant_name}","${r.payment_frequency}",${r.total_earning.toFixed(2)},${r.total_paid.toFixed(2)},${r.total_pending.toFixed(2)}\n`;
-    });
-    
-    // Download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `relatorio_pagamentos_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportOverdueCSV = () => {
-    if (!overdueData.length) return;
-    
-    let csv = 'Restaurante,Fatura,Período,Vencimento,Valor,Dias Atrasado\n';
-    
-    overdueData.forEach(r => {
-      r.invoices.forEach(inv => {
-        const days = Math.floor((new Date() - new Date(inv.due_date)) / (1000 * 60 * 60 * 24));
-        csv += `"${r.restaurant_name}","${inv.invoice_number}","${formatDate(inv.period_start)} - ${formatDate(inv.period_end)}","${formatDate(inv.due_date)}",${inv.total_amount.toFixed(2)},${days}\n`;
+    if (activeTab === 'reports') {
+      if (!reports.length) return;
+      
+      let csv = 'Entregador,Restaurante,Frequência,Total Ganhos,Total Pago,Pendente\n';
+      
+      reports.forEach(r => {
+        csv += `"${r.driver_name}","${r.restaurant_name}","${r.payment_frequency}",${r.total_earning.toFixed(2)},${r.total_paid.toFixed(2)},${r.total_pending.toFixed(2)}\n`;
       });
-    });
-    
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `relatorio_inadimplencia_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+      
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio_pagamentos_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else if (activeTab === 'withdrawals') {
+      if (!withdrawals.length) return;
+      
+      let csv = 'Entregador,Restaurante,PIX,Pendente,Pago,Frequência\n';
+      
+      withdrawals.forEach(d => {
+        csv += `"${d.driver_name}","${d.restaurant_name}","${d.pix_key || '-'}",${d.pending_amount.toFixed(2)},${d.paid_amount.toFixed(2)},"${d.payment_frequency}"\n`;
+      });
+      
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio_saques_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   return (
