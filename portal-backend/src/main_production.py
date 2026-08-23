@@ -604,6 +604,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar OFFERED ao enum orderstatus no PostgreSQL
+        try:
+            db.session.execute(db.text(
+                "ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'OFFERED' BEFORE 'ACCEPTED'"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas de roteirização (own_driver_routes e own_driver_stops)
         try:
             db.session.execute(db.text("""
