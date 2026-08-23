@@ -1,9 +1,13 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from enum import Enum
 
 db = SQLAlchemy()
+
+def utcnow():
+    """Timezone-aware UTC now, compatible with Python 3.12+"""
+    return datetime.now(timezone.utc)
 
 class UserType(Enum):
     DRIVER = "DRIVER"
@@ -85,8 +89,8 @@ class Tenant(db.Model):
     privacy_url = db.Column(db.String(500))  # URL da política de privacidade
     # Status
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     users = db.relationship('User', backref='tenant', lazy='dynamic')
@@ -133,8 +137,8 @@ class User(db.Model):
     profile_picture_url = db.Column(db.String(500))
     user_type = db.Column(db.Enum(UserType), nullable=False)
     status = db.Column(db.Enum(UserStatus), default=UserStatus.ACTIVE)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relacionamentos
     driver = db.relationship('Driver', backref='user', uselist=False, cascade='all, delete-orphan')
@@ -197,8 +201,8 @@ class Driver(db.Model):
     balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo disponível para saque
     locked_balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo bloqueado (em trânsito)
     pix_key = db.Column(db.String(100))  # Chave PIX para saques
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relacionamentos
     orders = db.relationship('Order', backref='driver')
@@ -264,7 +268,7 @@ class DriverRestaurant(db.Model):
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     is_priority = db.Column(db.Boolean, default=False)  # Se True, entregador tem prioridade neste restaurante
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     driver = db.relationship('Driver', backref='restaurant_assignments')
@@ -295,7 +299,7 @@ class DriverPenalty(db.Model):
     penalty_type = db.Column(db.String(50), nullable=False)  # REJECTION, LATE_DELIVERY, CANCELLED, etc.
     reason = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=True)  # Se a penalidade ainda está ativa
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     driver = db.relationship('Driver', backref='penalties')
@@ -335,8 +339,8 @@ class EstablishmentDriver(db.Model):
     rating = db.Column(db.Numeric(3, 2), default=5.00)
     total_deliveries = db.Column(db.Integer, default=0)
     total_ratings = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='own_drivers')
@@ -402,7 +406,7 @@ class OwnDriverEarning(db.Model):
     is_paid = db.Column(db.Boolean, default=False)  # Se já foi pago
     paid_at = db.Column(db.DateTime)  # Data do pagamento
     payment_method = db.Column(db.String(20))  # PIX, CASH, TRANSFER
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='own_driver_earnings')
@@ -472,8 +476,8 @@ class Restaurant(db.Model):
     # Tipo de confirmacao de entrega
     pickup_confirmation_type = db.Column(db.String(20), default='code')  # code, photo, none
     delivery_confirmation_type = db.Column(db.String(20), default='code')  # code, photo, none
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relacionamentos
     orders = db.relationship('Order', backref='restaurant')
@@ -521,8 +525,8 @@ class Customer(db.Model):
     name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
     email = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     user = db.relationship('User', backref='customer_profile', uselist=False)
@@ -561,8 +565,8 @@ class Address(db.Model):
     latitude = db.Column(db.Numeric(10, 8))
     longitude = db.Column(db.Numeric(11, 8))
     is_default = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relacionamentos
     orders = db.relationship('Order', backref='delivery_address')
@@ -627,8 +631,8 @@ class Order(db.Model):
     assigned_to_own_driver = db.Column(db.Boolean, default=False)  # Se foi atribuído a entregador próprio
     establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=True)
     called_platform = db.Column(db.Boolean, default=False)  # Se chamou entregadores da plataforma
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relacionamentos
     delivery = db.relationship('Delivery', backref='order', uselist=False, cascade='all, delete-orphan')
@@ -695,8 +699,8 @@ class DeliveryRoute(db.Model):
     completed_stops = db.Column(db.Integer, default=0)
     total_distance_km = db.Column(db.Numeric(8, 2))
     estimated_duration_minutes = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     orders = db.relationship('Order', backref='route', lazy='dynamic')
@@ -736,8 +740,8 @@ class Delivery(db.Model):
     customer_feedback = db.Column(db.Text)
     driver_rating = db.Column(db.Integer)         # entregador avalia estabelecimento (1-5)
     driver_feedback = db.Column(db.Text)           # comentário do entregador
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     def to_dict(self):
         return {
@@ -773,8 +777,8 @@ class Payment(db.Model):
     status = db.Column(db.Enum(PaymentStatus), default=PaymentStatus.PENDING)
     processed_at = db.Column(db.DateTime)
     transaction_id = db.Column(db.String(100))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     def to_dict(self):
         return {
@@ -801,7 +805,7 @@ class Notification(db.Model):
     type = db.Column(db.Enum(NotificationType), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     related_id = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
         return {
@@ -823,8 +827,8 @@ class SystemConfig(db.Model):
     config_key = db.Column(db.String(100), nullable=False)
     config_value = db.Column(db.Text, nullable=False)
     description = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (db.UniqueConstraint('tenant_id', 'config_key', name='system_configs_tenant_key'),)
 
@@ -854,8 +858,8 @@ class Square(db.Model):
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)  # Distancia minima cobrada (4km padrao)
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
     driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)  # Percentual do entregador (70% padrao)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     restaurants = db.relationship('Restaurant', backref='square')
@@ -895,8 +899,8 @@ class PricingTable(db.Model):
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
     driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     restaurants = db.relationship('Restaurant', backref='pricing_table', foreign_keys='Restaurant.pricing_table_id')
@@ -939,8 +943,8 @@ class DriverScore(db.Model):
     total_refused = db.Column(db.Integer, default=0)
     total_score = db.Column(db.Numeric(10, 2), default=0)
     ranking_position = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     driver = db.relationship('Driver', backref='scores')
@@ -977,7 +981,7 @@ class DriverBonus(db.Model):
     period_end = db.Column(db.Date)
     status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, CANCELLED
     paid_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     driver = db.relationship('Driver', backref='bonuses')
@@ -1005,7 +1009,7 @@ class DriverAchievement(db.Model):
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
     achievement_type = db.Column(db.String(50), nullable=False)
     achievement_name = db.Column(db.String(100), nullable=False)
-    unlocked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    unlocked_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     driver = db.relationship('Driver', backref='achievements')
@@ -1035,8 +1039,8 @@ class DynamicPricing(db.Model):
     holiday_bonus = db.Column(db.Numeric(10, 2), default=5.00)
     cancellation_fee_active = db.Column(db.Boolean, default=False)
     cancellation_fee = db.Column(db.Numeric(10, 2), default=5.00)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     square = db.relationship('Square', backref='dynamic_pricing')
@@ -1074,8 +1078,8 @@ class Invoice(db.Model):
     deliveries_count = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, OVERDUE
     paid_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='invoices')
@@ -1111,8 +1115,8 @@ class PlatformCredential(db.Model):
     refresh_token = db.Column(db.Text)
     expires_at = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='platform_credentials')
@@ -1142,7 +1146,7 @@ class OwnDriverRoute(db.Model):
     total_duration_min = db.Column(db.Numeric(10, 2))
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     driver = db.relationship('EstablishmentDriver', backref='routes')
@@ -1179,7 +1183,7 @@ class OwnDriverStop(db.Model):
     status = db.Column(db.String(20), default='PENDING')  # PENDING, COMPLETED, SKIPPED
     arrived_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     order = db.relationship('Order', backref='own_driver_stops')
@@ -1224,8 +1228,8 @@ class EstablishmentSubscription(db.Model):
     # Integração pagamento
     asaas_subscription_id = db.Column(db.String(100))
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='subscription')
@@ -1280,8 +1284,8 @@ class SubscriptionInvoice(db.Model):
     asaas_invoice_id = db.Column(db.String(100))
     payment_url = db.Column(db.String(500))
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='subscription_invoices')
@@ -1320,7 +1324,7 @@ class PlatformDriverRoute(db.Model):
     total_duration_min = db.Column(db.Numeric(10, 2))
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     driver = db.relationship('Driver', backref='routes')
@@ -1364,7 +1368,7 @@ class PlatformDriverStop(db.Model):
     status = db.Column(db.String(20), default='PENDING')  # PENDING, COMPLETED, SKIPPED
     arrived_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
     order = db.relationship('Order', backref='platform_route_stops')

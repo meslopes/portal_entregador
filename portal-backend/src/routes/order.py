@@ -1634,6 +1634,14 @@ def create_order():
         if missing_fields:
             return jsonify({'error': f'Campos obrigatórios ausentes: {", ".join(missing_fields)}'}), 400
 
+        # Validar comprimento dos campos
+        if len(str(data.get('customer_name', ''))) > 200:
+            return jsonify({'error': 'Nome do cliente muito longo'}), 400
+        if len(str(data.get('delivery_address', ''))) > 500:
+            return jsonify({'error': 'Endereço muito longo'}), 400
+        if len(str(data.get('special_instructions', ''))) > 1000:
+            return jsonify({'error': 'Instruções muito longas'}), 400
+
         # Validar payment_method se fornecido
         payment_method = data.get('payment_method', 'CASH')
         try:
