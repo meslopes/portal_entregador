@@ -48,6 +48,7 @@ const Layout = ({ children }) => {
     { name: 'Entregadores', href: '/admin/drivers', icon: Users },
     { name: 'Pedidos', href: '/admin/orders', icon: Package },
     { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
+    { name: 'Pagamentos Próprios', href: '/admin/payment-reports', icon: Wallet },
     { name: 'Precos', href: '/admin/pricing', icon: DollarSign },
     { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
     { name: 'Integracoes', href: '/admin/integrations', icon: Globe },

@@ -76,6 +76,9 @@ def create_app(config_name=None):
     from src.routes.route import route_bp
     app.register_blueprint(route_bp)
 
+    from src.routes.finance import finance_bp
+    app.register_blueprint(finance_bp)
+
     # Criar tabelas do banco de dados
     with app.app_context():
         _db_available = True

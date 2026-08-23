@@ -45,6 +45,7 @@ const ClientLayout = ({ children }) => {
     { name: 'Novo Pedido', href: '/client/new-order', icon: Plus },
     { name: 'Meus Pedidos', href: '/client/orders', icon: Package },
     { name: 'Financeiro', href: '/client/financial', icon: DollarSign },
+    { name: 'Pagamentos Próprios', href: '/client/payment-reports', icon: Wallet },
     { name: 'Faturas', href: '/client/invoices', icon: Receipt },
     { name: 'Integrações', href: '/client/integrations', icon: Globe },
   ];

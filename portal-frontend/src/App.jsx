@@ -35,6 +35,7 @@ import OwnDriverDeliveryPage from '@/pages/own-driver/OwnDriverDeliveryPage';
 import OwnDriverOrdersPage from '@/pages/own-driver/OwnDriverOrdersPage';
 import OwnDriverEarningsPage from '@/pages/own-driver/OwnDriverEarningsPage';
 import OwnDriverRoutesPage from '@/pages/own-driver/OwnDriverRoutesPage';
+import PaymentReportsPage from '@/pages/PaymentReportsPage';
 import ClientLayout from '@/components/ClientLayout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
 import AdminEstablishmentsPage from '@/pages/admin/AdminEstablishmentsPage';
@@ -267,6 +268,16 @@ function App() {
             }
           />
           <Route
+            path="/client/payment-reports"
+            element={
+              <ProtectedRoute>
+                <ClientLayout>
+                  <PaymentReportsPage />
+                </ClientLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/client/invoices"
             element={
               <ProtectedRoute>
@@ -405,6 +416,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminFinancePage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/payment-reports"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <PaymentReportsPage />
                 </Layout>
               </ProtectedRoute>
             }
