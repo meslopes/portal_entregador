@@ -2019,7 +2019,9 @@ def assign_own_driver(order_id):
         payment_type = restaurant.own_driver_payment_type if restaurant else 'PER_DELIVERY'
         delivery_fee = float(order.delivery_fee or 0)
         
-        if payment_type == 'PER_DELIVERY':
+        if not restaurant:
+            driver_earning = 5.00  # Fallback
+        elif payment_type == 'PER_DELIVERY':
             driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
         elif payment_type == 'PER_KM':
             driver_earning = distance_km * float(restaurant.own_driver_km_value or 1.50)
@@ -2153,11 +2155,16 @@ def track_order(tracking_token):
         # Localização do entregador (se disponível e pedido foi aceito)
         if order.driver and order.driver.current_latitude and order.driver.current_longitude:
             if order.status in [OrderStatus.PICKED_UP, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]:
+                driver_name = 'Entregador'
+                if order.driver.user:
+                    first = order.driver.user.first_name or ''
+                    last = order.driver.user.last_name or ''
+                    driver_name = f"{first} {last[0]}." if last else first
                 tracking_data['driver_location'] = {
                     'latitude': float(order.driver.current_latitude),
                     'longitude': float(order.driver.current_longitude),
-                    'name': f"{order.driver.user.first_name} {order.driver.user.last_name[0]}.",
-                    'vehicle_type': order.driver.vehicle_type.value
+                    'name': driver_name,
+                    'vehicle_type': order.driver.vehicle_type.value if order.driver.vehicle_type else None
                 }
         
         # Endereço de entrega (sem coordenadas exatas por privacidade)

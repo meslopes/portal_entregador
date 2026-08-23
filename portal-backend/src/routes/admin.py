@@ -8027,6 +8027,8 @@ def process_withdrawal_auto(withdrawal_id):
         amount = abs(float(withdrawal.amount))
 
         pix_key_type = detect_pix_key_type(driver.pix_key)
+        if not pix_key_type:
+            return jsonify({'error': 'Tipo de chave PIX não reconhecido'}), 400
 
 
 

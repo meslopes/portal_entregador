@@ -920,6 +920,8 @@ def process_own_driver_withdrawal():
         transfer_result = None
         if is_configured() and payment_method == 'PIX':
             pix_key_type = detect_pix_key_type(driver.pix_key)
+            if not pix_key_type:
+                return jsonify({'error': 'Tipo de chave PIX não reconhecido'}), 400
             transfer_result = transfer_pix(
                 value=total_amount,
                 pix_key=driver.pix_key,

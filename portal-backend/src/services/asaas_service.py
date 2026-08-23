@@ -105,9 +105,15 @@ def create_customer(name, cpf_cnpj, email=None, phone=None, address=None):
         else:
             logger.error(f"Erro ao criar cliente Asaas: {data}")
             return {'success': False, 'error': data.get('errors', [{}])[0].get('description', 'Erro desconhecido')}
-    except Exception as e:
-        logger.error(f"Exceção ao criar cliente Asaas: {e}")
+    except requests.exceptions.Timeout:
+        logger.error("Timeout ao criar cliente Asaas")
+        return {'success': False, 'error': 'Timeout na API Asaas'}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Erro de rede ao criar cliente Asaas: {e}")
         return {'success': False, 'error': str(e)}
+    except Exception as e:
+        logger.exception(f"Erro inesperado ao criar cliente Asaas: {e}")
+        return {'success': False, 'error': 'Erro interno'}
 
 
 def get_customer(customer_id):
@@ -341,4 +347,4 @@ def detect_pix_key_type(pix_key):
     if re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', pix_key, re.I):
         return 'EVP'
     
-    return 'CPF'  # fallback
+    return None  # Tipo desconhecido

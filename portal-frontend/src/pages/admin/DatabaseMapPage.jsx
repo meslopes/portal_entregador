@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api, { adminService } from '@/lib/api';
 
 const DatabaseMapPage = () => {
@@ -8,6 +8,7 @@ const DatabaseMapPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const msgTimeoutRef = useRef(null);
   const [actionMsg, setActionMsg] = useState('');
 
   useEffect(() => { loadData(); }, []);
@@ -25,9 +26,15 @@ const DatabaseMapPage = () => {
   };
 
   const showMsg = (msg, isError = false) => {
+    if (msgTimeoutRef.current) clearTimeout(msgTimeoutRef.current);
     setActionMsg({ text: msg, isError });
-    setTimeout(() => setActionMsg(''), 4000);
+    msgTimeoutRef.current = setTimeout(() => setActionMsg(''), 4000);
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => { if (msgTimeoutRef.current) clearTimeout(msgTimeoutRef.current); };
+  }, []);
 
   const handleDeleteUser = async (user) => {
     const isSuperAdmin = user.user_type === 'ADMIN' && !user.tenant_id;
