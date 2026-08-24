@@ -176,16 +176,12 @@ export const startOrderMonitor = (onNewOrders) => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      // Verificar se o entregador está online antes de buscar pedidos
+      // Não fazer polling para entregadores — o OrderOfferPopup já cuida disso
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          if (user.user_type === 'DRIVER') {
-            // is_online está dentro de user.driver
-            const isOnline = user.driver?.is_online;
-            if (isOnline === false) return;
-          }
+          if (user.user_type === 'DRIVER') return;
         } catch (e) { /* ignore parse error */ }
       }
 
