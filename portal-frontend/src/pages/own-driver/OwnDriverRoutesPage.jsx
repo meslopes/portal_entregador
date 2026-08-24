@@ -19,7 +19,7 @@ const OwnDriverRoutesPage = () => {
       setLoading(true);
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
-      const res = await api.get('/api/routes/active', { headers });
+      const res = await api.get('/api/routes/own-driver/active', { headers });
       setRoutes(res.data.routes || []);
     } catch (err) {
       console.error('Erro ao carregar rotas:', err);

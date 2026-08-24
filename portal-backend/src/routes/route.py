@@ -257,6 +257,24 @@ def get_active_routes():
         return jsonify({'error': str(e)}), 500
 
 
+@route_bp.route('/own-driver/active', methods=['GET'])
+@own_driver_required
+def get_own_driver_active_routes():
+    """Obtém rotas ativas do entregador próprio (usa own_driver_token)"""
+    try:
+        driver = request.own_driver
+
+        routes = OwnDriverRoute.query.filter(
+            OwnDriverRoute.establishment_driver_id == driver.id,
+            OwnDriverRoute.status == 'ACTIVE'
+        ).all()
+
+        return jsonify({'routes': [r.to_dict() for r in routes]}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ==================== ROTEIRIZAÇÃO PARA PLATAFORMA ====================
 
 @route_bp.route('/platform/create', methods=['POST'])
