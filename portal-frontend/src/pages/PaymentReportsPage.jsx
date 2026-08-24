@@ -207,7 +207,7 @@ const PaymentReportsPage = () => {
           </p>
         </div>
         <button
-          onClick={activeTab === 'reports' ? exportCSV : exportOverdueCSV}
+          onClick={exportCSV}
           style={{
             padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
             border: '1.5px solid #e2e8f0', background: 'white',
