@@ -35,7 +35,10 @@ const OrderOfferPopup = () => {
       if (user.user_type !== 'DRIVER') return;
 
       // Verificar se o entregador está online antes de buscar pedidos
-      if (user.is_online === false) return;
+      if (user.user_type === 'DRIVER') {
+        const isOnline = user.driver?.is_online;
+        if (isOnline === false) return;
+      }
 
       const response = await api.get('/api/orders/available');
       const orders = response.data.orders || [];

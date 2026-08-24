@@ -181,7 +181,11 @@ export const startOrderMonitor = (onNewOrders) => {
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          if (user.user_type === 'DRIVER' && user.is_online === false) return;
+          if (user.user_type === 'DRIVER') {
+            // is_online está dentro de user.driver
+            const isOnline = user.driver?.is_online;
+            if (isOnline === false) return;
+          }
         } catch (e) { /* ignore parse error */ }
       }
 
