@@ -22,7 +22,7 @@ def toggle_online_status():
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
         
-        data = request.get_json()
+        data = request.get_json() or {}
         is_online = data.get('is_online', not driver.is_online)
         
         driver.is_online = is_online
@@ -36,9 +36,11 @@ def toggle_online_status():
         
         db.session.commit()
         
+        # Retornar dados básicos sem chamar to_dict() pra evitar crash
         return jsonify({
             'message': f'Status alterado para {"online" if is_online else "offline"}',
-            'driver': driver.to_dict()
+            'is_online': driver.is_online,
+            'driver_id': driver.id
         }), 200
         
     except Exception as e:
