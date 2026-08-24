@@ -176,6 +176,15 @@ export const startOrderMonitor = (onNewOrders) => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
+      // Verificar se o entregador está online antes de buscar pedidos
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user.user_type === 'DRIVER' && user.is_online === false) return;
+        } catch (e) { /* ignore parse error */ }
+      }
+
       const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
       const response = await fetch(`${API_URL}/api/orders/available`, {
         headers: { 'Authorization': `Bearer ${token}` }
