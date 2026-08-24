@@ -1331,6 +1331,96 @@ def update_order_status(order_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@order_bp.route('/<int:order_id>/edit', methods=['PUT'])
+@jwt_required()
+def edit_order(order_id):
+    """Edita um pedido (apenas campos permitidos antes da coleta)"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+        
+        # Verificar permissão: admin ou dono do estabelecimento
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer or order.restaurant_id != customer.restaurant_id:
+                return jsonify({'error': 'Sem permissão para editar este pedido'}), 403
+        elif user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Sem permissão para editar pedidos'}), 403
+        
+        # Só permite editar pedidos que ainda não foram coletados
+        editable_statuses = [OrderStatus.SCHEDULED, OrderStatus.PENDING, OrderStatus.OFFERED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]
+        if order.status not in editable_statuses:
+            return jsonify({'error': f'Não é possível editar pedido com status {order.status.value}'}), 400
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+        
+        # Campos editáveis
+        if 'customer_name' in data:
+            if order.customer:
+                order.customer.name = data['customer_name']
+        
+        if 'customer_phone' in data:
+            if order.customer:
+                order.customer.phone = data['customer_phone']
+        
+        if 'delivery_address' in data or 'delivery_number' in data or 'delivery_neighborhood' in data:
+            if order.delivery_address:
+                if 'delivery_address' in data:
+                    order.delivery_address.street = data['delivery_address']
+                if 'delivery_number' in data:
+                    # Concatenar número ao endereço se fornecido separadamente
+                    pass
+                if 'delivery_neighborhood' in data:
+                    order.delivery_address.neighborhood = data['delivery_neighborhood']
+                if 'delivery_city' in data:
+                    order.delivery_city = data['delivery_city']
+                if 'delivery_state' in data:
+                    order.delivery_state = data['delivery_state']
+                if 'delivery_zip_code' in data:
+                    order.delivery_zip_code = data['delivery_zip_code']
+                
+                # Re-geocodificar se endereço mudou
+                if 'delivery_address' in data:
+                    try:
+                        from src.services.geocoding import geocode_address
+                        full_addr = f"{data['delivery_address']}, {data.get('delivery_neighborhood', order.delivery_address.neighborhood)}, {data.get('delivery_city', order.delivery_address.city)}, {data.get('delivery_state', order.delivery_address.state)}"
+                        geo = geocode_address(full_addr)
+                        if geo:
+                            order.delivery_address.latitude = geo['latitude']
+                            order.delivery_address.longitude = geo['longitude']
+                    except Exception as e:
+                        logger.warning(f"Falha ao re-geocodificar: {e}")
+        
+        if 'special_instructions' in data:
+            order.special_instructions = data['special_instructions']
+        
+        if 'delivery_fee' in data:
+            order.delivery_fee = float(data['delivery_fee'])
+            order.total_amount = float(order.subtotal or 0) + float(data['delivery_fee'])
+        
+        order.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Pedido atualizado com sucesso',
+            'order': order.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @order_bp.route('/<int:order_id>/cancel', methods=['POST'])
 @jwt_required()
 def cancel_order(order_id):
