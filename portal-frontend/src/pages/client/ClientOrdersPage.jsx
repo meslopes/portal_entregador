@@ -230,6 +230,9 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
   const [assigning, setAssigning] = useState(false);
   const [callingPlatform, setCallingPlatform] = useState(false);
   const [actionResult, setActionResult] = useState(null);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
 
   // Carrega entregadores próprios do restaurante
   useEffect(() => {
@@ -281,6 +284,33 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
     }
   };
 
+  const handleEdit = async () => {
+    try {
+      setEditLoading(true);
+      await api.put(`/api/orders/${order.id}/edit`, editForm);
+      setShowEdit(false);
+      onOrderUpdated();
+      alert('Pedido atualizado!');
+    } catch (err) {
+      alert('Erro ao editar: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const openEditModal = () => {
+    setEditForm({
+      customer_name: order.customer?.name || '',
+      customer_phone: order.customer?.phone || '',
+      delivery_address: order.delivery_address?.street || '',
+      delivery_neighborhood: order.delivery_address?.neighborhood || '',
+      delivery_city: order.delivery_address?.city || '',
+      delivery_state: order.delivery_address?.state || '',
+      special_instructions: order.special_instructions || ''
+    });
+    setShowEdit(true);
+  };
+
   const isPending = order.status === 'PENDING' || order.status === 'SCHEDULED';
   const hasOwnDriver = order.assigned_to_own_driver;
   const calledPlatform = order.called_platform;
@@ -294,7 +324,14 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Pedido #{order.order_number}</h2>
             <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{utils.formatDateTime(order.created_at)}</p>
           </div>
-          <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.25rem' }}>✕</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {['SCHEDULED', 'PENDING', 'OFFERED', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && (
+              <button onClick={openEditModal} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #2563eb', background: 'white', color: '#2563eb', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+                ✏️ Editar
+              </button>
+            )}
+            <button onClick={onClose} aria-label="Fechar" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.25rem' }}>✕</button>
+          </div>
         </div>
 
         <div style={{ padding: '1.5rem' }}>
@@ -513,6 +550,52 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
           )}
         </div>
       </div>
+
+      {/* Modal de Edição */}
+      {showEdit && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Pedido</h2>
+              <button onClick={() => setShowEdit(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Nome do Cliente</label>
+                <input value={editForm.customer_name} onChange={e => setEditForm(p => ({ ...p, customer_name: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Telefone</label>
+                <input value={editForm.customer_phone} onChange={e => setEditForm(p => ({ ...p, customer_phone: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Endereço</label>
+                <input value={editForm.delivery_address} onChange={e => setEditForm(p => ({ ...p, delivery_address: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Bairro</label>
+                  <input value={editForm.delivery_neighborhood} onChange={e => setEditForm(p => ({ ...p, delivery_neighborhood: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Cidade</label>
+                  <input value={editForm.delivery_city} onChange={e => setEditForm(p => ({ ...p, delivery_city: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Observações</label>
+                <textarea value={editForm.special_instructions} onChange={e => setEditForm(p => ({ ...p, special_instructions: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box', resize: 'vertical', minHeight: '60px' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button onClick={() => setShowEdit(false)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>
+                <button onClick={handleEdit} disabled={editLoading} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: editLoading ? 'not-allowed' : 'pointer', opacity: editLoading ? 0.7 : 1 }}>
+                  {editLoading ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
