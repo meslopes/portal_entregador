@@ -600,7 +600,7 @@ def get_available_orders():
 
         driver = user.driver
         if not driver or not driver.is_online:
-            return jsonify({'error': 'Entregador deve estar online'}), 400
+            return jsonify({'orders': []}), 200
 
         # Busca pedidos pendentes próximos ao entregador (filtrados por tenant)
         query = Order.query.filter(
