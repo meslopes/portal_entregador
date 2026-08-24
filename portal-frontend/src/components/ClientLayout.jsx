@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus, DollarSign, Receipt, Globe, Users, BarChart3
+  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus, DollarSign, Receipt, Globe, Users, BarChart3, Wallet
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
