@@ -582,7 +582,7 @@ const OrderDetailPage = () => {
                 </button>
               </div>
             </div>
-          </同样的
+          </div>
         </div>
       )}
 
