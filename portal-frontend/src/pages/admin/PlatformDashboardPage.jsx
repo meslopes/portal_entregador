@@ -184,19 +184,33 @@ const PlatformDashboardPage = () => {
             Gerencie todos os tenants e monitore o sistema
           </p>
         </div>
-        {activeTab === 'overview' && (
-          <button
-            onClick={() => { loadDashboard(); loadTenants(); }}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <a
+            href="/admin/database-map"
             style={{
               display: 'flex', alignItems: 'center', gap: '0.5rem',
               padding: '0.5rem 1rem', borderRadius: '0.5rem',
               border: '1px solid #e2e8f0', background: 'white',
-              cursor: 'pointer', fontSize: '0.875rem', color: '#64748b'
+              cursor: 'pointer', fontSize: '0.875rem', color: '#64748b',
+              textDecoration: 'none'
             }}
           >
-            <RefreshCw size={16} /> Atualizar
-          </button>
-        )}
+            🗺️ Mapa do Banco
+          </a>
+          {activeTab === 'overview' && (
+            <button
+              onClick={() => { loadDashboard(); loadTenants(); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 1rem', borderRadius: '0.5rem',
+                border: '1px solid #e2e8f0', background: 'white',
+                cursor: 'pointer', fontSize: '0.875rem', color: '#64748b'
+              }}
+            >
+              <RefreshCw size={16} /> Atualizar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
