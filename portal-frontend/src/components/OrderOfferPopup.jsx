@@ -34,6 +34,9 @@ const OrderOfferPopup = () => {
       const user = JSON.parse(userStr);
       if (user.user_type !== 'DRIVER') return;
 
+      // Verificar se o entregador está online antes de buscar pedidos
+      if (user.is_online === false) return;
+
       const response = await api.get('/api/orders/available');
       const orders = response.data.orders || [];
 
