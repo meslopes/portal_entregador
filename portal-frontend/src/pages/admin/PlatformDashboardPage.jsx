@@ -1102,20 +1102,47 @@ const AdminsTab = () => {
                       </span>
                     </td>
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleDeleteAdmin(admin.id, admin.first_name)}
-                        style={{
-                          padding: '0.375rem',
-                          borderRadius: '0.375rem',
-                          border: 'none',
-                          background: 'transparent',
-                          cursor: 'pointer',
-                          color: '#dc2626'
-                        }}
-                        title="Excluir"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => {
+                            setFormData({
+                              email: admin.email || '',
+                              password: '',
+                              first_name: admin.first_name || '',
+                              last_name: admin.last_name || '',
+                              phone: admin.phone || '',
+                              company_name: admin.company_name || '',
+                              tenant_id: admin.tenant_id || ''
+                            });
+                            setShowCreateModal(true);
+                          }}
+                          style={{
+                            padding: '0.375rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            color: '#2563eb'
+                          }}
+                          title="Editar"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAdmin(admin.id, admin.first_name)}
+                          style={{
+                            padding: '0.375rem',
+                            borderRadius: '0.375rem',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            color: '#dc2626'
+                          }}
+                          title="Excluir"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
