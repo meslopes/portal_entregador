@@ -165,6 +165,14 @@ def geocode_address(address, city_hint=None):
     # Formato original limpo
     formats.append(clean)
     formats.append(clean + ', Brasil')
+    
+    # Tenta extrair cidade do endereço se não tem city_hint
+    if not city_hint:
+        # Tenta encontrar cidade no endereço (padrão: "endereço, cidade - UF")
+        city_match = re.search(r',\s*([^-]+?)\s*-\s*[A-Z]{2}', clean)
+        if city_match:
+            extracted_city = city_match.group(1).strip()
+            formats.append(f"{clean}, {extracted_city}, Brasil")
 
     for fmt in formats:
         try:
@@ -193,8 +201,26 @@ def geocode_address(address, city_hint=None):
             logger.error(f"Erro na geocodificacao para '{fmt}': {e}")
             continue
 
-    # Fallback: retorna None se não conseguiu geocodificar
-    # NÃO usa centro da cidade para endereços específicos
+    # Fallback: tenta usar coordenadas da cidade se disponível
+    city_for_fallback = city_hint
+    if not city_for_fallback:
+        # Tenta extrair cidade do endereço
+        city_match = re.search(r',\s*([^-]+?)\s*-\s*[A-Z]{2}', clean)
+        if city_match:
+            city_for_fallback = city_match.group(1).strip()
+    
+    if city_for_fallback:
+        city_key = city_for_fallback.lower().strip()
+        if city_key in CITY_COORDS:
+            coords = CITY_COORDS[city_key]
+            logger.warning(f"Geocodificacao falhou para '{address}', usando centro de {city_for_fallback}")
+            return {
+                'latitude': coords['lat'],
+                'longitude': coords['lng'],
+                'display_name': f'{city_for_fallback} (centro aproximado)',
+                'is_approximate': True
+            }
+    
     logger.warning(f"Geocodificacao falhou para: '{address}' (sem fallback de centro)")
     return None
 

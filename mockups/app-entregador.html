@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>muv.log - Mockup App Entregador</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; display: flex; justify-content: center; padding: 2rem; }
+        
+        /* Phone Frame */
+        .phone { width: 375px; height: 812px; background: white; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative; }
+        .phone-screen { height: 100%; display: flex; flex-direction: column; }
+        
+        /* Status Bar */
+        .status-bar { background: #1e293b; color: white; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; font-size: 0.75rem; }
+        
+        /* App Header */
+        .app-header { background: #1e293b; color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .app-logo { font-size: 1.25rem; font-weight: 700; }
+        .app-logo span { color: #2563eb; }
+        .online-toggle { display: flex; align-items: center; gap: 0.5rem; }
+        .toggle { width: 44px; height: 24px; background: #22c55e; border-radius: 12px; position: relative; cursor: pointer; }
+        .toggle::after { content: ''; position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; }
+        .toggle-label { font-size: 0.75rem; color: #94a3b8; }
+        
+        /* Map Area */
+        .app-map { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative; min-height: 300px; }
+        .map-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .map-marker { width: 40px; height: 40px; background: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.25rem; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white; }
+        
+        /* Bottom Sheet */
+        .bottom-sheet { background: white; border-radius: 1.5rem 1.5rem 0 0; padding: 1rem; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
+        .sheet-handle { width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 1rem; }
+        
+        /* Tabs */
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tab { flex: 1; padding: 0.75rem; text-align: center; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
+        .tab.active { background: #2563eb; color: white; }
+        .tab.inactive { background: #f1f5f9; color: #64748b; }
+        
+        /* Order Card */
+        .order-card { background: #f8fafc; border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem; border: 1px solid #e2e8f0; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .order-number { font-weight: 700; font-size: 0.875rem; color: #1e293b; }
+        .order-value { font-weight: 700; color: #2563eb; font-size: 1rem; }
+        .order-details { font-size: 0.8125rem; color: #64748b; margin-bottom: 0.5rem; }
+        .order-address { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .address-icon { color: #2563eb; font-size: 1rem; }
+        .address-text { font-size: 0.8125rem; color: #1e293b; }
+        .order-actions { display: flex; gap: 0.5rem; }
+        .btn { flex: 1; padding: 0.75rem; border-radius: 0.5rem; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+        .btn-accept { background: #22c55e; color: white; }
+        .btn-reject { background: #ef4444; color: white; }
+        .btn-navigate { background: #2563eb; color: white; }
+        
+        /* Active Order */
+        .active-order { background: #eff6ff; border: 2px solid #2563eb; }
+        .progress-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0.75rem 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: #2563eb; width: 60%; border-radius: 2px; }
+        
+        /* Bottom Nav */
+        .bottom-nav { display: flex; background: white; border-top: 1px solid #e2e8f0; padding: 0.5rem 0; }
+        .nav-item { flex: 1; text-align: center; padding: 0.5rem; }
+        .nav-icon { font-size: 1.25rem; margin-bottom: 0.25rem; }
+        .nav-label { font-size: 0.625rem; color: #64748b; }
+        .nav-item.active .nav-label { color: #2563eb; font-weight: 600; }
+        
+        /* Notification */
+        .notification { position: absolute; top: 60px; left: 1rem; right: 1rem; background: #1e293b; color: white; padding: 1rem; border-radius: 0.75rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 100; }
+        .notification-icon { font-size: 1.5rem; }
+        .notification-text { font-size: 0.875rem; }
+        .notification-close { margin-left: auto; cursor: pointer; opacity: 0.7; }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <span>23:45</span>
+                <span>🔋 85%</span>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <div class="app-logo">muv<span>.log</span></div>
+                <div class="online-toggle">
+                    <span class="toggle-label">Online</span>
+                    <div class="toggle"></div>
+                </div>
+            </div>
+
+            <!-- Map Area -->
+            <div class="app-map">
+                <div class="map-center">
+                    <div class="map-marker">📍</div>
+                </div>
+                
+                <!-- Notification -->
+                <div class="notification">
+                    <span class="notification-icon">🔔</span>
+                    <div class="notification-text">
+                        <strong>Novo pedido disponível!</strong><br>
+                        #PED202607311234 • R$ 11,80
+                    </div>
+                    <span class="notification-close">✕</span>
+                </div>
+            </div>
+
+            <!-- Bottom Sheet -->
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                
+                <!-- Tabs -->
+                <div class="tabs">
+                    <div class="tab active">Em Andamento</div>
+                    <div class="tab inactive">Pendentes (2)</div>
+                </div>
+
+                <!-- Active Order -->
+                <div class="order-card active-order">
+                    <div class="order-header">
+                        <span class="order-number">#PED202607311230</span>
+                        <span class="order-value">R$ 15,20</span>
+                    </div>
+                    <div class="order-details">
+                        🏪 Lancheria Boa Vista<br>
+                        👤 Pedro Oliveira
+                    </div>
+                    <div class="order-address">
+                        <span class="address-icon">📍</span>
+                        <span class="address-text">Rua das Flores, 123 - Centro</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #64748b; text-align: center;">
+                        🏍 A caminho do cliente • 2.3 km restantes
+                    </div>
+                    <div class="order-actions" style="margin-top: 0.75rem;">
+                        <button class="btn btn-navigate">🗺 Navegar</button>
+                        <button class="btn btn-accept">✅ Entregue</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <div class="nav-icon">🏠</div>
+                    <div class="nav-label">Início</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">📦</div>
+                    <div class="nav-label">Pedidos</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">💰</div>
+                    <div class="nav-label">Ganhos</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">📊</div>
+                    <div class="nav-label">Ranking</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">☰</div>
+                    <div class="nav-label">Menu</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

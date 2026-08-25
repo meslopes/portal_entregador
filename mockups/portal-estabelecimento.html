@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>muv.log - Mockup Portal Estabelecimento</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; }
+        
+        /* Header */
+        .header { background: white; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .logo { font-size: 1.25rem; font-weight: 700; color: #1e293b; }
+        .logo span { color: #0d9488; }
+        .user-info { display: flex; align-items: center; gap: 0.75rem; }
+        .avatar { width: 2.5rem; height: 2.5rem; border-radius: 50%; background: #0d9488; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        
+        /* Main Content */
+        .main { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+        
+        /* Welcome Section */
+        .welcome { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); color: white; border-radius: 1rem; padding: 2rem; margin-bottom: 1.5rem; }
+        .welcome-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .welcome-subtitle { opacity: 0.9; font-size: 0.875rem; }
+        
+        /* Stats Cards */
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: white; border-radius: 0.75rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .stat-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
+        .stat-label { font-size: 0.8125rem; color: #64748b; margin-top: 0.25rem; }
+        
+        /* Quick Actions */
+        .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .action-card { background: white; border-radius: 0.75rem; padding: 1.5rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .action-card:hover { border-color: #0d9488; transform: translateY(-2px); }
+        .action-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+        .action-title { font-weight: 600; color: #1e293b; margin-bottom: 0.25rem; }
+        .action-desc { font-size: 0.75rem; color: #64748b; }
+        
+        /* Recent Orders */
+        .section { background: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .section-title { font-size: 1.125rem; font-weight: 600; color: #1e293b; }
+        .btn-new { background: #0d9488; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+        
+        .order-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .order-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f8fafc; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
+        .order-info { display: flex; align-items: center; gap: 1rem; }
+        .order-icon { width: 40px; height: 40px; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+        .order-icon.pending { background: #fef3c7; }
+        .order-icon.transit { background: #dbeafe; }
+        .order-icon.delivered { background: #dcfce7; }
+        .order-number { font-weight: 600; font-size: 0.875rem; color: #1e293b; }
+        .order-customer { font-size: 0.75rem; color: #64748b; }
+        .order-status { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 600; }
+        .status-pending { background: #fef3c7; color: #d97706; }
+        .status-transit { background: #dbeafe; color: #2563eb; }
+        .status-delivered { background: #dcfce7; color: #166534; }
+        .order-value { font-weight: 700; color: #1e293b; }
+        
+        /* Tracking Link */
+        .tracking-link { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #eff6ff; border-radius: 0.375rem; font-size: 0.75rem; color: #2563eb; margin-top: 0.5rem; }
+        .tracking-link a { color: #2563eb; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">muv<span>.log</span></div>
+        <div class="user-info">
+            <div class="avatar">LB</div>
+            <div>
+                <div style="font-weight: 600; font-size: 0.875rem;">Lancheria Boa Vista</div>
+                <div style="font-size: 0.75rem; color: #64748b;">Estabelecimento</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- Welcome -->
+        <div class="welcome">
+            <div class="welcome-title">Bem-vindo, Lancheria Boa Vista! 👋</div>
+            <div class="welcome-subtitle">Acompanhe seus pedidos e entregas em tempo real</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-value">12</div>
+                <div class="stat-label">Pedidos Hoje</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏍</div>
+                <div class="stat-value">3</div>
+                <div class="stat-label">Em Andamento</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">9</div>
+                <div class="stat-label">Entregues</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">R$ 142</div>
+                <div class="stat-label">Frete Hoje</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="actions">
+            <div class="action-card">
+                <div class="action-icon">➕</div>
+                <div class="action-title">Novo Pedido</div>
+                <div class="action-desc">Criar pedido de entrega</div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon">📍</div>
+                <div class="action-title">Rastrear</div>
+                <div class="action-desc">Acompanhar entregas</div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon">📊</div>
+                <div class="action-title">Relatórios</div>
+                <div class="action-desc">Ver estatísticas</div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">📋 Pedidos Recentes</div>
+                <button class="btn-new">+ Novo Pedido</button>
+            </div>
+
+            <div class="order-list">
+                <!-- Pending Order -->
+                <div class="order-item">
+                    <div class="order-info">
+                        <div class="order-icon pending">📦</div>
+                        <div>
+                            <div class="order-number">#PED202607311236</div>
+                            <div class="order-customer">Maria Santos • Av. Brasil, 456</div>
+                            <div class="tracking-link">
+                                📍 <a href="#">Rastrear pedido</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="order-status">
+                        <span class="status-badge status-pending">Pendente</span>
+                        <span class="order-value">R$ 8,50</span>
+                    </div>
+                </div>
+
+                <!-- In Transit Order -->
+                <div class="order-item">
+                    <div class="order-info">
+                        <div class="order-icon transit">🏍</div>
+                        <div>
+                            <div class="order-number">#PED202607311234</div>
+                            <div class="order-customer">Pedro Oliveira • Rua das Flores, 123</div>
+                            <div class="tracking-link">
+                                📍 <a href="#">Rastrear pedido</a> • 🏍 Carlos Silva (2.3 km)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="order-status">
+                        <span class="status-badge status-transit">A Caminho</span>
+                        <span class="order-value">R$ 11,80</span>
+                    </div>
+                </div>
+
+                <!-- Delivered Order -->
+                <div class="order-item">
+                    <div class="order-info">
+                        <div class="order-icon delivered">✅</div>
+                        <div>
+                            <div class="order-number">#PED202607311230</div>
+                            <div class="order-customer">João Silva • Rua da Paz, 789</div>
+                        </div>
+                    </div>
+                    <div class="order-status">
+                        <span class="status-badge status-delivered">Entregue</span>
+                        <span class="order-value">R$ 15,20</span>
+                    </div>
+                </div>
+
+                <!-- Delivered Order -->
+                <div class="order-item">
+                    <div class="order-info">
+                        <div class="order-icon delivered">✅</div>
+                        <div>
+                            <div class="order-number">#PED202607311228</div>
+                            <div class="order-customer">Ana Costa • Rua Augusta, 321</div>
+                        </div>
+                    </div>
+                    <div class="order-status">
+                        <span class="status-badge status-delivered">Entregue</span>
+                        <span class="order-value">R$ 9,90</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

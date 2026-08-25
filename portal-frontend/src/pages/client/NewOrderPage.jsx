@@ -98,8 +98,16 @@ const NewOrderPage = () => {
         restaurant_id: isAdmin ? form.selected_establishment : undefined
       });
       setEstimatedFee(res.data);
+      if (res.data.distance_km === 0) {
+        setError('Não foi possível calcular a distância exata. O frete mínimo será aplicado.');
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao calcular frete');
+      const errorMsg = err.response?.data?.error || 'Erro ao calcular frete';
+      if (errorMsg.includes('Estabelecimento não encontrado')) {
+        setError('Estabelecimento não encontrado. Verifique se o cadastro foi aprovado pelo administrador.');
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setCalculatingFee(false);
     }
