@@ -334,7 +334,7 @@ const SubscriptionPage = () => {
                                 onClick={() => handlePayInvoice(invoice.id)}
                                 style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#059669', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
                               >
-                                Pagar
+                                Registrar Pagamento
                               </button>
                             </div>
                           )}
