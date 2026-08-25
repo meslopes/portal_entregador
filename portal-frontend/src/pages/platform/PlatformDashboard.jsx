@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import {
   Users, Building2, Truck, Package, DollarSign,
   TrendingUp, Plus, Search, Edit, Trash2, Eye,
-  Shield, LogOut, Loader2, AlertCircle, X
+  Shield, LogOut, Loader2, AlertCircle, X, RefreshCw
 } from 'lucide-react';
 
 const PlatformDashboard = () => {
@@ -16,6 +16,8 @@ const PlatformDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
   const [admins, setAdmins] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -83,6 +85,45 @@ const PlatformDashboard = () => {
     }
   };
 
+  const handleEditAdmin = (admin) => {
+    setEditingAdmin(admin);
+    setFormData({
+      email: admin.email || '',
+      password: '',
+      first_name: admin.first_name || '',
+      last_name: admin.last_name || '',
+      phone: admin.phone || '',
+      company_name: admin.company_name || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateAdmin = async (e) => {
+    e.preventDefault();
+    setCreateLoading(true);
+
+    try {
+      const updateData = { ...formData };
+      if (!updateData.password) delete updateData.password;
+      await api.put(`/api/platform/admins/${editingAdmin.id}`, updateData);
+      setShowEditModal(false);
+      setEditingAdmin(null);
+      setFormData({
+        email: '',
+        password: '',
+        first_name: '',
+        last_name: '',
+        phone: '',
+        company_name: ''
+      });
+      loadData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao atualizar admin');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/platform/login');
@@ -133,6 +174,24 @@ const PlatformDashboard = () => {
           <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
             {user?.email}
           </span>
+          <button
+            onClick={loadData}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0',
+              background: 'white',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              color: '#64748b'
+            }}
+          >
+            <RefreshCw size={16} />
+            Atualizar
+          </button>
           <button
             onClick={handleLogout}
             style={{
@@ -329,6 +388,20 @@ const PlatformDashboard = () => {
                       <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                           <button
+                            onClick={() => handleEditAdmin(admin)}
+                            style={{
+                              padding: '0.375rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              color: '#2563eb'
+                            }}
+                            title="Editar"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
                             onClick={() => handleDeleteAdmin(admin.id, admin.first_name)}
                             style={{
                               padding: '0.375rem',
@@ -495,6 +568,154 @@ const PlatformDashboard = () => {
                   }}
                 >
                   {createLoading ? 'Criando...' : 'Criar Admin'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Admin */}
+      {showEditModal && editingAdmin && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '1rem',
+            padding: '2rem',
+            width: '100%',
+            maxWidth: '500px',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+                Editar Admin
+              </h3>
+              <button
+                onClick={() => { setShowEditModal(false); setEditingAdmin(null); }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateAdmin}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={labelStyle}>Nome da Empresa</label>
+                <input
+                  type="text"
+                  value={formData.company_name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
+                  style={inputStyle}
+                  placeholder="Restaurante XYZ"
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={labelStyle}>Nome *</label>
+                  <input
+                    type="text"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Sobrenome</label>
+                  <input
+                    type="text"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={labelStyle}>Email *</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  style={inputStyle}
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={labelStyle}>Nova Senha <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(deixe vazio para manter)</span></label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  style={inputStyle}
+                  minLength={6}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={labelStyle}>Telefone</label>
+                <input
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  style={inputStyle}
+                  placeholder="(51) 99999-9999"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowEditModal(false); setEditingAdmin(null); }}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e2e8f0',
+                    background: 'white',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    background: createLoading ? '#93c5fd' : '#2563eb',
+                    color: 'white',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: createLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {createLoading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </form>
