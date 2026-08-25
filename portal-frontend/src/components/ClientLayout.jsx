@@ -45,7 +45,6 @@ const ClientLayout = ({ children }) => {
     { name: 'Novo Pedido', href: '/client/new-order', icon: Plus },
     { name: 'Meus Pedidos', href: '/client/orders', icon: Package },
     { name: 'Financeiro', href: '/client/financial', icon: DollarSign },
-    { name: 'Pagamentos Próprios', href: '/client/payment-reports', icon: Wallet },
     { name: 'Faturas', href: '/client/invoices', icon: Receipt },
     { name: 'Integrações', href: '/client/integrations', icon: Globe },
   ];
@@ -54,6 +53,7 @@ const ClientLayout = ({ children }) => {
   const ownDriverNavigation = [
     { name: 'Meus Entregadores', href: '/client/drivers', icon: Users },
     { name: 'Pagamentos Entregadores', href: '/client/drivers/financial', icon: DollarSign },
+    { name: 'Pagamentos Próprios', href: '/client/payment-reports', icon: Wallet },
     { name: 'Desempenho Entregadores', href: '/client/drivers/metrics', icon: BarChart3 },
   ];
 
