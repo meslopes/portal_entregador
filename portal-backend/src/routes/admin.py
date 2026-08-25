@@ -6449,6 +6449,53 @@ def delete_square(square_id):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/squares/<int:square_id>/toggle-active', methods=['PUT'])
+
+@jwt_required()
+
+@admin_required
+
+def toggle_square_active(square_id):
+
+    """Ativa/desativa uma praça"""
+
+    try:
+
+        from src.models.portal_models import Square
+
+        square = Square.query.get(square_id)
+
+        if not square:
+
+            return jsonify({'error': 'Praça não encontrada'}), 404
+
+        data = request.get_json() or {}
+
+        new_status = data.get('is_active')
+
+        if new_status is None:
+
+            new_status = not square.is_active
+
+        square.is_active = bool(new_status)
+
+        db.session.commit()
+
+        return jsonify({
+
+            'message': f'Praça {square.name} agora esta {"ativa" if square.is_active else "inativa"}',
+
+            'is_active': square.is_active
+
+        }), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        return jsonify({'error': str(e)}), 500
+
+
 
 
 

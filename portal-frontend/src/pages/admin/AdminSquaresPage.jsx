@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   MapPin, Plus, Edit, Trash2, AlertCircle, CheckCircle,
-  Store, Users, Package, X
+  Store, Users, Package, X, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { adminService } from '@/lib/api';
+import api from '@/lib/api';
 
 const AdminSquaresPage = () => {
   const [squares, setSquares] = useState([]);
@@ -79,6 +80,17 @@ const AdminSquaresPage = () => {
       loadSquares();
     } catch (err) {
       alert(err.response?.data?.error || 'Erro ao excluir');
+    }
+  };
+
+  const handleToggleActive = async (square) => {
+    try {
+      await api.put(`/api/admin/squares/${square.id}/toggle-active`, {
+        is_active: !square.is_active
+      });
+      loadSquares();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao alterar status');
     }
   };
 
@@ -171,6 +183,10 @@ const AdminSquaresPage = () => {
                 </div>
               </div>
               <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                <button onClick={() => handleToggleActive(sq)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: sq.is_active ? '#22c55e' : '#e2e8f0', color: sq.is_active ? 'white' : '#64748b', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
+                  {sq.is_active ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                  {sq.is_active ? 'Ativa' : 'Inativa'}
+                </button>
                 <button onClick={() => openEditForm(sq)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <Edit size={14} /> Editar
                 </button>
