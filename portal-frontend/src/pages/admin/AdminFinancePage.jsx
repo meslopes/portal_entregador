@@ -20,8 +20,8 @@ const AdminFinancePage = () => {
   const [commission, setCommission] = useState(30); // % que o admin retém
   const [savingCommission, setSavingCommission] = useState(false);
 
-  useEffect(() => { loadData(); }, [period, squareId]);
-  useEffect(() => { if (dateRange) loadData(); }, [dateRange]);
+  useEffect(() => { loadData(); }, [squareId]);
+  useEffect(() => { loadData(); }, [dateRange]);
 
   const loadData = async () => {
     try {
@@ -31,8 +31,8 @@ const AdminFinancePage = () => {
       if (squareId) params.square_id = squareId;
 
       const [finance, establishments, paymentsRes, configRes] = await Promise.all([
-        adminService.getFinanceDashboard(period, dateRange?.startDate, dateRange?.endDate, squareId),
-        adminService.getFinanceByEstablishment(period, dateRange?.startDate, dateRange?.endDate, squareId),
+        adminService.getFinanceDashboard('custom', dateRange?.startDate, dateRange?.endDate, squareId),
+        adminService.getFinanceByEstablishment('custom', dateRange?.startDate, dateRange?.endDate, squareId),
         api.get('/api/admin/driver-payments', { params }),
         api.get('/api/admin/settings')
       ]);
@@ -81,21 +81,9 @@ const AdminFinancePage = () => {
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Financeiro</h1>
-          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Controle de recebimentos, pagamentos e comissões</p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.375rem' }}>
-          {[{ key: 'today', label: 'Hoje' }, { key: 'week', label: '7 dias' }, { key: 'month', label: '30 dias' }, { key: 'year', label: '1 ano' }].map(p => (
-            <button key={p.key} onClick={() => setPeriod(p.key)} style={{
-              padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
-              fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer',
-              background: period === p.key ? '#2563eb' : '#f1f5f9',
-              color: period === p.key ? 'white' : '#64748b'
-            }}>{p.label}</button>
-          ))}
-        </div>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Financeiro</h1>
+        <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Controle de recebimentos, pagamentos e comissões</p>
       </div>
 
       {error && (
