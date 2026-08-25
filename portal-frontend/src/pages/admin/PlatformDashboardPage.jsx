@@ -29,6 +29,10 @@ const PlatformDashboardPage = () => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [pendingLoading, setPendingLoading] = useState(false);
   const [squares, setSquares] = useState([]);
+  const [showUserEditModal, setShowUserEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userEditForm, setUserEditForm] = useState({ first_name: '', last_name: '', email: '', phone: '', status: 'ACTIVE', tenant_id: '', password: '' });
+  const [userEditLoading, setUserEditLoading] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -161,6 +165,52 @@ const PlatformDashboardPage = () => {
       alert(err.response?.data?.error || 'Erro ao criar tenant');
     } finally {
       setCreateTenantLoading(false);
+    }
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setUserEditForm({
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      status: user.status || 'ACTIVE',
+      tenant_id: user.tenant_id || '',
+      password: ''
+    });
+    setShowUserEditModal(true);
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    setUserEditLoading(true);
+    try {
+      const payload = { ...userEditForm };
+      if (!payload.password) delete payload.password;
+      if (payload.tenant_id) payload.tenant_id = parseInt(payload.tenant_id);
+      else payload.tenant_id = null;
+      await api.put(`/api/platform/users/${editingUser.id}`, payload);
+      setShowUserEditModal(false);
+      setEditingUser(null);
+      loadUsers();
+      alert('Usuário atualizado com sucesso!');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao atualizar usuário');
+    } finally {
+      setUserEditLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o usuário "${userName}"?`)) return;
+    try {
+      await api.delete(`/api/platform/users/${userId}`);
+      loadUsers();
+      loadDashboard();
+      alert('Usuário excluído com sucesso!');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao excluir usuário');
     }
   };
 
@@ -510,6 +560,7 @@ const PlatformDashboardPage = () => {
                     <th style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>TENANT</th>
                     <th style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>STATUS</th>
                     <th style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>CRIADO EM</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>AÇÕES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -546,6 +597,38 @@ const PlatformDashboardPage = () => {
                       </td>
                       <td style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.75rem', color: '#64748b' }}>
                         {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            style={{
+                              padding: '0.375rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              color: '#2563eb'
+                            }}
+                            title="Editar"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.first_name)}
+                            style={{
+                              padding: '0.375rem',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              color: '#dc2626'
+                            }}
+                            title="Excluir"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -917,6 +1000,145 @@ const PlatformDashboardPage = () => {
                   }}
                 >
                   {createTenantLoading ? 'Criando...' : 'Criar Tenant'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
+
+      {/* User Edit Modal */}
+      {showUserEditModal && editingUser && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999 }}
+            onClick={() => { setShowUserEditModal(false); setEditingUser(null); }}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '500px',
+            maxHeight: '80vh', overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 100000
+          }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
+                Editar Usuário
+              </h2>
+              <button
+                onClick={() => { setShowUserEditModal(false); setEditingUser(null); }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.5rem' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateUser} style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Nome</label>
+                  <input
+                    type="text"
+                    value={userEditForm.first_name}
+                    onChange={(e) => setUserEditForm(prev => ({ ...prev, first_name: e.target.value }))}
+                    style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Sobrenome</label>
+                  <input
+                    type="text"
+                    value={userEditForm.last_name}
+                    onChange={(e) => setUserEditForm(prev => ({ ...prev, last_name: e.target.value }))}
+                    style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Email</label>
+                <input
+                  type="email"
+                  value={userEditForm.email}
+                  onChange={(e) => setUserEditForm(prev => ({ ...prev, email: e.target.value }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Telefone</label>
+                <input
+                  type="text"
+                  value={userEditForm.phone}
+                  onChange={(e) => setUserEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="(51) 99999-9999"
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Status</label>
+                  <select
+                    value={userEditForm.status}
+                    onChange={(e) => setUserEditForm(prev => ({ ...prev, status: e.target.value }))}
+                    style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', background: 'white' }}
+                  >
+                    <option value="ACTIVE">Ativo</option>
+                    <option value="INACTIVE">Inativo</option>
+                    <option value="SUSPENDED">Suspenso</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Tenant</label>
+                  <select
+                    value={userEditForm.tenant_id}
+                    onChange={(e) => setUserEditForm(prev => ({ ...prev, tenant_id: e.target.value }))}
+                    style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', background: 'white' }}
+                  >
+                    <option value="">Plataforma (sem tenant)</option>
+                    {tenants.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                  Nova Senha <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(deixe vazio para manter)</span>
+                </label>
+                <input
+                  type="password"
+                  value={userEditForm.password}
+                  onChange={(e) => setUserEditForm(prev => ({ ...prev, password: e.target.value }))}
+                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                  minLength={6}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowUserEditModal(false); setEditingUser(null); }}
+                  style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                    border: '1px solid #e2e8f0', background: 'white',
+                    fontSize: '0.875rem', cursor: 'pointer'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={userEditLoading}
+                  style={{
+                    flex: 1, padding: '0.75rem', borderRadius: '0.5rem',
+                    border: 'none', background: userEditLoading ? '#93c5fd' : '#2563eb',
+                    color: 'white', fontSize: '0.875rem', fontWeight: 600,
+                    cursor: userEditLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {userEditLoading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
               </div>
             </form>

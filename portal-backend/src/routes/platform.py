@@ -508,6 +508,82 @@ def get_platform_users():
         return jsonify({'error': str(e)}), 500
 
 
+@platform_bp.route('/users/<int:user_id>', methods=['PUT'])
+@jwt_required()
+@platform_admin_required
+def update_platform_user(user_id):
+    """Atualiza um usuário"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        data = request.get_json()
+        
+        if 'first_name' in data:
+            user.first_name = data['first_name']
+        if 'last_name' in data:
+            user.last_name = data['last_name']
+        if 'email' in data:
+            # Verificar se email já existe
+            existing = User.query.filter(User.email == data['email'], User.id != user_id).first()
+            if existing:
+                return jsonify({'error': 'Email já cadastrado'}), 400
+            user.email = data['email']
+        if 'phone' in data:
+            user.phone = data['phone']
+        if 'status' in data:
+            from src.models.portal_models import UserStatus
+            user.status = UserStatus(data['status'])
+        if 'tenant_id' in data:
+            user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+        if 'password' in data and data['password']:
+            from werkzeug.security import generate_password_hash
+            user.password_hash = generate_password_hash(data['password'])
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Usuário atualizado com sucesso',
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atualizar usuário: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+@platform_admin_required
+def delete_platform_user(user_id):
+    """Exclui um usuário"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        # Não permitir excluir super admin
+        if user.user_type.value == 'ADMIN' and user.tenant_id is None:
+            return jsonify({'error': 'Não é possível excluir o super admin'}), 400
+        
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao excluir usuário: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @platform_bp.route('/tenants', methods=['POST'])
 @jwt_required()
 @platform_admin_required
