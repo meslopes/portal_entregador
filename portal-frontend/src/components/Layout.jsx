@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -62,8 +62,6 @@ const Layout = ({ children }) => {
 
   const platformNavigation = [
     { name: 'Dashboard', href: '/platform', icon: LayoutDashboard },
-    { name: 'Tenants', href: '/platform', icon: Store },
-    { name: 'Usuários', href: '/platform', icon: Users },
   ];
 
   const navigation = isSuperAdmin && location.pathname.startsWith('/platform') 
@@ -152,7 +150,29 @@ const Layout = ({ children }) => {
 
             {/* User Menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, position: 'relative', zIndex: 100001 }}>
-              {isAdmin && !isSuperAdmin && <SquareSelector />}
+              {isAdmin && !isSuperAdmin && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <SquareSelector />
+                  <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0.5rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #e2e8f0',
+                      background: 'white',
+                      cursor: 'pointer',
+                      color: '#64748b',
+                      transition: 'all 0.15s'
+                    }}
+                    title="Atualizar dados"
+                  >
+                    <RefreshCw size={16} />
+                  </button>
+                </div>
+              )}
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
