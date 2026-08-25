@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Package, Clock, Truck, CheckCircle, XCircle,
-  MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle
+  MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle, Map
 } from 'lucide-react';
 import api, { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
 
@@ -27,6 +27,9 @@ const OrderDetailPage = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
 
   useEffect(() => {
     loadOrder();
@@ -117,6 +120,57 @@ const OrderDetailPage = () => {
       special_instructions: order.special_instructions || ''
     });
     setShowEdit(true);
+  };
+
+  const hasGeolocation = order && (
+    (order.delivery_latitude && order.delivery_longitude) ||
+    (order.pickup_latitude && order.pickup_longitude)
+  );
+
+  const handleShowMap = () => {
+    if (!hasGeolocation) {
+      alert('Este pedido não possui dados de geolocalização.');
+      return;
+    }
+    setShowMap(true);
+    setTimeout(() => initMap(), 100);
+  };
+
+  const initMap = () => {
+    if (!mapRef.current || !window.L) return;
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+    }
+
+    const L = window.L;
+    const map = L.map(mapRef.current);
+    mapInstanceRef.current = map;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const markers = [];
+
+    if (order.pickup_latitude && order.pickup_longitude) {
+      const pickupMarker = L.marker([order.pickup_latitude, order.pickup_longitude])
+        .addTo(map)
+        .bindPopup(`<b>Coleta</b><br>${order.restaurant?.name || 'Estabelecimento'}`);
+      markers.push(pickupMarker);
+    }
+
+    if (order.delivery_latitude && order.delivery_longitude) {
+      const deliveryMarker = L.marker([order.delivery_latitude, order.delivery_longitude])
+        .addTo(map)
+        .bindPopup(`<b>Entrega</b><br>${order.delivery_address?.street || 'Endereço de entrega'}`);
+      markers.push(deliveryMarker);
+    }
+
+    if (markers.length > 0) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.1));
+    }
   };
 
   // Converte datetime UTC para horário local
@@ -342,6 +396,9 @@ const OrderDetailPage = () => {
               ✏️ Editar
             </button>
           )}
+          <button onClick={handleShowMap} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #059669', background: 'white', color: '#059669', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+            <Map size={14} style={{ marginRight: '0.25rem', verticalAlign: 'middle' }} /> Ver no Mapa
+          </button>
           {order.status === 'SCHEDULED' && (
             <button onClick={() => handleChangeStatus('PENDING')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
               🔔 Tocar Agora
@@ -536,6 +593,19 @@ const OrderDetailPage = () => {
                 <p style={{ fontWeight: 500, color: '#1e293b' }}>R$ {parseFloat(si.price_per_km || 0).toFixed(2).replace('.', ',')}</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal do Mapa */}
+      {showMap && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '800px', height: '80vh', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Pedido #{order?.order_number} - Mapa</h2>
+              <button onClick={() => setShowMap(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.25rem' }}>✕</button>
+            </div>
+            <div ref={mapRef} style={{ flex: 1, minHeight: '400px' }} />
           </div>
         </div>
       )}
