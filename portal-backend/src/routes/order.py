@@ -1648,10 +1648,21 @@ def estimate_fee():
             if square:
                 city_hint = square.city
 
-        geo_del = geocode_address(delivery_address, city_hint=city_hint)
-        del_lat = geo_del['latitude'] if geo_del else None
-        del_lng = geo_del['longitude'] if geo_del else None
-        geocode_failed = geo_del is None
+        # Permitir coordenadas manuais (quando usuário ajusta pino no mapa)
+        manual_lat = data.get('latitude')
+        manual_lng = data.get('longitude')
+        
+        if manual_lat and manual_lng:
+            # Usuário forneceu coordenadas do pino no mapa
+            del_lat = float(manual_lat)
+            del_lng = float(manual_lng)
+            is_approximate = False
+        else:
+            # Tentar geocodificar o endereço
+            geo_del = geocode_address(delivery_address, city_hint=city_hint)
+            del_lat = geo_del['latitude'] if geo_del else None
+            del_lng = geo_del['longitude'] if geo_del else None
+            is_approximate = geo_del.get('is_approximate', False) if geo_del else False
 
         # Calcular distância REAL (rota) com fallback para Haversine
         distance_km = 0
@@ -1700,11 +1711,14 @@ def estimate_fee():
             'price_per_km': price_per_km,
             'min_distance_km': min_km,
             'distance_source': distance_source,
-            'geocode_failed': geocode_failed
+            'is_approximate': is_approximate,
+            'latitude': del_lat,
+            'longitude': del_lng
         }
         
-        if geocode_failed:
-            response_data['warning'] = 'Não foi possível localizar o endereço exato. O frete foi calculado com a distância mínima. Verifique se o endereço está correto.'
+        if is_approximate:
+            response_data['needs_pin_adjustment'] = True
+            response_data['warning'] = 'Endereço não encontrado com precisão. Ajuste o pino no mapa para o local exato da entrega.'
         
         return jsonify(response_data), 200
 

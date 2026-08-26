@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, User, Phone, MapPin, DollarSign, Package,
-  AlertCircle, CheckCircle, ShoppingCart, Truck, Info, Store
+  AlertCircle, CheckCircle, ShoppingCart, Truck, Info, Store, Map
 } from 'lucide-react';
 import { orderService, adminService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +28,12 @@ const NewOrderPage = () => {
   const [hasOwnDrivers, setHasOwnDrivers] = useState(false);
   const [estimatedFee, setEstimatedFee] = useState(null);
   const [calculatingFee, setCalculatingFee] = useState(false);
+  const [showPinMap, setShowPinMap] = useState(false);
+  const [pinLocation, setPinLocation] = useState(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markerRef = useRef(null);
   const isAdmin = user?.user_type === 'ADMIN';
 
   const [form, setForm] = useState({
@@ -59,6 +65,22 @@ const NewOrderPage = () => {
     }
   }, [isAdmin]);
 
+  // Carregar Leaflet dinamicamente
+  useEffect(() => {
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    if (!window.L) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
   // Carrega estabelecimentos para admin
   useEffect(() => {
     if (isAdmin) {
@@ -83,7 +105,7 @@ const NewOrderPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.selected_establishment]);
 
-  const calculateFee = async () => {
+  const calculateFee = async (customLat = null, customLng = null) => {
     if (!form.delivery_address || !form.delivery_number || !form.delivery_neighborhood) {
       setError('Preencha o endereço completo para calcular o frete');
       return;
@@ -93,15 +115,24 @@ const NewOrderPage = () => {
       setError('');
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + ' - ' + form.delivery_neighborhood + ', ' + form.delivery_city + ' - ' + form.delivery_state;
       const { default: api } = await import('@/lib/api');
-      const res = await api.post('/api/orders/estimate-fee', {
+      const payload = {
         delivery_address: fullAddress,
         restaurant_id: isAdmin ? form.selected_establishment : undefined
-      });
+      };
+      if (customLat && customLng) {
+        payload.latitude = customLat;
+        payload.longitude = customLng;
+      }
+      const res = await api.post('/api/orders/estimate-fee', payload);
       setEstimatedFee(res.data);
-      if (res.data.geocode_failed) {
-        setError('⚠️ Endereço não encontrado no mapa. O frete foi calculado com distância mínima. Verifique se o endereço está correto (Rua, Número, Bairro, Cidade).');
+      
+      if (res.data.is_approximate && !customLat) {
+        // Endereço não encontrado com precisão - mostrar mapa para ajustar pino
+        setPinLocation({ lat: res.data.latitude, lng: res.data.longitude });
+        setShowPinMap(true);
+        setTimeout(() => initPinMap(res.data.latitude, res.data.longitude), 200);
       } else if (res.data.distance_km === 0) {
-        setError('Não foi possível calcular a distância exata. O frete mínimo será aplicado.');
+        setError('Não foi possível calcular a distância exata.');
       }
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Erro ao calcular frete';
@@ -113,6 +144,39 @@ const NewOrderPage = () => {
     } finally {
       setCalculatingFee(false);
     }
+  };
+
+  const initPinMap = (lat, lng) => {
+    if (!mapContainerRef.current || !window.L) return;
+    
+    const L = window.L;
+    
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+    }
+    
+    const map = L.map(mapContainerRef.current).setView([lat, lng], 15);
+    mapInstanceRef.current = map;
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    
+    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    markerRef.current = marker;
+    
+    marker.on('dragend', function(e) {
+      const pos = e.target.getLatLng();
+      setPinLocation({ lat: pos.lat, lng: pos.lng });
+    });
+    
+    setMapInitialized(true);
+  };
+
+  const handleConfirmPin = async () => {
+    if (!pinLocation) return;
+    setShowPinMap(false);
+    await calculateFee(pinLocation.lat, pinLocation.lng);
   };
 
   const handleChange = (e) => {
@@ -404,6 +468,35 @@ const NewOrderPage = () => {
           {isLoading ? 'Enviando Pedido...' : 'Enviar Pedido'}
         </button>
       </form>
+
+      {/* Modal do Mapa para Ajustar Pino */}
+      {showPinMap && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '700px', height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Ajustar Local da Entrega</h2>
+                <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: '0.25rem' }}>Arraste o pino para o local exato da entrega</p>
+              </div>
+              <button onClick={() => setShowPinMap(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.25rem' }}>✕</button>
+            </div>
+            <div ref={mapContainerRef} style={{ flex: 1, minHeight: '300px' }} />
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
+                {pinLocation ? `${pinLocation.lat.toFixed(6)}, ${pinLocation.lng.toFixed(6)}` : 'Arraste o pino'}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={() => setShowPinMap(false)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button onClick={handleConfirmPin} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
+                  Confirmar Local
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
