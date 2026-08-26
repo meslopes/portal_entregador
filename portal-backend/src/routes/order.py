@@ -1651,6 +1651,7 @@ def estimate_fee():
         geo_del = geocode_address(delivery_address, city_hint=city_hint)
         del_lat = geo_del['latitude'] if geo_del else None
         del_lng = geo_del['longitude'] if geo_del else None
+        geocode_failed = geo_del is None
 
         # Calcular distância REAL (rota) com fallback para Haversine
         distance_km = 0
@@ -1692,14 +1693,20 @@ def estimate_fee():
                 km_total = max(distance_km, min_km)
                 delivery_fee = round(km_total * price_per_km, 2)
 
-        return jsonify({
+        response_data = {
             'distance_km': round(distance_km, 2),
             'duration_min': round(duration_min, 1),
             'delivery_fee': delivery_fee,
             'price_per_km': price_per_km,
             'min_distance_km': min_km,
-            'distance_source': distance_source
-        }), 200
+            'distance_source': distance_source,
+            'geocode_failed': geocode_failed
+        }
+        
+        if geocode_failed:
+            response_data['warning'] = 'Não foi possível localizar o endereço exato. O frete foi calculado com a distância mínima. Verifique se o endereço está correto.'
+        
+        return jsonify(response_data), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

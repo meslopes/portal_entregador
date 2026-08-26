@@ -98,7 +98,9 @@ const NewOrderPage = () => {
         restaurant_id: isAdmin ? form.selected_establishment : undefined
       });
       setEstimatedFee(res.data);
-      if (res.data.distance_km === 0) {
+      if (res.data.geocode_failed) {
+        setError('⚠️ Endereço não encontrado no mapa. O frete foi calculado com distância mínima. Verifique se o endereço está correto (Rua, Número, Bairro, Cidade).');
+      } else if (res.data.distance_km === 0) {
         setError('Não foi possível calcular a distância exata. O frete mínimo será aplicado.');
       }
     } catch (err) {

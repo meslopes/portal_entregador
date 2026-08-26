@@ -201,27 +201,10 @@ def geocode_address(address, city_hint=None):
             logger.error(f"Erro na geocodificacao para '{fmt}': {e}")
             continue
 
-    # Fallback: tenta usar coordenadas da cidade se disponível
-    city_for_fallback = city_hint
-    if not city_for_fallback:
-        # Tenta extrair cidade do endereço
-        city_match = re.search(r',\s*([^-]+?)\s*-\s*[A-Z]{2}', clean)
-        if city_match:
-            city_for_fallback = city_match.group(1).strip()
-    
-    if city_for_fallback:
-        city_key = city_for_fallback.lower().strip()
-        if city_key in CITY_COORDS:
-            coords = CITY_COORDS[city_key]
-            logger.warning(f"Geocodificacao falhou para '{address}', usando centro de {city_for_fallback}")
-            return {
-                'latitude': coords['lat'],
-                'longitude': coords['lng'],
-                'display_name': f'{city_for_fallback} (centro aproximado)',
-                'is_approximate': True
-            }
-    
-    logger.warning(f"Geocodificacao falhou para: '{address}' (sem fallback de centro)")
+    # NÃO usar mais centro da cidade como fallback
+    # Isso causava frete incorreto pois as coordenadas do centro da cidade
+    # não representam o endereço real do cliente
+    logger.warning(f"Geocodificacao falhou para: '{address}' - endereco nao encontrado no Nominatim")
     return None
 
 
