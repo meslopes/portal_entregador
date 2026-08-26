@@ -126,13 +126,13 @@ const NewOrderPage = () => {
       const res = await api.post('/api/orders/estimate-fee', payload);
       setEstimatedFee(res.data);
       
-      if (res.data.is_approximate && !customLat) {
-        // Endereço não encontrado com precisão - mostrar mapa para ajustar pino
+      // Sempre salvar coordenadas para permitir ajuste no mapa
+      if (res.data.latitude && res.data.longitude) {
         setPinLocation({ lat: res.data.latitude, lng: res.data.longitude });
-        setShowPinMap(true);
-        setTimeout(() => initPinMap(res.data.latitude, res.data.longitude), 200);
-      } else if (res.data.distance_km === 0) {
-        setError('Não foi possível calcular a distância exata.');
+      }
+      
+      if (res.data.distance_km === 0 && !customLat) {
+        setError('Não foi possível calcular a distância. Use "Ajustar no Mapa" para marcar o local exato.');
       }
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Erro ao calcular frete';
@@ -215,7 +215,7 @@ const NewOrderPage = () => {
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + (form.delivery_complement ? ' - ' + form.delivery_complement : '');
       const DELIVERY_FEE = estimatedFee.delivery_fee || 0;
 
-      const response = await orderService.createOrder({
+      const orderData = {
         ...(isAdmin && { restaurant_id: form.selected_establishment }),
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
@@ -230,15 +230,20 @@ const NewOrderPage = () => {
         total_amount: DELIVERY_FEE,
         payment_method: form.product_payment_method,
         special_instructions: JSON.stringify({
-          // Valor dos itens só é incluído quando cobrança na entrega
           ...(form.product_payment_type === 'DELIVERY' && { product_value: PRODUCT_VALUE }),
           product_payment_type: form.product_payment_type,
           product_payment_method: form.product_payment_method,
           change_for: form.change_for || null,
-          distance_km: DISTANCE_KM,
-          price_per_km: PRICE_PER_KM,
         }),
-      });
+      };
+      
+      // Incluir coordenadas do pino se disponíveis
+      if (pinLocation) {
+        orderData.delivery_latitude = pinLocation.lat;
+        orderData.delivery_longitude = pinLocation.lng;
+      }
+      
+      const response = await orderService.createOrder(orderData);
       setSuccess(true);
       // Mostrar modal de distribuição apenas para estabelecimentos com entregadores próprios
       if (!isAdmin && hasOwnDrivers && response.order) {
@@ -401,6 +406,23 @@ const NewOrderPage = () => {
             >
               {calculatingFee ? 'Calculando...' : 'Calcular Frete'}
             </button>
+            {estimatedFee && pinLocation && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPinMap(true);
+                  setTimeout(() => initPinMap(pinLocation.lat, pinLocation.lng), 200);
+                }}
+                style={{
+                  width: '100%', marginTop: '0.5rem', padding: '0.5rem', borderRadius: '0.375rem',
+                  border: '1.5px solid #2563eb', background: 'white', color: '#2563eb',
+                  fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                }}
+              >
+                <Map size={14} /> Ajustar Local no Mapa
+              </button>
+            )}
           </div>
         </Card>
 
