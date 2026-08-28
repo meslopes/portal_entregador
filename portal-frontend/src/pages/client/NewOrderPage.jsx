@@ -246,6 +246,14 @@ const NewOrderPage = () => {
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + (form.delivery_complement ? ' - ' + form.delivery_complement : '');
       const DELIVERY_FEE = estimatedFee.delivery_fee || 0;
 
+      // Itens do pedido (produtos, não o frete)
+      const orderItems = [];
+      if (form.product_payment_type === 'DELIVERY' && PRODUCT_VALUE > 0) {
+        orderItems.push({ name: 'Produtos', quantity: 1, price: PRODUCT_VALUE });
+      }
+      
+      const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
       const orderData = {
         ...(isAdmin && { restaurant_id: form.selected_establishment }),
         customer_name: form.customer_name,
@@ -255,10 +263,10 @@ const NewOrderPage = () => {
         delivery_city: form.delivery_city,
         delivery_state: form.delivery_state,
         delivery_zip_code: form.delivery_zip_code,
-        items: [{ name: 'Entrega', quantity: 1, price: DELIVERY_FEE }],
-        subtotal: DELIVERY_FEE,
+        items: orderItems,
+        subtotal: subtotal,
         delivery_fee: DELIVERY_FEE,
-        total_amount: DELIVERY_FEE,
+        total_amount: subtotal + DELIVERY_FEE,
         payment_method: form.product_payment_method,
         special_instructions: form.special_instructions || '',
         product_payment_type: form.product_payment_type,
