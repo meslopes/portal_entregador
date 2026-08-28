@@ -742,6 +742,8 @@ def _format_order_for_driver(order):
     try:
         from src.models.portal_models import Address
 
+        logger.info(f"[FORMAT] Pedido {order.order_number}: delivery_address_id={order.delivery_address_id}, delivery_address={order.delivery_address}")
+
         result = {
             'id': order.id,
             'order_number': order.order_number or 'N/A',
@@ -766,16 +768,24 @@ def _format_order_for_driver(order):
                 'phone': order.restaurant.phone
             }
 
-        # Endereço de entrega
-        if order.delivery_address:
+        # Endereço de entrega - buscar diretamente se relationship não carregar
+        delivery_addr = order.delivery_address
+        if not delivery_addr and order.delivery_address_id:
+            logger.info(f"[FORMAT] Buscando endereço manualmente para pedido {order.order_number}, address_id={order.delivery_address_id}")
+            delivery_addr = Address.query.get(order.delivery_address_id)
+        
+        if delivery_addr:
             result['delivery_address'] = {
-                'street': order.delivery_address.street or 'N/A',
-                'neighborhood': order.delivery_address.neighborhood or 'N/A',
-                'city': order.delivery_address.city or 'N/A',
-                'state': order.delivery_state or 'N/A',
-                'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
-                'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
+                'street': delivery_addr.street or 'N/A',
+                'neighborhood': delivery_addr.neighborhood or 'N/A',
+                'city': delivery_addr.city or 'N/A',
+                'state': delivery_addr.state or 'N/A',
+                'latitude': float(delivery_addr.latitude) if delivery_addr.latitude else None,
+                'longitude': float(delivery_addr.longitude) if delivery_addr.longitude else None,
             }
+            logger.info(f"[FORMAT] Endereço encontrado: {delivery_addr.street}")
+        else:
+            logger.warning(f"[FORMAT] Pedido {order.order_number}: endereço NÃO encontrado (address_id={order.delivery_address_id})")
 
         # Cliente
         if order.customer:
