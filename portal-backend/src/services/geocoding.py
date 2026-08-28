@@ -149,8 +149,7 @@ def geocode_with_photon(address, city_hint=None):
         url = "https://photon.komoot.io/api/"
         params = {
             'q': query,
-            'limit': 5,
-            'lang': 'pt'
+            'limit': 5
         }
         
         response = requests.get(url, params=params, timeout=5)
