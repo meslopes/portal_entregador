@@ -120,6 +120,8 @@ const NewOrderPage = () => {
       const { default: api } = await import('@/lib/api');
       const payload = {
         delivery_address: fullAddress,
+        delivery_city: form.delivery_city,
+        delivery_state: form.delivery_state,
         restaurant_id: isAdmin ? form.selected_establishment : undefined
       };
       if (customLat && customLng) {

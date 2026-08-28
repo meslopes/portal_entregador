@@ -1647,6 +1647,10 @@ def estimate_fee():
             square = Square.query.get(restaurant.square_id)
             if square:
                 city_hint = square.city
+        
+        # Se não tem city_hint do restaurante, usar cidade do endereço
+        if not city_hint:
+            city_hint = data.get('delivery_city')
 
         # Permitir coordenadas manuais (quando usuário ajusta pino no mapa)
         manual_lat = data.get('latitude')
