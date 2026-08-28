@@ -223,7 +223,11 @@ def get_orders():
         # Limpar estado pendente da sessão
         db.session.rollback()
 
-        query = Order.query.filter(
+        query = Order.query.options(
+            db.joinedload(Order.delivery_address),
+            db.joinedload(Order.customer),
+            db.joinedload(Order.restaurant)
+        ).filter(
             Order.establishment_driver_id == driver.id,
             Order.assigned_to_own_driver == True
         )
