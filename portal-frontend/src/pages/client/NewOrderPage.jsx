@@ -33,6 +33,8 @@ const NewOrderPage = () => {
   const [pinAdjusted, setPinAdjusted] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainerRef = useRef(null);
+  const previewMapRef = useRef(null);
+  const previewMapInstanceRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
   const isAdmin = user?.user_type === 'ADMIN';
@@ -130,6 +132,8 @@ const NewOrderPage = () => {
       // Sempre salvar coordenadas para permitir ajuste no mapa
       if (res.data.latitude && res.data.longitude) {
         setPinLocation({ lat: res.data.latitude, lng: res.data.longitude });
+        // Inicializar mapa de preview após um pequeno delay
+        setTimeout(() => initPreviewMap(res.data.latitude, res.data.longitude), 300);
       }
       
       if (res.data.distance_km === 0 && !customLat) {
@@ -172,6 +176,25 @@ const NewOrderPage = () => {
     });
     
     setMapInitialized(true);
+  };
+
+  const initPreviewMap = (lat, lng) => {
+    if (!previewMapRef.current || !window.L) return;
+    
+    const L = window.L;
+    
+    if (previewMapInstanceRef.current) {
+      previewMapInstanceRef.current.remove();
+    }
+    
+    const map = L.map(previewMapRef.current).setView([lat, lng], 16);
+    previewMapInstanceRef.current = map;
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    
+    L.marker([lat, lng]).addTo(map);
   };
 
   const handleConfirmPin = async () => {
@@ -393,6 +416,31 @@ const NewOrderPage = () => {
                   <div style={{ fontSize: '0.625rem', color: '#94a3b8', textAlign: 'right', marginTop: '0.25rem' }}>
                     {estimatedFee.distance_source === 'osrm' ? 'Distância real (rota)' : 'Distância estimada (linha reta)'}
                   </div>
+                  {/* Mapa de preview */}
+                  {pinLocation && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
+                        <Map size={12} style={{ color: '#0d9488' }} />
+                        <span style={{ fontSize: '0.75rem', color: '#0d9488', fontWeight: 500 }}>Localização no mapa</span>
+                      </div>
+                      <div 
+                        ref={previewMapRef} 
+                        style={{ 
+                          height: '150px', 
+                          borderRadius: '0.375rem', 
+                          border: '1px solid #e2e8f0',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          setShowPinMap(true);
+                          setTimeout(() => initPinMap(pinLocation.lat, pinLocation.lng), 200);
+                        }}
+                      />
+                      <p style={{ fontSize: '0.625rem', color: '#94a3b8', textAlign: 'center', marginTop: '0.25rem' }}>
+                        Clique no mapa para ajustar o local
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.25rem', marginTop: '0.25rem' }}>
