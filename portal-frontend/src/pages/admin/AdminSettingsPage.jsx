@@ -464,6 +464,40 @@ const IntegrationSettings = ({ config, onChange }) => {
       )}
     </div>
 
+    <div style={{ marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: '#4285f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700 }}>G</div>
+          <div>
+            <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>Google Maps API (Geocoding)</p>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Endereços precisos para cálculo de frete • Recomendado para produção</p>
+          </div>
+        </div>
+        <select value={config.integration_google_maps || 'disabled'} onChange={e => onChange('integration_google_maps', e.target.value)} style={{ ...inputStyle, width: 'auto' }}>
+          <option value="enabled">Ativada</option>
+          <option value="disabled">Desativada</option>
+        </select>
+      </div>
+      {config.integration_google_maps === 'enabled' && (
+        <div style={{ padding: '0 1rem 1rem' }}>
+          <FormField label="Google Maps API Key">
+            <input type="password" value={config.google_maps_api_key || ''} onChange={e => onChange('google_maps_api_key', e.target.value)} style={inputStyle} placeholder="Sua API Key do Google Maps" />
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+              Obtenha em: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>console.cloud.google.com</a> → APIs → Geocoding API
+            </p>
+          </FormField>
+          <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
+            <p style={{ fontSize: '0.75rem', color: '#1e40af' }}>
+              <strong>Custo:</strong> ~$5 por 1.000 consultas. Para 100 pedidos/dia = ~R$ 75/mês.
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#1e40af', marginTop: '0.25rem' }}>
+              <strong>Benefício:</strong> Endereços sempre corretos, sem precisar ajustar pino no mapa.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

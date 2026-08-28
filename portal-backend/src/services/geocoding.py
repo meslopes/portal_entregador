@@ -1,15 +1,108 @@
 """
-Servico de geocodificacao usando Nominatim (OpenStreetMap).
-Converte enderecos em coordenadas geograficas (latitude/longitude).
+Servico de geocodificacao multi-provider.
+Ordem: Google Maps (se configurado) -> Photon -> Nominatim -> Fallback centro da cidade.
 Servico de roteirizacao usando OSRM para distancia real.
 """
 import requests
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 # OSRM public server
 OSRM_URL = "https://router.project-osrm.org/route/v1/driving"
+
+# Google Maps API Key (configurada via variavel de ambiente ou SystemConfig)
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
+
+
+def get_google_maps_api_key():
+    """Retorna a API key do Google Maps (env var ou SystemConfig)"""
+    if GOOGLE_MAPS_API_KEY:
+        return GOOGLE_MAPS_API_KEY
+    try:
+        from src.models.portal_models import SystemConfig
+        config = SystemConfig.query.filter_by(config_key='google_maps_api_key').first()
+        if config and config.config_value:
+            return config.config_value
+    except Exception:
+        pass
+    return ''
+
+
+def geocode_with_google(address, city_hint=None):
+    """
+    Geocodifica usando Google Maps Geocoding API.
+    Retorna coordenadas precisas para endereços brasileiros.
+    """
+    api_key = get_google_maps_api_key()
+    if not api_key:
+        logger.info("[GOOGLE] API key não configurada, pulando")
+        return None
+    
+    import re
+    
+    # Limpa o endereco
+    clean = address.replace(' - ', ', ').replace('  ', ' ').strip()
+    clean = re.sub(r',?\s*\d{5}-?\d{3}\s*$', '', clean).strip()
+    clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
+    
+    # Monta endereço completo
+    full_address = clean
+    if city_hint and city_hint.lower() not in clean.lower():
+        full_address = f"{clean}, {city_hint}, RS, Brasil"
+    elif 'brasil' not in full_address.lower():
+        full_address = f"{full_address}, Brasil"
+    
+    logger.info(f"[GOOGLE] Buscando: '{full_address}'")
+    
+    try:
+        url = "https://maps.googleapis.com/maps/api/geocode/json"
+        params = {
+            'address': full_address,
+            'key': api_key,
+            'language': 'pt-BR',
+            'region': 'br',
+            'components': 'country:BR'
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+        
+        if data.get('status') == 'OK' and data.get('results'):
+            result = data['results'][0]
+            location = result['geometry']['location']
+            lat = location['lat']
+            lng = location['lng']
+            
+            # Verificar qualidade do resultado
+            location_type = result['geometry'].get('location_type', '')
+            partial_match = result.get('partial_match', False)
+            
+            # ROOFTOP = endereço exato, RANGE_INTERPOLATED = aproximado
+            is_precise = location_type in ['ROOFTOP', 'RANGE_INTERPOLATED'] and not partial_match
+            
+            display_name = result.get('formatted_address', full_address)
+            
+            logger.info(f"[GOOGLE] OK: '{full_address}' => {lat}, {lng} (tipo: {location_type}, preciso: {is_precise})")
+            
+            return {
+                'latitude': float(lat),
+                'longitude': float(lng),
+                'display_name': display_name,
+                'source': 'google',
+                'is_precise': is_precise,
+                'location_type': location_type
+            }
+        else:
+            status = data.get('status', 'UNKNOWN')
+            error_message = data.get('error_message', '')
+            logger.warning(f"[GOOGLE] Sem resultados: status={status}, erro={error_message}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"[GOOGLE] Erro: {e}")
+        return None
 
 
 def get_route_distance(lat1, lng1, lat2, lng2):
@@ -206,7 +299,7 @@ def geocode_with_photon(address, city_hint=None):
 def geocode_address(address, city_hint=None):
     """
     Converte um endereco em coordenadas geograficas.
-    Tenta Photon primeiro (melhor busca), depois Nominatim.
+    Ordem: Google Maps (se configurado) -> Photon -> Nominatim -> Fallback.
     
     Args:
         address: Endereco completo (ex: "Rua Principal 100, Porto Alegre, RS")
@@ -230,8 +323,16 @@ def geocode_address(address, city_hint=None):
     # Remove virgulas duplas
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
 
-    # TENTAR PHOTON PRIMEIRO (melhor busca para endereços brasileiros)
     logger.info(f"[GEOCODE] Iniciando busca para: '{address}' (city_hint: {city_hint})")
+    
+    # 1. TENTAR GOOGLE MAPS PRIMEIRO (mais preciso)
+    google_result = geocode_with_google(address, city_hint)
+    if google_result:
+        logger.info(f"[GEOCODE] Google encontrou: {google_result['latitude']}, {google_result['longitude']}")
+        return google_result
+    
+    # 2. TENTAR PHOTON (melhor que Nominatim para endereços brasileiros)
+    logger.info("[GEOCODE] Google não configurado ou falhou, tentando Photon...")
     photon_result = geocode_with_photon(address, city_hint)
     if photon_result:
         logger.info(f"[GEOCODE] Photon encontrou: {photon_result['latitude']}, {photon_result['longitude']}")
