@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 OSRM_URL = "https://router.project-osrm.org/route/v1/driving"
 
 # Google Maps API Key (configurada via variavel de ambiente ou SystemConfig)
-GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', 'AIzaSyBPojnTVcZIdjLeZw5wa8F_KF0sPJXngV4')
 
 
 def get_google_maps_api_key():
