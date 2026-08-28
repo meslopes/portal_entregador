@@ -126,10 +126,74 @@ CITY_COORDS = {
 }
 
 
+def geocode_with_photon(address, city_hint=None):
+    """
+    Tenta geocodificar usando Photon (baseado em OSM, melhor busca).
+    """
+    import re
+    
+    if not address:
+        return None
+    
+    # Limpa o endereco
+    clean = address.replace(' - ', ', ').replace('  ', ' ').strip()
+    clean = re.sub(r',?\s*\d{5}-?\d{3}\s*$', '', clean).strip()
+    clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
+    
+    # Monta query para Photon
+    query = clean
+    if city_hint:
+        query = f"{clean}, {city_hint}"
+    
+    try:
+        url = "https://photon.komoot.io/api/"
+        params = {
+            'q': query,
+            'limit': 5,
+            'lang': 'pt'
+        }
+        
+        response = requests.get(url, params=params, timeout=5)
+        data = response.json()
+        
+        if data.get('features') and len(data['features']) > 0:
+            # Filtrar resultados pelo Brasil
+            for feature in data['features']:
+                props = feature.get('properties', {})
+                country = props.get('country', '').lower()
+                if 'brasil' in country or 'brazil' in country:
+                    coords = feature['geometry']['coordinates']
+                    lng, lat = coords[0], coords[1]
+                    
+                    # Verificar se tem cidade no resultado
+                    city = props.get('city', '').lower()
+                    district = props.get('district', '')
+                    street = props.get('street', '')
+                    name = props.get('name', '')
+                    
+                    display_parts = [street or name, district, city, 'Brasil']
+                    display_name = ', '.join(p for p in display_parts if p)
+                    
+                    logger.info(f"Photon OK: '{query}' => {lat}, {lng} ({display_name})")
+                    return {
+                        'latitude': float(lat),
+                        'longitude': float(lng),
+                        'display_name': display_name,
+                        'source': 'photon'
+                    }
+        
+        logger.info(f"Photon sem resultados para: '{query}'")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Erro no Photon para '{query}': {e}")
+        return None
+
+
 def geocode_address(address, city_hint=None):
     """
     Converte um endereco em coordenadas geograficas.
-    Tenta varias formatacoes para melhorar a taxa de sucesso.
+    Tenta Photon primeiro (melhor busca), depois Nominatim.
     
     Args:
         address: Endereco completo (ex: "Rua Principal 100, Porto Alegre, RS")
@@ -152,6 +216,13 @@ def geocode_address(address, city_hint=None):
     clean = re.sub(r',?\s*\d{5}-?\d{3}\s*$', '', clean).strip()
     # Remove virgulas duplas
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
+
+    # TENTAR PHOTON PRIMEIRO (melhor busca para endereços brasileiros)
+    photon_result = geocode_with_photon(address, city_hint)
+    if photon_result:
+        return photon_result
+    
+    logger.info("Photon falhou, tentando Nominatim...")
 
     # Lista de formatacoes para tentar (ordem importa)
     formats = []
