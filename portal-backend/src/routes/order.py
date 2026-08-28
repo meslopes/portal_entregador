@@ -1719,6 +1719,8 @@ def estimate_fee():
         price_per_km = 2.95
         min_km = 4.0
 
+        logger.info(f"[FRETE] Distancia OSRM: {distance_km} km")
+        
         if restaurant.pricing_table_id:
             from src.models.portal_models import PricingTable
             pt = PricingTable.query.get(restaurant.pricing_table_id)
@@ -1727,6 +1729,7 @@ def estimate_fee():
                 min_km = float(pt.min_distance_km or 4.0)
                 km_total = max(distance_km, min_km)
                 delivery_fee = round(km_total * price_per_km, 2)
+                logger.info(f"[FRETE] Pricing table: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
                 if pt.min_delivery_fee:
                     delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
                 if pt.max_delivery_fee:
@@ -1739,6 +1742,11 @@ def estimate_fee():
                 min_km = float(sq.min_distance_km or 4.0)
                 km_total = max(distance_km, min_km)
                 delivery_fee = round(km_total * price_per_km, 2)
+                logger.info(f"[FRETE] Square: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
+        else:
+            logger.info(f"[FRETE] Usando padrao: price_per_km={price_per_km}, min_km={min_km}")
+            km_total = max(distance_km, min_km)
+            delivery_fee = round(km_total * price_per_km, 2)
 
         response_data = {
             'distance_km': round(distance_km, 2),
