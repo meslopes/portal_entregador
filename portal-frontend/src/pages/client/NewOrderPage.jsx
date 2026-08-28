@@ -30,6 +30,7 @@ const NewOrderPage = () => {
   const [calculatingFee, setCalculatingFee] = useState(false);
   const [showPinMap, setShowPinMap] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
+  const [pinAdjusted, setPinAdjusted] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -176,7 +177,14 @@ const NewOrderPage = () => {
   const handleConfirmPin = async () => {
     if (!pinLocation) return;
     setShowPinMap(false);
+    setPinAdjusted(true);
     await calculateFee(pinLocation.lat, pinLocation.lng);
+  };
+
+  const handleResetPin = () => {
+    setPinAdjusted(false);
+    setPinLocation(null);
+    setEstimatedFee(null);
   };
 
   const handleChange = (e) => {
@@ -229,12 +237,11 @@ const NewOrderPage = () => {
         delivery_fee: DELIVERY_FEE,
         total_amount: DELIVERY_FEE,
         payment_method: form.product_payment_method,
-        special_instructions: JSON.stringify({
-          ...(form.product_payment_type === 'DELIVERY' && { product_value: PRODUCT_VALUE }),
-          product_payment_type: form.product_payment_type,
-          product_payment_method: form.product_payment_method,
-          change_for: form.change_for || null,
-        }),
+        special_instructions: form.special_instructions || '',
+        product_payment_type: form.product_payment_type,
+        product_payment_method: form.product_payment_method,
+        change_for: form.change_for || null,
+        ...(form.product_payment_type === 'DELIVERY' && { product_value: PRODUCT_VALUE }),
       };
       
       // Incluir coordenadas do pino se disponíveis
@@ -394,18 +401,27 @@ const NewOrderPage = () => {
                 </div>
               )}
             </div>
-            <button
-              type="button"
-              onClick={calculateFee}
-              disabled={calculatingFee}
-              style={{
-                width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.375rem',
-                border: 'none', background: calculatingFee ? '#94a3b8' : '#0d9488', color: 'white',
-                fontSize: '0.8125rem', fontWeight: 600, cursor: calculatingFee ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {calculatingFee ? 'Calculando...' : 'Calcular Frete'}
-            </button>
+            {!pinAdjusted ? (
+              <button
+                type="button"
+                onClick={calculateFee}
+                disabled={calculatingFee}
+                style={{
+                  width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.375rem',
+                  border: 'none', background: calculatingFee ? '#94a3b8' : '#0d9488', color: 'white',
+                  fontSize: '0.8125rem', fontWeight: 600, cursor: calculatingFee ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {calculatingFee ? 'Calculando...' : 'Calcular Frete'}
+              </button>
+            ) : (
+              <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#dcfce7', borderRadius: '0.375rem', border: '1px solid #86efac', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#166534', fontWeight: 500 }}>✓ Local confirmado no mapa</span>
+                <button type="button" onClick={handleResetPin} style={{ fontSize: '0.75rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                  Recalcular
+                </button>
+              </div>
+            )}
             {estimatedFee && pinLocation && (
               <button
                 type="button"
@@ -420,7 +436,7 @@ const NewOrderPage = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
                 }}
               >
-                <Map size={14} /> Ajustar Local no Mapa
+                <Map size={14} /> {pinAdjusted ? 'Ajustar Novamente' : 'Ajustar Local no Mapa'}
               </button>
             )}
           </div>
