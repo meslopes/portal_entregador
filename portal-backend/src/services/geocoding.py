@@ -154,14 +154,19 @@ def geocode_with_photon(address, city_hint=None):
             'q': query,
             'limit': 5
         }
+        headers = {
+            'User-Agent': 'muv.log/1.0 (sistema de delivery - contato@muvlog.com.br)',
+            'Accept': 'application/json'
+        }
         
-        response = requests.get(url, params=params, timeout=5)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         logger.info(f"[PHOTON] Status: {response.status_code}")
         
         if response.status_code != 200:
             logger.error(f"[PHOTON] Erro HTTP {response.status_code}: {response.text[:200]}")
             return None
         
+        logger.info(f"[PHOTON] Resposta recebida, tamanho: {len(response.text)} bytes")
         data = response.json()
         
         if data.get('features') and len(data['features']) > 0:
@@ -268,7 +273,13 @@ def geocode_address(address, city_hint=None):
                 'addressdetails': 1
             }
 
-            response = requests.get(url, params=params, headers=headers, timeout=5)
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+            logger.info(f"[NOMINATIM] Status: {response.status_code}, Tamanho: {len(response.text)} bytes")
+            
+            if response.status_code != 200:
+                logger.error(f"[NOMINATIM] Erro HTTP {response.status_code}: {response.text[:200]}")
+                continue
+            
             data = response.json()
 
             if data and len(data) > 0:
