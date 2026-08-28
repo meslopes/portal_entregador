@@ -133,6 +133,7 @@ def geocode_with_photon(address, city_hint=None):
     import re
     
     if not address:
+        logger.warning("[PHOTON] Endereco vazio")
         return None
     
     # Limpa o endereco
@@ -145,6 +146,8 @@ def geocode_with_photon(address, city_hint=None):
     if city_hint:
         query = f"{clean}, {city_hint}"
     
+    logger.info(f"[PHOTON] Buscando: '{query}' (original: '{address}')")
+    
     try:
         url = "https://photon.komoot.io/api/"
         params = {
@@ -153,6 +156,12 @@ def geocode_with_photon(address, city_hint=None):
         }
         
         response = requests.get(url, params=params, timeout=5)
+        logger.info(f"[PHOTON] Status: {response.status_code}")
+        
+        if response.status_code != 200:
+            logger.error(f"[PHOTON] Erro HTTP {response.status_code}: {response.text[:200]}")
+            return None
+        
         data = response.json()
         
         if data.get('features') and len(data['features']) > 0:
@@ -217,11 +226,13 @@ def geocode_address(address, city_hint=None):
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
 
     # TENTAR PHOTON PRIMEIRO (melhor busca para endereços brasileiros)
+    logger.info(f"[GEOCODE] Iniciando busca para: '{address}' (city_hint: {city_hint})")
     photon_result = geocode_with_photon(address, city_hint)
     if photon_result:
+        logger.info(f"[GEOCODE] Photon encontrou: {photon_result['latitude']}, {photon_result['longitude']}")
         return photon_result
     
-    logger.info("Photon falhou, tentando Nominatim...")
+    logger.info("[GEOCODE] Photon falhou, tentando Nominatim...")
 
     # Lista de formatacoes para tentar (ordem importa)
     formats = []
@@ -244,8 +255,10 @@ def geocode_address(address, city_hint=None):
             extracted_city = city_match.group(1).strip()
             formats.append(f"{clean}, {extracted_city}, Brasil")
 
-    for fmt in formats:
+    logger.info(f"[GEOCODE] Tentando Nominatim com {len(formats)} formatos...")
+    for i, fmt in enumerate(formats):
         try:
+            logger.info(f"[NOMINATIM] Tentativa {i+1}: '{fmt}'")
             url = "https://nominatim.openstreetmap.org/search"
             params = {
                 'q': fmt,
@@ -264,15 +277,17 @@ def geocode_address(address, city_hint=None):
                     'longitude': float(data[0]['lon']),
                     'display_name': data[0].get('display_name', '')
                 }
-                logger.info(f"Geocodificacao OK: '{fmt}' => {result['latitude']}, {result['longitude']}")
+                logger.info(f"[NOMINATIM] OK: '{fmt}' => {result['latitude']}, {result['longitude']}")
                 return result
+            else:
+                logger.info(f"[NOMINATIM] Sem resultados para: '{fmt}'")
 
         except Exception as e:
-            logger.error(f"Erro na geocodificacao para '{fmt}': {e}")
+            logger.error(f"[NOMINATIM] Erro para '{fmt}': {e}")
             continue
 
     # Fallback: retorna coordenadas da cidade com flag is_approximate
-    # O frontend vai mostrar mapa para o usuário ajustar o pino manualmente
+    logger.warning(f"[GEOCODE] TODOS os servicos falharam para '{address}'")
     city_for_fallback = city_hint
     if not city_for_fallback:
         city_match = re.search(r',\s*([^-]+?)\s*-\s*[A-Z]{2}', clean)
@@ -283,7 +298,7 @@ def geocode_address(address, city_hint=None):
         city_key = city_for_fallback.lower().strip()
         if city_key in CITY_COORDS:
             coords = CITY_COORDS[city_key]
-            logger.warning(f"Geocodificacao falhou para '{address}', retornando centro de {city_for_fallback} como aproximacao inicial")
+            logger.warning(f"[FALLBACK] Usando centro de {city_for_fallback}: {coords['lat']}, {coords['lng']}")
             return {
                 'latitude': coords['lat'],
                 'longitude': coords['lng'],
