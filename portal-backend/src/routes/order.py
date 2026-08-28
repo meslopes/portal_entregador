@@ -1611,13 +1611,17 @@ def get_active_orders():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@order_bp.route('/test-geocode', methods=['POST'])
+@order_bp.route('/test-geocode', methods=['GET', 'POST'])
 def test_geocode():
     """Endpoint para testar geocodificação diretamente"""
     try:
-        data = request.get_json()
-        address = data.get('address', '')
-        city = data.get('city', '')
+        if request.method == 'GET':
+            address = request.args.get('address', 'Rua Julio de Castilhos, 100 - Centro, Capao da Canoa - RS')
+            city = request.args.get('city', 'Capao da Canoa')
+        else:
+            data = request.get_json()
+            address = data.get('address', '')
+            city = data.get('city', '')
         
         from src.services.geocoding import geocode_address, geocode_with_photon
         
