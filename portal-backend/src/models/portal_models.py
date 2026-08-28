@@ -635,7 +635,6 @@ class Order(db.Model):
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relacionamentos
-    delivery_address = db.relationship('Address', foreign_keys=[delivery_address_id], lazy='joined')
     delivery = db.relationship('Delivery', backref='order', uselist=False, cascade='all, delete-orphan')
 
     # Índices para performance
