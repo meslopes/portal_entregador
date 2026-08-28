@@ -246,8 +246,8 @@ const NewOrderPage = () => {
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + (form.delivery_complement ? ' - ' + form.delivery_complement : '');
       const DELIVERY_FEE = estimatedFee.delivery_fee || 0;
 
-      // Itens do pedido (produtos, não o frete)
-      const orderItems = [];
+      // Itens do pedido (frete não entra como item para não duplicar)
+      const orderItems = [{ name: 'Entrega', quantity: 1, price: 0 }];
       if (form.product_payment_type === 'DELIVERY' && PRODUCT_VALUE > 0) {
         orderItems.push({ name: 'Produtos', quantity: 1, price: PRODUCT_VALUE });
       }
