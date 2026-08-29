@@ -218,7 +218,7 @@ def create_route():
 
         # Vincular pedidos à rota (sem atribuir entregador)
         for order in orders:
-            order.route_id = route.id
+            order.own_driver_route_id = route.id
 
         db.session.commit()
 
@@ -268,6 +268,7 @@ def assign_driver_to_route(route_id):
             if order:
                 order.assigned_to_own_driver = True
                 order.establishment_driver_id = driver_id
+                order.own_driver_route_id = route.id
                 
                 # Calcular ganho do entregador para este pedido
                 if restaurant:
@@ -398,7 +399,7 @@ def add_orders_to_route(route_id):
                 })
                 
                 # Vincular pedido à rota
-                order.route_id = route.id
+                order.own_driver_route_id = route.id
                 
                 # Se a rota já tem entregador, atribuir e calcular ganhos
                 if route.establishment_driver_id:
@@ -649,7 +650,7 @@ def reject_route(route_id):
         for stop in route.stops:
             order = Order.query.get(stop.order_id)
             if order:
-                order.route_id = None
+                order.own_driver_route_id = None
                 # Não desvincular o entregador - estabelecimento pode reatribuir
         
         db.session.commit()

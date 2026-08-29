@@ -966,6 +966,10 @@ def create_app(config_name=None):
             db.session.execute(db.text(
                 "ALTER TABLE own_driver_routes ALTER COLUMN establishment_driver_id DROP NOT NULL"
             ))
+            # Adicionar coluna own_driver_route_id em orders
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'own_driver_route_id') THEN ALTER TABLE orders ADD COLUMN own_driver_route_id INTEGER REFERENCES own_driver_routes(id); END IF; END $$"
+            ))
             db.session.commit()
         except Exception:
             db.session.rollback()
