@@ -8687,7 +8687,74 @@ def list_establishment_drivers():
         return jsonify({'error': str(e)}), 500
 
 
-
+@admin_bp.route('/establishment/orders', methods=['GET'])
+@jwt_required()
+@client_or_admin_required
+def get_establishment_orders():
+    """Lista pedidos do estabelecimento (para CLIENT e ADMIN)"""
+    try:
+        restaurant_id = request.args.get('restaurant_id')
+        status_filter = request.args.get('status', '')
+        
+        if not restaurant_id:
+            return jsonify({'error': 'restaurant_id é obrigatório'}), 400
+        
+        query = Order.query.filter_by(restaurant_id=int(restaurant_id))
+        
+        # Filtrar por status se fornecido
+        if status_filter:
+            statuses = [s.strip().upper() for s in status_filter.split(',')]
+            status_enums = []
+            for s in statuses:
+                try:
+                    status_enums.append(OrderStatus[s])
+                except KeyError:
+                    pass
+            if status_enums:
+                query = query.filter(Order.status.in_(status_enums))
+        
+        orders = query.order_by(Order.created_at.desc()).limit(100).all()
+        
+        # Carregar relacionamentos
+        result = []
+        for order in orders:
+            order_dict = order.to_dict()
+            # Adicionar informações do cliente
+            if order.customer:
+                order_dict['customer'] = {
+                    'id': order.customer.id,
+                    'name': order.customer.name,
+                    'phone': order.customer.phone
+                }
+            # Adicionar endereço de entrega
+            if order.delivery_address:
+                order_dict['delivery_address'] = {
+                    'street': order.delivery_address.street,
+                    'neighborhood': order.delivery_address.neighborhood,
+                    'city': order.delivery_address.city,
+                    'state': order.delivery_address.state,
+                    'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
+                    'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None
+                }
+            # Adicionar informações do entregador da plataforma
+            if order.driver_id:
+                driver = Driver.query.get(order.driver_id)
+                if driver:
+                    order_dict['driver'] = {
+                        'id': driver.id,
+                        'name': f"{driver.user.first_name} {driver.user.last_name}" if driver.user else 'N/A',
+                        'phone': driver.user.phone if driver.user else None
+                    }
+            result.append(order_dict)
+        
+        return jsonify({
+            'orders': result,
+            'total': len(result)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao listar pedidos do estabelecimento: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @admin_bp.route('/establishment-drivers', methods=['POST'])

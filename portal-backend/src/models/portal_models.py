@@ -1152,7 +1152,6 @@ class OwnDriverRoute(db.Model):
     __tablename__ = 'own_driver_routes'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50))  # Nome/identificador da rota (ex: "Rota 1", "Manhã")
     establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=False)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     status = db.Column(db.String(20), default='PENDING')  # PENDING, ACTIVE, COMPLETED, CANCELLED
@@ -1170,7 +1169,7 @@ class OwnDriverRoute(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'name': self.name,
+            'name': f'Rota #{self.id}',
             'establishment_driver_id': self.establishment_driver_id,
             'driver_name': self.driver.name if self.driver else None,
             'restaurant_id': self.restaurant_id,

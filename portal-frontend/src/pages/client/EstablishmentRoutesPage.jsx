@@ -32,7 +32,7 @@ const EstablishmentRoutesPage = () => {
       
       const [routesRes, ordersRes, driversRes] = await Promise.all([
         api.get('/api/routes/establishment/list'),
-        restaurantId ? api.get(`/api/admin/orders?status=PENDING,ACCEPTED,SCHEDULED&restaurant_id=${restaurantId}`) : Promise.resolve({ data: { orders: [] } }),
+        restaurantId ? api.get(`/api/admin/establishment/orders?status=PENDING,ACCEPTED,SCHEDULED&restaurant_id=${restaurantId}`) : Promise.resolve({ data: { orders: [] } }),
         restaurantId ? api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`) : Promise.resolve({ data: { drivers: [] } })
       ]);
       setRoutes(routesRes.data.routes || []);
