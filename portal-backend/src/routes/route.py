@@ -111,152 +111,11 @@ def haversine_distance(lat1, lng1, lat2, lng2):
 
 def auto_create_or_update_route(establishment_driver_id, restaurant_id):
     """
-    Cria ou atualiza automaticamente uma rota para um entregador próprio.
-    Chamada quando um pedido é atribuído ao entregador.
+    DESABILITADO - Rotas agora são criadas manualmente pelo estabelecimento.
+    Mantido para compatibilidade mas não faz nada.
     """
-    try:
-        # Buscar todos os pedidos ativos atribuídos ao entregador
-        active_orders = Order.query.filter(
-            Order.establishment_driver_id == establishment_driver_id,
-            Order.assigned_to_own_driver == True,
-            Order.status.in_([OrderStatus.ACCEPTED, OrderStatus.PICKED_UP])
-        ).all()
-        
-        # Se tem menos de 2 pedidos, não criar rota
-        if len(active_orders) < 2:
-            logger.info(f"[ROUTE-AUTO] Menos de 2 pedidos ativos para entregador {establishment_driver_id}, sem rota")
-            return None
-        
-        # Verificar se já existe uma rota ativa para este entregador
-        existing_route = OwnDriverRoute.query.filter(
-            OwnDriverRoute.establishment_driver_id == establishment_driver_id,
-            OwnDriverRoute.status == 'ACTIVE'
-        ).first()
-        
-        if existing_route:
-            # Atualizar rota existente - adicionar pedidos novos
-            existing_order_ids = {stop.order_id for stop in existing_route.stops}
-            new_orders = [o for o in active_orders if o.id not in existing_order_ids]
-            
-            if not new_orders:
-                logger.info(f"[ROUTE-AUTO] Rota {existing_route.id} já contém todos os pedidos")
-                return existing_route
-            
-            # Adicionar novas paradas à rota
-            for order in new_orders:
-                # Parada de pickup
-                pickup_stop = OwnDriverStop(
-                    route_id=existing_route.id,
-                    order_id=order.id,
-                    stop_order=0,  # Temporário, será reordenado
-                    stop_type='PICKUP',
-                    latitude=order.restaurant.latitude if order.restaurant else None,
-                    longitude=order.restaurant.longitude if order.restaurant else None,
-                    address=order.restaurant.address if order.restaurant else None,
-                    status='PENDING'
-                )
-                db.session.add(pickup_stop)
-                
-                # Parada de delivery
-                delivery_stop = OwnDriverStop(
-                    route_id=existing_route.id,
-                    order_id=order.id,
-                    stop_order=0,  # Temporário, será reordenado
-                    stop_type='DELIVERY',
-                    latitude=order.delivery_address.latitude if order.delivery_address else None,
-                    longitude=order.delivery_address.longitude if order.delivery_address else None,
-                    address=order.delivery_address.street if order.delivery_address else None,
-                    status='PENDING'
-                )
-                db.session.add(delivery_stop)
-            
-            # Flush para ter os IDs das novas paradas
-            db.session.flush()
-            
-            # Re-otimizar TODAS as paradas da rota
-            all_stops_data = []
-            for stop in existing_route.stops:
-                all_stops_data.append({
-                    'stop_id': stop.id,
-                    'order_id': stop.order_id,
-                    'stop_type': stop.stop_type,
-                    'latitude': float(stop.latitude) if stop.latitude else None,
-                    'longitude': float(stop.longitude) if stop.longitude else None,
-                    'address': stop.address,
-                    'status': stop.status
-                })
-            
-            optimized_stops = optimize_stop_order(all_stops_data)
-            
-            # Atualizar ordem das paradas no banco
-            for stop_data in optimized_stops:
-                if 'stop_id' in stop_data:
-                    stop = OwnDriverStop.query.get(stop_data['stop_id'])
-                    if stop:
-                        stop.stop_order = stop_data['stop_order']
-            
-            # Atualizar distância e tempo estimado
-            _update_route_stats(existing_route)
-            
-            logger.info(f"[ROUTE-AUTO] Rota {existing_route.id} atualizada com {len(new_orders)} novos pedidos (re-otimizada)")
-            return existing_route
-        else:
-            # Criar nova rota
-            route = OwnDriverRoute(
-                establishment_driver_id=establishment_driver_id,
-                restaurant_id=restaurant_id,
-                status='ACTIVE',
-                started_at=datetime.utcnow()
-            )
-            db.session.add(route)
-            db.session.flush()
-            
-            # Coletar dados das paradas para otimização
-            stops_data = []
-            for order in active_orders:
-                # Pickup
-                stops_data.append({
-                    'order_id': order.id,
-                    'stop_type': 'PICKUP',
-                    'latitude': float(order.restaurant.latitude) if order.restaurant and order.restaurant.latitude else None,
-                    'longitude': float(order.restaurant.longitude) if order.restaurant and order.restaurant.longitude else None,
-                    'address': order.restaurant.address if order.restaurant else None,
-                })
-                # Delivery
-                stops_data.append({
-                    'order_id': order.id,
-                    'stop_type': 'DELIVERY',
-                    'latitude': float(order.delivery_address.latitude) if order.delivery_address and order.delivery_address.latitude else None,
-                    'longitude': float(order.delivery_address.longitude) if order.delivery_address and order.delivery_address.longitude else None,
-                    'address': order.delivery_address.street if order.delivery_address else None,
-                })
-            
-            # Otimizar ordem das paradas
-            optimized_stops = optimize_stop_order(stops_data)
-            
-            # Criar paradas no banco com ordem otimizada
-            for stop_data in optimized_stops:
-                stop = OwnDriverStop(
-                    route_id=route.id,
-                    order_id=stop_data['order_id'],
-                    stop_order=stop_data['stop_order'],
-                    stop_type=stop_data['stop_type'],
-                    latitude=stop_data['latitude'],
-                    longitude=stop_data['longitude'],
-                    address=stop_data['address'],
-                    status='PENDING'
-                )
-                db.session.add(stop)
-            
-            # Atualizar distância e tempo estimado
-            _update_route_stats(route)
-            
-            logger.info(f"[ROUTE-AUTO] Nova rota {route.id} criada com {len(active_orders)} pedidos (otimizada)")
-            return route
-        
-    except Exception as e:
-        logger.error(f"[ROUTE-AUTO] Erro ao criar/atualizar rota: {e}")
-        return None
+    logger.info(f"[ROUTE-AUTO] Criação automática desabilitada - rotas são manuais")
+    return None
 
 
 def _update_route_stats(route):
@@ -287,7 +146,7 @@ def _update_route_stats(route):
 @route_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_route():
-    """Cria uma rota com múltiplos pedidos para um entregador próprio"""
+    """Cria uma rota manual com pedidos para um entregador próprio"""
     try:
         user = get_current_user()
         if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
@@ -299,6 +158,7 @@ def create_route():
 
         driver_id = data.get('establishment_driver_id')
         order_ids = data.get('order_ids', [])
+        route_name = data.get('name', f'Rota {datetime.utcnow().strftime("%H:%M")}')
         
         if not driver_id or not order_ids:
             return jsonify({'error': 'Entregador e pedidos são obrigatórios'}), 400
@@ -320,74 +180,48 @@ def create_route():
 
         restaurant_id = restaurant_ids.pop()
 
-        # Criar rota
+        # Criar rota (status PENDING - aguardando entregador ativar)
         route = OwnDriverRoute(
+            name=route_name,
             establishment_driver_id=driver_id,
             restaurant_id=restaurant_id,
-            status='ACTIVE',
-            started_at=datetime.utcnow()
+            status='PENDING'
         )
         db.session.add(route)
         db.session.flush()
 
-        # Criar paradas (pickups no restaurante, deliveries nos clientes)
-        stops = []
-        stop_order = 1
-
-        # Parada de pickup no restaurante
-        restaurant = Restaurant.query.get(restaurant_id)
-        if restaurant:
-            for order in orders:
-                pickup_stop = OwnDriverStop(
-                    route_id=route.id,
-                    order_id=order.id,
-                    stop_order=stop_order,
-                    stop_type='PICKUP',
-                    latitude=restaurant.latitude,
-                    longitude=restaurant.longitude,
-                    address=restaurant.address
-                )
-                db.session.add(pickup_stop)
-                stops.append({
-                    'order_id': order.id,
-                    'stop_type': 'PICKUP',
-                    'latitude': float(restaurant.latitude) if restaurant.latitude else None,
-                    'longitude': float(restaurant.longitude) if restaurant.longitude else None,
-                    'address': restaurant.address
-                })
-                stop_order += 1
-
-        # Paradas de delivery
+        # Criar APENAS paradas de delivery (sem pickup - coleta é no restaurante)
+        stops_data = []
         for order in orders:
             if order.delivery_address:
                 delivery_stop = OwnDriverStop(
                     route_id=route.id,
                     order_id=order.id,
-                    stop_order=stop_order,
+                    stop_order=0,  # Será otimizado depois
                     stop_type='DELIVERY',
                     latitude=order.delivery_address.latitude,
                     longitude=order.delivery_address.longitude,
-                    address=f"{order.delivery_address.street}, {order.delivery_address.neighborhood}"
+                    address=order.delivery_address.street,
+                    neighborhood=order.delivery_address.neighborhood,
+                    city=order.delivery_address.city
                 )
                 db.session.add(delivery_stop)
-                stops.append({
+                stops_data.append({
                     'order_id': order.id,
                     'stop_type': 'DELIVERY',
                     'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
                     'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
-                    'address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}"
+                    'address': order.delivery_address.street
                 })
-                stop_order += 1
 
         # Otimizar ordem das paradas
-        optimized_stops = optimize_stop_order(stops)
+        optimized_stops = optimize_stop_order(stops_data)
         
         # Atualizar ordem no banco
         for i, stop_data in enumerate(optimized_stops):
             stop = OwnDriverStop.query.filter_by(
                 route_id=route.id,
-                order_id=stop_data['order_id'],
-                stop_type=stop_data['stop_type']
+                order_id=stop_data['order_id']
             ).first()
             if stop:
                 stop.stop_order = i + 1
@@ -397,20 +231,102 @@ def create_route():
             order.route_id = route.id
             order.assigned_to_own_driver = True
             order.establishment_driver_id = driver_id
-            if order.status == OrderStatus.PENDING:
-                order.status = OrderStatus.OFFERED
-                order.offered_at = datetime.utcnow()
 
         db.session.commit()
 
         return jsonify({
-            'message': f'Rota criada com {len(orders)} pedidos',
+            'message': f'Rota "{route_name}" criada com {len(orders)} entregas',
             'route': route.to_dict()
         }), 201
 
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao criar rota: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@route_bp.route('/establishment/list', methods=['GET'])
+@jwt_required()
+def list_establishment_routes():
+    """Lista todas as rotas do estabelecimento"""
+    try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
+        # Buscar restaurante do usuário
+        from src.models.portal_models import Customer
+        customer = Customer.query.filter_by(user_id=user.id).first()
+        if not customer:
+            return jsonify({'routes': []}), 200
+
+        restaurant = Restaurant.query.filter_by(name=customer.name).first()
+        if not restaurant:
+            return jsonify({'routes': []}), 200
+
+        routes = OwnDriverRoute.query.filter_by(
+            restaurant_id=restaurant.id
+        ).order_by(OwnDriverRoute.created_at.desc()).all()
+
+        return jsonify({'routes': [r.to_dict() for r in routes]}), 200
+
+    except Exception as e:
+        logger.error(f"Erro ao listar rotas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@route_bp.route('/<int:route_id>/activate', methods=['POST'])
+@jwt_required()
+def activate_route(route_id):
+    """Entregador ativa uma rota (quando vai sair para entregar)"""
+    try:
+        route = OwnDriverRoute.query.get(route_id)
+        if not route:
+            return jsonify({'error': 'Rota não encontrada'}), 404
+
+        if route.status != 'PENDING':
+            return jsonify({'error': 'Rota já foi ativada ou concluída'}), 400
+
+        route.status = 'ACTIVE'
+        route.started_at = datetime.utcnow()
+
+        # Re-otimizar paradas (garantir ordem correta)
+        stops_data = []
+        for stop in route.stops:
+            stops_data.append({
+                'stop_id': stop.id,
+                'order_id': stop.order_id,
+                'stop_type': stop.stop_type,
+                'latitude': float(stop.latitude) if stop.latitude else None,
+                'longitude': float(stop.longitude) if stop.longitude else None,
+                'address': stop.address
+            })
+
+        optimized_stops = optimize_stop_order(stops_data)
+        
+        for stop_data in optimized_stops:
+            if 'stop_id' in stop_data:
+                stop = OwnDriverStop.query.get(stop_data['stop_id'])
+                if stop:
+                    stop.stop_order = stop_data['stop_order']
+
+        # Atualizar status dos pedidos
+        for stop in route.stops:
+            order = Order.query.get(stop.order_id)
+            if order and order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
+                order.status = OrderStatus.ACCEPTED
+                order.accepted_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Rota "{route.name}" ativada',
+            'route': route.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao ativar rota: {e}")
         return jsonify({'error': str(e)}), 500
 
 

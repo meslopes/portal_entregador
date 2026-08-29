@@ -27,6 +27,7 @@ import ClientInvoicePage from '@/pages/client/ClientInvoicePage';
 import ClientIntegrationsPage from '@/pages/client/ClientIntegrationsPage';
 import ClientProfilePage from '@/pages/client/ClientProfilePage';
 import EstablishmentDriversPage from '@/pages/client/EstablishmentDriversPage';
+import EstablishmentRoutesPage from '@/pages/client/EstablishmentRoutesPage';
 import OwnDriverFinancialPage from '@/pages/client/OwnDriverFinancialPage';
 import OwnDriverMetricsPage from '@/pages/client/OwnDriverMetricsPage';
 import OwnDriverLoginPage from '@/pages/own-driver/OwnDriverLoginPage';
@@ -335,6 +336,16 @@ function App() {
               <ProtectedRoute>
                 <ClientLayout>
                   <ClientProfilePage />
+                </ClientLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client/routes"
+            element={
+              <ProtectedRoute>
+                <ClientLayout>
+                  <EstablishmentRoutesPage />
                 </ClientLayout>
               </ProtectedRoute>
             }

@@ -1139,9 +1139,10 @@ class OwnDriverRoute(db.Model):
     __tablename__ = 'own_driver_routes'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(50))  # Nome/identificador da rota (ex: "Rota 1", "Manhã")
     establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=False)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
-    status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, COMPLETED, CANCELLED
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, ACTIVE, COMPLETED, CANCELLED
     total_distance_km = db.Column(db.Numeric(10, 2))
     total_duration_min = db.Column(db.Numeric(10, 2))
     started_at = db.Column(db.DateTime)
@@ -1156,7 +1157,9 @@ class OwnDriverRoute(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'name': self.name,
             'establishment_driver_id': self.establishment_driver_id,
+            'driver_name': self.driver.name if self.driver else None,
             'restaurant_id': self.restaurant_id,
             'status': self.status,
             'total_distance_km': float(self.total_distance_km) if self.total_distance_km else None,
@@ -1164,6 +1167,7 @@ class OwnDriverRoute(db.Model):
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'created_at': self.created_at.isoformat(),
+            'stops_count': len(self.stops),
             'stops': [s.to_dict() for s in self.stops]
         }
 
@@ -1180,6 +1184,8 @@ class OwnDriverStop(db.Model):
     latitude = db.Column(db.Numeric(10, 8))
     longitude = db.Column(db.Numeric(11, 8))
     address = db.Column(db.String(500))
+    neighborhood = db.Column(db.String(100))
+    city = db.Column(db.String(100))
     status = db.Column(db.String(20), default='PENDING')  # PENDING, COMPLETED, SKIPPED
     arrived_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
@@ -1193,11 +1199,17 @@ class OwnDriverStop(db.Model):
             'id': self.id,
             'route_id': self.route_id,
             'order_id': self.order_id,
+            'order_number': self.order.order_number if self.order else None,
+            'customer_name': self.order.customer.name if self.order and self.order.customer else None,
+            'customer_phone': self.order.customer.phone if self.order and self.order.customer else None,
             'stop_order': self.stop_order,
             'stop_type': self.stop_type,
             'latitude': float(self.latitude) if self.latitude else None,
             'longitude': float(self.longitude) if self.longitude else None,
             'address': self.address,
+            'neighborhood': self.neighborhood,
+            'city': self.city,
+            'full_address': f"{self.address}, {self.neighborhood}" if self.neighborhood else self.address,
             'status': self.status,
             'arrived_at': self.arrived_at.isoformat() if self.arrived_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,

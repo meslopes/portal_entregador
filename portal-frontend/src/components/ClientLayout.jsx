@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus, DollarSign, Receipt, Globe, Users, BarChart3, Wallet
+  Home, Package, Clock, User, LogOut, Menu, X, ChevronDown, Plus, DollarSign, Receipt, Globe, Users, BarChart3, Wallet, Route
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -52,6 +52,7 @@ const ClientLayout = ({ children }) => {
   // Menu de entregadores próprios (apenas para quem tem has_own_drivers)
   const ownDriverNavigation = [
     { name: 'Meus Entregadores', href: '/client/drivers', icon: Users },
+    { name: 'Rotas', href: '/client/routes', icon: Route },
     { name: 'Pagamentos Entregadores', href: '/client/drivers/financial', icon: DollarSign },
     { name: 'Pagamentos Próprios', href: '/client/payment-reports', icon: Wallet },
     { name: 'Desempenho Entregadores', href: '/client/drivers/metrics', icon: BarChart3 },
