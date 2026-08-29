@@ -1184,8 +1184,6 @@ class OwnDriverStop(db.Model):
     latitude = db.Column(db.Numeric(10, 8))
     longitude = db.Column(db.Numeric(11, 8))
     address = db.Column(db.String(500))
-    neighborhood = db.Column(db.String(100))
-    city = db.Column(db.String(100))
     status = db.Column(db.String(20), default='PENDING')  # PENDING, COMPLETED, SKIPPED
     arrived_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
@@ -1207,9 +1205,6 @@ class OwnDriverStop(db.Model):
             'latitude': float(self.latitude) if self.latitude else None,
             'longitude': float(self.longitude) if self.longitude else None,
             'address': self.address,
-            'neighborhood': self.neighborhood,
-            'city': self.city,
-            'full_address': f"{self.address}, {self.neighborhood}" if self.neighborhood else self.address,
             'status': self.status,
             'arrived_at': self.arrived_at.isoformat() if self.arrived_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,

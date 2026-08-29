@@ -201,9 +201,7 @@ def create_route():
                     stop_type='DELIVERY',
                     latitude=order.delivery_address.latitude,
                     longitude=order.delivery_address.longitude,
-                    address=order.delivery_address.street,
-                    neighborhood=order.delivery_address.neighborhood,
-                    city=order.delivery_address.city
+                    address=order.delivery_address.street
                 )
                 db.session.add(delivery_stop)
                 stops_data.append({

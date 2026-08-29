@@ -25,10 +25,15 @@ const EstablishmentRoutesPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Buscar restaurant_id do usuário logado
+      const userRes = await api.get('/api/user/profile');
+      const restaurantId = userRes.data.restaurant_id;
+      
       const [routesRes, ordersRes, driversRes] = await Promise.all([
         api.get('/api/routes/establishment/list'),
-        api.get('/api/admin/orders?status=PENDING,ACCEPTED,SCHEDULED'),
-        api.get('/api/admin/establishment-drivers')
+        restaurantId ? api.get(`/api/admin/orders?status=PENDING,ACCEPTED,SCHEDULED&restaurant_id=${restaurantId}`) : Promise.resolve({ data: { orders: [] } }),
+        restaurantId ? api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`) : Promise.resolve({ data: { drivers: [] } })
       ]);
       setRoutes(routesRes.data.routes || []);
       setOrders(ordersRes.data.orders || []);
