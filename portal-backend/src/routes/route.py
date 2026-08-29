@@ -466,6 +466,48 @@ def add_orders_to_route(route_id):
         return jsonify({'error': str(e)}), 500
 
 
+@route_bp.route('/<int:route_id>', methods=['DELETE'])
+@jwt_required()
+def delete_route(route_id):
+    """Exclui uma rota"""
+    try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
+        route = OwnDriverRoute.query.get(route_id)
+        if not route:
+            return jsonify({'error': 'Rota não encontrada'}), 404
+
+        # Não permitir excluir rotas ativas
+        if route.status == 'ACTIVE':
+            return jsonify({'error': 'Não é possível excluir uma rota ativa'}), 400
+
+        # Desvincular pedidos da rota
+        for stop in route.stops:
+            order = Order.query.get(stop.order_id)
+            if order:
+                order.own_driver_route_id = None
+                # Se o pedido foi atribuído apenas por esta rota, desvincular entregador
+                if order.assigned_to_own_driver and order.establishment_driver_id == route.establishment_driver_id:
+                    order.assigned_to_own_driver = False
+                    order.establishment_driver_id = None
+
+        # Excluir paradas e rota
+        for stop in route.stops:
+            db.session.delete(stop)
+        
+        db.session.delete(route)
+        db.session.commit()
+
+        return jsonify({'message': 'Rota excluída com sucesso'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao excluir rota: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @route_bp.route('/establishment/list', methods=['GET'])
 @jwt_required()
 def list_establishment_routes():
