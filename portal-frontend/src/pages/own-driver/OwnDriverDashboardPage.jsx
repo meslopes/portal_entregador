@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, Clock, DollarSign, Star, TrendingUp,
   MapPin, Truck, CheckCircle, AlertCircle, Power,
-  Navigation, RefreshCw, Route
+  Navigation, RefreshCw, Route, Bell
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
@@ -27,6 +27,15 @@ const OwnDriverDashboardPage = () => {
   const [error, setError] = useState('');
   const [isOnline, setIsOnline] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [pendingRoutes, setPendingRoutes] = useState(0);
+  const prevPendingRoutes = useRef(0);
+  const audioRef = useRef(null);
+
+  // Carregar som de notificação
+  useEffect(() => {
+    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI+Hf3R0gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiA==');
+    audioRef.current.volume = 0.8;
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('own_driver_token');
@@ -40,6 +49,22 @@ const OwnDriverDashboardPage = () => {
     const interval = setInterval(() => loadData(true), 20000);
     return () => clearInterval(interval);
   }, []);
+
+  // Tocar som quando novas rotas pendentes aparecem
+  useEffect(() => {
+    if (pendingRoutes > prevPendingRoutes.current && prevPendingRoutes.current > 0) {
+      try {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(() => {});
+        }
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200]);
+        }
+      } catch (e) {}
+    }
+    prevPendingRoutes.current = pendingRoutes;
+  }, [pendingRoutes]);
 
   // Enviar localização a cada 15 segundos quando online
   useEffect(() => {
@@ -89,8 +114,11 @@ const OwnDriverDashboardPage = () => {
       setDriver(statsRes.data.driver);
       setIsOnline(statsRes.data.driver?.is_online || false);
       
-      // Extrair pedidos das rotas ativas
+      // Extrair pedidos das rotas ativas e contar pendentes
       const routes = routesRes.data.routes || [];
+      const pending = routes.filter(r => r.status === 'PENDING').length;
+      setPendingRoutes(pending);
+      
       const ordersFromRoutes = [];
       routes.forEach(route => {
         if (route.stops) {
@@ -213,6 +241,28 @@ const OwnDriverDashboardPage = () => {
           {toggling ? 'Alterando...' : isOnline ? 'Você está ONLINE' : 'Você está OFFLINE'}
         </button>
       </header>
+
+      {/* Notificação de rotas pendentes */}
+      {pendingRoutes > 0 && (
+        <div 
+          onClick={() => navigate('/own-driver/routes')}
+          style={{
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            color: 'white', padding: '0.875rem 1rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            cursor: 'pointer', animation: 'pulse 1.5s ease-in-out infinite'
+          }}
+        >
+          <Bell size={20} style={{ animation: 'ring 0.5s ease-in-out' }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+              {pendingRoutes} rota{pendingRoutes > 1 ? 's' : ''} aguardando aceite!
+            </p>
+            <p style={{ fontSize: '0.75rem', opacity: 0.9 }}>Toque para ver e aceitar</p>
+          </div>
+          <span style={{ fontSize: '1.25rem' }}>→</span>
+        </div>
+      )}
 
       <div style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto', marginTop: '-1rem' }}>
         {/* Erro */}
@@ -401,5 +451,25 @@ const ActionButton = ({ icon, label, onClick, color }) => (
     <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>{label}</span>
   </button>
 );
+
+// CSS Animations
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+  @keyframes ring {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(15deg); }
+    50% { transform: rotate(-15deg); }
+    75% { transform: rotate(10deg); }
+    100% { transform: rotate(0deg); }
+  }
+`;
+if (typeof document !== 'undefined' && !document.querySelector('#own-driver-animations')) {
+  styleSheet.id = 'own-driver-animations';
+  document.head.appendChild(styleSheet);
+}
 
 export default OwnDriverDashboardPage;

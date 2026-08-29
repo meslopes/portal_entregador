@@ -1,31 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Route, ArrowLeft, MapPin, Package, CheckCircle, Clock,
-  Navigation, AlertCircle
+  Navigation, AlertCircle, Bell
 } from 'lucide-react';
 import api from '@/lib/api';
+
+// URL do som de notificação (beep curto)
+const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI+Hf3R0goqOjomDe3V5g4uQj4qDend7hIyRkIuGe3d6g4uQj4qDe3d6g4yRj4qEe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiA==';
 
 const OwnDriverRoutesPage = () => {
   const navigate = useNavigate();
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pendingCount, setPendingCount] = useState(0);
+  const prevPendingCount = useRef(0);
+  const audioRef = useRef(null);
 
-  useEffect(() => { loadRoutes(); }, []);
+  // Carregar som de notificação
+  useEffect(() => {
+    audioRef.current = new Audio(NOTIFICATION_SOUND);
+    audioRef.current.volume = 0.8;
+  }, []);
 
-  const loadRoutes = async () => {
+  // Auto-refresh a cada 15 segundos
+  useEffect(() => {
+    loadRoutes();
+    const interval = setInterval(() => loadRoutes(true), 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Tocar som quando novas rotas pendentes aparecem
+  useEffect(() => {
+    const newPending = routes.filter(r => r.status === 'PENDING').length;
+    if (newPending > prevPendingCount.current && prevPendingCount.current > 0) {
+      playNotification();
+    }
+    prevPendingCount.current = newPending;
+    setPendingCount(newPending);
+  }, [routes]);
+
+  const playNotification = () => {
     try {
-      setLoading(true);
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {});
+      }
+      // Vibração no celular (se suportado)
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    } catch (e) {
+      // Silenciar erro de áudio
+    }
+  };
+
+  const loadRoutes = async (isRefresh = false) => {
+    try {
+      if (!isRefresh) setLoading(true);
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get('/api/routes/own-driver/active', { headers });
       setRoutes(res.data.routes || []);
     } catch (err) {
       console.error('Erro ao carregar rotas:', err);
-      setError('Erro ao carregar rotas');
+      if (!isRefresh) setError('Erro ao carregar rotas');
     } finally {
-      setLoading(false);
+      if (!isRefresh) setLoading(false);
     }
   };
 
@@ -78,14 +120,30 @@ const OwnDriverRoutesPage = () => {
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
       {/* Header */}
       <header style={{
-        background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
-        color: 'white', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem'
+        background: pendingCount > 0 
+          ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+          : 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+        color: 'white', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
+        transition: 'background 0.3s'
       }}>
         <button onClick={() => navigate('/own-driver')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
           <ArrowLeft size={24} />
         </button>
         <Route size={20} />
         <h1 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Minhas Rotas</h1>
+        {pendingCount > 0 && (
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            marginLeft: 'auto', padding: '0.375rem 0.75rem', 
+            borderRadius: '9999px', background: 'rgba(255,255,255,0.25)',
+            animation: 'pulse 1.5s ease-in-out infinite'
+          }}>
+            <Bell size={16} style={{ animation: 'ring 0.5s ease-in-out' }} />
+            <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+              {pendingCount} rota{pendingCount > 1 ? 's' : ''} aguardando
+            </span>
+          </div>
+        )}
       </header>
 
       <div style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -222,6 +280,20 @@ const OwnDriverRoutesPage = () => {
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        @keyframes ring {
+          0% { transform: rotate(0deg); }
+          25% { transform: rotate(15deg); }
+          50% { transform: rotate(-15deg); }
+          75% { transform: rotate(10deg); }
+          100% { transform: rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 };
