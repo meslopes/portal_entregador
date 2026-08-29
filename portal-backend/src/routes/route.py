@@ -182,7 +182,6 @@ def create_route():
 
         # Criar rota (status PENDING - aguardando entregador ativar)
         route = OwnDriverRoute(
-            name=route_name,
             establishment_driver_id=driver_id,
             restaurant_id=restaurant_id,
             status='PENDING'
