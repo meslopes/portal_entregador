@@ -9,12 +9,12 @@ import api from '@/lib/api';
 import { utils } from '@/lib/api';
 
 const STATUS_CONFIG = {
-  OFFERED: { color: '#f59e0b', bg: '#fef3c7', text: 'Oferecido', icon: Clock },
-  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
+  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Na Rota', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
   READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
   PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Truck },
   DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue', icon: CheckCircle },
+  PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Aguardando Rota', icon: Clock },
 };
 
 const OwnDriverDashboardPage = () => {
@@ -80,15 +80,37 @@ const OwnDriverDashboardPage = () => {
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [statsRes, ordersRes] = await Promise.all([
+      const [statsRes, routesRes] = await Promise.all([
         api.get('/api/own-driver/stats', { headers }),
-        api.get('/api/own-driver/orders?status=active', { headers })
+        api.get('/api/routes/own-driver/active', { headers })
       ]);
 
       setStats(statsRes.data.stats);
       setDriver(statsRes.data.driver);
-      setActiveOrders(ordersRes.data.orders || []);
       setIsOnline(statsRes.data.driver?.is_online || false);
+      
+      // Extrair pedidos das rotas ativas
+      const routes = routesRes.data.routes || [];
+      const ordersFromRoutes = [];
+      routes.forEach(route => {
+        if (route.stops) {
+          route.stops.forEach(stop => {
+            if (stop.order_id && !ordersFromRoutes.find(o => o.id === stop.order_id)) {
+              ordersFromRoutes.push({
+                id: stop.order_id,
+                order_number: stop.order_number || `Pedido #${stop.order_id}`,
+                status: route.status === 'ACTIVE' ? 'ACCEPTED' : 'PENDING',
+                delivery_address: { street: stop.address },
+                customer: { name: stop.customer_name, phone: stop.customer_phone },
+                delivery_fee: 0,
+                route_id: route.id,
+                route_name: route.name
+              });
+            }
+          });
+        }
+      });
+      setActiveOrders(ordersFromRoutes);
 
       const storedRestaurant = localStorage.getItem('own_driver_restaurant');
       if (storedRestaurant) {
@@ -235,12 +257,12 @@ const OwnDriverDashboardPage = () => {
               background: 'white', borderRadius: '0.75rem', padding: '2rem',
               textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
             }}>
-              <Package size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
+              <Route size={40} style={{ color: '#64748b', marginBottom: '0.75rem' }} />
               <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
-                Nenhum pedido ativo
+                Nenhuma rota ativa
               </p>
               <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                {isOnline ? 'Aguardando pedidos...' : 'Fique online para receber pedidos'}
+                {isOnline ? 'Aguardando rotas do estabelecimento...' : 'Fique online para receber rotas'}
               </p>
             </div>
           ) : (
@@ -250,24 +272,6 @@ const OwnDriverDashboardPage = () => {
                   key={order.id}
                   order={order}
                   onClick={() => navigate(`/own-driver/delivery/${order.id}`)}
-                  onAccept={async (orderId) => {
-                    try {
-                      const token = localStorage.getItem('own_driver_token');
-                      await api.post(`/api/own-driver/orders/${orderId}/accept`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                      loadData(true);
-                    } catch (err) {
-                      setError(err.response?.data?.error || 'Erro ao aceitar pedido');
-                    }
-                  }}
-                  onReject={async (orderId) => {
-                    try {
-                      const token = localStorage.getItem('own_driver_token');
-                      await api.post(`/api/own-driver/orders/${orderId}/reject`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                      loadData(true);
-                    } catch (err) {
-                      setError(err.response?.data?.error || 'Erro ao rejeitar pedido');
-                    }
-                  }}
                 />
               ))}
             </div>
@@ -313,19 +317,17 @@ const StatCard = ({ icon, label, value, color }) => (
   </div>
 );
 
-const ActiveOrderCard = ({ order, onClick, onAccept, onReject }) => {
+const ActiveOrderCard = ({ order, onClick }) => {
   const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.ACCEPTED;
   const StatusIcon = config.icon;
-  const isOffered = order.status === 'OFFERED';
 
   return (
     <div
-      onClick={isOffered ? undefined : onClick}
+      onClick={onClick}
       style={{
         background: 'white', borderRadius: '0.75rem', padding: '1rem',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: isOffered ? 'default' : 'pointer',
-        borderLeft: `4px solid ${config.color}`, transition: 'all 0.15s',
-        border: isOffered ? '2px solid #f59e0b' : undefined
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer',
+        borderLeft: `4px solid ${config.color}`, transition: 'all 0.15s'
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -355,29 +357,10 @@ const ActiveOrderCard = ({ order, onClick, onAccept, onReject }) => {
         </div>
       )}
 
-      {/* Botões de aceite/recusa para pedidos oferecidos */}
-      {isOffered && (
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); onAccept(order.id); }}
-            style={{
-              flex: 1, padding: '0.5rem', borderRadius: '0.375rem', border: 'none',
-              background: '#16a34a', color: 'white', fontWeight: 600, fontSize: '0.8125rem',
-              cursor: 'pointer'
-            }}
-          >
-            Aceitar
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onReject(order.id); }}
-            style={{
-              flex: 1, padding: '0.5rem', borderRadius: '0.375rem', border: 'none',
-              background: '#dc2626', color: 'white', fontWeight: 600, fontSize: '0.8125rem',
-              cursor: 'pointer'
-            }}
-          >
-            Rejeitar
-          </button>
+      {/* Indicação de rota */}
+      {order.route_name && (
+        <div style={{ marginTop: '0.5rem', padding: '0.375rem 0.75rem', background: '#dbeafe', borderRadius: '0.375rem', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
+          <span style={{ fontSize: '0.75rem', color: '#1d4ed8' }}>📍 Rota: <strong>{order.route_name}</strong></span>
         </div>
       )}
 
