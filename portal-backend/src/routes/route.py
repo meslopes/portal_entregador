@@ -171,6 +171,13 @@ def create_route():
         if len(restaurant_ids) > 1:
             return jsonify({'error': 'Todos os pedidos devem ser do mesmo restaurante'}), 400
 
+        # Verificar se algum pedido já está em outra rota ativa
+        for order in orders:
+            if order.own_driver_route_id:
+                existing_route = OwnDriverRoute.query.get(order.own_driver_route_id)
+                if existing_route and existing_route.status in ['CREATED', 'PENDING', 'ACTIVE']:
+                    return jsonify({'error': f'Pedido {order.order_number} já está na rota #{existing_route.id}'}), 400
+
         restaurant_id = restaurant_ids.pop()
 
         # Criar rota SEM entregador (status CREATED - aguardando atribuição)
@@ -361,6 +368,12 @@ def add_orders_to_route(route_id):
         for order in orders:
             if order.restaurant_id != route.restaurant_id:
                 return jsonify({'error': f'Pedido {order.order_number} não é do mesmo restaurante da rota'}), 400
+            
+            # Verificar se já está em outra rota ativa
+            if order.own_driver_route_id and order.own_driver_route_id != route_id:
+                existing_route = OwnDriverRoute.query.get(order.own_driver_route_id)
+                if existing_route and existing_route.status in ['CREATED', 'PENDING', 'ACTIVE']:
+                    return jsonify({'error': f'Pedido {order.order_number} já está na rota #{existing_route.id}'}), 400
 
         # Adicionar pedidos à rota
         stops_data = []
@@ -616,6 +629,10 @@ def accept_route(route_id):
         if not route:
             return jsonify({'error': 'Rota não encontrada'}), 404
         
+        # Verificar se a rota tem entregador atribuído
+        if not route.establishment_driver_id:
+            return jsonify({'error': 'Esta rota ainda não tem entregador atribuído'}), 400
+        
         if route.establishment_driver_id != own_driver.id:
             return jsonify({'error': 'Esta rota não foi atribuída a você'}), 403
         
@@ -661,8 +678,8 @@ def accept_route(route_id):
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Erro ao aceitar rota: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Erro ao aceitar rota {route_id}: {e}", exc_info=True)
+        return jsonify({'error': f'Erro ao aceitar rota: {str(e)}'}), 500
 
 
 @route_bp.route('/<int:route_id>/reject', methods=['POST'])

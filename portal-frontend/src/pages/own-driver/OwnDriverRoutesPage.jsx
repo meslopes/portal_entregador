@@ -18,10 +18,27 @@ const OwnDriverRoutesPage = () => {
   const prevPendingCount = useRef(0);
   const audioRef = useRef(null);
 
-  // Carregar som de notificação
+  // Carregar som de notificação e habilitar áudio com interação do usuário
   useEffect(() => {
     audioRef.current = new Audio(NOTIFICATION_SOUND);
     audioRef.current.volume = 0.8;
+    
+    // Habilitar áudio após primeira interação do usuário
+    const enableAudio = () => {
+      audioRef.current.play().then(() => {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }).catch(() => {});
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
+    document.addEventListener('click', enableAudio, { once: true });
+    document.addEventListener('touchstart', enableAudio, { once: true });
+    
+    return () => {
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
   }, []);
 
   // Auto-refresh a cada 15 segundos
