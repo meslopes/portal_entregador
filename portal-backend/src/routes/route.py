@@ -485,7 +485,7 @@ def list_establishment_routes():
         if not restaurant:
             return jsonify({'routes': []}), 200
 
-        # Filtrar por status se fornecido, senão mostrar apenas ativas e pendentes
+        # Filtrar por status se fornecido, senão mostrar todas não concluídas/canceladas
         status_filter = request.args.get('status', '')
         if status_filter:
             routes = OwnDriverRoute.query.filter_by(
@@ -495,7 +495,7 @@ def list_establishment_routes():
         else:
             routes = OwnDriverRoute.query.filter(
                 OwnDriverRoute.restaurant_id == restaurant.id,
-                OwnDriverRoute.status.in_(['PENDING', 'ACTIVE'])
+                OwnDriverRoute.status.in_(['CREATED', 'PENDING', 'ACTIVE'])
             ).order_by(OwnDriverRoute.created_at.desc()).all()
 
         return jsonify({'routes': [r.to_dict() for r in routes]}), 200
