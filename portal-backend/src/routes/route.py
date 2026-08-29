@@ -146,7 +146,7 @@ def _update_route_stats(route):
 @route_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_route():
-    """Cria uma rota manual com pedidos para um entregador próprio"""
+    """Cria uma rota com pedidos (sem entregador - será atribuído depois)"""
     try:
         user = get_current_user()
         if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
@@ -156,17 +156,10 @@ def create_route():
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
 
-        driver_id = data.get('establishment_driver_id')
         order_ids = data.get('order_ids', [])
-        route_name = data.get('name', f'Rota {datetime.utcnow().strftime("%H:%M")}')
         
-        if not driver_id or not order_ids:
-            return jsonify({'error': 'Entregador e pedidos são obrigatórios'}), 400
-
-        # Verificar entregador
-        driver = EstablishmentDriver.query.get(driver_id)
-        if not driver:
-            return jsonify({'error': 'Entregador não encontrado'}), 404
+        if not order_ids:
+            return jsonify({'error': 'Pedidos são obrigatórios'}), 400
 
         # Verificar pedidos
         orders = Order.query.filter(Order.id.in_(order_ids)).all()
@@ -180,11 +173,11 @@ def create_route():
 
         restaurant_id = restaurant_ids.pop()
 
-        # Criar rota (status PENDING - aguardando entregador ativar)
+        # Criar rota SEM entregador (status CREATED - aguardando atribuição)
         route = OwnDriverRoute(
-            establishment_driver_id=driver_id,
+            establishment_driver_id=None,  # Sem entregador ainda
             restaurant_id=restaurant_id,
-            status='PENDING'
+            status='CREATED'
         )
         db.session.add(route)
         db.session.flush()
@@ -223,22 +216,252 @@ def create_route():
             if stop:
                 stop.stop_order = i + 1
 
-        # Atualizar pedidos com referência à rota
+        # Vincular pedidos à rota (sem atribuir entregador)
         for order in orders:
             order.route_id = route.id
-            order.assigned_to_own_driver = True
-            order.establishment_driver_id = driver_id
 
         db.session.commit()
 
         return jsonify({
-            'message': f'Rota "{route_name}" criada com {len(orders)} entregas',
+            'message': f'Rota criada com {len(orders)} entregas',
             'route': route.to_dict()
         }), 201
 
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao criar rota: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@route_bp.route('/<int:route_id>/assign-driver', methods=['POST'])
+@jwt_required()
+def assign_driver_to_route(route_id):
+    """Atribui entregador a uma rota (calcula ganhos para cada pedido)"""
+    try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
+        data = request.get_json()
+        driver_id = data.get('driver_id')
+        
+        if not driver_id:
+            return jsonify({'error': 'ID do entregador é obrigatório'}), 400
+
+        route = OwnDriverRoute.query.get(route_id)
+        if not route:
+            return jsonify({'error': 'Rota não encontrada'}), 404
+
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        # Atribuir entregador à rota
+        route.establishment_driver_id = driver_id
+        route.status = 'PENDING'  # Aguardando entregador aceitar
+        
+        # Atribuir entregador a todos os pedidos da rota e calcular ganhos
+        restaurant = Restaurant.query.get(route.restaurant_id)
+        
+        for stop in route.stops:
+            order = Order.query.get(stop.order_id)
+            if order:
+                order.assigned_to_own_driver = True
+                order.establishment_driver_id = driver_id
+                
+                # Calcular ganho do entregador para este pedido
+                if restaurant:
+                    payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
+                    delivery_fee = float(order.delivery_fee or 0)
+                    distance_km = 0
+                    
+                    if order.delivery_address and order.delivery_address.latitude and restaurant.latitude:
+                        distance_km = haversine_distance(
+                            float(restaurant.latitude), float(restaurant.longitude),
+                            float(order.delivery_address.latitude), float(order.delivery_address.longitude)
+                        )
+                    
+                    # Calcular valor baseado no tipo de pagamento
+                    if payment_type == 'PER_DELIVERY':
+                        driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
+                    elif payment_type == 'PER_KM':
+                        driver_earning = distance_km * float(restaurant.own_driver_km_value or 1.50)
+                    elif payment_type == 'PERCENTAGE':
+                        driver_earning = delivery_fee * (float(restaurant.own_driver_percentage or 70.0) / 100)
+                    elif payment_type == 'FIXED_PLUS_DELIVERY':
+                        delivery_value = float(restaurant.own_driver_delivery_value or 3.00)
+                        driver_earning = float(restaurant.own_driver_fixed_value or 5.00) + delivery_value
+                    elif payment_type == 'FIXED_UP_TO_PLUS_DELIVERY':
+                        delivery_value = float(restaurant.own_driver_delivery_value or 3.00)
+                        max_deliveries = restaurant.own_driver_max_deliveries or 10
+                        from datetime import datetime as dt
+                        today_start = dt.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                        deliveries_today = OwnDriverEarning.query.filter(
+                            OwnDriverEarning.establishment_driver_id == driver_id,
+                            OwnDriverEarning.created_at >= today_start
+                        ).count()
+                        if deliveries_today >= max_deliveries:
+                            driver_earning = delivery_value
+                        else:
+                            driver_earning = 0
+                    else:
+                        driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
+                    
+                    # Criar registro de ganho
+                    earning = OwnDriverEarning(
+                        restaurant_id=restaurant.id,
+                        establishment_driver_id=driver_id,
+                        order_id=order.id,
+                        delivery_fee=delivery_fee,
+                        driver_earning=driver_earning,
+                        payment_type=payment_type,
+                        distance_km=distance_km
+                    )
+                    db.session.add(earning)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Entregador {driver.name} atribuído à rota',
+            'route': route.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao atribuir entregador à rota: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@route_bp.route('/<int:route_id>/add-orders', methods=['POST'])
+@jwt_required()
+def add_orders_to_route(route_id):
+    """Adiciona pedidos a uma rota existente"""
+    try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
+        data = request.get_json()
+        order_ids = data.get('order_ids', [])
+        
+        if not order_ids:
+            return jsonify({'error': 'Pedidos são obrigatórios'}), 400
+
+        route = OwnDriverRoute.query.get(route_id)
+        if not route:
+            return jsonify({'error': 'Rota não encontrada'}), 404
+
+        # Verificar pedidos
+        orders = Order.query.filter(Order.id.in_(order_ids)).all()
+        if len(orders) != len(order_ids):
+            return jsonify({'error': 'Alguns pedidos não foram encontrados'}), 400
+
+        # Verificar se pedidos são do mesmo restaurante da rota
+        for order in orders:
+            if order.restaurant_id != route.restaurant_id:
+                return jsonify({'error': f'Pedido {order.order_number} não é do mesmo restaurante da rota'}), 400
+
+        # Adicionar pedidos à rota
+        stops_data = []
+        for stop in route.stops:
+            stops_data.append({
+                'order_id': stop.order_id,
+                'stop_type': stop.stop_type,
+                'latitude': float(stop.latitude) if stop.latitude else None,
+                'longitude': float(stop.longitude) if stop.longitude else None,
+                'address': stop.address
+            })
+        
+        for order in orders:
+            # Verificar se já está na rota
+            existing = OwnDriverStop.query.filter_by(route_id=route_id, order_id=order.id).first()
+            if existing:
+                continue
+            
+            if order.delivery_address:
+                delivery_stop = OwnDriverStop(
+                    route_id=route.id,
+                    order_id=order.id,
+                    stop_order=0,
+                    stop_type='DELIVERY',
+                    latitude=order.delivery_address.latitude,
+                    longitude=order.delivery_address.longitude,
+                    address=order.delivery_address.street
+                )
+                db.session.add(delivery_stop)
+                stops_data.append({
+                    'order_id': order.id,
+                    'stop_type': 'DELIVERY',
+                    'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
+                    'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
+                    'address': order.delivery_address.street
+                })
+                
+                # Vincular pedido à rota
+                order.route_id = route.id
+                
+                # Se a rota já tem entregador, atribuir e calcular ganhos
+                if route.establishment_driver_id:
+                    order.assigned_to_own_driver = True
+                    order.establishment_driver_id = route.establishment_driver_id
+                    
+                    restaurant = Restaurant.query.get(route.restaurant_id)
+                    if restaurant:
+                        # Calcular ganho (mesmo cálculo acima)
+                        payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
+                        delivery_fee = float(order.delivery_fee or 0)
+                        distance_km = 0
+                        
+                        if order.delivery_address and order.delivery_address.latitude and restaurant.latitude:
+                            distance_km = haversine_distance(
+                                float(restaurant.latitude), float(restaurant.longitude),
+                                float(order.delivery_address.latitude), float(order.delivery_address.longitude)
+                            )
+                        
+                        if payment_type == 'PER_DELIVERY':
+                            driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
+                        elif payment_type == 'PER_KM':
+                            driver_earning = distance_km * float(restaurant.own_driver_km_value or 1.50)
+                        elif payment_type == 'PERCENTAGE':
+                            driver_earning = delivery_fee * (float(restaurant.own_driver_percentage or 70.0) / 100)
+                        else:
+                            driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
+                        
+                        earning = OwnDriverEarning(
+                            restaurant_id=restaurant.id,
+                            establishment_driver_id=route.establishment_driver_id,
+                            order_id=order.id,
+                            delivery_fee=delivery_fee,
+                            driver_earning=driver_earning,
+                            payment_type=payment_type,
+                            distance_km=distance_km
+                        )
+                        db.session.add(earning)
+
+        # Re-otimizar paradas
+        optimized_stops = optimize_stop_order(stops_data)
+        
+        for i, stop_data in enumerate(optimized_stops):
+            stop = OwnDriverStop.query.filter_by(
+                route_id=route.id,
+                order_id=stop_data['order_id']
+            ).first()
+            if stop:
+                stop.stop_order = i + 1
+        
+        # Atualizar distância e tempo
+        _update_route_stats(route)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'{len(orders)} pedido(s) adicionado(s) à rota',
+            'route': route.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao adicionar pedidos à rota: {e}")
         return jsonify({'error': str(e)}), 500
 
 

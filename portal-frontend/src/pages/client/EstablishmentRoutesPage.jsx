@@ -47,8 +47,8 @@ const EstablishmentRoutesPage = () => {
   };
 
   const handleCreateRoute = async () => {
-    if (!selectedDriver || selectedOrders.length === 0) {
-      setError('Selecione um entregador e pelo menos um pedido');
+    if (selectedOrders.length === 0) {
+      setError('Selecione pelo menos um pedido');
       return;
     }
 
@@ -57,22 +57,59 @@ const EstablishmentRoutesPage = () => {
       setError('');
 
       const res = await api.post('/api/routes/create', {
-        establishment_driver_id: parseInt(selectedDriver),
-        order_ids: selectedOrders.map(id => parseInt(id)),
-        name: routeName || `Rota ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+        order_ids: selectedOrders.map(id => parseInt(id))
       });
 
       setSuccess(res.data.message);
       setShowCreateModal(false);
       setSelectedOrders([]);
       setSelectedDriver('');
-      setRouteName('');
       loadData();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao criar rota');
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const handleAssignDriver = async (routeId) => {
+    if (!selectedDriver) {
+      setError('Selecione um entregador');
+      return;
+    }
+
+    try {
+      setError('');
+      const res = await api.post(`/api/routes/${routeId}/assign-driver`, {
+        driver_id: parseInt(selectedDriver)
+      });
+      setSuccess(res.data.message);
+      setSelectedDriver('');
+      loadData();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao atribuir entregador');
+    }
+  };
+
+  const handleAddOrdersToRoute = async (routeId) => {
+    if (selectedOrders.length === 0) {
+      setError('Selecione pelo menos um pedido para adicionar');
+      return;
+    }
+
+    try {
+      setError('');
+      const res = await api.post(`/api/routes/${routeId}/add-orders`, {
+        order_ids: selectedOrders.map(id => parseInt(id))
+      });
+      setSuccess(res.data.message);
+      setSelectedOrders([]);
+      loadData();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao adicionar pedidos');
     }
   };
 
@@ -96,12 +133,14 @@ const EstablishmentRoutesPage = () => {
 
   const getStatusBadge = (status) => {
     const configs = {
-      PENDING: { bg: '#fef3c7', color: '#92400e', label: 'Aguardando' },
+      CREATED: { bg: '#f1f5f9', color: '#475569', label: 'Sem Entregador' },
+      PENDING: { bg: '#fef3c7', color: '#92400e', label: 'Aguardando Aceite' },
       ACTIVE: { bg: '#dbeafe', color: '#1d4ed8', label: 'Em Rota' },
       COMPLETED: { bg: '#dcfce7', color: '#166534', label: 'Concluída' },
-      CANCELLED: { bg: '#fef2f2', color: '#dc2626', label: 'Cancelada' }
+      CANCELLED: { bg: '#fef2f2', color: '#dc2626', label: 'Cancelada' },
+      REJECTED: { bg: '#fef2f2', color: '#dc2626', label: 'Rejeitada' }
     };
-    const config = configs[status] || configs.PENDING;
+    const config = configs[status] || configs.CREATED;
     return (
       <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: config.bg, color: config.color }}>
         {config.label}
@@ -167,9 +206,9 @@ const EstablishmentRoutesPage = () => {
                   <div>
                     <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '1rem' }}>{route.name}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      <span style={{ fontSize: '0.75rem', color: route.driver_name ? '#64748b' : '#dc2626' }}>
                         <Users size={12} style={{ marginRight: '0.25rem', verticalAlign: 'middle' }} />
-                        {route.driver_name}
+                        {route.driver_name || 'Sem entregador'}
                       </span>
                       <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                         <Package size={12} style={{ marginRight: '0.25rem', verticalAlign: 'middle' }} />
@@ -180,12 +219,60 @@ const EstablishmentRoutesPage = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   {getStatusBadge(route.status)}
-                  {route.status === 'PENDING' && (
+                  {['CREATED', 'PENDING'].includes(route.status) && (
                     <button onClick={() => handleDeleteRoute(route.id)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }}>
                       <Trash2 size={16} />
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Ações da Rota */}
+              <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {/* Atribuir entregador */}
+                {route.status === 'CREATED' && (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <select
+                      value={selectedDriver}
+                      onChange={e => setSelectedDriver(e.target.value)}
+                      style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.75rem', background: 'white' }}
+                    >
+                      <option value="">Selecionar entregador...</option>
+                      {drivers.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleAssignDriver(route.id)}
+                      disabled={!selectedDriver}
+                      style={{
+                        padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                        border: 'none', background: selectedDriver ? '#2563eb' : '#94a3b8',
+                        color: 'white', fontSize: '0.75rem', fontWeight: 600,
+                        cursor: selectedDriver ? 'pointer' : 'not-allowed'
+                      }}
+                    >
+                      Atribuir Entregador
+                    </button>
+                  </div>
+                )}
+                
+                {/* Adicionar pedidos */}
+                {['CREATED', 'PENDING', 'ACTIVE'].includes(route.status) && (
+                  <button
+                    onClick={() => handleAddOrdersToRoute(route.id)}
+                    disabled={selectedOrders.length === 0}
+                    style={{
+                      padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                      border: '1px solid #0d9488', background: 'white',
+                      color: selectedOrders.length > 0 ? '#0d9488' : '#94a3b8',
+                      fontSize: '0.75rem', fontWeight: 600,
+                      cursor: selectedOrders.length > 0 ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    + Adicionar Pedidos ({selectedOrders.length})
+                  </button>
+                )}
               </div>
 
               {/* Paradas da Rota */}
@@ -219,33 +306,6 @@ const EstablishmentRoutesPage = () => {
               <button onClick={() => setShowCreateModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <div style={{ padding: '1.5rem' }}>
-              {/* Nome da Rota */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Nome da Rota</label>
-                <input
-                  type="text"
-                  value={routeName}
-                  onChange={e => setRouteName(e.target.value)}
-                  placeholder="Ex: Rota Manhã, Rota 1"
-                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              {/* Selecionar Entregador */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Entregador *</label>
-                <select
-                  value={selectedDriver}
-                  onChange={e => setSelectedDriver(e.target.value)}
-                  style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', background: 'white' }}
-                >
-                  <option value="">Selecione um entregador...</option>
-                  {drivers.map(d => (
-                    <option key={d.id} value={d.id}>{d.name} - {d.vehicle_type}</option>
-                  ))}
-                </select>
-              </div>
-
               {/* Selecionar Pedidos */}
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
@@ -293,16 +353,16 @@ const EstablishmentRoutesPage = () => {
                 </button>
                 <button
                   onClick={handleCreateRoute}
-                  disabled={createLoading || !selectedDriver || selectedOrders.length === 0}
+                  disabled={createLoading || selectedOrders.length === 0}
                   style={{
                     padding: '0.625rem 1.25rem',
                     borderRadius: '0.5rem',
                     border: 'none',
-                    background: createLoading || !selectedDriver || selectedOrders.length === 0 ? '#94a3b8' : '#2563eb',
+                    background: createLoading || selectedOrders.length === 0 ? '#94a3b8' : '#2563eb',
                     color: 'white',
                     fontSize: '0.875rem',
                     fontWeight: 600,
-                    cursor: createLoading || !selectedDriver || selectedOrders.length === 0 ? 'not-allowed' : 'pointer'
+                    cursor: createLoading || selectedOrders.length === 0 ? 'not-allowed' : 'pointer'
                   }}
                 >
                   {createLoading ? 'Criando...' : 'Criar Rota'}
