@@ -202,6 +202,14 @@ def process_scheduled_orders():
                     distance_km=km_total
                 )
                 db.session.add(earning)
+                
+                # Criar/atualizar rota automaticamente
+                try:
+                    from src.routes.route import auto_create_or_update_route
+                    auto_create_or_update_route(own_driver.id, restaurant.id)
+                except Exception as route_err:
+                    logger.error(f"[HYBRID] Erro ao criar rota automática: {route_err}")
+                
                 continue  # Próximo pedido
             
             # === FALLBACK: Sem entregadores próprios online, distribui para plataforma ===
@@ -2196,6 +2204,13 @@ def assign_own_driver(order_id):
             distance_km=distance_km
         )
         db.session.add(earning)
+        
+        # Criar/atualizar rota automaticamente
+        try:
+            from src.routes.route import auto_create_or_update_route
+            auto_create_or_update_route(est_driver.id, restaurant.id if restaurant else None)
+        except Exception as route_err:
+            logger.error(f"[ASSIGN] Erro ao criar rota automática: {route_err}")
         
         db.session.commit()
         

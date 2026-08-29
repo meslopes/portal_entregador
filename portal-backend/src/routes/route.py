@@ -46,6 +46,155 @@ def optimize_stop_order(stops):
     return optimized
 
 
+def auto_create_or_update_route(establishment_driver_id, restaurant_id):
+    """
+    Cria ou atualiza automaticamente uma rota para um entregador próprio.
+    Chamada quando um pedido é atribuído ao entregador.
+    """
+    try:
+        # Buscar todos os pedidos ativos atribuídos ao entregador
+        active_orders = Order.query.filter(
+            Order.establishment_driver_id == establishment_driver_id,
+            Order.assigned_to_own_driver == True,
+            Order.status.in_([OrderStatus.ACCEPTED, OrderStatus.PICKED_UP])
+        ).all()
+        
+        # Se tem menos de 2 pedidos, não criar rota
+        if len(active_orders) < 2:
+            logger.info(f"[ROUTE-AUTO] Menos de 2 pedidos ativos para entregador {establishment_driver_id}, sem rota")
+            return None
+        
+        # Verificar se já existe uma rota ativa para este entregador
+        existing_route = OwnDriverRoute.query.filter(
+            OwnDriverRoute.establishment_driver_id == establishment_driver_id,
+            OwnDriverRoute.status == 'ACTIVE'
+        ).first()
+        
+        if existing_route:
+            # Atualizar rota existente - adicionar pedidos novos
+            existing_order_ids = {stop.order_id for stop in existing_route.stops}
+            new_orders = [o for o in active_orders if o.id not in existing_order_ids]
+            
+            if not new_orders:
+                logger.info(f"[ROUTE-AUTO] Rota {existing_route.id} já contém todos os pedidos")
+                return existing_route
+            
+            # Adicionar novas paradas à rota
+            max_order = max(stop.stop_order for stop in existing_route.stops) if existing_route.stops else 0
+            stop_order = max_order + 1
+            
+            for order in new_orders:
+                # Parada de pickup
+                pickup_stop = OwnDriverStop(
+                    route_id=existing_route.id,
+                    order_id=order.id,
+                    stop_order=stop_order,
+                    stop_type='PICKUP',
+                    latitude=order.restaurant.latitude if order.restaurant else None,
+                    longitude=order.restaurant.longitude if order.restaurant else None,
+                    address=order.restaurant.address if order.restaurant else None,
+                    status='PENDING'
+                )
+                db.session.add(pickup_stop)
+                stop_order += 1
+                
+                # Parada de delivery
+                delivery_stop = OwnDriverStop(
+                    route_id=existing_route.id,
+                    order_id=order.id,
+                    stop_order=stop_order,
+                    stop_type='DELIVERY',
+                    latitude=order.delivery_address.latitude if order.delivery_address else None,
+                    longitude=order.delivery_address.longitude if order.delivery_address else None,
+                    address=order.delivery_address.street if order.delivery_address else None,
+                    status='PENDING'
+                )
+                db.session.add(delivery_stop)
+                stop_order += 1
+            
+            # Atualizar distância e tempo estimado
+            _update_route_stats(existing_route)
+            
+            logger.info(f"[ROUTE-AUTO] Rota {existing_route.id} atualizada com {len(new_orders)} novos pedidos")
+            return existing_route
+        else:
+            # Criar nova rota
+            route = OwnDriverRoute(
+                establishment_driver_id=establishment_driver_id,
+                restaurant_id=restaurant_id,
+                status='ACTIVE',
+                started_at=datetime.utcnow()
+            )
+            db.session.add(route)
+            db.session.flush()
+            
+            # Criar paradas para todos os pedidos ativos
+            stop_order = 1
+            for order in active_orders:
+                # Parada de pickup
+                pickup_stop = OwnDriverStop(
+                    route_id=route.id,
+                    order_id=order.id,
+                    stop_order=stop_order,
+                    stop_type='PICKUP',
+                    latitude=order.restaurant.latitude if order.restaurant else None,
+                    longitude=order.restaurant.longitude if order.restaurant else None,
+                    address=order.restaurant.address if order.restaurant else None,
+                    status='PENDING'
+                )
+                db.session.add(pickup_stop)
+                stop_order += 1
+                
+                # Parada de delivery
+                delivery_stop = OwnDriverStop(
+                    route_id=route.id,
+                    order_id=order.id,
+                    stop_order=stop_order,
+                    stop_type='DELIVERY',
+                    latitude=order.delivery_address.latitude if order.delivery_address else None,
+                    longitude=order.delivery_address.longitude if order.delivery_address else None,
+                    address=order.delivery_address.street if order.delivery_address else None,
+                    status='PENDING'
+                )
+                db.session.add(delivery_stop)
+                stop_order += 1
+            
+            # Atualizar distância e tempo estimado
+            _update_route_stats(route)
+            
+            logger.info(f"[ROUTE-AUTO] Nova rota {route.id} criada com {len(active_orders)} pedidos")
+            return route
+        
+    except Exception as e:
+        logger.error(f"[ROUTE-AUTO] Erro ao criar/atualizar rota: {e}")
+        return None
+
+
+def _update_route_stats(route):
+    """Atualiza distância e tempo estimado da rota"""
+    try:
+        from src.services.geocoding import get_route_distance_with_fallback
+        
+        stops = sorted(route.stops, key=lambda s: s.stop_order)
+        total_distance = 0
+        total_duration = 0
+        
+        for i in range(len(stops) - 1):
+            if stops[i].latitude and stops[i].longitude and stops[i+1].latitude and stops[i+1].longitude:
+                route_info = get_route_distance_with_fallback(
+                    float(stops[i].latitude), float(stops[i].longitude),
+                    float(stops[i+1].latitude), float(stops[i+1].longitude)
+                )
+                total_distance += route_info['distance_km']
+                total_duration += route_info['duration_min']
+        
+        route.total_distance_km = round(total_distance, 2)
+        route.total_duration_min = round(total_duration, 1)
+        
+    except Exception as e:
+        logger.error(f"[ROUTE-AUTO] Erro ao calcular stats da rota: {e}")
+
+
 @route_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_route():
