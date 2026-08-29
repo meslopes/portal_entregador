@@ -24,6 +24,10 @@ def optimize_stop_order(stops):
     """
     Otimiza a ordem das paradas usando algoritmo do vizinho mais próximo.
     Retorna a lista de paradas reordenadas.
+    
+    Lógica:
+    1. Todas as coletas primeiro (no restaurante)
+    2. Entregas ordenadas por proximidade (vizinho mais próximo)
     """
     if len(stops) <= 2:
         return stops
@@ -32,18 +36,77 @@ def optimize_stop_order(stops):
     pickups = [s for s in stops if s['stop_type'] == 'PICKUP']
     deliveries = [s for s in stops if s['stop_type'] == 'DELIVERY']
     
-    # Ordenar pickups por distância do restaurante (mais próximo primeiro)
-    # Ordenar deliveries por distância do último pickup (mais próximo primeiro)
+    if len(deliveries) <= 1:
+        # Se tem 0 ou 1 entrega, não precisa otimizar
+        optimized = pickups + deliveries
+        for i, stop in enumerate(optimized):
+            stop['stop_order'] = i + 1
+        return optimized
     
-    # Por simplicidade, manter ordem: todos pickups primeiro, depois deliveries
-    # Em uma implementação futura, usar OSRM para otimização real
-    optimized = pickups + deliveries
+    # Otimizar ordem das entregas usando vizinho mais próximo
+    # Começar do restaurante (último pickup ou primeiro ponto)
+    start_lat = pickups[0]['latitude'] if pickups else None
+    start_lng = pickups[0]['longitude'] if pickups else None
+    
+    # Se não tem coordenadas do restaurante, usar primeira entrega como ponto de partida
+    if not start_lat or not start_lng:
+        if deliveries:
+            start_lat = deliveries[0]['latitude']
+            start_lng = deliveries[0]['longitude']
+    
+    # Algoritmo do vizinho mais próximo
+    optimized_deliveries = []
+    remaining = list(deliveries)
+    current_lat = start_lat
+    current_lng = start_lng
+    
+    while remaining:
+        # Encontrar a entrega mais próxima do ponto atual
+        nearest_idx = 0
+        nearest_dist = float('inf')
+        
+        for i, stop in enumerate(remaining):
+            if stop['latitude'] and stop['longitude'] and current_lat and current_lng:
+                dist = haversine_distance(
+                    float(current_lat), float(current_lng),
+                    float(stop['latitude']), float(stop['longitude'])
+                )
+            else:
+                dist = 0  # Se não tem coordenadas, manter ordem original
+            
+            if dist < nearest_dist:
+                nearest_dist = dist
+                nearest_idx = i
+        
+        # Adicionar a mais próxima à lista otimizada
+        nearest_stop = remaining.pop(nearest_idx)
+        optimized_deliveries.append(nearest_stop)
+        current_lat = nearest_stop['latitude']
+        current_lng = nearest_stop['longitude']
+    
+    # Combinar: pickups primeiro, depois deliveries otimizadas
+    optimized = pickups + optimized_deliveries
     
     # Reatribuir ordem
     for i, stop in enumerate(optimized):
         stop['stop_order'] = i + 1
     
     return optimized
+
+
+def haversine_distance(lat1, lng1, lat2, lng2):
+    """Calcula distância em km entre dois pontos usando Haversine"""
+    from math import radians, sin, cos, sqrt, atan2
+    
+    R = 6371  # Raio da Terra em km
+    lat1_r, lat2_r = radians(lat1), radians(lat2)
+    dlat = radians(lat2 - lat1)
+    dlng = radians(lng2 - lng1)
+    
+    a = sin(dlat/2)**2 + cos(lat1_r) * cos(lat2_r) * sin(dlng/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    
+    return R * c
 
 
 def auto_create_or_update_route(establishment_driver_id, restaurant_id):
@@ -80,15 +143,12 @@ def auto_create_or_update_route(establishment_driver_id, restaurant_id):
                 return existing_route
             
             # Adicionar novas paradas à rota
-            max_order = max(stop.stop_order for stop in existing_route.stops) if existing_route.stops else 0
-            stop_order = max_order + 1
-            
             for order in new_orders:
                 # Parada de pickup
                 pickup_stop = OwnDriverStop(
                     route_id=existing_route.id,
                     order_id=order.id,
-                    stop_order=stop_order,
+                    stop_order=0,  # Temporário, será reordenado
                     stop_type='PICKUP',
                     latitude=order.restaurant.latitude if order.restaurant else None,
                     longitude=order.restaurant.longitude if order.restaurant else None,
@@ -96,13 +156,12 @@ def auto_create_or_update_route(establishment_driver_id, restaurant_id):
                     status='PENDING'
                 )
                 db.session.add(pickup_stop)
-                stop_order += 1
                 
                 # Parada de delivery
                 delivery_stop = OwnDriverStop(
                     route_id=existing_route.id,
                     order_id=order.id,
-                    stop_order=stop_order,
+                    stop_order=0,  # Temporário, será reordenado
                     stop_type='DELIVERY',
                     latitude=order.delivery_address.latitude if order.delivery_address else None,
                     longitude=order.delivery_address.longitude if order.delivery_address else None,
@@ -110,12 +169,36 @@ def auto_create_or_update_route(establishment_driver_id, restaurant_id):
                     status='PENDING'
                 )
                 db.session.add(delivery_stop)
-                stop_order += 1
+            
+            # Flush para ter os IDs das novas paradas
+            db.session.flush()
+            
+            # Re-otimizar TODAS as paradas da rota
+            all_stops_data = []
+            for stop in existing_route.stops:
+                all_stops_data.append({
+                    'stop_id': stop.id,
+                    'order_id': stop.order_id,
+                    'stop_type': stop.stop_type,
+                    'latitude': float(stop.latitude) if stop.latitude else None,
+                    'longitude': float(stop.longitude) if stop.longitude else None,
+                    'address': stop.address,
+                    'status': stop.status
+                })
+            
+            optimized_stops = optimize_stop_order(all_stops_data)
+            
+            # Atualizar ordem das paradas no banco
+            for stop_data in optimized_stops:
+                if 'stop_id' in stop_data:
+                    stop = OwnDriverStop.query.get(stop_data['stop_id'])
+                    if stop:
+                        stop.stop_order = stop_data['stop_order']
             
             # Atualizar distância e tempo estimado
             _update_route_stats(existing_route)
             
-            logger.info(f"[ROUTE-AUTO] Rota {existing_route.id} atualizada com {len(new_orders)} novos pedidos")
+            logger.info(f"[ROUTE-AUTO] Rota {existing_route.id} atualizada com {len(new_orders)} novos pedidos (re-otimizada)")
             return existing_route
         else:
             # Criar nova rota
@@ -128,41 +211,47 @@ def auto_create_or_update_route(establishment_driver_id, restaurant_id):
             db.session.add(route)
             db.session.flush()
             
-            # Criar paradas para todos os pedidos ativos
-            stop_order = 1
+            # Coletar dados das paradas para otimização
+            stops_data = []
             for order in active_orders:
-                # Parada de pickup
-                pickup_stop = OwnDriverStop(
+                # Pickup
+                stops_data.append({
+                    'order_id': order.id,
+                    'stop_type': 'PICKUP',
+                    'latitude': float(order.restaurant.latitude) if order.restaurant and order.restaurant.latitude else None,
+                    'longitude': float(order.restaurant.longitude) if order.restaurant and order.restaurant.longitude else None,
+                    'address': order.restaurant.address if order.restaurant else None,
+                })
+                # Delivery
+                stops_data.append({
+                    'order_id': order.id,
+                    'stop_type': 'DELIVERY',
+                    'latitude': float(order.delivery_address.latitude) if order.delivery_address and order.delivery_address.latitude else None,
+                    'longitude': float(order.delivery_address.longitude) if order.delivery_address and order.delivery_address.longitude else None,
+                    'address': order.delivery_address.street if order.delivery_address else None,
+                })
+            
+            # Otimizar ordem das paradas
+            optimized_stops = optimize_stop_order(stops_data)
+            
+            # Criar paradas no banco com ordem otimizada
+            for stop_data in optimized_stops:
+                stop = OwnDriverStop(
                     route_id=route.id,
-                    order_id=order.id,
-                    stop_order=stop_order,
-                    stop_type='PICKUP',
-                    latitude=order.restaurant.latitude if order.restaurant else None,
-                    longitude=order.restaurant.longitude if order.restaurant else None,
-                    address=order.restaurant.address if order.restaurant else None,
+                    order_id=stop_data['order_id'],
+                    stop_order=stop_data['stop_order'],
+                    stop_type=stop_data['stop_type'],
+                    latitude=stop_data['latitude'],
+                    longitude=stop_data['longitude'],
+                    address=stop_data['address'],
                     status='PENDING'
                 )
-                db.session.add(pickup_stop)
-                stop_order += 1
-                
-                # Parada de delivery
-                delivery_stop = OwnDriverStop(
-                    route_id=route.id,
-                    order_id=order.id,
-                    stop_order=stop_order,
-                    stop_type='DELIVERY',
-                    latitude=order.delivery_address.latitude if order.delivery_address else None,
-                    longitude=order.delivery_address.longitude if order.delivery_address else None,
-                    address=order.delivery_address.street if order.delivery_address else None,
-                    status='PENDING'
-                )
-                db.session.add(delivery_stop)
-                stop_order += 1
+                db.session.add(stop)
             
             # Atualizar distância e tempo estimado
             _update_route_stats(route)
             
-            logger.info(f"[ROUTE-AUTO] Nova rota {route.id} criada com {len(active_orders)} pedidos")
+            logger.info(f"[ROUTE-AUTO] Nova rota {route.id} criada com {len(active_orders)} pedidos (otimizada)")
             return route
         
     except Exception as e:
