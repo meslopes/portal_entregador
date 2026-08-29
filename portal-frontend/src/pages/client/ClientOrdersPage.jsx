@@ -416,13 +416,19 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                 {/* Botão para trocar entregador */}
                 {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'SCHEDULED'].includes(order.status) && (
                   <button 
-                    onClick={() => {/* TODO: Implementar troca de entregador */}}
+                    onClick={() => {
+                      // Rolar até a seção de distribuição
+                      const distribSection = document.getElementById('distribuicao-section');
+                      if (distribSection) {
+                        distribSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
                     style={{ 
                       padding: '0.375rem 0.75rem', 
                       borderRadius: '0.375rem', 
-                      border: '1px solid #e2e8f0', 
+                      border: '1px solid #2563eb', 
                       background: 'white', 
-                      color: '#64748b', 
+                      color: '#2563eb', 
                       cursor: 'pointer', 
                       fontSize: '0.75rem',
                       display: 'flex',
@@ -452,6 +458,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
 
           {/* Distribuição Híbrida - para pedidos que podem ter entregador alterado */}
           {['PENDING', 'SCHEDULED', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && (
+            <div id="distribuicao-section">
             <InfoSection title={order.driver || order.own_driver ? "Trocar Entregador" : "Distribuição do Pedido"}>
               {/* Resultado da ação */}
               {actionResult && (
@@ -542,6 +549,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                 </button>
               </div>
             </InfoSection>
+            </div>
           )}
 
           {/* Info de distribuição para pedidos já atribuídos */}

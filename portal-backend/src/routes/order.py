@@ -2105,6 +2105,26 @@ def assign_own_driver(order_id):
         if not est_driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
         
+        # Remover pedido da rota anterior (se existir)
+        if order.own_driver_route_id:
+            from src.models.portal_models import OwnDriverRoute, OwnDriverStop
+            old_route = OwnDriverRoute.query.get(order.own_driver_route_id)
+            if old_route:
+                # Remover parada da rota antiga
+                old_stop = OwnDriverStop.query.filter_by(
+                    route_id=old_route.id, 
+                    order_id=order.id
+                ).first()
+                if old_stop:
+                    db.session.delete(old_stop)
+                
+                # Se a rota antiga fica sem paradas, excluí-la
+                remaining_stops = OwnDriverStop.query.filter_by(route_id=old_route.id).count()
+                if remaining_stops <= 1:  # <=1 porque ainda não deletamos o stop acima
+                    db.session.delete(old_route)
+            
+            order.own_driver_route_id = None
+
         # Atribuir pedido ao entregador próprio
         order.assigned_to_own_driver = True
         order.establishment_driver_id = est_driver.id
