@@ -336,10 +336,31 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
 
         <div style={{ padding: '1.5rem' }}>
           {/* Status */}
-          <div style={{ padding: '1rem', borderRadius: '0.5rem', background: config.bg, textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ padding: '1rem', borderRadius: '0.5rem', background: config.bg, textAlign: 'center', marginBottom: '1rem' }}>
             <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Status</p>
             <p style={{ fontSize: '1.25rem', fontWeight: 700, color: config.color }}>{config.text}</p>
           </div>
+
+          {/* Botões de mudança de status para entregas próprias */}
+          {hasOwnDriver && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Alterar Status</p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {order.status === 'SCHEDULED' && (
+                  <StatusBtn status="PENDING" label="Tocar Agora" color="#f59e0b" orderId={order.id} onUpdated={onOrderUpdated} />
+                )}
+                {order.status === 'ACCEPTED' && (
+                  <StatusBtn status="PICKED_UP" label="Marcar Coletado" color="#3b82f6" orderId={order.id} onUpdated={onOrderUpdated} />
+                )}
+                {order.status === 'PICKED_UP' && (
+                  <StatusBtn status="DELIVERED" label="Marcar Entregue" color="#22c55e" orderId={order.id} onUpdated={onOrderUpdated} />
+                )}
+                {['SCHEDULED', 'PENDING', 'ACCEPTED'].includes(order.status) && (
+                  <StatusBtn status="CANCELLED" label="Cancelar" color="#ef4444" orderId={order.id} onUpdated={onOrderUpdated} />
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Valores */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1.5rem' }}>
@@ -648,5 +669,41 @@ const FilterBtn = ({ active, onClick, children }) => (
 );
 
 const pagBtn = (disabled) => ({ padding: '0.5rem 1rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, fontSize: '0.875rem' });
+
+const StatusBtn = ({ status, label, color, orderId, onUpdated }) => {
+  const [loading, setLoading] = useState(false);
+  
+  const handleClick = async () => {
+    if (!window.confirm(`Tem certeza que deseja alterar o status para "${label}"?`)) return;
+    try {
+      setLoading(true);
+      await api.put(`/api/orders/${orderId}/status`, { status });
+      onUpdated();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao alterar status');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      style={{
+        padding: '0.5rem 1rem',
+        borderRadius: '0.375rem',
+        border: 'none',
+        background: loading ? '#94a3b8' : color,
+        color: 'white',
+        fontSize: '0.8125rem',
+        fontWeight: 600,
+        cursor: loading ? 'not-allowed' : 'pointer'
+      }}
+    >
+      {loading ? '...' : label}
+    </button>
+  );
+};
 
 export default ClientOrdersPage;

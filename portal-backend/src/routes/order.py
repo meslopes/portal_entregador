@@ -1038,7 +1038,7 @@ def notify_admin_no_drivers(order):
 @order_bp.route('/<int:order_id>/status', methods=['PUT'])
 @jwt_required()
 def update_order_status(order_id):
-    """Atualiza o status do pedido (entregador ou admin)"""
+    """Atualiza o status do pedido (entregador, admin ou estabelecimento)"""
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
@@ -1047,11 +1047,12 @@ def update_order_status(order_id):
             return jsonify({'error': 'Usuário não encontrado'}), 404
         
         is_admin = user.user_type == UserType.ADMIN
+        is_client = user.user_type == UserType.CLIENT
         driver = None
         
-        if not is_admin:
+        if not is_admin and not is_client:
             if user.user_type != UserType.DRIVER:
-                return jsonify({'error': 'Usuário não é um entregador'}), 403
+                return jsonify({'error': 'Usuário não autorizado'}), 403
             driver = user.driver
         
         order = Order.query.get(order_id)
@@ -1059,12 +1060,21 @@ def update_order_status(order_id):
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
         
-        # Verificar tenant para admin
+        # Verificar permissão
         if is_admin:
             from src.utils.tenant import get_current_tenant_id
             tenant_id = get_current_tenant_id()
             if tenant_id and order.tenant_id != tenant_id:
                 return jsonify({'error': 'Pedido não encontrado'}), 404
+        elif is_client:
+            # Verificar se o pedido pertence ao restaurante do estabelecimento
+            from src.models.portal_models import Customer
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if not customer:
+                return jsonify({'error': 'Perfil de estabelecimento não encontrado'}), 403
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            if not restaurant or order.restaurant_id != restaurant.id:
+                return jsonify({'error': 'Pedido não pertence a este estabelecimento'}), 403
         else:
             if order.driver_id != driver.id:
                 return jsonify({'error': 'Pedido não pertence a este entregador'}), 403
@@ -1080,9 +1090,9 @@ def update_order_status(order_id):
         except ValueError:
             return jsonify({'error': 'Status inválido'}), 400
         
-        # Admin pode mudar de qualquer status para qualquer status
+        # Admin e Estabelecimento podem mudar de qualquer status para qualquer status
         # Entregador segue transições válidas
-        if not is_admin:
+        if not is_admin and not is_client:
             valid_transitions = {
                 OrderStatus.SCHEDULED: [OrderStatus.PENDING, OrderStatus.CANCELLED],
                 OrderStatus.PENDING: [OrderStatus.CANCELLED],
