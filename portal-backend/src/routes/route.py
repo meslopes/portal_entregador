@@ -262,9 +262,18 @@ def list_establishment_routes():
         if not restaurant:
             return jsonify({'routes': []}), 200
 
-        routes = OwnDriverRoute.query.filter_by(
-            restaurant_id=restaurant.id
-        ).order_by(OwnDriverRoute.created_at.desc()).all()
+        # Filtrar por status se fornecido, senão mostrar apenas ativas e pendentes
+        status_filter = request.args.get('status', '')
+        if status_filter:
+            routes = OwnDriverRoute.query.filter_by(
+                restaurant_id=restaurant.id,
+                status=status_filter
+            ).order_by(OwnDriverRoute.created_at.desc()).all()
+        else:
+            routes = OwnDriverRoute.query.filter(
+                OwnDriverRoute.restaurant_id == restaurant.id,
+                OwnDriverRoute.status.in_(['PENDING', 'ACTIVE'])
+            ).order_by(OwnDriverRoute.created_at.desc()).all()
 
         return jsonify({'routes': [r.to_dict() for r in routes]}), 200
 
@@ -329,10 +338,31 @@ def activate_route(route_id):
 
 
 @route_bp.route('/<int:route_id>/complete-stop', methods=['POST'])
-@jwt_required()
 def complete_stop(route_id):
-    """Marca uma parada como concluída"""
+    """Marca uma parada como concluída (aceita JWT regular ou own_driver_token)"""
     try:
+        # Verificar autenticação - aceitar JWT regular ou own_driver_token
+        from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+        from src.routes.own_driver import get_own_driver_from_token
+        
+        # Tentar JWT regular primeiro
+        user = None
+        own_driver = None
+        
+        try:
+            verify_jwt_in_request(optional=True)
+            user_id = get_jwt_identity()
+            if user_id:
+                user = User.query.get(int(user_id))
+        except:
+            pass
+        
+        # Se não tem JWT regular, tentar own_driver_token
+        if not user:
+            own_driver = get_own_driver_from_token()
+            if not own_driver:
+                return jsonify({'error': 'Autenticação necessária'}), 401
+        
         data = request.get_json()
         stop_id = data.get('stop_id')
         
@@ -342,6 +372,12 @@ def complete_stop(route_id):
         stop = OwnDriverStop.query.get(stop_id)
         if not stop or stop.route_id != route_id:
             return jsonify({'error': 'Parada não encontrada'}), 404
+
+        # Verificar permissão: se for own_driver, verificar se a rota é dele
+        if own_driver:
+            route = OwnDriverRoute.query.get(route_id)
+            if route.establishment_driver_id != own_driver.id:
+                return jsonify({'error': 'Sem permissão'}), 403
 
         stop.status = 'COMPLETED'
         stop.completed_at = datetime.utcnow()

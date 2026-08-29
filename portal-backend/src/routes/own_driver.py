@@ -29,6 +29,23 @@ def create_own_driver_token(driver_id, restaurant_id):
     return jwt.encode(payload, OWN_DRIVER_SECRET, algorithm='HS256')
 
 
+def get_own_driver_from_token():
+    """Extrai o entregador próprio do token (sem ser decorator)"""
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, OWN_DRIVER_SECRET, algorithms=['HS256'])
+        if payload.get('type') != 'own_driver':
+            return None
+        driver = EstablishmentDriver.query.get(payload['driver_id'])
+        if not driver or not driver.is_active:
+            return None
+        return driver
+    except:
+        return None
+
+
 def own_driver_required(f):
     """Decorator para proteger rotas do entregador próprio"""
     @wraps(f)
