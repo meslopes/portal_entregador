@@ -962,6 +962,10 @@ def create_app(config_name=None):
             db.session.execute(db.text(
                 "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'delivery_confirmation_type') THEN ALTER TABLE restaurants ADD COLUMN delivery_confirmation_type VARCHAR(20) DEFAULT 'code'; END IF; END $$"
             ))
+            # Permitir establishment_driver_id nulo em rotas (rotas sem entregador)
+            db.session.execute(db.text(
+                "ALTER TABLE own_driver_routes ALTER COLUMN establishment_driver_id DROP NOT NULL"
+            ))
             db.session.commit()
         except Exception:
             db.session.rollback()

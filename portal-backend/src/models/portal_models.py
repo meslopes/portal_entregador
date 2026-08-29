@@ -1152,7 +1152,7 @@ class OwnDriverRoute(db.Model):
     __tablename__ = 'own_driver_routes'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=False)
+    establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     status = db.Column(db.String(20), default='PENDING')  # PENDING, ACTIVE, COMPLETED, CANCELLED
     total_distance_km = db.Column(db.Numeric(10, 2))
