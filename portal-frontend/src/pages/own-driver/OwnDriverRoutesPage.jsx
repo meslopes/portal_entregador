@@ -29,6 +29,29 @@ const OwnDriverRoutesPage = () => {
     }
   };
 
+  const acceptRoute = async (routeId) => {
+    try {
+      const token = localStorage.getItem('own_driver_token');
+      const headers = { Authorization: `Bearer ${token}` };
+      await api.post(`/api/routes/${routeId}/accept`, {}, { headers });
+      loadRoutes();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao aceitar rota');
+    }
+  };
+
+  const rejectRoute = async (routeId) => {
+    if (!window.confirm('Tem certeza que deseja rejeitar esta rota? O estabelecimento será notificado.')) return;
+    try {
+      const token = localStorage.getItem('own_driver_token');
+      const headers = { Authorization: `Bearer ${token}` };
+      await api.post(`/api/routes/${routeId}/reject`, {}, { headers });
+      loadRoutes();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao rejeitar rota');
+    }
+  };
+
   const completeStop = async (routeId, stopId) => {
     try {
       const token = localStorage.getItem('own_driver_token');
@@ -111,15 +134,45 @@ const OwnDriverRoutesPage = () => {
                       {route.total_duration_min && ` • ~${Math.round(route.total_duration_min)} min`}
                     </p>
                   </div>
-                  <span style={{
-                    padding: '0.25rem 0.5rem', borderRadius: '9999px',
-                    fontSize: '0.6875rem', fontWeight: 600,
-                    background: route.status === 'ACTIVE' ? '#dbeafe' : '#dcfce7',
-                    color: route.status === 'ACTIVE' ? '#2563eb' : '#16a34a'
-                  }}>
-                    {route.status === 'ACTIVE' ? 'Em andamento' : 'Concluída'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{
+                      padding: '0.25rem 0.5rem', borderRadius: '9999px',
+                      fontSize: '0.6875rem', fontWeight: 600,
+                      background: route.status === 'ACTIVE' ? '#dbeafe' : route.status === 'PENDING' ? '#fef3c7' : '#dcfce7',
+                      color: route.status === 'ACTIVE' ? '#2563eb' : route.status === 'PENDING' ? '#92400e' : '#16a34a'
+                    }}>
+                      {route.status === 'ACTIVE' ? 'Em andamento' : route.status === 'PENDING' ? 'Aguardando' : 'Concluída'}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Botões de aceite/rejeição para rotas pendentes */}
+                {route.status === 'PENDING' && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <button
+                      onClick={() => acceptRoute(route.id)}
+                      style={{
+                        flex: 1, padding: '0.625rem', borderRadius: '0.5rem',
+                        border: 'none', background: '#16a34a', color: 'white',
+                        fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                      }}
+                    >
+                      ✓ Aceitar Rota
+                    </button>
+                    <button
+                      onClick={() => rejectRoute(route.id)}
+                      style={{
+                        flex: 1, padding: '0.625rem', borderRadius: '0.5rem',
+                        border: '1px solid #ef4444', background: 'white', color: '#ef4444',
+                        fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                      }}
+                    >
+                      ✕ Rejeitar
+                    </button>
+                  </div>
+                )}
 
                 {/* Lista de paradas */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

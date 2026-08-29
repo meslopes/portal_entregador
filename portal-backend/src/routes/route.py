@@ -326,13 +326,119 @@ def activate_route(route_id):
         db.session.commit()
 
         return jsonify({
-            'message': f'Rota "{route.name}" ativada',
+            'message': f'Rota ativada',
             'route': route.to_dict()
         }), 200
 
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao ativar rota: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@route_bp.route('/<int:route_id>/accept', methods=['POST'])
+def accept_route(route_id):
+    """Entregador aceita uma rota"""
+    try:
+        from src.routes.own_driver import get_own_driver_from_token
+        
+        own_driver = get_own_driver_from_token()
+        if not own_driver:
+            return jsonify({'error': 'Autenticação necessária'}), 401
+        
+        route = OwnDriverRoute.query.get(route_id)
+        if not route:
+            return jsonify({'error': 'Rota não encontrada'}), 404
+        
+        if route.establishment_driver_id != own_driver.id:
+            return jsonify({'error': 'Esta rota não foi atribuída a você'}), 403
+        
+        if route.status != 'PENDING':
+            return jsonify({'error': 'Rota já foi aceita ou rejeitada'}), 400
+        
+        route.status = 'ACTIVE'
+        route.started_at = datetime.utcnow()
+        
+        # Re-otimizar paradas
+        stops_data = []
+        for stop in route.stops:
+            stops_data.append({
+                'stop_id': stop.id,
+                'order_id': stop.order_id,
+                'stop_type': stop.stop_type,
+                'latitude': float(stop.latitude) if stop.latitude else None,
+                'longitude': float(stop.longitude) if stop.longitude else None,
+                'address': stop.address
+            })
+        
+        optimized_stops = optimize_stop_order(stops_data)
+        
+        for stop_data in optimized_stops:
+            if 'stop_id' in stop_data:
+                stop = OwnDriverStop.query.get(stop_data['stop_id'])
+                if stop:
+                    stop.stop_order = stop_data['stop_order']
+        
+        # Atualizar status dos pedidos
+        for stop in route.stops:
+            order = Order.query.get(stop.order_id)
+            if order and order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
+                order.status = OrderStatus.ACCEPTED
+                order.accepted_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Rota aceita com sucesso',
+            'route': route.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao aceitar rota: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@route_bp.route('/<int:route_id>/reject', methods=['POST'])
+def reject_route(route_id):
+    """Entregador rejeita uma rota"""
+    try:
+        from src.routes.own_driver import get_own_driver_from_token
+        
+        own_driver = get_own_driver_from_token()
+        if not own_driver:
+            return jsonify({'error': 'Autenticação necessária'}), 401
+        
+        route = OwnDriverRoute.query.get(route_id)
+        if not route:
+            return jsonify({'error': 'Rota não encontrada'}), 404
+        
+        if route.establishment_driver_id != own_driver.id:
+            return jsonify({'error': 'Esta rota não foi atribuída a você'}), 403
+        
+        if route.status != 'PENDING':
+            return jsonify({'error': 'Rota já foi aceita ou rejeitada'}), 400
+        
+        # Marcar rota como rejeitada
+        route.status = 'REJECTED'
+        
+        # Desvincular pedidos da rota
+        for stop in route.stops:
+            order = Order.query.get(stop.order_id)
+            if order:
+                order.route_id = None
+                # Não desvincular o entregador - estabelecimento pode reatribuir
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Rota rejeitada. O estabelecimento será notificado.',
+            'route': route.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao rejeitar rota: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -447,14 +553,14 @@ def get_active_routes():
 @route_bp.route('/own-driver/active', methods=['GET'])
 @own_driver_required
 def get_own_driver_active_routes():
-    """Obtém rotas ativas do entregador próprio (usa own_driver_token)"""
+    """Obtém rotas do entregador próprio (pendentes e ativas)"""
     try:
         driver = request.own_driver
 
         routes = OwnDriverRoute.query.filter(
             OwnDriverRoute.establishment_driver_id == driver.id,
-            OwnDriverRoute.status == 'ACTIVE'
-        ).all()
+            OwnDriverRoute.status.in_(['PENDING', 'ACTIVE'])
+        ).order_by(OwnDriverRoute.created_at.desc()).all()
 
         return jsonify({'routes': [r.to_dict() for r in routes]}), 200
 
