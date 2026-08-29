@@ -140,7 +140,7 @@ const OwnDriverRoutesPage = () => {
                             {getStopLabel(stop)} #{index + 1}
                           </span>
                           <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                            Pedido #{stop.order_id}
+                            Pedido #{stop.order_number || stop.order_id}
                           </span>
                         </div>
                         <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
