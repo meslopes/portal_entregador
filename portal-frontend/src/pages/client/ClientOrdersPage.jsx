@@ -178,10 +178,10 @@ const ClientOrdersPage = () => {
                         <MapPin size={14} style={{ color: '#64748b', flexShrink: 0 }} />
                         {order.delivery_address?.street || 'Sem endereço'}
                       </div>
-                      {order.driver && (
+                      {(order.driver || order.own_driver) && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                          <Truck size={14} style={{ color: '#64748b' }} />
-                          {order.driver.name}
+                          {order.assigned_to_own_driver ? <Users size={14} style={{ color: '#2563eb' }} /> : <Truck size={14} style={{ color: '#64748b' }} />}
+                          {order.own_driver?.name || order.driver?.name || 'Entregador'}
                         </div>
                       )}
                     </div>
@@ -374,18 +374,44 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
           </InfoSection>
 
           {/* Entregador (atribuído) */}
-          {order.driver && (
+          {(order.driver || order.own_driver) && (
             <InfoSection title="Entregador">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: hasOwnDriver ? '#dbeafe' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {hasOwnDriver ? <Users size={16} style={{ color: '#2563eb' }} /> : <Truck size={16} style={{ color: '#16a34a' }} />}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: hasOwnDriver ? '#dbeafe' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {hasOwnDriver ? <Users size={16} style={{ color: '#2563eb' }} /> : <Truck size={16} style={{ color: '#16a34a' }} />}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>
+                      {order.own_driver?.name || order.driver?.name || 'Entregador'}
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {hasOwnDriver ? 'Entregador Próprio' : 'Plataforma'} 
+                      {(order.own_driver?.phone || order.driver?.phone) ? ` • ${order.own_driver?.phone || order.driver?.phone}` : ''}
+                      {order.own_driver?.vehicle_type ? ` • ${order.own_driver.vehicle_type}` : ''}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.driver.name}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    {hasOwnDriver ? 'Entregador Próprio' : 'Plataforma'} {order.driver.phone ? `• ${order.driver.phone}` : ''}
-                  </p>
-                </div>
+                {/* Botão para trocar entregador */}
+                {['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'SCHEDULED'].includes(order.status) && (
+                  <button 
+                    onClick={() => {/* TODO: Implementar troca de entregador */}}
+                    style={{ 
+                      padding: '0.375rem 0.75rem', 
+                      borderRadius: '0.375rem', 
+                      border: '1px solid #e2e8f0', 
+                      background: 'white', 
+                      color: '#64748b', 
+                      cursor: 'pointer', 
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    <Users size={12} /> Trocar
+                  </button>
+                )}
               </div>
             </InfoSection>
           )}
@@ -403,9 +429,9 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
             )}
           </InfoSection>
 
-          {/* Distribuição Híbrida - só para pedidos PENDING sem entregador */}
-          {isPending && !order.driver && (
-            <InfoSection title="Distribuição do Pedido">
+          {/* Distribuição Híbrida - para pedidos que podem ter entregador alterado */}
+          {['PENDING', 'SCHEDULED', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && (
+            <InfoSection title={order.driver || order.own_driver ? "Trocar Entregador" : "Distribuição do Pedido"}>
               {/* Resultado da ação */}
               {actionResult && (
                 <div style={{

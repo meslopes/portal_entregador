@@ -636,6 +636,7 @@ class Order(db.Model):
     
     # Relacionamentos
     delivery = db.relationship('Delivery', backref='order', uselist=False, cascade='all, delete-orphan')
+    establishment_driver = db.relationship('EstablishmentDriver', foreign_keys=[establishment_driver_id], lazy='select')
 
     # Índices para performance
     __table_args__ = (
@@ -646,7 +647,7 @@ class Order(db.Model):
     )
 
     def to_dict(self):
-        return {
+        result = {
             'id': self.id,
             'tenant_id': self.tenant_id,
             'restaurant_id': self.restaurant_id,
@@ -684,6 +685,18 @@ class Order(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+        
+        # Incluir informações do entregador próprio se atribuído
+        if self.establishment_driver:
+            result['own_driver'] = {
+                'id': self.establishment_driver.id,
+                'name': self.establishment_driver.name,
+                'phone': self.establishment_driver.phone,
+                'vehicle_type': self.establishment_driver.vehicle_type,
+                'vehicle_plate': self.establishment_driver.vehicle_plate
+            }
+        
+        return result
 
 
 class DeliveryRoute(db.Model):
