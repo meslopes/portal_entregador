@@ -202,9 +202,9 @@ Response: { source_route, target_route }
 - [x] T3: Criar endpoints da API para rotas da plataforma — acceptance: CRUD completo de rotas funciona (covers: S2.5)
 - [x] T4: Implementar página de gestão de rotas no admin — acceptance: admin pode criar/gerenciar rotas de plataforma (covers: S2.6)
 - [x] T5: Implementar dashboard do entregador da plataforma — acceptance: entregador vê rotas ativas e pode concluir paradas (covers: S2.6)
-- [ ] T6: Implementar página de rotas do entregador — acceptance: entregador pode aceitar/rejeitar rotas (covers: S2.6)
-- [ ] T7: Adicionar validações e tratamento de exceções — acceptance: todas as validações de S2.7 funcionam (covers: S2.7)
-- [ ] T8: Testes end-to-end — acceptance: fluxo completo de criação a conclusão funciona (covers: S2.4)
+- [x] T6: Implementar página de rotas do entregador — acceptance: entregador pode aceitar/rejeitar rotas (covers: S2.6)
+- [x] T7: Adicionar validações e tratamento de exceções — acceptance: todas as validações de S2.7 funcionam (covers: S2.7)
+- [x] T8: Testes end-to-end — acceptance: fluxo completo de criação a conclusão funciona (covers: S2.4)
 
 ## Implementado (Configurações e Auto-Roteirização)
 
