@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw, Route
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw, Route, Truck
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
