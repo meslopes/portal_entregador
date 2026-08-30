@@ -6,7 +6,7 @@ from src.models.portal_models import (
     db, Order, OrderStatus, Driver, Restaurant,
     PlatformDriverRoute, PlatformDriverStop, RouteSettings
 )
-from src.services.geocoding import haversine_distance
+from src.utils.geo import haversine_distance
 from datetime import datetime, timedelta
 import logging
 

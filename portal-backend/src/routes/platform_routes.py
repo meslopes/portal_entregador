@@ -9,7 +9,7 @@ from src.models.portal_models import (
     PlatformDriverRoute, PlatformDriverStop, User, UserType
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id
-from src.services.geocoding import haversine_distance
+from src.utils.geo import haversine_distance
 from datetime import datetime
 import logging
 
