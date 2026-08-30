@@ -1168,10 +1168,14 @@ class OwnDriverRoute(db.Model):
     restaurant = db.relationship('Restaurant', backref='own_driver_routes')
     stops = db.relationship('OwnDriverStop', backref='route', order_by='OwnDriverStop.stop_order')
 
+    @property
+    def name(self):
+        return f'Rota #{self.id}'
+
     def to_dict(self):
         return {
             'id': self.id,
-            'name': f'Rota #{self.id}',
+            'name': self.name,
             'establishment_driver_id': self.establishment_driver_id,
             'driver_name': self.driver.name if self.driver else None,
             'restaurant_id': self.restaurant_id,
