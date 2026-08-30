@@ -127,11 +127,24 @@ def create_platform_route():
         driver = Driver.query.get(driver_id)
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        if not driver.is_active:
+            return jsonify({'error': 'Entregador está inativo'}), 400
+        
+        if not driver.is_online:
+            return jsonify({'error': 'Entregador está offline'}), 400
 
         # Verificar pedidos
         orders = Order.query.filter(Order.id.in_(order_ids)).all()
         if len(orders) != len(order_ids):
             return jsonify({'error': 'Alguns pedidos não foram encontrados'}), 400
+        
+        # Verificar limite de pedidos
+        from src.models.portal_models import RouteSettings
+        settings = RouteSettings.query.first()
+        max_orders = settings.max_orders_manual if settings else 10
+        if len(orders) > max_orders:
+            return jsonify({'error': f'Máximo de {max_orders} pedidos por rota'}), 400
 
         # Verificar se pedidos já estão em rotas ativas
         for order in orders:
@@ -139,6 +152,10 @@ def create_platform_route():
                 existing_route = PlatformDriverRoute.query.get(order.route_id)
                 if existing_route and existing_route.status in ['PENDING', 'ACTIVE']:
                     return jsonify({'error': f'Pedido {order.order_number} já está na rota #{existing_route.id}'}), 400
+            
+            # Verificar se pedido tem dados de entrega
+            if not order.delivery_address or not order.delivery_address.latitude:
+                return jsonify({'error': f'Pedido {order.order_number} não tem endereço de entrega com coordenadas'}), 400
 
         # Criar rota
         route = PlatformDriverRoute(
@@ -255,6 +272,9 @@ def accept_route(route_id):
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
+        
+        if not driver.is_active:
+            return jsonify({'error': 'Entregador está inativo'}), 400
 
         route = PlatformDriverRoute.query.get(route_id)
         if not route:
