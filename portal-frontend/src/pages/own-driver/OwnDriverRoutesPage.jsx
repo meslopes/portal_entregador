@@ -6,9 +6,6 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 
-// URL do som de notificação (beep curto)
-const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI+Hf3R0goqOjomDe3V5g4uQj4qDend7hIyRkIuGe3d6g4uQj4qDe3d6g4yRj4qEe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiA==';
-
 const OwnDriverRoutesPage = () => {
   const navigate = useNavigate();
   const [routes, setRoutes] = useState([]);
@@ -16,19 +13,16 @@ const OwnDriverRoutesPage = () => {
   const [error, setError] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
   const prevPendingCount = useRef(0);
-  const audioRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const audioEnabledRef = useRef(false);
 
-  // Carregar som de notificação e habilitar áudio com interação do usuário
+  // Habilitar áudio após primeira interação do usuário
   useEffect(() => {
-    audioRef.current = new Audio(NOTIFICATION_SOUND);
-    audioRef.current.volume = 0.8;
-    
-    // Habilitar áudio após primeira interação do usuário
     const enableAudio = () => {
-      audioRef.current.play().then(() => {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }).catch(() => {});
+      try {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        audioEnabledRef.current = true;
+      } catch (e) {}
       document.removeEventListener('click', enableAudio);
       document.removeEventListener('touchstart', enableAudio);
     };
@@ -60,13 +54,42 @@ const OwnDriverRoutesPage = () => {
 
   const playNotification = () => {
     try {
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
+      // Usar Web Audio API para gerar beep
+      if (audioEnabledRef.current && audioContextRef.current) {
+        const ctx = audioContextRef.current;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.frequency.value = 800; // Frequência do beep
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.3);
+        
+        // Segundo beep mais agudo
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.frequency.value = 1000;
+          osc2.type = 'sine';
+          gain2.gain.setValueAtTime(0.5, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc2.start(ctx.currentTime);
+          osc2.stop(ctx.currentTime + 0.3);
+        }, 350);
       }
+      
       // Vibração no celular (se suportado)
       if (navigator.vibrate) {
-        navigator.vibrate([200, 100, 200]);
+        navigator.vibrate([200, 100, 200, 100, 200]);
       }
     } catch (e) {
       // Silenciar erro de áudio

@@ -29,12 +29,26 @@ const OwnDriverDashboardPage = () => {
   const [toggling, setToggling] = useState(false);
   const [pendingRoutes, setPendingRoutes] = useState(0);
   const prevPendingRoutes = useRef(0);
-  const audioRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const audioEnabledRef = useRef(false);
 
-  // Carregar som de notificação
+  // Habilitar áudio após primeira interação do usuário
   useEffect(() => {
-    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI+Hf3R0gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiDe3Z6gouPjoiA==');
-    audioRef.current.volume = 0.8;
+    const enableAudio = () => {
+      try {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        audioEnabledRef.current = true;
+      } catch (e) {}
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
+    document.addEventListener('click', enableAudio, { once: true });
+    document.addEventListener('touchstart', enableAudio, { once: true });
+    
+    return () => {
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
   }, []);
 
   useEffect(() => {
@@ -54,12 +68,41 @@ const OwnDriverDashboardPage = () => {
   useEffect(() => {
     if (pendingRoutes > prevPendingRoutes.current && prevPendingRoutes.current > 0) {
       try {
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(() => {});
+        // Usar Web Audio API para gerar beep
+        if (audioEnabledRef.current && audioContextRef.current) {
+          const ctx = audioContextRef.current;
+          const oscillator = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          
+          oscillator.start(ctx.currentTime);
+          oscillator.stop(ctx.currentTime + 0.3);
+          
+          // Segundo beep mais agudo
+          setTimeout(() => {
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.frequency.value = 1000;
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(0.5, ctx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc2.start(ctx.currentTime);
+            osc2.stop(ctx.currentTime + 0.3);
+          }, 350);
         }
+        
         if (navigator.vibrate) {
-          navigator.vibrate([200, 100, 200]);
+          navigator.vibrate([200, 100, 200, 100, 200]);
         }
       } catch (e) {}
     }
