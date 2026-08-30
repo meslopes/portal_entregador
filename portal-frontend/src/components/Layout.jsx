@@ -59,6 +59,7 @@ const Layout = ({ children }) => {
     { name: 'Relatorios', href: '/admin/reports', icon: FileText },
     { name: 'Configuracoes', href: '/admin/settings', icon: Settings },
     { name: 'Rotas', href: '/admin/route-settings', icon: Route },
+    { name: 'Rotas Plataforma', href: '/admin/platform-routes', icon: Truck },
   ];
 
   const platformNavigation = [

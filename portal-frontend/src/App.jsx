@@ -54,6 +54,7 @@ import AdminIntegrationsPage from '@/pages/admin/AdminIntegrationsPage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminRouteSettingsPage from '@/pages/admin/AdminRouteSettingsPage';
+import AdminPlatformRoutesPage from '@/pages/admin/AdminPlatformRoutesPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
@@ -560,6 +561,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminRouteSettingsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/platform-routes"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <AdminPlatformRoutesPage />
                 </Layout>
               </ProtectedRoute>
             }
