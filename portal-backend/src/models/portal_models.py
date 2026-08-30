@@ -1253,6 +1253,14 @@ class RouteSettings(db.Model):
     min_time_savings_min = db.Column(db.Integer, default=10)  # mínimo de minutos economizados
     min_clusterization = db.Column(db.Numeric(3, 2), default=0.70)  # proximidade mínima (0-1)
     
+    # Status de pedidos para roteirização
+    include_scheduled = db.Column(db.Boolean, default=False)  # incluir agendados
+    scheduled_advance_min = db.Column(db.Integer, default=30)  # minutos antes do horário agendado para incluir
+    include_pending = db.Column(db.Boolean, default=True)  # incluir pendentes
+    include_accepted = db.Column(db.Boolean, default=True)  # incluir aceitos
+    include_preparing = db.Column(db.Boolean, default=True)  # incluir em preparo
+    include_ready = db.Column(db.Boolean, default=True)  # incluir prontos
+    
     # Notificações
     notify_admin_auto_route = db.Column(db.Boolean, default=True)
     notify_driver_auto_route = db.Column(db.Boolean, default=True)
@@ -1273,6 +1281,12 @@ class RouteSettings(db.Model):
             'distance_weight': float(self.distance_weight) if self.distance_weight else 0.30,
             'min_time_savings_min': self.min_time_savings_min,
             'min_clusterization': float(self.min_clusterization) if self.min_clusterization else 0.70,
+            'include_scheduled': self.include_scheduled,
+            'scheduled_advance_min': self.scheduled_advance_min,
+            'include_pending': self.include_pending,
+            'include_accepted': self.include_accepted,
+            'include_preparing': self.include_preparing,
+            'include_ready': self.include_ready,
             'notify_admin_auto_route': self.notify_admin_auto_route,
             'notify_driver_auto_route': self.notify_driver_auto_route,
             'created_at': self.created_at.isoformat(),

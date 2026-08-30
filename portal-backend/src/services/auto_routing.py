@@ -23,10 +23,47 @@ def get_route_settings(tenant_id=None):
     return settings
 
 
-def get_pending_orders(tenant_id=None):
-    """Obtém pedidos pendentes prontos para entrega"""
+def get_pending_orders(tenant_id=None, settings=None):
+    """Obtém pedidos pendentes prontos para entrega baseado nas configurações"""
+    if not settings:
+        settings = get_route_settings(tenant_id)
+    
+    # Determinar quais status incluir
+    statuses = []
+    if settings.include_ready:
+        statuses.append(OrderStatus.READY)
+    if settings.include_preparing:
+        statuses.append(OrderStatus.PREPARING)
+    if settings.include_accepted:
+        statuses.append(OrderStatus.ACCEPTED)
+    if settings.include_pending:
+        statuses.append(OrderStatus.PENDING)
+    
+    # Incluir agendados se configurado
+    if settings.include_scheduled:
+        from datetime import datetime, timedelta
+        now = datetime.utcnow()
+        advance_time = now + timedelta(minutes=settings.scheduled_advance_min)
+        
+        # Buscar agendados que devem ser preparados em breve
+        scheduled_orders = Order.query.filter(
+            Order.status == OrderStatus.SCHEDULED,
+            Order.scheduled_at <= advance_time,
+            Order.driver_id.is_(None),
+            Order.assigned_to_own_driver == False
+        )
+        if tenant_id:
+            scheduled_orders = scheduled_orders.filter(Order.tenant_id == tenant_id)
+        
+        scheduled_list = scheduled_orders.all()
+    else:
+        scheduled_list = []
+    
+    if not statuses:
+        return scheduled_list
+    
     query = Order.query.filter(
-        Order.status.in_([OrderStatus.READY, OrderStatus.PICKED_UP]),
+        Order.status.in_(statuses),
         Order.driver_id.is_(None),  # Sem entregador da plataforma
         Order.assigned_to_own_driver == False  # Sem entregador próprio
     )
@@ -34,7 +71,7 @@ def get_pending_orders(tenant_id=None):
     if tenant_id:
         query = query.filter(Order.tenant_id == tenant_id)
     
-    return query.all()
+    return query.all() + scheduled_list
 
 
 def get_available_drivers(tenant_id=None):
@@ -455,8 +492,8 @@ def run_auto_routing(tenant_id=None):
         if not settings.auto_routing_enabled:
             return {'status': 'disabled', 'message': 'Auto-roteirização desabilitada'}
         
-        # Obter pedidos pendentes
-        orders = get_pending_orders(tenant_id)
+        # Obter pedidos pendentes (usando configurações de status)
+        orders = get_pending_orders(tenant_id, settings)
         
         if not orders:
             return {'status': 'no_orders', 'message': 'Nenhum pedido pendente'}

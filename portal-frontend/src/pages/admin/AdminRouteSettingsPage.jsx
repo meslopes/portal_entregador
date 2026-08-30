@@ -188,6 +188,102 @@ const AdminRouteSettingsPage = () => {
         </div>
       </div>
 
+      {/* Status de Pedidos */}
+      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', overflow: 'hidden' }}>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <Package size={20} style={{ color: '#f59e0b' }} />
+          <div>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b' }}>Status de Pedidos</h2>
+            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Quais status incluir na roteirização</p>
+          </div>
+        </div>
+        <div style={{ padding: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <p style={{ fontWeight: 500, color: '#1e293b' }}>Prontos (READY)</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedidos prontos para coleta</p>
+            </div>
+            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px' }}>
+              <input type="checkbox" checked={settings.include_ready} onChange={e => handleChange('include_ready', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+              <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: settings.include_ready ? '#2563eb' : '#94a3b8', borderRadius: '24px', transition: '0.3s' }}>
+                <span style={{ position: 'absolute', height: '18px', width: '18px', left: settings.include_ready ? '27px' : '3px', bottom: '3px', background: 'white', borderRadius: '50%', transition: '0.3s' }} />
+              </span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <p style={{ fontWeight: 500, color: '#1e293b' }}>Em Preparo (PREPARING)</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedidos sendo preparados</p>
+            </div>
+            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px' }}>
+              <input type="checkbox" checked={settings.include_preparing} onChange={e => handleChange('include_preparing', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+              <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: settings.include_preparing ? '#2563eb' : '#94a3b8', borderRadius: '24px', transition: '0.3s' }}>
+                <span style={{ position: 'absolute', height: '18px', width: '18px', left: settings.include_preparing ? '27px' : '3px', bottom: '3px', background: 'white', borderRadius: '50%', transition: '0.3s' }} />
+              </span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <p style={{ fontWeight: 500, color: '#1e293b' }}>Aceitos (ACCEPTED)</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedidos aceitos pelo restaurante</p>
+            </div>
+            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px' }}>
+              <input type="checkbox" checked={settings.include_accepted} onChange={e => handleChange('include_accepted', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+              <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: settings.include_accepted ? '#2563eb' : '#94a3b8', borderRadius: '24px', transition: '0.3s' }}>
+                <span style={{ position: 'absolute', height: '18px', width: '18px', left: settings.include_accepted ? '27px' : '3px', bottom: '3px', background: 'white', borderRadius: '50%', transition: '0.3s' }} />
+              </span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <p style={{ fontWeight: 500, color: '#1e293b' }}>Pendentes (PENDING)</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedidos aguardando aceite</p>
+            </div>
+            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px' }}>
+              <input type="checkbox" checked={settings.include_pending} onChange={e => handleChange('include_pending', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+              <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: settings.include_pending ? '#2563eb' : '#94a3b8', borderRadius: '24px', transition: '0.3s' }}>
+                <span style={{ position: 'absolute', height: '18px', width: '18px', left: settings.include_pending ? '27px' : '3px', bottom: '3px', background: 'white', borderRadius: '50%', transition: '0.3s' }} />
+              </span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <p style={{ fontWeight: 500, color: '#1e293b' }}>Agendados (SCHEDULED)</p>
+              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedidos agendados para horário futuro</p>
+            </div>
+            <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px' }}>
+              <input type="checkbox" checked={settings.include_scheduled} onChange={e => handleChange('include_scheduled', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+              <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: settings.include_scheduled ? '#2563eb' : '#94a3b8', borderRadius: '24px', transition: '0.3s' }}>
+                <span style={{ position: 'absolute', height: '18px', width: '18px', left: settings.include_scheduled ? '27px' : '3px', bottom: '3px', background: 'white', borderRadius: '50%', transition: '0.3s' }} />
+              </span>
+            </label>
+          </div>
+
+          {settings.include_scheduled && (
+            <div style={{ marginTop: '0.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                Antecedência para Agendados (minutos)
+              </label>
+              <input
+                type="number"
+                min="5"
+                max="120"
+                value={settings.scheduled_advance_min}
+                onChange={e => handleChange('scheduled_advance_min', parseInt(e.target.value) || 30)}
+                style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+              />
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                Incluir agendados que começam em até {settings.scheduled_advance_min} minutos
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Algoritmo */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', overflow: 'hidden' }}>
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

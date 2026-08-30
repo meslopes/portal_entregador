@@ -77,6 +77,18 @@ def update_settings():
             settings.min_time_savings_min = max(1, min(60, data['min_time_savings_min']))
         if 'min_clusterization' in data:
             settings.min_clusterization = max(0, min(1, data['min_clusterization']))
+        if 'include_scheduled' in data:
+            settings.include_scheduled = data['include_scheduled']
+        if 'scheduled_advance_min' in data:
+            settings.scheduled_advance_min = max(5, min(120, data['scheduled_advance_min']))
+        if 'include_pending' in data:
+            settings.include_pending = data['include_pending']
+        if 'include_accepted' in data:
+            settings.include_accepted = data['include_accepted']
+        if 'include_preparing' in data:
+            settings.include_preparing = data['include_preparing']
+        if 'include_ready' in data:
+            settings.include_ready = data['include_ready']
         if 'notify_admin_auto_route' in data:
             settings.notify_admin_auto_route = data['notify_admin_auto_route']
         if 'notify_driver_auto_route' in data:
