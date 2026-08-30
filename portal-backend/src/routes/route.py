@@ -675,7 +675,7 @@ def move_order_between_routes(route_id):
         db.session.commit()
 
         return jsonify({
-            'message': f'Pedido movido para {target_route.name}',
+            'message': f'Pedido movido para Rota #{target_route.id}',
             'source_route': source_route.to_dict() if remaining_stops else None,
             'target_route': target_route.to_dict()
         }), 200
