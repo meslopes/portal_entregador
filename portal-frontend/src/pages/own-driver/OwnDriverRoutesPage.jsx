@@ -102,7 +102,17 @@ const OwnDriverRoutesPage = () => {
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get('/api/routes/own-driver/active', { headers });
-      setRoutes(res.data.routes || []);
+      const allRoutes = res.data.routes || [];
+      // Filtrar rotas onde todas as paradas já foram concluídas
+      const activeRoutes = allRoutes.filter(route => {
+        if (route.status === 'COMPLETED') return false;
+        if (route.stops && route.stops.length > 0) {
+          const allDone = route.stops.every(s => s.status === 'COMPLETED');
+          if (allDone) return false;
+        }
+        return true;
+      });
+      setRoutes(activeRoutes);
     } catch (err) {
       console.error('Erro ao carregar rotas:', err);
       if (!isRefresh) setError('Erro ao carregar rotas');

@@ -158,7 +158,13 @@ const OwnDriverDashboardPage = () => {
       setIsOnline(statsRes.data.driver?.is_online || false);
       
       // Extrair pedidos das rotas ativas e contar pendentes
-      const routes = routesRes.data.routes || [];
+      const routes = (routesRes.data.routes || []).filter(route => {
+        if (route.status === 'COMPLETED') return false;
+        if (route.stops && route.stops.length > 0) {
+          return !route.stops.every(s => s.status === 'COMPLETED');
+        }
+        return true;
+      });
       const pending = routes.filter(r => r.status === 'PENDING').length;
       setPendingRoutes(pending);
       
