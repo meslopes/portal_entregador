@@ -504,6 +504,24 @@ def update_order_status(order_id):
         elif new_status_enum == OrderStatus.DELIVERED:
             order.delivery_time = datetime.utcnow()
 
+            # Marcar parada como concluída na rota (se aplicável)
+            if order.own_driver_route_id:
+                from src.models.portal_models import OwnDriverStop, OwnDriverRoute
+                stop = OwnDriverStop.query.filter_by(
+                    route_id=order.own_driver_route_id,
+                    order_id=order.id
+                ).first()
+                if stop and stop.status != 'COMPLETED':
+                    stop.status = 'COMPLETED'
+                    stop.completed_at = datetime.utcnow()
+                    # Verificar se todas as paradas foram concluídas
+                    route = OwnDriverRoute.query.get(order.own_driver_route_id)
+                    if route:
+                        all_completed = all(s.status == 'COMPLETED' for s in route.stops)
+                        if all_completed:
+                            route.status = 'COMPLETED'
+                            route.completed_at = datetime.utcnow()
+
             # Salvar prova de entrega se fornecida
             proof_data = data.get('proof_of_delivery')
             if proof_data and order.delivery:
