@@ -633,9 +633,6 @@ def move_order_between_routes(route_id):
 
         # Mover parada para a rota de destino
         stop.route_id = target_route_id
-        # Colocar como última parada da rota de destino
-        max_order = db.session.query(db.func.max(OwnDriverStop.stop_order)).filter_by(route_id=target_route_id).scalar() or 0
-        stop.stop_order = max_order + 1
 
         # Atualizar vínculo do pedido
         if order:
@@ -653,6 +650,25 @@ def move_order_between_routes(route_id):
         # Se rota de origem ficou sem paradas, excluir
         if not remaining_stops:
             db.session.delete(source_route)
+
+        # Re-otimizar ordem das paradas da rota de destino
+        target_stops_data = []
+        for s in OwnDriverStop.query.filter_by(route_id=target_route_id).order_by(OwnDriverStop.stop_order).all():
+            target_stops_data.append({
+                'stop_id': s.id,
+                'order_id': s.order_id,
+                'stop_type': s.stop_type,
+                'latitude': float(s.latitude) if s.latitude else None,
+                'longitude': float(s.longitude) if s.longitude else None,
+                'address': s.address
+            })
+
+        optimized = optimize_stop_order(target_stops_data)
+        for stop_data in optimized:
+            if 'stop_id' in stop_data:
+                s = OwnDriverStop.query.get(stop_data['stop_id'])
+                if s:
+                    s.stop_order = stop_data['stop_order']
 
         db.session.commit()
 
