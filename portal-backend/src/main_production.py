@@ -67,6 +67,9 @@ def create_app(config_name=None):
     from src.routes.route_settings import route_settings_bp
     app.register_blueprint(route_settings_bp)
 
+    from src.routes.platform_routes import platform_routes_bp
+    app.register_blueprint(platform_routes_bp)
+
     from src.routes.finance import finance_bp
     app.register_blueprint(finance_bp)
 
