@@ -541,14 +541,14 @@ def remove_order_from_route(route_id):
         if not route:
             return jsonify({'error': 'Rota não encontrada'}), 404
 
-        # Não permitir remover de rotas ativas
-        if route.status == 'ACTIVE':
-            return jsonify({'error': 'Não é possível remover pedidos de uma rota ativa'}), 400
-
         # Encontrar a parada do pedido nesta rota
         stop = OwnDriverStop.query.filter_by(route_id=route_id, order_id=order_id).first()
         if not stop:
             return jsonify({'error': 'Pedido não encontrado nesta rota'}), 404
+
+        # Não permitir remover paradas já concluídas
+        if stop.status == 'COMPLETED':
+            return jsonify({'error': 'Não é possível remover uma parada já concluída'}), 400
 
         # Desvincular pedido da rota
         order = Order.query.get(order_id)
@@ -612,14 +612,14 @@ def move_order_between_routes(route_id):
         if not target_route:
             return jsonify({'error': 'Rota de destino não encontrada'}), 404
 
-        # Não permitir mover de rotas ativas
-        if source_route.status == 'ACTIVE':
-            return jsonify({'error': 'Não é possível mover pedidos de uma rota ativa'}), 400
-
         # Encontrar a parada na rota de origem
         stop = OwnDriverStop.query.filter_by(route_id=route_id, order_id=order_id).first()
         if not stop:
             return jsonify({'error': 'Pedido não encontrado na rota de origem'}), 404
+
+        # Não permitir mover paradas já concluídas
+        if stop.status == 'COMPLETED':
+            return jsonify({'error': 'Não é possível mover uma parada já concluída'}), 400
 
         # Verificar se o pedido já está na rota de destino
         existing = OwnDriverStop.query.filter_by(route_id=target_route_id, order_id=order_id).first()

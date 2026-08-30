@@ -368,7 +368,7 @@ const EstablishmentRoutesPage = () => {
                         <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{stop.customer_name} • Pedido #{stop.order_number}</p>
                       </div>
                       {stop.status === 'COMPLETED' && <CheckCircle size={16} style={{ color: '#22c55e' }} />}
-                      {stop.status !== 'COMPLETED' && ['CREATED', 'PENDING'].includes(route.status) && (
+                      {stop.status !== 'COMPLETED' && ['CREATED', 'PENDING', 'ACTIVE'].includes(route.status) && (
                         <div style={{ display: 'flex', gap: '0.25rem' }}>
                           <button
                             onClick={() => { setMovingStop({ ...stop, route_id: route.id }); setTargetRouteId(''); }}
@@ -489,7 +489,7 @@ const EstablishmentRoutesPage = () => {
                 style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', marginBottom: '1rem' }}
               >
                 <option value="">Selecionar rota de destino...</option>
-                {routes.filter(r => r.id !== movingStop.route_id && ['CREATED', 'PENDING'].includes(r.status)).map(r => (
+                {routes.filter(r => r.id !== movingStop.route_id && ['CREATED', 'PENDING', 'ACTIVE'].includes(r.status)).map(r => (
                   <option key={r.id} value={r.id}>{r.name} - {r.driver_name || 'Sem entregador'} ({r.stops_count} entregas)</option>
                 ))}
               </select>
