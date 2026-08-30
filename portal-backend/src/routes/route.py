@@ -30,6 +30,8 @@ def optimize_stop_order(stops):
     2. Entregas ordenadas por proximidade (vizinho mais próximo)
     """
     if len(stops) <= 2:
+        for i, stop in enumerate(stops):
+            stop['stop_order'] = i + 1
         return stops
     
     # Separar pickups e deliveries
