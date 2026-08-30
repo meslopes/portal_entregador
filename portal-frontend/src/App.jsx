@@ -53,6 +53,7 @@ import AdminDynamicPricingPage from '@/pages/admin/AdminDynamicPricingPage';
 import AdminIntegrationsPage from '@/pages/admin/AdminIntegrationsPage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
+import AdminRouteSettingsPage from '@/pages/admin/AdminRouteSettingsPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
@@ -549,6 +550,16 @@ function App() {
               <ProtectedRoute requiredRole="ADMIN">
                 <Layout>
                   <AdminSettingsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/route-settings"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout>
+                  <AdminRouteSettingsPage />
                 </Layout>
               </ProtectedRoute>
             }

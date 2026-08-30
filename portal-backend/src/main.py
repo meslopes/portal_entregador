@@ -67,6 +67,9 @@ app.register_blueprint(platform_bp, url_prefix='/api/platform')
 from src.routes.own_driver import own_driver_bp
 app.register_blueprint(own_driver_bp)
 
+from src.routes.route_settings import route_settings_bp
+app.register_blueprint(route_settings_bp)
+
 # Inicializa banco de dados
 db.init_app(app)
 with app.app_context():

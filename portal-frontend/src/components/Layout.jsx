@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw, Route
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -58,6 +58,7 @@ const Layout = ({ children }) => {
     { name: 'Faturas', href: '/admin/invoices', icon: FileText },
     { name: 'Relatorios', href: '/admin/reports', icon: FileText },
     { name: 'Configuracoes', href: '/admin/settings', icon: Settings },
+    { name: 'Rotas', href: '/admin/route-settings', icon: Route },
   ];
 
   const platformNavigation = [

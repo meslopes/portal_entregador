@@ -1231,6 +1231,55 @@ class OwnDriverStop(db.Model):
         }
 
 
+class RouteSettings(db.Model):
+    """Configurações de roteirização"""
+    __tablename__ = 'route_settings'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    
+    # Auto-roteirização
+    auto_routing_enabled = db.Column(db.Boolean, default=True)
+    auto_routing_interval_min = db.Column(db.Integer, default=5)  # minutos
+    
+    # Limites
+    max_orders_auto = db.Column(db.Integer, default=6)  # máximo para auto
+    max_orders_manual = db.Column(db.Integer, default=10)  # máximo para manual
+    max_distance_km = db.Column(db.Numeric(5, 2), default=10.0)  # distância máxima entre pedidos
+    
+    # Algoritmo
+    direction_weight = db.Column(db.Numeric(3, 2), default=0.70)  # peso da direção (0-1)
+    distance_weight = db.Column(db.Numeric(3, 2), default=0.30)  # peso da distância (0-1)
+    min_time_savings_min = db.Column(db.Integer, default=10)  # mínimo de minutos economizados
+    min_clusterization = db.Column(db.Numeric(3, 2), default=0.70)  # proximidade mínima (0-1)
+    
+    # Notificações
+    notify_admin_auto_route = db.Column(db.Boolean, default=True)
+    notify_driver_auto_route = db.Column(db.Boolean, default=True)
+    
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'auto_routing_enabled': self.auto_routing_enabled,
+            'auto_routing_interval_min': self.auto_routing_interval_min,
+            'max_orders_auto': self.max_orders_auto,
+            'max_orders_manual': self.max_orders_manual,
+            'max_distance_km': float(self.max_distance_km) if self.max_distance_km else 10.0,
+            'direction_weight': float(self.direction_weight) if self.direction_weight else 0.70,
+            'distance_weight': float(self.distance_weight) if self.distance_weight else 0.30,
+            'min_time_savings_min': self.min_time_savings_min,
+            'min_clusterization': float(self.min_clusterization) if self.min_clusterization else 0.70,
+            'notify_admin_auto_route': self.notify_admin_auto_route,
+            'notify_driver_auto_route': self.notify_driver_auto_route,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
+        }
+
+
 class EstablishmentSubscription(db.Model):
     """Assinatura de entregadores próprios do estabelecimento"""
     __tablename__ = 'establishment_subscriptions'
