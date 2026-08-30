@@ -166,6 +166,8 @@ const OwnDriverDashboardPage = () => {
       routes.forEach(route => {
         if (route.stops) {
           route.stops.forEach(stop => {
+            // Ignorar paradas já concluídas
+            if (stop.status === 'COMPLETED') return;
             if (stop.order_id && !ordersFromRoutes.find(o => o.id === stop.order_id)) {
               ordersFromRoutes.push({
                 id: stop.order_id,
