@@ -8722,11 +8722,15 @@ def get_establishment_orders():
                 query = query.filter(Order.status.in_(status_enums))
         
         # Excluir pedidos que já estão em rotas ativas (CREATED, PENDING, ACTIVE)
+        # Incluir pedidos sem rota (NULL) OU com rota não ativa
         active_route_ids = db.session.query(OwnDriverRoute.id).filter(
             OwnDriverRoute.status.in_(['CREATED', 'PENDING', 'ACTIVE'])
         )
         query = query.filter(
-            ~Order.own_driver_route_id.in_(active_route_ids)
+            or_(
+                Order.own_driver_route_id.is_(None),
+                ~Order.own_driver_route_id.in_(active_route_ids)
+            )
         )
         
         orders = query.order_by(Order.created_at.desc()).limit(100).all()
