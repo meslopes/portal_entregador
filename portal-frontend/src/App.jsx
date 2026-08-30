@@ -55,6 +55,7 @@ import AdminReportsPage from '@/pages/admin/AdminReportsPage';
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage';
 import AdminRouteSettingsPage from '@/pages/admin/AdminRouteSettingsPage';
 import AdminPlatformRoutesPage from '@/pages/admin/AdminPlatformRoutesPage';
+import PlatformDriverDashboardPage from '@/pages/driver/PlatformDriverDashboardPage';
 import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
@@ -133,6 +134,14 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/platform-driver"
+            element={
+              <ProtectedRoute>
+                <PlatformDriverDashboardPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/orders"
