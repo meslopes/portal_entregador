@@ -523,6 +523,151 @@ def delete_route(route_id):
         return jsonify({'error': str(e)}), 500
 
 
+@route_bp.route('/<int:route_id>/remove-order', methods=['POST'])
+@jwt_required()
+def remove_order_from_route(route_id):
+    """Remove um pedido de uma rota (torna disponível novamente)"""
+    try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
+        data = request.get_json()
+        order_id = data.get('order_id')
+        if not order_id:
+            return jsonify({'error': 'order_id é obrigatório'}), 400
+
+        route = OwnDriverRoute.query.get(route_id)
+        if not route:
+            return jsonify({'error': 'Rota não encontrada'}), 404
+
+        # Não permitir remover de rotas ativas
+        if route.status == 'ACTIVE':
+            return jsonify({'error': 'Não é possível remover pedidos de uma rota ativa'}), 400
+
+        # Encontrar a parada do pedido nesta rota
+        stop = OwnDriverStop.query.filter_by(route_id=route_id, order_id=order_id).first()
+        if not stop:
+            return jsonify({'error': 'Pedido não encontrado nesta rota'}), 404
+
+        # Desvincular pedido da rota
+        order = Order.query.get(order_id)
+        if order:
+            order.own_driver_route_id = None
+            # Se foi atribuído apenas por esta rota, desvincular entregador
+            if order.assigned_to_own_driver and order.establishment_driver_id == route.establishment_driver_id:
+                order.assigned_to_own_driver = False
+                order.establishment_driver_id = None
+
+        # Remover parada
+        db.session.delete(stop)
+
+        # Reordenar paradas restantes
+        remaining_stops = OwnDriverStop.query.filter_by(route_id=route_id).order_by(OwnDriverStop.stop_order).all()
+        for i, s in enumerate(remaining_stops):
+            s.stop_order = i + 1
+
+        # Se rota ficou sem paradas, excluir rota
+        if not remaining_stops:
+            db.session.delete(route)
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Pedido removido da rota',
+            'route': route.to_dict() if remaining_stops else None
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao remover pedido da rota: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@route_bp.route('/<int:route_id>/move-order', methods=['POST'])
+@jwt_required()
+def move_order_between_routes(route_id):
+    """Move um pedido de uma rota para outra"""
+    try:
+        user = get_current_user()
+        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
+            return jsonify({'error': 'Sem permissão'}), 403
+
+        data = request.get_json()
+        order_id = data.get('order_id')
+        target_route_id = data.get('target_route_id')
+
+        if not order_id:
+            return jsonify({'error': 'order_id é obrigatório'}), 400
+        if not target_route_id:
+            return jsonify({'error': 'target_route_id é obrigatório'}), 400
+        if route_id == target_route_id:
+            return jsonify({'error': 'Rota de origem e destino são iguais'}), 400
+
+        source_route = OwnDriverRoute.query.get(route_id)
+        if not source_route:
+            return jsonify({'error': 'Rota de origem não encontrada'}), 404
+
+        target_route = OwnDriverRoute.query.get(target_route_id)
+        if not target_route:
+            return jsonify({'error': 'Rota de destino não encontrada'}), 404
+
+        # Não permitir mover de rotas ativas
+        if source_route.status == 'ACTIVE':
+            return jsonify({'error': 'Não é possível mover pedidos de uma rota ativa'}), 400
+
+        # Encontrar a parada na rota de origem
+        stop = OwnDriverStop.query.filter_by(route_id=route_id, order_id=order_id).first()
+        if not stop:
+            return jsonify({'error': 'Pedido não encontrado na rota de origem'}), 404
+
+        # Verificar se o pedido já está na rota de destino
+        existing = OwnDriverStop.query.filter_by(route_id=target_route_id, order_id=order_id).first()
+        if existing:
+            return jsonify({'error': 'Pedido já está na rota de destino'}), 400
+
+        # Verificar se o pedido é do mesmo restaurante da rota de destino
+        order = Order.query.get(order_id)
+        if order and order.restaurant_id != target_route.restaurant_id:
+            return jsonify({'error': 'Pedido não é do mesmo restaurante da rota de destino'}), 400
+
+        # Mover parada para a rota de destino
+        stop.route_id = target_route_id
+        # Colocar como última parada da rota de destino
+        max_order = db.session.query(db.func.max(OwnDriverStop.stop_order)).filter_by(route_id=target_route_id).scalar() or 0
+        stop.stop_order = max_order + 1
+
+        # Atualizar vínculo do pedido
+        if order:
+            order.own_driver_route_id = target_route_id
+            # Se a rota de destino tem entregador, atribuir
+            if target_route.establishment_driver_id:
+                order.assigned_to_own_driver = True
+                order.establishment_driver_id = target_route.establishment_driver_id
+
+        # Reordenar paradas da rota de origem
+        remaining_stops = OwnDriverStop.query.filter_by(route_id=route_id).order_by(OwnDriverStop.stop_order).all()
+        for i, s in enumerate(remaining_stops):
+            s.stop_order = i + 1
+
+        # Se rota de origem ficou sem paradas, excluir
+        if not remaining_stops:
+            db.session.delete(source_route)
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Pedido movido para {target_route.name}',
+            'source_route': source_route.to_dict() if remaining_stops else None,
+            'target_route': target_route.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao mover pedido entre rotas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @route_bp.route('/establishment/list', methods=['GET'])
 @jwt_required()
 def list_establishment_routes():
