@@ -159,6 +159,11 @@ const ClientOrdersPage = () => {
                               <Users size={9} /> Próprio
                             </span>
                           )}
+                          {order.own_driver_route && (
+                            <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
+                              {order.own_driver_route.name}
+                            </span>
+                          )}
                         </div>
                         <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{utils.formatDateTime(order.created_at)}</p>
                       </div>

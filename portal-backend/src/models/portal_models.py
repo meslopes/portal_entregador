@@ -682,6 +682,7 @@ class Order(db.Model):
             'square_id': self.square_id,
             'assigned_to_own_driver': self.assigned_to_own_driver or False,
             'establishment_driver_id': self.establishment_driver_id,
+            'own_driver_route_id': self.own_driver_route_id,
             'called_platform': self.called_platform or False,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()

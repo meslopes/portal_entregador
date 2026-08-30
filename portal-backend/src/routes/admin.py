@@ -16,7 +16,7 @@ from src.models.portal_models import (
 
     Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice,
 
-    PlatformCredential, DriverRestaurant, EstablishmentDriver, OwnDriverEarning, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
+    PlatformCredential, DriverRestaurant, EstablishmentDriver, OwnDriverEarning, OwnDriverRoute, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
 
 )
 
@@ -2229,7 +2229,15 @@ def get_all_orders():
 
                 }
 
-            
+            # Incluir informações da rota se o pedido estiver em uma rota
+            if order.own_driver_route_id:
+                own_route = OwnDriverRoute.query.get(order.own_driver_route_id)
+                if own_route:
+                    order_dict['own_driver_route'] = {
+                        'id': own_route.id,
+                        'name': f'Rota #{own_route.id}',
+                        'status': own_route.status
+                    }
 
             orders_data.append(order_dict)
 
@@ -8712,6 +8720,14 @@ def get_establishment_orders():
                     pass
             if status_enums:
                 query = query.filter(Order.status.in_(status_enums))
+        
+        # Excluir pedidos que já estão em rotas ativas (CREATED, PENDING, ACTIVE)
+        active_route_ids = db.session.query(OwnDriverRoute.id).filter(
+            OwnDriverRoute.status.in_(['CREATED', 'PENDING', 'ACTIVE'])
+        )
+        query = query.filter(
+            ~Order.own_driver_route_id.in_(active_route_ids)
+        )
         
         orders = query.order_by(Order.created_at.desc()).limit(100).all()
         

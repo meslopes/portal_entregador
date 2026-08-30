@@ -315,6 +315,11 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
           <span style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 500, background: '#f1f5f9', color: '#64748b' }}>
             {utils.getStatusText(order.payment_method)}
           </span>
+          {order.own_driver_route && (
+            <span style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
+              {order.own_driver_route.name}
+            </span>
+          )}
         </div>
         <div style={{ textAlign: 'right' }}>
           <p style={{ fontWeight: 700, color: '#1e293b' }}>{utils.formatCurrency(order.total_amount)}</p>

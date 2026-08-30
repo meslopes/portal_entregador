@@ -2392,6 +2392,16 @@ def get_my_orders():
                 }
             if order.delivery:
                 order_dict['delivery'] = order.delivery.to_dict()
+            # Incluir informações da rota se o pedido estiver em uma rota
+            if order.own_driver_route_id:
+                from src.models.portal_models import OwnDriverRoute
+                own_route = OwnDriverRoute.query.get(order.own_driver_route_id)
+                if own_route:
+                    order_dict['own_driver_route'] = {
+                        'id': own_route.id,
+                        'name': f'Rota #{own_route.id}',
+                        'status': own_route.status
+                    }
             orders_data.append(order_dict)
 
         return jsonify({
