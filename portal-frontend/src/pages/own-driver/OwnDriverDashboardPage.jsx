@@ -178,7 +178,7 @@ const OwnDriverDashboardPage = () => {
               ordersFromRoutes.push({
                 id: stop.order_id,
                 order_number: stop.order_number || `Pedido #${stop.order_id}`,
-                status: route.status === 'ACTIVE' ? 'ACCEPTED' : 'PENDING',
+                status: stop.order_status || (route.status === 'ACTIVE' ? 'ACCEPTED' : 'PENDING'),
                 delivery_address: { street: stop.address },
                 customer: { name: stop.customer_name, phone: stop.customer_phone },
                 delivery_fee: 0,

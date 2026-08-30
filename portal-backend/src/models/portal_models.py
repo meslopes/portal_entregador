@@ -1216,6 +1216,7 @@ class OwnDriverStop(db.Model):
             'route_id': self.route_id,
             'order_id': self.order_id,
             'order_number': self.order.order_number if self.order else None,
+            'order_status': self.order.status.value if self.order and self.order.status else None,
             'customer_name': self.order.customer.name if self.order and self.order.customer else None,
             'customer_phone': self.order.customer.phone if self.order and self.order.customer else None,
             'stop_order': self.stop_order,
