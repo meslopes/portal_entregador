@@ -554,10 +554,12 @@ def remove_order_from_route(route_id):
         order = Order.query.get(order_id)
         if order:
             order.own_driver_route_id = None
-            # Se foi atribuído apenas por esta rota, desvincular entregador
-            if order.assigned_to_own_driver and order.establishment_driver_id == route.establishment_driver_id:
-                order.assigned_to_own_driver = False
-                order.establishment_driver_id = None
+            order.assigned_to_own_driver = False
+            order.establishment_driver_id = None
+            # Resetar status para PENDING se estava ACCEPTED (aceito pela rota mas não coletado)
+            if order.status == OrderStatus.ACCEPTED:
+                order.status = OrderStatus.PENDING
+                order.accepted_at = None
 
         # Remover parada
         db.session.delete(stop)
