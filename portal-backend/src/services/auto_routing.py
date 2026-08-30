@@ -404,6 +404,37 @@ def create_auto_route(orders, driver, settings):
             order.status = OrderStatus.OFFERED
             order.offered_at = datetime.utcnow()
         
+        # Enviar notificações
+        if settings.notify_driver_auto_route:
+            from src.models.portal_models import Notification, NotificationType
+            notification = Notification(
+                user_id=driver.user_id,
+                title='Nova Rota Automática',
+                message=f'Você recebeu uma rota com {len(orders)} pedidos',
+                type=NotificationType.NEW_ORDER,
+                related_id=route.id
+            )
+            db.session.add(notification)
+        
+        if settings.notify_admin_auto_route:
+            from src.models.portal_models import Notification, NotificationType, User, UserType
+            # Notificar admins do tenant
+            tenant_id = orders[0].tenant_id if orders[0].tenant_id else None
+            admins = User.query.filter_by(
+                user_type=UserType.ADMIN,
+                tenant_id=tenant_id
+            ).all()
+            
+            for admin in admins:
+                notification = Notification(
+                    user_id=admin.id,
+                    title='Rota Automática Criada',
+                    message=f'Rota #{route.id} criada para {driver.user.first_name} com {len(orders)} pedidos',
+                    type=NotificationType.SYSTEM,
+                    related_id=route.id
+                )
+                db.session.add(notification)
+        
         db.session.commit()
         
         logger.info(f"[AUTO-ROUTE] Rota #{route.id} criada para {driver.user.first_name} com {len(orders)} pedidos")
