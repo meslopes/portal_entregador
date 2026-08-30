@@ -197,11 +197,20 @@ Response: { source_route, target_route }
 
 ## Tasks
 
-- [ ] T1: Criar modelos PlatformDriverRoute e PlatformDriverStop — acceptance: tabelas criadas no banco (covers: S2.2)
-- [ ] T2: Implementar algoritmo de otimização multi-depósito — acceptance: rota com 3+ restaurantes é otimizada corretamente (covers: S2.3)
+- [x] T1: Criar modelos PlatformDriverRoute e PlatformDriverStop — acceptance: tabelas criadas no banco (covers: S2.2)
+- [x] T2: Implementar algoritmo de otimização multi-depósito — acceptance: rota com 3+ restaurantes é otimizada corretamente (covers: S2.3)
 - [ ] T3: Criar endpoints da API para rotas da plataforma — acceptance: CRUD completo de rotas funciona (covers: S2.5)
 - [ ] T4: Implementar página de gestão de rotas no admin — acceptance: admin pode criar/gerenciar rotas de plataforma (covers: S2.6)
 - [ ] T5: Implementar dashboard do entregador da plataforma — acceptance: entregador vê rotas ativas e pode concluir paradas (covers: S2.6)
 - [ ] T6: Implementar página de rotas do entregador — acceptance: entregador pode aceitar/rejeitar rotas (covers: S2.6)
 - [ ] T7: Adicionar validações e tratamento de exceções — acceptance: todas as validações de S2.7 funcionam (covers: S2.7)
 - [ ] T8: Testes end-to-end — acceptance: fluxo completo de criação a conclusão funciona (covers: S2.4)
+
+## Implementado (Configurações e Auto-Roteirização)
+
+- [x] Modelo RouteSettings no banco de dados
+- [x] API CRUD para configurações (/api/route-settings)
+- [x] Página admin de configurações de roteirização
+- [x] Algoritmo de auto-roteirização direção-aware
+- [x] Sistema de notificações para rotas automáticas
+- [x] Integração com background tasks (roda a cada 5 min)
