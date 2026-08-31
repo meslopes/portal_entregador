@@ -184,6 +184,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar platform_route_id em orders
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'platform_route_id') THEN ALTER TABLE orders ADD COLUMN platform_route_id INTEGER REFERENCES platform_driver_routes(id); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: remover colunas antigas se existirem
         for col in ['min_delivery_fee', 'driver_km_bonus']:
             try:

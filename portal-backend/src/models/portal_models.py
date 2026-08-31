@@ -631,6 +631,7 @@ class Order(db.Model):
     assigned_to_own_driver = db.Column(db.Boolean, default=False)  # Se foi atribuído a entregador próprio
     establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=True)
     own_driver_route_id = db.Column(db.Integer, db.ForeignKey('own_driver_routes.id'), nullable=True)  # Rota do entregador próprio
+    platform_route_id = db.Column(db.Integer, db.ForeignKey('platform_driver_routes.id'), nullable=True)  # Rota do entregador da plataforma
     called_platform = db.Column(db.Boolean, default=False)  # Se chamou entregadores da plataforma
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)

@@ -148,8 +148,8 @@ def create_platform_route():
 
         # Verificar se pedidos já estão em rotas ativas
         for order in orders:
-            if order.route_id:
-                existing_route = PlatformDriverRoute.query.get(order.route_id)
+            if order.platform_route_id:
+                existing_route = PlatformDriverRoute.query.get(order.platform_route_id)
                 if existing_route and existing_route.status in ['PENDING', 'ACTIVE']:
                     return jsonify({'error': f'Pedido {order.order_number} já está na rota #{existing_route.id}'}), 400
             
@@ -157,12 +157,12 @@ def create_platform_route():
             if not order.delivery_address or not order.delivery_address.latitude:
                 return jsonify({'error': f'Pedido {order.order_number} não tem endereço de entrega com coordenadas'}), 400
         
-        # Limpar route_id de pedidos de rotas concluídas/canceladas
+        # Limpar platform_route_id de pedidos de rotas concluídas/canceladas
         for order in orders:
-            if order.route_id:
-                existing_route = PlatformDriverRoute.query.get(order.route_id)
+            if order.platform_route_id:
+                existing_route = PlatformDriverRoute.query.get(order.platform_route_id)
                 if existing_route and existing_route.status in ['COMPLETED', 'CANCELLED', 'REJECTED']:
-                    order.route_id = None
+                    order.platform_route_id = None
 
         # Criar rota
         route = PlatformDriverRoute(
@@ -220,7 +220,7 @@ def create_platform_route():
 
         # Atualizar pedidos
         for order in orders:
-            order.route_id = route.id
+            order.platform_route_id = route.id
             order.driver_id = driver_id
             order.status = OrderStatus.OFFERED
             order.offered_at = datetime.utcnow()
@@ -347,7 +347,7 @@ def reject_route(route_id):
         for stop in route.stops:
             order = Order.query.get(stop.order_id)
             if order:
-                order.route_id = None
+                order.platform_route_id = None
                 order.driver_id = None
                 order.status = OrderStatus.READY
 
@@ -455,7 +455,7 @@ def remove_order_from_route(route_id):
         # Desvincular pedido
         order = Order.query.get(order_id)
         if order:
-            order.route_id = None
+            order.platform_route_id = None
             order.driver_id = None
             order.status = OrderStatus.READY
 
@@ -530,7 +530,7 @@ def move_order_between_routes(route_id):
         # Atualizar pedido
         order = Order.query.get(order_id)
         if order:
-            order.route_id = target_route_id
+            order.platform_route_id = target_route_id
             order.driver_id = target_route.driver_id
 
         # Reordenar paradas da rota de origem
