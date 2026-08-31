@@ -171,7 +171,7 @@ const PlatformDriverRoutesPage = () => {
         color: 'white', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
         transition: 'background 0.3s'
       }}>
-        <button onClick={() => navigate('/platform-driver')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+        <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
           <ArrowLeft size={24} />
         </button>
         <Route size={20} />
