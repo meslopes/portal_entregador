@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Route, Package, MapPin, Clock, CheckCircle, Truck,
@@ -12,6 +12,81 @@ const PlatformDriverRoutesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const prevPendingCount = useRef(0);
+  const audioContextRef = useRef(null);
+  const audioEnabledRef = useRef(false);
+
+  // Habilitar áudio após primeira interação do usuário
+  useEffect(() => {
+    const enableAudio = () => {
+      try {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        audioEnabledRef.current = true;
+      } catch (e) {}
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
+    document.addEventListener('click', enableAudio, { once: true });
+    document.addEventListener('touchstart', enableAudio, { once: true });
+    
+    return () => {
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
+  }, []);
+
+  // Auto-refresh a cada 15 segundos
+  useEffect(() => {
+    loadRoutes();
+    const interval = setInterval(() => loadRoutes(true), 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Tocar som quando novas rotas pendentes aparecem
+  useEffect(() => {
+    const newPending = routes.filter(r => r.status === 'PENDING').length;
+    if (newPending > prevPendingCount.current && prevPendingCount.current > 0) {
+      playNotification();
+    }
+    prevPendingCount.current = newPending;
+    setPendingCount(newPending);
+  }, [routes]);
+
+  const playNotification = () => {
+    try {
+      if (audioEnabledRef.current && audioContextRef.current) {
+        const ctx = audioContextRef.current;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.3);
+        
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.frequency.value = 1000;
+          osc2.type = 'sine';
+          gain2.gain.setValueAtTime(0.5, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc2.start(ctx.currentTime);
+          osc2.stop(ctx.currentTime + 0.3);
+        }, 200);
+      }
+    } catch (e) {}
+  };
 
   useEffect(() => { loadRoutes(); }, []);
 
