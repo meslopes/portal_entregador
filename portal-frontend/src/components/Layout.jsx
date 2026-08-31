@@ -58,7 +58,7 @@ const Layout = ({ children }) => {
     { name: 'Faturas', href: '/admin/invoices', icon: FileText },
     { name: 'Relatorios', href: '/admin/reports', icon: FileText },
     { name: 'Configuracoes', href: '/admin/settings', icon: Settings },
-    { name: 'Rotas', href: '/admin/route-settings', icon: Route },
+    { name: 'Config. Rotas', href: '/admin/route-settings', icon: Route },
     { name: 'Rotas Plataforma', href: '/admin/platform-routes', icon: Truck },
   ];
 

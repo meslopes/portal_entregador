@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Settings, Save, RefreshCw, AlertCircle, CheckCircle,
-  Route, Clock, MapPin, Zap, Bell
+  Route, Clock, MapPin, Zap, Bell, Package
 } from 'lucide-react';
 import api from '@/lib/api';
 
