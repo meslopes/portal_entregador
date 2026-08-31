@@ -27,7 +27,7 @@ const PlatformDriverDashboardPage = () => {
   const loadData = async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
-      const token = localStorage.getItem('driver_token');
+      const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
       const [routesRes, statsRes] = await Promise.all([
@@ -39,7 +39,6 @@ const PlatformDriverDashboardPage = () => {
       setStats(statsRes.data.stats);
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('driver_token');
         navigate('/login');
       } else {
         setError('Erro ao carregar dados');
@@ -51,7 +50,7 @@ const PlatformDriverDashboardPage = () => {
 
   const acceptRoute = async (routeId) => {
     try {
-      const token = localStorage.getItem('driver_token');
+      const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/platform-routes/${routeId}/accept`, {}, { headers });
       loadData();
@@ -63,7 +62,7 @@ const PlatformDriverDashboardPage = () => {
   const rejectRoute = async (routeId) => {
     if (!window.confirm('Rejeitar esta rota?')) return;
     try {
-      const token = localStorage.getItem('driver_token');
+      const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/platform-routes/${routeId}/reject`, {}, { headers });
       loadData();
@@ -74,7 +73,7 @@ const PlatformDriverDashboardPage = () => {
 
   const completeStop = async (routeId, stopId) => {
     try {
-      const token = localStorage.getItem('driver_token');
+      const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/platform-routes/${routeId}/complete-stop`, { stop_id: stopId }, { headers });
       loadData(true);
