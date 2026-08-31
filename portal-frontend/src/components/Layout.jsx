@@ -23,6 +23,8 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const [openDropdown, setOpenDropdown] = useState(null);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -130,9 +132,16 @@ const Layout = ({ children }) => {
                 // Dropdown menu item
                 if (item.children) {
                   const isAnyChildActive = item.children.some(c => isActive(c.href));
+                  const isOpen = openDropdown === item.name;
                   return (
-                    <div key={item.name} style={{ position: 'relative' }} className="nav-dropdown">
+                    <div 
+                      key={item.name} 
+                      style={{ position: 'relative' }}
+                      onMouseEnter={() => setOpenDropdown(item.name)}
+                      onMouseLeave={() => setOpenDropdown(null)}
+                    >
                       <button
+                        onClick={() => setOpenDropdown(isOpen ? null : item.name)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -152,44 +161,46 @@ const Layout = ({ children }) => {
                         {item.name}
                         <ChevronDown size={14} />
                       </button>
-                      <div className="nav-dropdown-content" style={{
-                        display: 'none',
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        background: 'white',
-                        borderRadius: '0.5rem',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        border: '1px solid #e2e8f0',
-                        minWidth: '180px',
-                        zIndex: 1000,
-                        padding: '0.5rem 0'
-                      }}>
-                        {item.children.map((child) => {
-                          const ChildIcon = child.icon;
-                          const childActive = isActive(child.href);
-                          return (
-                            <Link
-                              key={child.name}
-                              to={child.href}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                fontSize: '0.875rem',
-                                textDecoration: 'none',
-                                background: childActive ? '#eff6ff' : 'transparent',
-                                color: childActive ? '#2563eb' : '#64748b',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              <ChildIcon size={14} />
-                              {child.name}
-                            </Link>
-                          );
-                        })}
-                      </div>
+                      {isOpen && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          background: 'white',
+                          borderRadius: '0.5rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          border: '1px solid #e2e8f0',
+                          minWidth: '180px',
+                          zIndex: 1000,
+                          padding: '0.5rem 0'
+                        }}>
+                          {item.children.map((child) => {
+                            const ChildIcon = child.icon;
+                            const childActive = isActive(child.href);
+                            return (
+                              <Link
+                                key={child.name}
+                                to={child.href}
+                                onClick={() => setOpenDropdown(null)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  padding: '0.5rem 1rem',
+                                  fontSize: '0.875rem',
+                                  textDecoration: 'none',
+                                  background: childActive ? '#eff6ff' : 'transparent',
+                                  color: childActive ? '#2563eb' : '#64748b',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                <ChildIcon size={14} />
+                                {child.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 }
@@ -428,12 +439,6 @@ const Layout = ({ children }) => {
         }
         nav::-webkit-scrollbar-thumb:hover {
           background: #94a3b8;
-        }
-        .nav-dropdown:hover .nav-dropdown-content {
-          display: block !important;
-        }
-        .nav-dropdown-content a:hover {
-          background: #f8fafc;
         }
       `}</style>
     </div>
