@@ -37,7 +37,10 @@ const EstablishmentRoutesPage = () => {
         restaurantId ? api.get(`/api/admin/establishment/orders?status=PENDING,ACCEPTED,SCHEDULED&restaurant_id=${restaurantId}`) : Promise.resolve({ data: { orders: [] } }),
         restaurantId ? api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`) : Promise.resolve({ data: { drivers: [] } })
       ]);
-      setRoutes(routesRes.data.routes || []);
+      // Filtrar rotas concluídas e rejeitadas
+      const allRoutes = routesRes.data.routes || [];
+      const activeRoutes = allRoutes.filter(r => r.status !== 'COMPLETED' && r.status !== 'REJECTED');
+      setRoutes(activeRoutes);
       setOrders(ordersRes.data.orders || []);
       setDrivers(driversRes.data.drivers || []);
     } catch (err) {
