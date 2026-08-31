@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { ROUTE_STATUS, getRouteStatusLabel } from '@/constants/status';
+import Tooltip from '@/components/Tooltip';
+import { showConfirm } from '@/components/ConfirmDialog';
 
 const EstablishmentRoutesPage = () => {
   const [routes, setRoutes] = useState([]);
@@ -19,6 +21,7 @@ const EstablishmentRoutesPage = () => {
   const [createLoading, setCreateLoading] = useState(false);
   const [movingStop, setMovingStop] = useState(null);
   const [targetRouteId, setTargetRouteId] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -43,6 +46,7 @@ const EstablishmentRoutesPage = () => {
       setRoutes(activeRoutes);
       setOrders(ordersRes.data.orders || []);
       setDrivers(driversRes.data.drivers || []);
+      setLastUpdated(new Date());
     } catch (err) {
       setError('Erro ao carregar dados');
       console.error(err);
@@ -119,26 +123,28 @@ const EstablishmentRoutesPage = () => {
   };
 
   const handleDeleteRoute = async (routeId) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta rota?')) return;
-    try {
-      await api.delete(`/api/routes/${routeId}`);
-      loadData();
-    } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao excluir rota');
-    }
+    showConfirm('Tem certeza que deseja excluir esta rota?', async () => {
+      try {
+        await api.delete(`/api/routes/${routeId}`);
+        loadData();
+      } catch (err) {
+        setError(err.response?.data?.error || 'Erro ao excluir rota');
+      }
+    });
   };
 
   const handleRemoveOrder = async (routeId, orderId) => {
-    if (!window.confirm('Remover este pedido da rota? Ele ficará disponível novamente.')) return;
-    try {
-      setError('');
-      const res = await api.post(`/api/routes/${routeId}/remove-order`, { order_id: orderId });
-      setSuccess(res.data.message);
-      loadData();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao remover pedido');
-    }
+    showConfirm('Remover este pedido da rota? Ele ficará disponível novamente.', async () => {
+      try {
+        setError('');
+        const res = await api.post(`/api/routes/${routeId}/remove-order`, { order_id: orderId });
+        setSuccess(res.data.message);
+        loadData();
+        setTimeout(() => setSuccess(''), 3000);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Erro ao remover pedido');
+      }
+    });
   };
 
   const handleMoveOrder = async () => {
@@ -191,14 +197,23 @@ const EstablishmentRoutesPage = () => {
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b' }}>Rotas de Entrega</h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Gerencie as rotas dos seus entregadores</p>
+          {lastUpdated && (
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              Atualizado: {lastUpdated.toLocaleTimeString('pt-BR')}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
-            <RefreshCw size={16} /> Atualizar
-          </button>
-          <button onClick={() => setShowCreateModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}>
-            <Plus size={16} /> Nova Rota
-          </button>
+          <Tooltip text="Atualizar lista de rotas" position="bottom">
+            <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
+              <RefreshCw size={16} /> Atualizar
+            </button>
+          </Tooltip>
+          <Tooltip text="Criar nova rota para seus entregadores" position="bottom">
+            <button onClick={() => setShowCreateModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}>
+              <Plus size={16} /> Nova Rota
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -249,7 +264,7 @@ const EstablishmentRoutesPage = () => {
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
-                    <span style={{ padding: '0.125rem 0.375rem', borderRadius: '9999px', fontSize: '0.625rem', background: order.status === 'SCHEDULED' ? '#ede9fe' : '#dbeafe', color: order.status === 'SCHEDULED' ? '#6d28d9' : '#1d4ed8' }}>
+                    <span style={{ padding: '0.125rem 0.375rem', borderRadius: '9999px', fontSize: '0.75rem', background: order.status === 'SCHEDULED' ? '#ede9fe' : '#dbeafe', color: order.status === 'SCHEDULED' ? '#6d28d9' : '#1d4ed8' }}>
                       {order.status === 'SCHEDULED' ? 'Agendado' : order.status === 'PENDING' ? 'Pendente' : 'Aceito'}
                     </span>
                   </div>
@@ -355,12 +370,12 @@ const EstablishmentRoutesPage = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {route.stops?.map((stop, index) => (
                     <div key={stop.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', background: stop.status === 'COMPLETED' ? '#f0fdf4' : '#f8fafc', borderRadius: '0.375rem' }}>
-                      <span style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', background: stop.status === 'COMPLETED' ? '#22c55e' : '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 600 }}>
+                      <span style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', background: stop.status === 'COMPLETED' ? '#22c55e' : '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
                         {stop.stop_order}
                       </span>
                       <div style={{ flex: 1 }}>
                         <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{stop.address}</p>
-                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{stop.customer_name} • Pedido #{stop.order_number}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{stop.customer_name} • Pedido #{stop.order_number}</p>
                       </div>
                       {stop.status === 'COMPLETED' && <CheckCircle size={16} style={{ color: '#22c55e' }} />}
                       {stop.status !== 'COMPLETED' && ['CREATED', 'PENDING', 'ACTIVE'].includes(route.status) && (
@@ -432,7 +447,7 @@ const EstablishmentRoutesPage = () => {
                           <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
                           <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.customer?.name} • {order.delivery_address?.street}</p>
                         </div>
-                        <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>{order.status}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.status}</span>
                       </div>
                     ))
                   )}

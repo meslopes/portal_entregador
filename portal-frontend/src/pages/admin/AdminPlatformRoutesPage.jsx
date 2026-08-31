@@ -4,6 +4,8 @@ import {
   AlertCircle, RefreshCw, X, ArrowRightLeft, Truck
 } from 'lucide-react';
 import api from '@/lib/api';
+import Tooltip from '@/components/Tooltip';
+import { showConfirm } from '@/components/ConfirmDialog';
 
 const AdminPlatformRoutesPage = () => {
   const [routes, setRoutes] = useState([]);
@@ -18,6 +20,7 @@ const AdminPlatformRoutesPage = () => {
   const [createLoading, setCreateLoading] = useState(false);
   const [movingStop, setMovingStop] = useState(null);
   const [targetRouteId, setTargetRouteId] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -37,6 +40,7 @@ const AdminPlatformRoutesPage = () => {
       );
       setOrders(availableOrders);
       setDrivers(driversRes.data.drivers || []);
+      setLastUpdated(new Date());
     } catch (err) {
       setError('Erro ao carregar dados');
       console.error(err);
@@ -78,16 +82,17 @@ const AdminPlatformRoutesPage = () => {
   };
 
   const handleRemoveOrder = async (routeId, orderId) => {
-    if (!window.confirm('Remover este pedido da rota?')) return;
-    try {
-      setError('');
-      const res = await api.post(`/api/platform-routes/${routeId}/remove-order`, { order_id: orderId });
-      setSuccess(res.data.message);
-      loadData();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao remover pedido');
-    }
+    showConfirm('Remover este pedido da rota?', async () => {
+      try {
+        setError('');
+        const res = await api.post(`/api/platform-routes/${routeId}/remove-order`, { order_id: orderId });
+        setSuccess(res.data.message);
+        loadData();
+        setTimeout(() => setSuccess(''), 3000);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Erro ao remover pedido');
+      }
+    });
   };
 
   const handleMoveOrder = async () => {
@@ -144,14 +149,23 @@ const AdminPlatformRoutesPage = () => {
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b' }}>Rotas da Plataforma</h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Gerencie rotas dos entregadores da plataforma</p>
+          {lastUpdated && (
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              Atualizado: {lastUpdated.toLocaleTimeString('pt-BR')}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
-            <RefreshCw size={16} /> Atualizar
-          </button>
-          <button onClick={() => setShowCreateModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}>
-            <Plus size={16} /> Nova Rota
-          </button>
+          <Tooltip text="Atualizar lista de rotas" position="bottom">
+            <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.875rem', color: '#64748b' }}>
+              <RefreshCw size={16} /> Atualizar
+            </button>
+          </Tooltip>
+          <Tooltip text="Criar nova rota para entregadores da plataforma" position="bottom">
+            <button onClick={() => setShowCreateModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}>
+              <Plus size={16} /> Nova Rota
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -208,17 +222,17 @@ const AdminPlatformRoutesPage = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {route.stops?.map((stop) => (
                     <div key={stop.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', background: stop.status === 'COMPLETED' ? '#f0fdf4' : '#f8fafc', borderRadius: '0.375rem' }}>
-                      <span style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', background: stop.status === 'COMPLETED' ? '#22c55e' : stop.stop_type === 'PICKUP' ? '#f59e0b' : '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.625rem', fontWeight: 600 }}>
+                      <span style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', background: stop.status === 'COMPLETED' ? '#22c55e' : stop.stop_type === 'PICKUP' ? '#f59e0b' : '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
                         {stop.stop_order}
                       </span>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.625rem', padding: '0.125rem 0.375rem', borderRadius: '9999px', background: stop.stop_type === 'PICKUP' ? '#fef3c7' : '#dbeafe', color: stop.stop_type === 'PICKUP' ? '#92400e' : '#1d4ed8' }}>
+                          <span style={{ fontSize: '0.75rem', padding: '0.125rem 0.375rem', borderRadius: '9999px', background: stop.stop_type === 'PICKUP' ? '#fef3c7' : '#dbeafe', color: stop.stop_type === 'PICKUP' ? '#92400e' : '#1d4ed8' }}>
                             {stop.stop_type === 'PICKUP' ? 'Coleta' : 'Entrega'}
                           </span>
                           <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{stop.address}</p>
                         </div>
-                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
                           {stop.stop_type === 'PICKUP' 
                             ? `${stop.restaurant_name || 'Restaurante'} • Pedido #${stop.order_number}`
                             : `${stop.customer_name || 'Cliente'} • Pedido #${stop.order_number}`
@@ -312,7 +326,7 @@ const AdminPlatformRoutesPage = () => {
                           <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
                           <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.customer?.name} • {order.delivery_address?.street}</p>
                         </div>
-                        <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>{order.status}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.status}</span>
                       </div>
                     ))
                   )}

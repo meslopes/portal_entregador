@@ -141,16 +141,16 @@ const ClientOrdersPage = () => {
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.125rem' }}>
                           <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9375rem' }}>#{order.order_number}</span>
-                          <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: config.bg, color: config.color, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: config.bg, color: config.color, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                             {config.icon} {config.label}
                           </span>
                           {order.assigned_to_own_driver && (
-                            <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                               <Users size={9} /> Próprio
                             </span>
                           )}
                           {order.own_driver_route && (
-                            <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
+                            <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
                               {order.own_driver_route.name}
                             </span>
                           )}
@@ -159,7 +159,7 @@ const ClientOrdersPage = () => {
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '1rem' }}>{utils.formatCurrency(order.total_amount)}</p>
-                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>Frete: {utils.formatCurrency(order.delivery_fee || 0)}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Frete: {utils.formatCurrency(order.delivery_fee || 0)}</p>
                       </div>
                     </div>
 
@@ -332,14 +332,14 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
         <div style={{ padding: '1.5rem' }}>
           {/* Status */}
           <div style={{ padding: '1rem', borderRadius: '0.5rem', background: config.bg, textAlign: 'center', marginBottom: '1rem' }}>
-            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Status</p>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Status</p>
             <p style={{ fontSize: '1.25rem', fontWeight: 700, color: config.color }}>{config.label}</p>
           </div>
 
           {/* Botões de mudança de status para entregas próprias */}
           {hasOwnDriver && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
             <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Alterar Status</p>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Alterar Status</p>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {order.status === 'SCHEDULED' && (
                   <StatusBtn status="PENDING" label="Tocar Agora" color="#f59e0b" orderId={order.id} onUpdated={onOrderUpdated} />
@@ -521,7 +521,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
               {/* Separador */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.75rem 0' }}>
                 <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-                <span style={{ fontSize: '0.6875rem', color: '#64748b', fontWeight: 500 }}>OU</span>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>OU</span>
                 <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
               </div>
 
@@ -579,7 +579,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
           {/* Prova de Entrega */}
           {order.delivery?.proof_of_delivery_url && (
             <div style={{ marginBottom: '1.25rem' }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prova de Entrega</p>
+              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prova de Entrega</p>
               <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                 <img
                   src={`${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
@@ -653,14 +653,14 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
 // Componentes auxiliares
 const StatBox = ({ label, value, highlight, bold }) => (
   <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>
-    <p style={{ fontSize: '0.625rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
+    <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
     <p style={{ fontSize: bold ? '1rem' : '0.875rem', fontWeight: bold ? 700 : 600, color: highlight ? '#0d9488' : '#1e293b' }}>{value}</p>
   </div>
 );
 
 const InfoSection = ({ title, children }) => (
   <div style={{ marginBottom: '1.25rem' }}>
-    <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</p>
+    <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</p>
     <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '0.875rem' }}>{children}</div>
   </div>
 );

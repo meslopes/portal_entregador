@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSquare } from '@/contexts/SquareContext';
 import { showToast } from '@/components/Toast';
 import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
+import Tooltip from '@/components/Tooltip';
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ const AdminDashboardPage = () => {
   const [allEstablishments, setAllEstablishments] = useState([]);
   const [platformRoutes, setPlatformRoutes] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -136,6 +138,7 @@ const AdminDashboardPage = () => {
     try {
       const data = await adminService.getLiveTracking(squareId || null);
       setTracking(data);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Erro ao carregar tracking:', err);
     }
@@ -553,7 +556,7 @@ const AdminDashboardPage = () => {
               Pendentes
               <span style={{
                 background: '#ef4444', color: 'white', borderRadius: '9999px',
-                padding: '0 0.375rem', fontSize: '0.625rem', fontWeight: 700,
+                padding: '0 0.375rem', fontSize: '0.75rem', fontWeight: 700,
                 minWidth: '1.25rem', textAlign: 'center'
               }}>
                 {pendingUsers.length}
@@ -575,26 +578,28 @@ const AdminDashboardPage = () => {
               Rotas
               <span style={{
                 background: '#2563eb', color: 'white', borderRadius: '9999px',
-                padding: '0 0.375rem', fontSize: '0.625rem', fontWeight: 700,
+                padding: '0 0.375rem', fontSize: '0.75rem', fontWeight: 700,
                 minWidth: '1.25rem', textAlign: 'center'
               }}>
                 {platformRoutes.length}
               </span>
             </button>
           )}
-          <button
-            onClick={() => {
-              console.log('Settings clicked, showSettings:', showSettings);
-              setShowSettings(true);
-            }}
-            style={{
-              padding: '0.5rem', border: 'none', background: 'transparent',
-              cursor: 'pointer', color: '#64748b', fontSize: '1.25rem'
-            }}
-            title="Configurações"
-          >
-            ⚙️
-          </button>
+          <Tooltip text="Configurações da sidebar" position="bottom">
+            <button
+              onClick={() => {
+                console.log('Settings clicked, showSettings:', showSettings);
+                setShowSettings(true);
+              }}
+              style={{
+                padding: '0.5rem', border: 'none', background: 'transparent',
+                cursor: 'pointer', color: '#64748b', fontSize: '1.25rem'
+              }}
+              title="Configurações"
+            >
+              ⚙️
+            </button>
+          </Tooltip>
         </div>
 
         {/* Lista de Status */}
@@ -657,7 +662,7 @@ const AdminDashboardPage = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <span style={{ color: '#64748b', fontSize: '0.6875rem' }}>{utils.formatCurrency(order.total_amount)}</span>
+                                <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{utils.formatCurrency(order.total_amount)}</span>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -672,7 +677,7 @@ const AdminDashboardPage = () => {
                                 </button>
                               </div>
                             </div>
-                            <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.6875rem' }}>
+                            <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.75rem' }}>
                               {order.customer?.name || 'Cliente'}
                             </div>
                             {/* Countdown para pedidos agendados */}
@@ -680,7 +685,7 @@ const AdminDashboardPage = () => {
                               <div style={{ 
                                 marginTop: '0.25rem', padding: '0.25rem 0.375rem', 
                                 background: '#e0e7ff', borderRadius: '0.25rem',
-                                fontSize: '0.625rem', color: '#4338ca', fontWeight: 500,
+                                fontSize: '0.75rem', color: '#4338ca', fontWeight: 500,
                                 display: 'flex', alignItems: 'center', gap: '0.25rem'
                               }}>
                                 ⏰ Lança em {getTimeRemaining(order.scheduled_at)}
@@ -698,11 +703,11 @@ const AdminDashboardPage = () => {
                               }}>
                                 {/* Detalhes do pedido */}
                                 <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '0.25rem' }}>
-                                  <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Detalhes</p>
-                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Rest: {order.restaurant?.name}</p>
-                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Cliente: {order.customer?.name}</p>
-                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Frete: {utils.formatCurrency(order.delivery_fee)}</p>
-                                  <p style={{ fontSize: '0.6875rem', color: '#1e293b' }}>Total: {utils.formatCurrency(order.total_amount)}</p>
+                                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Detalhes</p>
+                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Rest: {order.restaurant?.name}</p>
+                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Cliente: {order.customer?.name}</p>
+                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Frete: {utils.formatCurrency(order.delivery_fee)}</p>
+                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Total: {utils.formatCurrency(order.total_amount)}</p>
                                 </div>
 
                                 {/* Atribuir Entregador */}
@@ -726,7 +731,7 @@ const AdminDashboardPage = () => {
                                 </button>
 
                                 {/* Opções de status */}
-                                <p style={{ fontSize: '0.625rem', color: '#64748b', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
+                                <p style={{ fontSize: '0.75rem', color: '#64748b', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
                                 {['SCHEDULED', 'PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
                                   if (s === order.status) return null;
                                   const cfg = ORDER_STATUS[s];
@@ -748,7 +753,7 @@ const AdminDashboardPage = () => {
                                         border: 'none', background: 'transparent',
                                         borderRadius: '0.25rem', cursor: 'pointer',
                                         display: 'flex', alignItems: 'center', gap: '0.375rem',
-                                        fontSize: '0.6875rem', color: '#1e293b',
+                                        fontSize: '0.75rem', color: '#1e293b',
                                         textAlign: 'left'
                                       }}
                                       onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
@@ -777,7 +782,7 @@ const AdminDashboardPage = () => {
                                     border: 'none', background: 'transparent',
                                     borderRadius: '0.25rem', cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', gap: '0.375rem',
-                                    fontSize: '0.6875rem', color: '#2563eb',
+                                    fontSize: '0.75rem', color: '#2563eb',
                                     borderTop: '1px solid #f1f5f9', marginTop: '0.25rem', paddingTop: '0.5rem'
                                   }}
                                 >
@@ -829,12 +834,12 @@ const AdminDashboardPage = () => {
                       padding: '0.125rem 0.375rem', borderRadius: '9999px',
                       background: driver.is_online ? '#dcfce7' : '#f1f5f9',
                       color: driver.is_online ? '#166534' : '#64748b',
-                      fontSize: '0.625rem', fontWeight: 500
+                      fontSize: '0.75rem', fontWeight: 500
                     }}>
                       {driver.is_online ? 'Online' : 'Offline'}
                     </span>
                   </div>
-                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.625rem' }}>
+                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.75rem' }}>
                     {driver.vehicle_type} • {driver.total_deliveries || 0} entregas
                   </div>
                 </div>
@@ -868,12 +873,12 @@ const AdminDashboardPage = () => {
                     <span style={{
                       padding: '0.125rem 0.375rem', borderRadius: '9999px',
                       background: '#fee2e2', color: '#dc2626',
-                      fontSize: '0.625rem', fontWeight: 600
+                      fontSize: '0.75rem', fontWeight: 600
                     }}>
                       {est.active_orders || 0} pedidos
                     </span>
                   </div>
-                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.625rem' }}>
+                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.75rem' }}>
                     {est.address || 'Sem endereço'}
                   </div>
                 </div>
@@ -913,7 +918,7 @@ const AdminDashboardPage = () => {
                   <Store size={14} style={{ color: '#64748b' }} />
                   <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>{sq.name}</span>
                 </div>
-                <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
                   {sq.city}/{sq.state}
                 </div>
               </div>
@@ -943,10 +948,10 @@ const AdminDashboardPage = () => {
                       <div style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>
                         {user.first_name} {user.last_name}
                       </div>
-                      <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
                         {user.email}
                       </div>
-                      <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
                         {user.phone || 'Sem telefone'}
                       </div>
                     </div>
@@ -954,7 +959,7 @@ const AdminDashboardPage = () => {
                       padding: '0.125rem 0.5rem', borderRadius: '9999px',
                       background: user.user_type === 'DRIVER' ? '#dbeafe' : '#fef3c7',
                       color: user.user_type === 'DRIVER' ? '#2563eb' : '#d97706',
-                      fontSize: '0.625rem', fontWeight: 600
+                      fontSize: '0.75rem', fontWeight: 600
                     }}>
                       {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}
                     </span>
@@ -966,7 +971,7 @@ const AdminDashboardPage = () => {
                         id={`tenant-${user.id}`}
                         style={{
                           width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
-                          border: '1px solid #e2e8f0', fontSize: '0.6875rem',
+                          border: '1px solid #e2e8f0', fontSize: '0.75rem',
                           outline: 'none', background: 'white'
                         }}
                       >
@@ -984,7 +989,7 @@ const AdminDashboardPage = () => {
                         id={`square-${user.id}`}
                         style={{
                           width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
-                          border: '1px solid #e2e8f0', fontSize: '0.6875rem',
+                          border: '1px solid #e2e8f0', fontSize: '0.75rem',
                           outline: 'none', background: 'white'
                         }}
                         defaultValue={selectedSquare?.id || ''}
@@ -1008,7 +1013,7 @@ const AdminDashboardPage = () => {
                       style={{
                         flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
                         border: 'none', background: '#16a34a', color: 'white',
-                        fontSize: '0.6875rem', fontWeight: 600, cursor: 'pointer'
+                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
                       }}
                     >
                       Aprovar
@@ -1018,7 +1023,7 @@ const AdminDashboardPage = () => {
                       style={{
                         flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
                         border: '1px solid #e2e8f0', background: 'white', color: '#dc2626',
-                        fontSize: '0.6875rem', fontWeight: 600, cursor: 'pointer'
+                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
                       }}
                     >
                       Rejeitar
@@ -1065,14 +1070,14 @@ const AdminDashboardPage = () => {
                   </div>
                   <span style={{
                     padding: '0.125rem 0.5rem', borderRadius: '9999px',
-                    fontSize: '0.625rem', fontWeight: 600,
+                    fontSize: '0.75rem', fontWeight: 600,
                     background: route.status === 'PENDING' ? '#fef3c7' : '#dbeafe',
                     color: route.status === 'PENDING' ? '#92400e' : '#1d4ed8'
                   }}>
                     {route.status === 'PENDING' ? 'Aguardando' : 'Em Rota'}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
                   {route.driver_name || 'Sem entregador'} • {route.stops_count} paradas
                 </div>
               </div>
@@ -1091,6 +1096,11 @@ const AdminDashboardPage = () => {
             <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>
               {tracking?.drivers?.length || 0} entregadores | {tracking?.establishments?.length || 0} estabelecimentos
             </span>
+            {lastUpdated && (
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>
+                Atualizado: {lastUpdated.toLocaleTimeString('pt-BR')}
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <select
@@ -1158,8 +1168,8 @@ const AdminDashboardPage = () => {
             background: 'white', borderRadius: '0.5rem', padding: '0.75rem',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 1000
           }}>
-            <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Legenda</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.625rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Legenda</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#2563eb' }} />
                 <span>Entregador em entrega</span>
@@ -1237,7 +1247,7 @@ const AdminDashboardPage = () => {
                     </button>
                   ))}
                 </div>
-                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
                   Atual: {timeInterval} minutos ({timeInterval >= 60 ? `${Math.floor(timeInterval/60)}h` : `${timeInterval}min`})
                 </p>
               </div>

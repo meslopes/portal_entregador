@@ -9,6 +9,7 @@ import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { showToast } from '@/components/Toast';
 import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
+import { showConfirm } from '@/components/ConfirmDialog';
 
 const STATUS_FILTERS = [
   { key: '', label: 'Todos', color: '#64748b' },
@@ -50,13 +51,14 @@ const AdminOrdersPage = () => {
   };
 
   const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm('Excluir este pedido? Esta ação não pode ser desfeita.')) return;
-    try {
-      await adminService.adminDeleteOrder(orderId);
-      loadOrders();
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
-    }
+    showConfirm('Excluir este pedido? Esta ação não pode ser desfeita.', async () => {
+      try {
+        await adminService.adminDeleteOrder(orderId);
+        loadOrders();
+      } catch (err) {
+        showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
+      }
+    });
   };
 
   const openEditOrder = (order) => {
