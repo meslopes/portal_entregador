@@ -3,7 +3,7 @@ Serviço de auto-roteirização inteligente.
 Analisa pedidos pendentes e cria rotas automaticamente quando vantajoso.
 """
 from src.models.portal_models import (
-    db, Order, OrderStatus, Driver, Restaurant,
+    db, Order, OrderStatus, Driver, Restaurant, User, UserStatus,
     PlatformDriverRoute, PlatformDriverStop, RouteSettings
 )
 from src.utils.geo import haversine_distance
@@ -76,9 +76,9 @@ def get_pending_orders(tenant_id=None, settings=None):
 
 def get_available_drivers(tenant_id=None):
     """Obtém entregadores da plataforma disponíveis"""
-    query = Driver.query.filter(
+    query = Driver.query.join(User).filter(
         Driver.is_online == True,
-        Driver.is_active == True
+        User.status == UserStatus.ACTIVE
     )
     
     if tenant_id:
@@ -436,7 +436,7 @@ def create_auto_route(orders, driver, settings):
         
         # Atualizar pedidos
         for order in orders:
-            order.route_id = route.id
+            order.platform_route_id = route.id
             order.driver_id = driver.id
             order.status = OrderStatus.OFFERED
             order.offered_at = datetime.utcnow()

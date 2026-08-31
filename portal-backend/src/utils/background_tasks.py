@@ -62,7 +62,7 @@ def start_background_tasks(app):
                     from src.models.portal_models import RouteSettings
                     settings = RouteSettings.query.first()
                     interval = (settings.auto_routing_interval_min if settings else 5) * 60
-            except:
+            except Exception:
                 interval = 300
             
             time.sleep(interval)

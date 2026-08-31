@@ -164,7 +164,7 @@ class User(db.Model):
             'user_type': self.user_type.value if self.user_type else None,
             'status': self.status.value if self.status else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 class Driver(db.Model):
@@ -243,8 +243,8 @@ class Driver(db.Model):
             'balance': float(self.balance) if self.balance else 0,
             'locked_balance': float(self.locked_balance) if self.locked_balance else 0,
             'driver_type': 'PLATFORM',
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
         # Incluir dados da praça se disponível
         if self.square:
