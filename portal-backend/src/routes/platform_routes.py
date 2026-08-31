@@ -156,6 +156,13 @@ def create_platform_route():
             # Verificar se pedido tem dados de entrega
             if not order.delivery_address or not order.delivery_address.latitude:
                 return jsonify({'error': f'Pedido {order.order_number} não tem endereço de entrega com coordenadas'}), 400
+        
+        # Limpar route_id de pedidos de rotas concluídas/canceladas
+        for order in orders:
+            if order.route_id:
+                existing_route = PlatformDriverRoute.query.get(order.route_id)
+                if existing_route and existing_route.status in ['COMPLETED', 'CANCELLED', 'REJECTED']:
+                    order.route_id = None
 
         # Criar rota
         route = PlatformDriverRoute(
