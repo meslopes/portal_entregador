@@ -1449,6 +1449,7 @@ class PlatformDriverStop(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     route_id = db.Column(db.Integer, db.ForeignKey('platform_driver_routes.id'), nullable=False)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=True)  # Restaurante da coleta
     stop_order = db.Column(db.Integer, nullable=False)
     stop_type = db.Column(db.String(20))  # PICKUP, DELIVERY
     latitude = db.Column(db.Numeric(10, 8))
@@ -1461,12 +1462,14 @@ class PlatformDriverStop(db.Model):
 
     # Relacionamentos
     order = db.relationship('Order', backref='platform_route_stops')
+    restaurant = db.relationship('Restaurant', backref='platform_stops')
 
     def to_dict(self):
         return {
             'id': self.id,
             'route_id': self.route_id,
             'order_id': self.order_id,
+            'restaurant_id': self.restaurant_id,
             'stop_order': self.stop_order,
             'stop_type': self.stop_type,
             'latitude': float(self.latitude) if self.latitude else None,
