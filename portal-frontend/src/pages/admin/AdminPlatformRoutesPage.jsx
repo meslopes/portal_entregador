@@ -26,11 +26,16 @@ const AdminPlatformRoutesPage = () => {
       setLoading(true);
       const [routesRes, ordersRes, driversRes] = await Promise.all([
         api.get('/api/platform-routes/list'),
-        api.get('/api/admin/orders?status=READY,PREPARING,ACCEPTED,PENDING'),
+        api.get('/api/admin/orders?per_page=100'),
         api.get('/api/admin/drivers?status=online')
       ]);
       setRoutes(routesRes.data.routes || []);
-      setOrders(ordersRes.data.orders || []);
+      // Filtrar pedidos: excluir DELIVERED e CANCELLED
+      const allOrders = ordersRes.data.orders || [];
+      const availableOrders = allOrders.filter(o => 
+        o.status !== 'DELIVERED' && o.status !== 'CANCELLED'
+      );
+      setOrders(availableOrders);
       setDrivers(driversRes.data.drivers || []);
     } catch (err) {
       setError('Erro ao carregar dados');
