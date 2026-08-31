@@ -269,7 +269,7 @@ const AdminPlatformRoutesPage = () => {
                 >
                   <option value="">Selecionar entregador...</option>
                   {drivers.map(d => (
-                    <option key={d.id} value={d.id}>{d.name} - {d.vehicle_type}</option>
+                    <option key={d.id} value={d.id}>{d.user?.first_name} {d.user?.last_name} - {d.vehicle_type}</option>
                   ))}
                 </select>
               </div>
