@@ -149,6 +149,23 @@ def create_app(config_name=None):
             except Exception:
                 db.session.rollback()
 
+        # Migration: adicionar colunas de status de pedidos na tabela route_settings
+        for col, col_type in [
+            ('include_scheduled', 'BOOLEAN DEFAULT FALSE'),
+            ('scheduled_advance_min', 'INTEGER DEFAULT 30'),
+            ('include_pending', 'BOOLEAN DEFAULT TRUE'),
+            ('include_accepted', 'BOOLEAN DEFAULT TRUE'),
+            ('include_preparing', 'BOOLEAN DEFAULT TRUE'),
+            ('include_ready', 'BOOLEAN DEFAULT TRUE'),
+        ]:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'route_settings' AND column_name = '{col}') THEN ALTER TABLE route_settings ADD COLUMN {col} {col_type}; END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
         # Migration: remover colunas antigas se existirem
         for col in ['min_delivery_fee', 'driver_km_bonus']:
             try:
