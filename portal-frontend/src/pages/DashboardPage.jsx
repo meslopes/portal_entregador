@@ -323,6 +323,14 @@ const DashboardPage = () => {
           onClick={() => navigate('/orders')}
         />
         <ActionCard
+          icon={<Truck size={24} />}
+          iconBg="#dbeafe"
+          iconColor="#1d4ed8"
+          title="Rotas da Plataforma"
+          description="Veja suas rotas atribuídas e aceite/rejeite"
+          onClick={() => navigate('/platform-driver/routes')}
+        />
+        <ActionCard
           icon={<DollarSign size={24} />}
           iconBg="#f0fdf4"
           iconColor="#16a34a"
