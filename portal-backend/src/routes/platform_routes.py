@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import (
     db, Order, OrderStatus, Driver, Restaurant,
-    PlatformDriverRoute, PlatformDriverStop, User, UserType
+    PlatformDriverRoute, PlatformDriverStop, User, UserType, UserStatus
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id
 from src.utils.geo import haversine_distance
