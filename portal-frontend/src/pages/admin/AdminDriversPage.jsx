@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, AlertCircle, Truck, Phone, Mail,
   Star, X, Edit, Eye, MapPin, User, Trash2, Clock, Link, Copy
@@ -6,6 +6,7 @@ import {
 import api, { adminService, utils } from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import { showToast } from '@/components/Toast';
 
 const AdminDriversPage = () => {
   const { squareId } = useSquare();
@@ -58,7 +59,7 @@ const AdminDriversPage = () => {
       await adminService.deleteUser(id);
       loadDrivers();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir');
+      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
     }
   };
 
@@ -85,7 +86,7 @@ const AdminDriversPage = () => {
       await api.put(`/api/admin/drivers/${editing.id}`, editData);
       setEditing(null);
       loadDrivers();
-      alert('Entregador atualizado com sucesso!');
+      showToast('Entregador atualizado com sucesso!', 'success');
     } catch (err) {
       setFormError(err.response?.data?.error || 'Erro ao atualizar entregador');
     } finally {
@@ -114,7 +115,7 @@ const AdminDriversPage = () => {
   const copyRegistrationLink = () => {
     const link = `${window.location.origin}/register`;
     navigator.clipboard.writeText(link).then(() => {
-      alert('Link copiado!\n\nEnvie para o entregador se cadastrar:\n' + link);
+      showToast('Link copiado!\n\nEnvie para o entregador se cadastrar:\n' + link, 'info');
     }).catch(() => {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
@@ -123,7 +124,7 @@ const AdminDriversPage = () => {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      alert('Link copiado!\n\nEnvie para o entregador se cadastrar:\n' + link);
+      showToast('Link copiado!\n\nEnvie para o entregador se cadastrar:\n' + link, 'info');
     });
   };
 
@@ -144,7 +145,7 @@ const AdminDriversPage = () => {
       const result = await api.post('/api/admin/drivers', formData);
       setShowForm(false);
       loadDrivers();
-      alert('Entregador criado com sucesso! Email: ' + result.driver.email);
+      showToast('Entregador criado com sucesso! Email: ' + result.driver.email, 'info');
     } catch (err) {
       setFormError(err.response?.data?.error || 'Erro ao criar entregador');
     } finally {
@@ -252,10 +253,10 @@ const AdminDriversPage = () => {
                   <button onClick={() => openEditForm(driver)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }} title="Editar">
                     <Edit size={14} />
                   </button>
-                  <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'OFFLINE' : 'ONLINE'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#64748b' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
+                  <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'OFFLINE' : 'ONLINE'); loadDrivers(); } catch (err) { showToast(err.response?.data?.error || 'Erro', 'error'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#64748b' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
                     {driver.is_online ? <Truck size={14} /> : <Truck size={14} />}
                   </button>
-                  <button onClick={async (e) => { e.stopPropagation(); if (!window.confirm('Suspender este entregador?')) return; try { await adminService.updateDriverStatus(driver.id, 'SUSPENDED'); loadDrivers(); } catch (err) { alert(err.response?.data?.error || 'Erro'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#f59e0b' }} title="Suspender">
+                  <button onClick={async (e) => { e.stopPropagation(); if (!window.confirm('Suspender este entregador?')) return; try { await adminService.updateDriverStatus(driver.id, 'SUSPENDED'); loadDrivers(); } catch (err) { showToast(err.response?.data?.error || 'Erro', 'error'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#f59e0b' }} title="Suspender">
                     <Clock size={14} />
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); handleDelete(driver.id, driver.user?.first_name + ' ' + driver.user?.last_name); }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }} title="Excluir">

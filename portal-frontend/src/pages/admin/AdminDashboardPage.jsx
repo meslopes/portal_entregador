@@ -9,18 +9,8 @@ import { adminService, orderService, utils } from '@/lib/api';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquare } from '@/contexts/SquareContext';
-
-
-const STATUS_CONFIG = {
-  SCHEDULED: { color: '#6366f1', bg: '#e0e7ff', text: 'Agendados', icon: '⏰' },
-  PENDING: { color: '#ef4444', bg: '#fee2e2', text: 'Tocando', icon: '🔴' },
-  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceitos', icon: '🔵' },
-  PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: '🟣' },
-  READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: '🟢' },
-  PICKED_UP: { color: '#f59e0b', bg: '#fef3c7', text: 'Coletados', icon: '🟡' },
-  DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregues', icon: '✅' },
-  CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelados', icon: '❌' },
-};
+import { showToast } from '@/components/Toast';
+import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -201,7 +191,7 @@ const AdminDashboardPage = () => {
       loadOrders();
       loadTracking();
     } catch (err) {
-      alert('Erro ao atribuir entregador: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao atribuir entregador: ' + (err.response?.data?.error || err.message), 'error');
     } finally {
       setAssignLoading(false);
     }
@@ -222,7 +212,7 @@ const AdminDashboardPage = () => {
       loadPendingUsers();
       loadAllDrivers();
     } catch (err) {
-      alert('Erro ao aprovar: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao aprovar: ' + (err.response?.data?.error || err.message), 'error');
     }
   };
 
@@ -233,7 +223,7 @@ const AdminDashboardPage = () => {
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
       loadDashboard();
     } catch (err) {
-      alert('Erro ao rejeitar: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao rejeitar: ' + (err.response?.data?.error || err.message), 'error');
     }
   };
 
@@ -351,16 +341,9 @@ const AdminDashboardPage = () => {
           if (est.orders && est.orders.length > 0) {
             ordersHtml = '<div style="margin-top:8px;max-height:200px;overflow-y:auto;">';
             est.orders.forEach(o => {
-              const statusColors = {
-                PENDING: '#ef4444', ACCEPTED: '#2563eb', PREPARING: '#8b5cf6',
-                READY: '#06b6d4', PICKED_UP: '#f59e0b'
-              };
-              const statusLabels = {
-                PENDING: 'Tocando', ACCEPTED: 'Aceito', PREPARING: 'Preparando',
-                READY: 'Pronto', PICKED_UP: 'Coletado'
-              };
-              const color = statusColors[o.status] || '#64748b';
-              const label = statusLabels[o.status] || o.status;
+              const statusCfg = ORDER_STATUS[o.status];
+              const color = statusCfg?.color || '#64748b';
+              const label = statusCfg?.label || o.status;
               ordersHtml += `<div style="padding:4px 6px;margin:2px 0;background:#f8fafc;border-radius:4px;font-size:11px;border-left:3px solid ${color}">`;
               ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${o.order_number}</b><span style="color:${color}">${label}</span></div>`;
               ordersHtml += `<div style="color:#64748b;">${o.customer_name || 'Cliente'}</div>`;
@@ -617,7 +600,7 @@ const AdminDashboardPage = () => {
         {/* Lista de Status */}
         {activeTab === 'status' && (
           <div style={{ padding: '0.5rem' }}>
-            {Object.entries(STATUS_CONFIG).filter(([status]) => !['PREPARING', 'READY'].includes(status)).map(([status, config]) => {
+            {Object.entries(ORDER_STATUS).filter(([status]) => !['PREPARING', 'READY'].includes(status)).map(([status, config]) => {
               const count = getOrdersByStatus(status).length;
               const isExpanded = expandedStatus === status;
               
@@ -636,7 +619,7 @@ const AdminDashboardPage = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '1rem' }}>{config.icon}</span>
                       <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>
-                        Pedidos {config.text}
+                        Pedidos {config.label}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -746,7 +729,7 @@ const AdminDashboardPage = () => {
                                 <p style={{ fontSize: '0.625rem', color: '#64748b', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
                                 {['SCHEDULED', 'PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
                                   if (s === order.status) return null;
-                                  const cfg = STATUS_CONFIG[s];
+                                  const cfg = ORDER_STATUS[s];
                                   return (
                                     <button
                                       key={s}
@@ -757,7 +740,7 @@ const AdminDashboardPage = () => {
                                           setSelectedOrderMenu(null);
                                           loadOrders();
                                         } catch (err) {
-                                          alert('Erro ao alterar status');
+                                          showToast('Erro ao alterar status', 'error');
                                         }
                                       }}
                                       style={{

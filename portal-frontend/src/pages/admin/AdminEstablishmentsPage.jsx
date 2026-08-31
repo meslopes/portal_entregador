@@ -7,6 +7,7 @@ import {
 import { adminService, utils } from '@/lib/api';
 import api from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
+import { showToast } from '@/components/Toast';
 
 const STATUS_CONFIG = {
   PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente' },
@@ -96,7 +97,7 @@ const AdminEstablishmentsPage = () => {
       setShowDetails(null);
       await loadEstablishments();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao alterar configuração');
+      showToast(err.response?.data?.error || 'Erro ao alterar configuração', 'error');
     }
   };
 
@@ -117,7 +118,7 @@ const AdminEstablishmentsPage = () => {
   const copyRegistrationLink = () => {
     const link = `${window.location.origin}/client/register`;
     navigator.clipboard.writeText(link).then(() => {
-      alert('Link copiado!\n\nEnvie para o estabelecimento se cadastrar:\n' + link);
+      showToast('Link copiado!\n\nEnvie para o estabelecimento se cadastrar:\n' + link, 'info');
     }).catch(() => {
       const textArea = document.createElement('textarea');
       textArea.value = link;
@@ -125,7 +126,7 @@ const AdminEstablishmentsPage = () => {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      alert('Link copiado!\n\nEnvie para o estabelecimento se cadastrar:\n' + link);
+      showToast('Link copiado!\n\nEnvie para o estabelecimento se cadastrar:\n' + link, 'info');
     });
   };
 
@@ -294,7 +295,7 @@ const AdminEstablishmentsPage = () => {
       await adminService.deleteEstablishment(id, hasOrders);
       loadEstablishments();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir');
+      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
     }
   };
 
@@ -303,7 +304,7 @@ const AdminEstablishmentsPage = () => {
       const data = await adminService.getEstablishmentDetails(id);
       setShowDetails(data);
     } catch (err) {
-      alert('Erro ao carregar detalhes');
+      showToast('Erro ao carregar detalhes', 'error');
     }
   };
 
@@ -312,7 +313,7 @@ const AdminEstablishmentsPage = () => {
       await adminService.updateEstablishment(est.id, { is_active: !est.is_active });
       loadEstablishments();
     } catch (err) {
-      alert('Erro ao alterar status');
+      showToast('Erro ao alterar status', 'error');
     }
   };
 
@@ -732,9 +733,9 @@ const AdminEstablishmentsPage = () => {
                   const res = await api.post(endpoint, { address: addr });
                   setFormData(prev => ({ ...prev, latitude: res.data.latitude, longitude: res.data.longitude }));
                   setFormError('');
-                  alert('Geocodificação realizada com sucesso!');
+                  showToast('Geocodificação realizada com sucesso!', 'success');
                 } catch (e) {
-                  alert('Erro ao geocodificar');
+                  showToast('Erro ao geocodificar', 'error');
                 }
               }} style={{
                 padding: '0.5rem 1rem', borderRadius: '0.5rem',
@@ -752,9 +753,9 @@ const AdminEstablishmentsPage = () => {
                     const res = await api.post(`/api/admin/establishments/${editing.id}/geocode`);
                     setFormData(prev => ({ ...prev, latitude: res.data.latitude, longitude: res.data.longitude }));
                     setFormError('');
-                    alert('Geocodificação realizada com sucesso!');
+                    showToast('Geocodificação realizada com sucesso!', 'success');
                   } catch (e) {
-                    alert('Erro ao geocodificar');
+                    showToast('Erro ao geocodificar', 'error');
                   }
                 }} style={{
                   padding: '0.5rem 1rem', borderRadius: '0.5rem',
@@ -899,7 +900,7 @@ const AdminEstablishmentsPage = () => {
                       });
                       setShowDetails({ ...showDetails, enable_platform_routing: !showDetails.enable_platform_routing });
                     } catch (err) {
-                      alert('Erro ao alterar configuração');
+                      showToast('Erro ao alterar configuração', 'error');
                     }
                   }}
                   style={{

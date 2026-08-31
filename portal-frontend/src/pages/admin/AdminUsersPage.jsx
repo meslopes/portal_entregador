@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, Edit, Trash2, AlertCircle, X,
   Truck, Store, Shield, Mail, Phone, CheckCircle
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -68,7 +69,7 @@ const AdminUsersPage = () => {
       const result = await adminService.createAdminUser(formData);
       setShowForm(false);
       loadUsers();
-      alert(`Admin criado!\nEmail: ${result.user.email}\nSenha: ${result.user.password}`);
+      showToast(`Admin criado!\nEmail: ${result.user.email}\nSenha: ${result.user.password}`, 'info');
     } catch (err) {
       setFormError(err.response?.data?.error || 'Erro ao criar admin');
     } finally {
@@ -95,7 +96,7 @@ const AdminUsersPage = () => {
       setShowEdit(null);
       loadUsers();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao atualizar');
+      showToast(err.response?.data?.error || 'Erro ao atualizar', 'error');
     } finally {
       setFormLoading(false);
     }
@@ -107,7 +108,7 @@ const AdminUsersPage = () => {
       await adminService.deleteUser(userId);
       loadUsers();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir');
+      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
     }
   };
 

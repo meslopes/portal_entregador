@@ -7,6 +7,7 @@ import { adminService, utils } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import { showToast } from '@/components/Toast';
 
 const STATUS_FILTERS = [
   { key: '', label: 'Todos', color: '#64748b' },
@@ -63,7 +64,7 @@ const AdminOrdersPage = () => {
       await adminService.adminDeleteOrder(orderId);
       loadOrders();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir');
+      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
     }
   };
 
@@ -94,7 +95,7 @@ const AdminOrdersPage = () => {
       setEditingOrder(null);
       loadOrders();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao atualizar');
+      showToast(err.response?.data?.error || 'Erro ao atualizar', 'error');
     }
   };
 

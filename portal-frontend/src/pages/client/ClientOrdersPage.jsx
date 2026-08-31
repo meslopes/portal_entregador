@@ -8,6 +8,7 @@ import { orderService, utils, API_BASE_URL } from '@/lib/api';
 import api from '@/lib/api';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
+import { showToast } from '@/components/Toast';
 
 const STATUS_CONFIG = {
   SCHEDULED: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Agendado', icon: Clock },
@@ -295,9 +296,9 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
       await api.put(`/api/orders/${order.id}/edit`, editForm);
       setShowEdit(false);
       onOrderUpdated();
-      alert('Pedido atualizado!');
+      showToast('Pedido atualizado!', 'success');
     } catch (err) {
-      alert('Erro ao editar: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao editar: ' + (err.response?.data?.error || err.message), 'error');
     } finally {
       setEditLoading(false);
     }
@@ -693,7 +694,7 @@ const StatusBtn = ({ status, label, color, orderId, onUpdated }) => {
       await api.put(`/api/orders/${orderId}/status`, { status });
       onUpdated();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao alterar status');
+      showToast(err.response?.data?.error || 'Erro ao alterar status', 'error');
     } finally {
       setLoading(false);
     }

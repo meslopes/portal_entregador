@@ -43,23 +43,47 @@ const Layout = ({ children }) => {
 
   const adminNavigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Pracas', href: '/admin/squares', icon: MapPin },
-    { name: 'Clientes', href: '/admin/establishments', icon: Store },
-    { name: 'Entregadores', href: '/admin/drivers', icon: Users },
-    { name: 'Pedidos', href: '/admin/orders', icon: Package },
-    { name: 'Financeiro', href: '/admin/finance', icon: BarChart3 },
-    { name: 'Pagamentos Próprios', href: '/admin/payment-reports', icon: Wallet },
-    { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
-    { name: 'Inadimplência', href: '/admin/overdue-report', icon: AlertTriangle },
-    { name: 'Precos', href: '/admin/pricing', icon: DollarSign },
-    { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
-    { name: 'Integracoes', href: '/admin/integrations', icon: Globe },
-    { name: 'Saques', href: '/admin/withdrawals', icon: CreditCard },
-    { name: 'Faturas', href: '/admin/invoices', icon: FileText },
-    { name: 'Relatorios', href: '/admin/reports', icon: FileText },
-    { name: 'Configuracoes', href: '/admin/settings', icon: Settings },
-    { name: 'Config. Rotas', href: '/admin/route-settings', icon: Route },
-    { name: 'Rotas Plataforma', href: '/admin/platform-routes', icon: Truck },
+    { 
+      name: 'Operações', 
+      icon: Package,
+      children: [
+        { name: 'Pedidos', href: '/admin/orders', icon: Package },
+        { name: 'Rotas', href: '/admin/platform-routes', icon: Truck },
+        { name: 'Config. Rotas', href: '/admin/route-settings', icon: Route },
+      ]
+    },
+    { 
+      name: 'Negócios', 
+      icon: Store,
+      children: [
+        { name: 'Estabelecimentos', href: '/admin/establishments', icon: Store },
+        { name: 'Praças', href: '/admin/squares', icon: MapPin },
+        { name: 'Entregadores', href: '/admin/drivers', icon: Users },
+      ]
+    },
+    { 
+      name: 'Financeiro', 
+      icon: DollarSign,
+      children: [
+        { name: 'Visão Geral', href: '/admin/finance', icon: BarChart3 },
+        { name: 'Pagamentos Próprios', href: '/admin/payment-reports', icon: Wallet },
+        { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
+        { name: 'Inadimplência', href: '/admin/overdue-report', icon: AlertTriangle },
+        { name: 'Saques', href: '/admin/withdrawals', icon: CreditCard },
+        { name: 'Faturas', href: '/admin/invoices', icon: FileText },
+      ]
+    },
+    { 
+      name: 'Configurações', 
+      icon: Settings,
+      children: [
+        { name: 'Geral', href: '/admin/settings', icon: Settings },
+        { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
+        { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
+        { name: 'Integrações', href: '/admin/integrations', icon: Globe },
+        { name: 'Relatórios', href: '/admin/reports', icon: FileText },
+      ]
+    },
   ];
 
   const platformNavigation = [
@@ -102,6 +126,75 @@ const Layout = ({ children }) => {
             <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               {navigation.map((item) => {
                 const Icon = item.icon;
+                
+                // Dropdown menu item
+                if (item.children) {
+                  const isAnyChildActive = item.children.some(c => isActive(c.href));
+                  return (
+                    <div key={item.name} style={{ position: 'relative' }} className="nav-dropdown">
+                      <button
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          border: 'none',
+                          background: isAnyChildActive ? '#eff6ff' : 'transparent',
+                          color: isAnyChildActive ? '#2563eb' : '#64748b',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <Icon size={16} />
+                        {item.name}
+                        <ChevronDown size={14} />
+                      </button>
+                      <div className="nav-dropdown-content" style={{
+                        display: 'none',
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        background: 'white',
+                        borderRadius: '0.5rem',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        border: '1px solid #e2e8f0',
+                        minWidth: '180px',
+                        zIndex: 1000,
+                        padding: '0.5rem 0'
+                      }}>
+                        {item.children.map((child) => {
+                          const ChildIcon = child.icon;
+                          const childActive = isActive(child.href);
+                          return (
+                            <Link
+                              key={child.name}
+                              to={child.href}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.5rem 1rem',
+                                fontSize: '0.875rem',
+                                textDecoration: 'none',
+                                background: childActive ? '#eff6ff' : 'transparent',
+                                color: childActive ? '#2563eb' : '#64748b',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              <ChildIcon size={14} />
+                              {child.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Regular menu item
                 const active = isActive(item.href);
                 return (
                   <Link
@@ -293,6 +386,12 @@ const Layout = ({ children }) => {
         }
         nav::-webkit-scrollbar-thumb:hover {
           background: #94a3b8;
+        }
+        .nav-dropdown:hover .nav-dropdown-content {
+          display: block !important;
+        }
+        .nav-dropdown-content a:hover {
+          background: #f8fafc;
         }
       `}</style>
     </div>

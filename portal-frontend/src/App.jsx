@@ -6,6 +6,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import OwnDriverProtectedRoute from '@/components/OwnDriverProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
+import ToastContainer from '@/components/Toast';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -101,6 +102,7 @@ function App() {
       <AuthProvider>
         <SquareProvider>
           <Router>
+          <ToastContainer />
           <Routes>
           {/* Rotas públicas */}
           <Route

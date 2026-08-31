@@ -5,6 +5,7 @@ import {
   MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle, Map
 } from 'lucide-react';
 import api, { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const STATUS_CONFIG = {
   SCHEDULED: { color: '#6366f1', bg: '#e0e7ff', text: 'Agendado', icon: '⏰' },
@@ -89,7 +90,7 @@ const OrderDetailPage = () => {
       }
       loadOrder();
     } catch (err) {
-      alert('Erro ao alterar status: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao alterar status: ' + (err.response?.data?.error || err.message), 'error');
     }
   };
 
@@ -99,9 +100,9 @@ const OrderDetailPage = () => {
       await api.put(`/api/orders/${orderId}/edit`, editForm);
       setShowEdit(false);
       loadOrder();
-      alert('Pedido atualizado com sucesso!');
+      showToast('Pedido atualizado com sucesso!', 'success');
     } catch (err) {
-      alert('Erro ao editar pedido: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao editar pedido: ' + (err.response?.data?.error || err.message), 'error');
     } finally {
       setEditLoading(false);
     }
@@ -129,7 +130,7 @@ const OrderDetailPage = () => {
 
   const handleShowMap = () => {
     if (!hasGeolocation) {
-      alert('Este pedido não possui dados de geolocalização.');
+      showToast('Este pedido não possui dados de geolocalização.', 'info');
       return;
     }
     setShowMap(true);
