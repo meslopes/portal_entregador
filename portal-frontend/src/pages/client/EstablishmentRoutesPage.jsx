@@ -4,6 +4,7 @@ import {
   AlertCircle, RefreshCw, Trash2, X, ArrowRightLeft
 } from 'lucide-react';
 import api from '@/lib/api';
+import { ROUTE_STATUS, getRouteStatusLabel } from '@/constants/status';
 
 const EstablishmentRoutesPage = () => {
   const [routes, setRoutes] = useState([]);
@@ -167,15 +168,7 @@ const EstablishmentRoutesPage = () => {
   };
 
   const getStatusBadge = (status) => {
-    const configs = {
-      CREATED: { bg: '#f1f5f9', color: '#475569', label: 'Sem Entregador' },
-      PENDING: { bg: '#fef3c7', color: '#92400e', label: 'Aguardando Aceite' },
-      ACTIVE: { bg: '#dbeafe', color: '#1d4ed8', label: 'Em Rota' },
-      COMPLETED: { bg: '#dcfce7', color: '#166534', label: 'Concluída' },
-      CANCELLED: { bg: '#fef2f2', color: '#dc2626', label: 'Cancelada' },
-      REJECTED: { bg: '#fef2f2', color: '#dc2626', label: 'Rejeitada' }
-    };
-    const config = configs[status] || configs.CREATED;
+    const config = ROUTE_STATUS[status] || ROUTE_STATUS.CREATED;
     return (
       <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: config.bg, color: config.color }}>
         {config.label}

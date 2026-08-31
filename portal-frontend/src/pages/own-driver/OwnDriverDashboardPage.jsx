@@ -7,15 +7,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
-
-const STATUS_CONFIG = {
-  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Na Rota', icon: CheckCircle },
-  PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
-  READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Truck },
-  DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue', icon: CheckCircle },
-  PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Aguardando Rota', icon: Clock },
-};
+import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
 
 const OwnDriverDashboardPage = () => {
   const navigate = useNavigate();
@@ -419,8 +411,7 @@ const StatCard = ({ icon, label, value, color }) => (
 );
 
 const ActiveOrderCard = ({ order, onClick }) => {
-  const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.ACCEPTED;
-  const StatusIcon = config.icon;
+  const config = ORDER_STATUS[order.status] || ORDER_STATUS.ACCEPTED;
 
   return (
     <div
@@ -441,7 +432,7 @@ const ActiveOrderCard = ({ order, onClick }) => {
           background: config.bg, color: config.color,
           display: 'flex', alignItems: 'center', gap: '0.25rem'
         }}>
-          <StatusIcon size={10} /> {config.text}
+          {config.icon} {config.label}
         </span>
       </div>
 

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { showToast } from '@/components/Toast';
+import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
 
 const STATUS_FILTERS = [
   { key: '', label: 'Todos', color: '#64748b' },
@@ -18,16 +19,6 @@ const STATUS_FILTERS = [
   { key: 'DELIVERED', label: 'Entregue', color: '#22c55e' },
   { key: 'CANCELLED', label: 'Cancelado', color: '#ef4444' },
 ];
-
-const STATUS_COLORS = {
-  PENDING: { bg: '#fef3c7', text: '#d97706' },
-  ACCEPTED: { bg: '#dbeafe', text: '#2563eb' },
-  PREPARING: { bg: '#f3e8ff', text: '#8b5cf6' },
-  READY: { bg: '#cffafe', text: '#06b6d4' },
-  PICKED_UP: { bg: '#dbeafe', text: '#3b82f6' },
-  DELIVERED: { bg: '#dcfce7', text: '#22c55e' },
-  CANCELLED: { bg: '#fee2e2', text: '#ef4444' },
-};
 
 const AdminOrdersPage = () => {
   const navigate = useNavigate();
@@ -296,7 +287,7 @@ const AdminOrdersPage = () => {
 };
 
 const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
-  const statusColor = STATUS_COLORS[order.status] || { bg: '#f1f5f9', text: '#64748b' };
+  const statusColor = ORDER_STATUS[order.status] || { bg: '#f1f5f9', color: '#64748b' };
 
   return (
     <div style={{
@@ -310,7 +301,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
           <span style={{ fontFamily: 'monospace', fontSize: '0.8125rem', color: '#64748b', fontWeight: 500 }}>#{order.order_number}</span>
-          <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: statusColor.bg, color: statusColor.text }}>
+          <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: statusColor.bg, color: statusColor.color }}>
             {utils.getStatusText(order.status)}
           </span>
           <span style={{ padding: '0.25rem 0.625rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 500, background: '#f1f5f9', color: '#64748b' }}>

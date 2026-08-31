@@ -6,6 +6,7 @@ import {
   Store, Truck, BarChart3, Globe, Shield, Calendar, Plus, Trash2, X
 } from 'lucide-react';
 import api from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const cardStyle = {
   background: 'white', borderRadius: '0.75rem', padding: '1.5rem',
@@ -117,7 +118,7 @@ const PlatformDashboardPage = () => {
       loadDashboard();
       loadUsers();
     } catch (err) {
-      alert('Erro ao aprovar: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao aprovar: ' + (err.response?.data?.error || err.message), 'error');
     }
   };
 
@@ -128,7 +129,7 @@ const PlatformDashboardPage = () => {
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
       loadDashboard();
     } catch (err) {
-      alert('Erro ao rejeitar: ' + (err.response?.data?.error || err.message));
+      showToast('Erro ao rejeitar: ' + (err.response?.data?.error || err.message), 'error');
     }
   };
 
@@ -138,7 +139,7 @@ const PlatformDashboardPage = () => {
       loadTenants();
       loadDashboard();
     } catch (err) {
-      alert('Erro ao alterar status do tenant');
+      showToast('Erro ao alterar status do tenant', 'error');
     }
   };
 
@@ -148,7 +149,7 @@ const PlatformDashboardPage = () => {
       setSelectedTenant(response.data.tenant);
       setShowTenantModal(true);
     } catch (err) {
-      alert('Erro ao carregar detalhes do tenant');
+      showToast('Erro ao carregar detalhes do tenant', 'error');
     }
   };
 
@@ -162,7 +163,7 @@ const PlatformDashboardPage = () => {
       loadTenants();
       loadDashboard();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao criar tenant');
+      showToast(err.response?.data?.error || 'Erro ao criar tenant', 'error');
     } finally {
       setCreateTenantLoading(false);
     }
@@ -194,9 +195,9 @@ const PlatformDashboardPage = () => {
       setShowUserEditModal(false);
       setEditingUser(null);
       loadUsers();
-      alert('Usuário atualizado com sucesso!');
+      showToast('Usuário atualizado com sucesso!', 'success');
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao atualizar usuário');
+      showToast(err.response?.data?.error || 'Erro ao atualizar usuário', 'error');
     } finally {
       setUserEditLoading(false);
     }
@@ -208,9 +209,9 @@ const PlatformDashboardPage = () => {
       await api.delete(`/api/platform/users/${userId}`);
       loadUsers();
       loadDashboard();
-      alert('Usuário excluído com sucesso!');
+      showToast('Usuário excluído com sucesso!', 'success');
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir usuário');
+      showToast(err.response?.data?.error || 'Erro ao excluir usuário', 'error');
     }
   };
 
@@ -1217,7 +1218,7 @@ const AdminsTab = () => {
       });
       loadAdmins();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao criar admin');
+      showToast(err.response?.data?.error || 'Erro ao criar admin', 'error');
     } finally {
       setCreateLoading(false);
     }
@@ -1232,7 +1233,7 @@ const AdminsTab = () => {
       await api.delete(`/api/platform/admins/${adminId}?force=true`);
       loadAdmins();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir admin');
+      showToast(err.response?.data?.error || 'Erro ao excluir admin', 'error');
     }
   };
 

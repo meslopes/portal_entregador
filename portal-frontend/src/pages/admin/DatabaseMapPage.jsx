@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api, { adminService } from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const DatabaseMapPage = () => {
   const [data, setData] = useState(null);
@@ -38,7 +39,7 @@ const DatabaseMapPage = () => {
 
   const handleDeleteUser = async (user) => {
     const isSuperAdmin = user.user_type === 'ADMIN' && !user.tenant_id;
-    if (isSuperAdmin) { alert('Não é possível excluir o super admin.'); return; }
+    if (isSuperAdmin) { showToast('Não é possível excluir o super admin.', 'info'); return; }
     if (!window.confirm(`Excluir ${user.first_name} ${user.last_name} (${user.email})?\n\nSe tiver pedidos ou dados vinculados, serão desvinculados automaticamente.`)) return;
     try {
       await api.delete(`/api/admin/users/${user.id}?force=true`);
@@ -361,7 +362,7 @@ const DatabaseMapPage = () => {
 
     const win = window.open('', '_blank');
     if (!win) {
-      alert('O navegador bloqueou o popup. Permita popups para este site e tente novamente.');
+      showToast('O navegador bloqueou o popup. Permita popups para este site e tente novamente.', 'info');
       return;
     }
     win.document.write(html);
