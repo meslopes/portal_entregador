@@ -166,6 +166,15 @@ def create_app(config_name=None):
             except Exception:
                 db.session.rollback()
 
+        # Migration: tornar restaurant_id nullable em platform_driver_routes
+        try:
+            db.session.execute(db.text(
+                "ALTER TABLE platform_driver_routes ALTER COLUMN restaurant_id DROP NOT NULL"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: remover colunas antigas se existirem
         for col in ['min_delivery_fee', 'driver_km_bonus']:
             try:

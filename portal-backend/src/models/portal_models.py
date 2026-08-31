@@ -1407,8 +1407,8 @@ class PlatformDriverRoute(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
-    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
-    status = db.Column(db.String(20), default='ACTIVE')  # ACTIVE, COMPLETED, CANCELLED
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=True)  # Nullable para entregadores da plataforma
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, ACTIVE, COMPLETED, CANCELLED, REJECTED
     total_distance_km = db.Column(db.Numeric(10, 2))
     total_duration_min = db.Column(db.Numeric(10, 2))
     started_at = db.Column(db.DateTime)
