@@ -218,7 +218,12 @@ const AdminPlatformRoutesPage = () => {
                           </span>
                           <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{stop.address}</p>
                         </div>
-                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{stop.customer_name} • Pedido #{stop.order_number}</p>
+                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                          {stop.stop_type === 'PICKUP' 
+                            ? `${stop.restaurant_name || 'Restaurante'} • Pedido #${stop.order_number}`
+                            : `${stop.customer_name || 'Cliente'} • Pedido #${stop.order_number}`
+                          }
+                        </p>
                       </div>
                       {stop.status === 'COMPLETED' && <CheckCircle size={16} style={{ color: '#22c55e' }} />}
                       {stop.status !== 'COMPLETED' && route.status !== 'COMPLETED' && (
