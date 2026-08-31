@@ -214,9 +214,9 @@ const AdminDashboardPage = () => {
     loadOnlineDrivers();
   };
 
-  const handleApprove = async (userId, squareId = null, tenantId = null) => {
+  const handleApprove = async (userId, assignedSquareId = null, tenantId = null) => {
     try {
-      await adminService.approveUser(userId, squareId, tenantId);
+      await adminService.approveUser(userId, assignedSquareId, tenantId);
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
       loadDashboard();
       loadOrders();

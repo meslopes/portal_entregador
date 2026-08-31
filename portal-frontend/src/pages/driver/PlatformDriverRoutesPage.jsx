@@ -12,7 +12,6 @@ const PlatformDriverRoutesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const [pendingCount, setPendingCount] = useState(0);
   const prevPendingCount = useRef(0);
   const audioContextRef = useRef(null);
   const audioEnabledRef = useRef(false);
@@ -50,7 +49,6 @@ const PlatformDriverRoutesPage = () => {
       playNotification();
     }
     prevPendingCount.current = newPending;
-    setPendingCount(newPending);
   }, [routes]);
 
   const playNotification = () => {
@@ -87,8 +85,6 @@ const PlatformDriverRoutesPage = () => {
       }
     } catch (e) {}
   };
-
-  useEffect(() => { loadRoutes(); }, []);
 
   const loadRoutes = async (isRefresh = false) => {
     try {
