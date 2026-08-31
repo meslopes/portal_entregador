@@ -128,7 +128,7 @@ def create_platform_route():
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
         
-        if not driver.user or not driver.user.is_active:
+        if not driver.user or driver.user.status != UserStatus.ACTIVE:
             return jsonify({'error': 'Entregador está inativo'}), 400
         
         if not driver.is_online:
@@ -280,7 +280,7 @@ def accept_route(route_id):
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
         
-        if not driver.user or not driver.user.is_active:
+        if not driver.user or driver.user.status != UserStatus.ACTIVE:
             return jsonify({'error': 'Entregador está inativo'}), 400
 
         route = PlatformDriverRoute.query.get(route_id)
