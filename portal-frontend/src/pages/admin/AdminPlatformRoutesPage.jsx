@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Route, Plus, Users, Package, MapPin, Clock, CheckCircle,
-  AlertCircle, RefreshCw, Trash2, Play, Eye, X, ArrowRightLeft, Truck
+  Route, Plus, Users, Package, MapPin, CheckCircle,
+  AlertCircle, RefreshCw, X, ArrowRightLeft, Truck
 } from 'lucide-react';
 import api from '@/lib/api';
 

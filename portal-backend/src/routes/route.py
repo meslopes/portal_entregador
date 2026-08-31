@@ -12,6 +12,7 @@ from src.models.portal_models import (
 )
 from src.routes.own_driver import own_driver_required
 from src.utils.tenant import get_current_tenant_id, get_current_user
+from src.utils.geo import haversine_distance
 from datetime import datetime
 import logging
 
@@ -94,21 +95,6 @@ def optimize_stop_order(stops):
         stop['stop_order'] = i + 1
     
     return optimized
-
-
-def haversine_distance(lat1, lng1, lat2, lng2):
-    """Calcula distância em km entre dois pontos usando Haversine"""
-    from math import radians, sin, cos, sqrt, atan2
-    
-    R = 6371  # Raio da Terra em km
-    lat1_r, lat2_r = radians(lat1), radians(lat2)
-    dlat = radians(lat2 - lat1)
-    dlng = radians(lng2 - lng1)
-    
-    a = sin(dlat/2)**2 + cos(lat1_r) * cos(lat2_r) * sin(dlng/2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1-a))
-    
-    return R * c
 
 
 def auto_create_or_update_route(establishment_driver_id, restaurant_id):
@@ -557,9 +543,11 @@ def remove_order_from_route(route_id):
             order.assigned_to_own_driver = False
             order.establishment_driver_id = None
             # Resetar status para PENDING se estava ACCEPTED (aceito pela rota mas não coletado)
-            if order.status == OrderStatus.ACCEPTED:
-                order.status = OrderStatus.PENDING
-                order.accepted_at = None
+            # Não resetar se já foi coletado ou entregue
+            if order.status not in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
+                if order.status == OrderStatus.ACCEPTED:
+                    order.status = OrderStatus.PENDING
+                    order.accepted_at = None
 
         # Remover parada
         db.session.delete(stop)

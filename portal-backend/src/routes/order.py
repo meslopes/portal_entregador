@@ -598,8 +598,8 @@ def get_available_orders():
             
             order_dict = order.to_dict()
             order_dict['restaurant'] = order.restaurant.to_dict()
-            order_dict['customer'] = order.customer.to_dict()
-            order_dict['delivery_address'] = order.delivery_address.to_dict()
+            order_dict['customer'] = order.customer.to_dict() if order.customer else None
+            order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
             order_dict['distance_to_restaurant_km'] = round(distance_to_restaurant, 2)
             
             # Calcula distância do restaurante ao cliente
@@ -729,8 +729,8 @@ def accept_order(order_id):
         
         order_dict = order.to_dict()
         order_dict['restaurant'] = order.restaurant.to_dict()
-        order_dict['customer'] = order.customer.to_dict()
-        order_dict['delivery_address'] = order.delivery_address.to_dict()
+        order_dict['customer'] = order.customer.to_dict() if order.customer else None
+        order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
         order_dict['delivery'] = delivery.to_dict()
         
         return jsonify({
@@ -1367,11 +1367,11 @@ def edit_order(order_id):
                 if 'delivery_neighborhood' in data:
                     order.delivery_address.neighborhood = data['delivery_neighborhood']
                 if 'delivery_city' in data:
-                    order.delivery_city = data['delivery_city']
+                    order.delivery_address.city = data['delivery_city']
                 if 'delivery_state' in data:
-                    order.delivery_state = data['delivery_state']
+                    order.delivery_address.state = data['delivery_state']
                 if 'delivery_zip_code' in data:
-                    order.delivery_zip_code = data['delivery_zip_code']
+                    order.delivery_address.zip_code = data['delivery_zip_code']
                 
                 # Re-geocodificar se endereço mudou
                 if 'delivery_address' in data:
@@ -2400,8 +2400,8 @@ def get_my_orders():
         orders_data = []
         for order in orders.items:
             order_dict = order.to_dict()
-            order_dict['customer'] = order.customer.to_dict()
-            order_dict['delivery_address'] = order.delivery_address.to_dict()
+            order_dict['customer'] = order.customer.to_dict() if order.customer else None
+            order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
             if order.driver:
                 order_dict['driver'] = {
                     'id': order.driver.id,
@@ -2875,7 +2875,7 @@ def rate_restaurant(order_id):
             return jsonify({'error': 'Pedido não encontrado'}), 404
 
         # Verifica se o pedido pertence ao entregador
-        if not order.delivery or order.delivery.driver_id != user.driver.id:
+        if not order.delivery or not user.driver or order.delivery.driver_id != user.driver.id:
             return jsonify({'error': 'Pedido não pertence a este entregador'}), 403
 
         # Verifica se ja foi avaliado

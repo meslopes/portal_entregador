@@ -53,8 +53,12 @@ def optimize_platform_route_order(stops, driver_pos=None):
             break
         
         # Calcular centroid das paradas restantes
-        centroid_lat = sum(s['latitude'] for s in valid_stops) / len(valid_stops)
-        centroid_lng = sum(s['longitude'] for s in valid_stops) / len(valid_stops)
+        valid_with_coords = [s for s in valid_stops if s.get('latitude') and s.get('longitude')]
+        if valid_with_coords:
+            centroid_lat = sum(s['latitude'] for s in valid_with_coords) / len(valid_with_coords)
+            centroid_lng = sum(s['longitude'] for s in valid_with_coords) / len(valid_with_coords)
+        else:
+            centroid_lat, centroid_lng = current_pos
         
         # Encontrar melhor parada
         best_stop = None
@@ -587,6 +591,9 @@ def list_platform_routes():
         status_filter = request.args.get('status', '')
 
         query = PlatformDriverRoute.query
+
+        if tenant_id:
+            query = query.filter_by(tenant_id=tenant_id)
 
         if status_filter:
             query = query.filter_by(status=status_filter)

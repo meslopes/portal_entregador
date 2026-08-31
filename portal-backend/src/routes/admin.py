@@ -1935,7 +1935,7 @@ def update_driver(driver_id):
 
         if 'cpf' in data:
 
-            driver.cpf = data['cpf'] or None
+            user.cpf = data['cpf'] or None
 
         if 'vehicle_type' in data:
 
@@ -2886,7 +2886,7 @@ def get_finance_by_establishment():
 
             Restaurant.phone,
 
-            func.sum(Order.delivery_fee).label('revenue'),
+            func.sum(Order.total_amount).label('revenue'),
 
             func.count(Order.id).label('total_orders'),
 
@@ -3250,7 +3250,7 @@ def get_live_tracking():
 
         # Limpar estado pendente (endpoint é GET/read-only)
 
-        db.session.rollback()
+        db.session.expire_all()
 
         return jsonify({
 
@@ -4352,11 +4352,11 @@ def report_establishments_ranking():
 
             func.count(Order.id).label('orders'),
 
-            func.sum(Order.delivery_fee).label('revenue'),
+            func.sum(Order.total_amount).label('revenue'),
 
             func.sum(Order.delivery_fee).label('delivery_fees'),
 
-            func.avg(Order.delivery_fee).label('avg_order')
+            func.avg(Order.total_amount).label('avg_order')
 
         ).outerjoin(Order, db.and_(
 

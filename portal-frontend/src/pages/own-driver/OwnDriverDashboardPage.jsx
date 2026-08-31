@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Package, Clock, DollarSign, Star, TrendingUp,
+  Package, Clock, DollarSign, Star,
   MapPin, Truck, CheckCircle, AlertCircle, Power,
   Navigation, RefreshCw, Route, Bell
 } from 'lucide-react';

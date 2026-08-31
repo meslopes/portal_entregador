@@ -2,15 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
-  AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
+  AlertCircle, Clock, CheckCircle, MapPin,
   Search, Filter, ChevronDown, ChevronRight, Store, X, Navigation, Plus, Route
 } from 'lucide-react';
 import { adminService, orderService, utils } from '@/lib/api';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquare } from '@/contexts/SquareContext';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+
 
 const STATUS_CONFIG = {
   SCHEDULED: { color: '#6366f1', bg: '#e0e7ff', text: 'Agendados', icon: '⏰' },

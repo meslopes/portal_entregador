@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Route, Plus, Users, Package, MapPin, Clock, CheckCircle,
-  AlertCircle, RefreshCw, Trash2, Play, Eye, X, ArrowRightLeft
+  Route, Plus, Users, Package, MapPin, CheckCircle,
+  AlertCircle, RefreshCw, Trash2, X, ArrowRightLeft
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -15,7 +15,6 @@ const EstablishmentRoutesPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState('');
-  const [routeName, setRouteName] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
   const [movingStop, setMovingStop] = useState(null);
   const [targetRouteId, setTargetRouteId] = useState('');

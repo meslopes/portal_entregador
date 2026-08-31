@@ -42,7 +42,7 @@ def get_own_driver_from_token():
         if not driver or not driver.is_active:
             return None
         return driver
-    except:
+    except Exception:
         return None
 
 
