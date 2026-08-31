@@ -3,9 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   Users, Truck, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, BarChart3, MapPin,
-  Search, Filter, ChevronDown, ChevronRight, Store, X, Navigation, Plus
+  Search, Filter, ChevronDown, ChevronRight, Store, X, Navigation, Plus, Route
 } from 'lucide-react';
 import { adminService, orderService, utils } from '@/lib/api';
+import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquare } from '@/contexts/SquareContext';
 import L from 'leaflet';
@@ -47,6 +48,7 @@ const AdminDashboardPage = () => {
   const [onlineDrivers, setOnlineDrivers] = useState([]);
   const [allDrivers, setAllDrivers] = useState([]);
   const [allEstablishments, setAllEstablishments] = useState([]);
+  const [platformRoutes, setPlatformRoutes] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef(null);
@@ -61,6 +63,7 @@ const AdminDashboardPage = () => {
     loadSquares();
     loadAllDrivers();
     loadTenants();
+    loadPlatformRoutes();
   }, []);
 
   // Atualiza establishments quando tracking muda
@@ -165,6 +168,15 @@ const AdminDashboardPage = () => {
       setAllDrivers(data.drivers || []);
     } catch (err) {
       console.error('Erro ao carregar entregadores:', err);
+    }
+  };
+
+  const loadPlatformRoutes = async () => {
+    try {
+      const res = await api.get('/api/platform-routes/list');
+      setPlatformRoutes(res.data.routes || []);
+    } catch (err) {
+      console.error('Erro ao carregar rotas da plataforma:', err);
     }
   };
 
@@ -563,6 +575,28 @@ const AdminDashboardPage = () => {
                 minWidth: '1.25rem', textAlign: 'center'
               }}>
                 {pendingUsers.length}
+              </span>
+            </button>
+          )}
+          {platformRoutes.length > 0 && (
+            <button
+              onClick={() => setActiveTab('routes')}
+              style={{
+                padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
+                fontWeight: 600, whiteSpace: 'nowrap',
+                color: activeTab === 'routes' ? '#2563eb' : '#64748b',
+                borderBottom: activeTab === 'routes' ? '2px solid #2563eb' : '2px solid transparent',
+                cursor: 'pointer', fontSize: '0.75rem',
+                display: 'flex', alignItems: 'center', gap: '0.25rem'
+              }}
+            >
+              Rotas
+              <span style={{
+                background: '#2563eb', color: 'white', borderRadius: '9999px',
+                padding: '0 0.375rem', fontSize: '0.625rem', fontWeight: 700,
+                minWidth: '1.25rem', textAlign: 'center'
+              }}>
+                {platformRoutes.length}
               </span>
             </button>
           )}
@@ -1011,6 +1045,56 @@ const AdminDashboardPage = () => {
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* Lista de Rotas da Plataforma */}
+        {activeTab === 'routes' && (
+          <div style={{ padding: '0.5rem' }}>
+            <div style={{ padding: '0.5rem', marginBottom: '0.5rem' }}>
+              <a
+                href="/admin/platform-routes"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  padding: '0.5rem', borderRadius: '0.375rem',
+                  background: '#2563eb', color: 'white',
+                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none'
+                }}
+              >
+                <Route size={14} /> Gerenciar Rotas
+              </a>
+            </div>
+            {platformRoutes.map(route => (
+              <div
+                key={route.id}
+                onClick={() => navigate('/admin/platform-routes')}
+                style={{
+                  padding: '0.75rem', borderRadius: '0.375rem',
+                  background: 'transparent', cursor: 'pointer', marginBottom: '0.25rem',
+                  border: '1px solid transparent'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Truck size={14} style={{ color: route.status === 'PENDING' ? '#f59e0b' : '#2563eb' }} />
+                    <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>Rota #{route.id}</span>
+                  </div>
+                  <span style={{
+                    padding: '0.125rem 0.5rem', borderRadius: '9999px',
+                    fontSize: '0.625rem', fontWeight: 600,
+                    background: route.status === 'PENDING' ? '#fef3c7' : '#dbeafe',
+                    color: route.status === 'PENDING' ? '#92400e' : '#1d4ed8'
+                  }}>
+                    {route.status === 'PENDING' ? 'Aguardando' : 'Em Rota'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  {route.driver_name || 'Sem entregador'} • {route.stops_count} paradas
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
