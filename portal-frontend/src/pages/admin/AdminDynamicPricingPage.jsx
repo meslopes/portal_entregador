@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, CloudRain, TrendingUp, Calendar, XCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
+import { showToast } from '@/components/Toast';
 
 const AdminDynamicPricingPage = () => {
   const { squareId } = useSquare();
@@ -105,7 +106,7 @@ const AdminDynamicPricingPage = () => {
       await adminService.deleteDynamicPricing(id);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir');
+      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
     }
   };
 
@@ -114,7 +115,7 @@ const AdminDynamicPricingPage = () => {
       await adminService.updateDynamicPricing(config.id, { [field]: !config[field] });
       loadData();
     } catch {
-      alert('Erro ao atualizar');
+      showToast('Erro ao atualizar', 'error');
     }
   };
 

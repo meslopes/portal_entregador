@@ -7,6 +7,7 @@ import OwnDriverProtectedRoute from '@/components/OwnDriverProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
 import ToastContainer from '@/components/Toast';
+import ConfirmDialogContainer from '@/components/ConfirmDialog';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -103,6 +104,7 @@ function App() {
         <SquareProvider>
           <Router>
           <ToastContainer />
+          <ConfirmDialogContainer />
           <Routes>
           {/* Rotas públicas */}
           <Route

@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
+import { showToast } from '@/components/Toast';
 
 const STATUS_CONFIG = {
   PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente', icon: Clock },
@@ -407,7 +408,7 @@ const ClientDashboardPage = () => {
               setFeedback('');
               loadData(); // Recarrega para atualizar status
             } catch (err) {
-              alert(err.response?.data?.error || 'Erro ao avaliar');
+              showToast(err.response?.data?.error || 'Erro ao avaliar', 'error');
             } finally {
               setRatingLoading(false);
             }
@@ -473,7 +474,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
       onClose();
       window.location.reload();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao atribuir entregador');
+      showToast(err.response?.data?.error || 'Erro ao atribuir entregador', 'error');
     } finally {
       setAssigning(false);
     }
@@ -483,11 +484,11 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
     try {
       setCallingPlatform(true);
       const res = await api.post(`/api/orders/${order.id}/call-platform`);
-      alert(res.data.message || 'Solicitação enviada');
+      showToast(res.data.message || 'Solicitação enviada', 'success');
       onClose();
       window.location.reload();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao chamar plataforma');
+      showToast(err.response?.data?.error || 'Erro ao chamar plataforma', 'error');
     } finally {
       setCallingPlatform(false);
     }
@@ -745,7 +746,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                   await orderService.cancelOrder(order.id);
                   onClose();
                 } catch (err) {
-                  alert(err.response?.data?.error || 'Erro ao cancelar');
+                  showToast(err.response?.data?.error || 'Erro ao cancelar', 'error');
                 }
               }}
               style={{

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, Truck, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
 import api from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const inputStyle = {
   width: '100%', padding: '0.625rem 0.875rem',
@@ -111,7 +112,7 @@ const EstablishmentDriversPage = () => {
       await api.delete(`/api/admin/establishment-drivers/${id}`);
       loadDrivers();
     } catch {
-      alert('Erro ao remover');
+      showToast('Erro ao remover', 'error');
     }
   };
 
@@ -122,7 +123,7 @@ const EstablishmentDriversPage = () => {
       });
       loadDrivers();
     } catch {
-      alert('Erro ao alterar status');
+      showToast('Erro ao alterar status', 'error');
     }
   };
 

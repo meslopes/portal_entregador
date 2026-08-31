@@ -755,7 +755,7 @@ const AdminDashboardPage = () => {
                                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                     >
                                       <span style={{ fontSize: '0.75rem' }}>{cfg.icon}</span>
-                                      {cfg.text}
+                                      {cfg.label}
                                     </button>
                                   );
                                 })}

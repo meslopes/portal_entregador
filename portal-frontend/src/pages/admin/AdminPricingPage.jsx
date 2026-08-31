@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const AdminPricingPage = () => {
   const [tables, setTables] = useState([]);
@@ -91,7 +92,7 @@ const AdminPricingPage = () => {
       await adminService.deletePricingTable(id);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir');
+      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
     }
   };
 

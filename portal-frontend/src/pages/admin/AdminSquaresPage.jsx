@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const AdminSquaresPage = () => {
   const [squares, setSquares] = useState([]);
@@ -79,7 +80,7 @@ const AdminSquaresPage = () => {
       await adminService.deleteSquare(id);
       loadSquares();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir');
+      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
     }
   };
 
@@ -90,7 +91,7 @@ const AdminSquaresPage = () => {
       });
       loadSquares();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao alterar status');
+      showToast(err.response?.data?.error || 'Erro ao alterar status', 'error');
     }
   };
 

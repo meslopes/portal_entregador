@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, Plus, Trash2, CheckCircle, AlertCircle, RefreshCw, ExternalLink, Shield } from 'lucide-react';
 import api from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const AdminIntegrationsPage = () => {
   const [credentials, setCredentials] = useState([]);
@@ -83,7 +84,7 @@ const AdminIntegrationsPage = () => {
       await api.delete(`/api/admin/platform-credentials/${id}`);
       loadData();
     } catch {
-      alert('Erro ao excluir');
+      showToast('Erro ao excluir', 'error');
     }
   };
 

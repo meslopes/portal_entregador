@@ -9,17 +9,7 @@ import api from '@/lib/api';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
 import { showToast } from '@/components/Toast';
-
-const STATUS_CONFIG = {
-  SCHEDULED: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Agendado', icon: Clock },
-  PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente', icon: Clock },
-  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
-  PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
-  READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Truck },
-  DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue', icon: CheckCircle },
-  CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelado', icon: XCircle },
-};
+import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
 
 const ClientOrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -131,8 +121,7 @@ const ClientOrdersPage = () => {
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {filtered.map(order => {
-              const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
-              const StatusIcon = config.icon;
+              const config = ORDER_STATUS[order.status] || ORDER_STATUS.PENDING;
               return (
                 <div
                   key={order.id}
@@ -153,7 +142,7 @@ const ClientOrdersPage = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.125rem' }}>
                           <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9375rem' }}>#{order.order_number}</span>
                           <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: config.bg, color: config.color, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <StatusIcon size={10} /> {config.text}
+                            {config.icon} {config.label}
                           </span>
                           {order.assigned_to_own_driver && (
                             <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -227,7 +216,7 @@ const ClientOrdersPage = () => {
 
 // Modal de detalhes com distribuição híbrida
 const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
-  const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
+  const config = ORDER_STATUS[order.status] || ORDER_STATUS.PENDING;
   let specialInfo = {};
   try { if (order.special_instructions) specialInfo = JSON.parse(order.special_instructions); } catch (e) {}
 
@@ -344,7 +333,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
           {/* Status */}
           <div style={{ padding: '1rem', borderRadius: '0.5rem', background: config.bg, textAlign: 'center', marginBottom: '1rem' }}>
             <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Status</p>
-            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: config.color }}>{config.text}</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 700, color: config.color }}>{config.label}</p>
           </div>
 
           {/* Botões de mudança de status para entregas próprias */}

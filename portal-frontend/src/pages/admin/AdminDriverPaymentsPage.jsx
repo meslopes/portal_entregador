@@ -4,6 +4,7 @@ import {
   Star, Truck, Phone, Mail, Send, Filter
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
+import { showToast } from '@/components/Toast';
 
 const AdminDriverPaymentsPage = () => {
   const [data, setData] = useState(null);
@@ -32,10 +33,10 @@ const AdminDriverPaymentsPage = () => {
     try {
       setPaying(driverId);
       const result = await api.post(`/api/admin/driver-payments/${driverId}/pay`);
-      alert(result.data.message);
+      showToast(result.data.message, 'success');
       loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao processar pagamento');
+      showToast(err.response?.data?.error || 'Erro ao processar pagamento', 'error');
     } finally {
       setPaying(null);
     }

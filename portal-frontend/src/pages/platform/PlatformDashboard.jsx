@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
+import { showToast } from '@/components/Toast';
 import {
   Users, Building2, Truck, Package, DollarSign,
   TrendingUp, Plus, Search, Edit, Trash2, Eye,
@@ -66,7 +67,7 @@ const PlatformDashboard = () => {
       });
       loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao criar admin');
+      showToast(err.response?.data?.error || 'Erro ao criar admin', 'error');
     } finally {
       setCreateLoading(false);
     }
@@ -81,7 +82,7 @@ const PlatformDashboard = () => {
       await api.delete(`/api/platform/admins/${adminId}?force=true`);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao excluir admin');
+      showToast(err.response?.data?.error || 'Erro ao excluir admin', 'error');
     }
   };
 
@@ -118,7 +119,7 @@ const PlatformDashboard = () => {
       });
       loadData();
     } catch (err) {
-      alert(err.response?.data?.error || 'Erro ao atualizar admin');
+      showToast(err.response?.data?.error || 'Erro ao atualizar admin', 'error');
     } finally {
       setCreateLoading(false);
     }
