@@ -331,6 +331,48 @@ const Layout = ({ children }) => {
           <div style={{ padding: '0.5rem 1rem 1rem', borderTop: '1px solid #f1f5f9' }}>
             {navigation.map((item) => {
               const Icon = item.icon;
+              
+              // Handle dropdown items with children
+              if (item.children) {
+                return (
+                  <div key={item.name} style={{ marginBottom: '0.5rem' }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      padding: '0.75rem 1rem', fontSize: '0.875rem',
+                      fontWeight: 600, color: '#64748b', textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>
+                      <Icon size={16} />
+                      {item.name}
+                    </div>
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      const childActive = isActive(child.href);
+                      return (
+                        <Link
+                          key={child.name}
+                          to={child.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '0.75rem',
+                            padding: '0.625rem 1rem 0.625rem 2.5rem',
+                            borderRadius: '0.5rem', fontSize: '0.875rem',
+                            fontWeight: 500, textDecoration: 'none',
+                            marginBottom: '0.125rem',
+                            background: childActive ? '#eff6ff' : 'transparent',
+                            color: childActive ? '#2563eb' : '#475569'
+                          }}
+                        >
+                          <ChildIcon size={16} />
+                          {child.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                );
+              }
+              
+              // Regular menu item
               const active = isActive(item.href);
               return (
                 <Link

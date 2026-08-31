@@ -54,6 +54,16 @@ const Tooltip = ({ children, text, position = 'top' }) => {
               borderLeft: '6px solid transparent',
               borderRight: '6px solid transparent',
               borderBottom: '6px solid #1e293b'
+            } : position === 'left' ? {
+              left: '100%', top: '50%', transform: 'translateY(-50%)',
+              borderTop: '6px solid transparent',
+              borderBottom: '6px solid transparent',
+              borderLeft: '6px solid #1e293b'
+            } : position === 'right' ? {
+              right: '100%', top: '50%', transform: 'translateY(-50%)',
+              borderTop: '6px solid transparent',
+              borderBottom: '6px solid transparent',
+              borderRight: '6px solid #1e293b'
             } : {})
           }} />
         </div>
