@@ -74,7 +74,8 @@ const AdminDriversPage = () => {
       vehicle_plate: driver.vehicle_plate || '',
       vehicle_model: driver.vehicle_model || '',
       pix_key: driver.pix_key || '',
-      max_concurrent_orders: driver.max_concurrent_orders || 3
+      max_concurrent_orders: driver.max_concurrent_orders || 3,
+      square_id: driver.square_id || ''
     });
     setShowEdit(true);
   };
@@ -427,6 +428,14 @@ const AdminDriversPage = () => {
               </div>
               <FormField label="Telefone"><input type="text" value={editData.phone} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} /></FormField>
               <FormField label="Email"><input type="email" value={editData.email} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} style={inputStyle} /></FormField>
+              <FormField label="Praça">
+                <select value={editData.square_id} onChange={e => setEditData(p => ({ ...p, square_id: e.target.value }))} style={inputStyle}>
+                  <option value="">Selecione uma praça</option>
+                  {squares.map(sq => (
+                    <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
+                  ))}
+                </select>
+              </FormField>
               <FormField label="Tipo de Veículo">
                 <select value={editData.vehicle_type} onChange={e => setEditData(p => ({ ...p, vehicle_type: e.target.value }))} style={inputStyle}>
                   <option value="MOTORCYCLE">Moto</option>

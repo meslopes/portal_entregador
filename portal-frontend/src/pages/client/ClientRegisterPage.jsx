@@ -204,11 +204,13 @@ const ClientRegisterPage = () => {
                 <div className="auth-animate-in" key="step1">
                   <div style={{ marginBottom: '1rem' }}>
                     <label style={labelStyle}>Nome do Estabelecimento *</label>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Nome que aparecerá para os entregadores e clientes</p>
                     <input name="name" style={inputStyle} placeholder="Ex: Farmácia da Esquina"
                       value={formData.name} onChange={handleChange} required />
                   </div>
                   <div style={{ marginBottom: '1rem' }}>
                     <label style={labelStyle}>CNPJ</label>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Cadastro Nacional da Pessoa Jurídica (opcional para pessoa física)</p>
                     <input name="cnpj" style={inputStyle} placeholder="00.000.000/0001-00"
                       value={formData.cnpj} onChange={handleChange} />
                   </div>

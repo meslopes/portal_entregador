@@ -2183,7 +2183,9 @@ def get_all_orders():
 
             try:
 
-                query = query.filter(Order.created_at <= datetime.strptime(date_to, '%Y-%m-%d'))
+                # Incluir todo o dia final (até 23:59:59)
+                end_date = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+                query = query.filter(Order.created_at < end_date)
 
             except ValueError:
 
