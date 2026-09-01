@@ -587,13 +587,9 @@ def list_platform_routes():
         if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
             return jsonify({'error': 'Sem permissão'}), 403
 
-        tenant_id = get_current_tenant_id()
         status_filter = request.args.get('status', '')
 
         query = PlatformDriverRoute.query
-
-        if tenant_id:
-            query = query.filter_by(tenant_id=tenant_id)
 
         if status_filter:
             query = query.filter_by(status=status_filter)
