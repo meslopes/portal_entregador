@@ -216,6 +216,7 @@ const ClientRegisterPage = () => {
                   </div>
                   <div style={{ marginBottom: '1rem' }}>
                     <label style={labelStyle}>Telefone *</label>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Telefone para contato com entregadores</p>
                     <input name="phone" style={inputStyle} placeholder="(51) 99999-9999"
                       value={formData.phone} onChange={handleChange} required />
                   </div>
@@ -269,6 +270,7 @@ const ClientRegisterPage = () => {
                 <div className="auth-animate-in" key="step3">
                   <div style={{ marginBottom: '1rem' }}>
                     <label style={labelStyle}>Rua/Avenida *</label>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Endereço completo do estabelecimento (ponto de coleta)</p>
                     <input name="address_street" style={inputStyle} placeholder="Ex: Rua das Flores"
                       value={formData.address_street} onChange={handleChange} required />
                   </div>
@@ -317,12 +319,14 @@ const ClientRegisterPage = () => {
                 <div className="auth-animate-in" key="step4">
                   <div style={{ marginBottom: '1rem' }}>
                     <label style={labelStyle}>Tempo de Preparo (minutos)</label>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Tempo médio que o estabelecimento leva para preparar um pedido (em minutos)</p>
                     <input type="number" name="preparation_minutes" style={inputStyle} placeholder="10"
                       value={formData.preparation_minutes} onChange={handleChange} min="1" max="120" />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
                       <label style={labelStyle}>Confirmação de Coleta</label>
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Como o entregador confirma que coletou o pedido (código, foto, ou nenhum)</p>
                       <select name="pickup_confirmation_type" value={formData.pickup_confirmation_type} onChange={handleChange} style={inputStyle}>
                         <option value="code">Código</option>
                         <option value="photo">Foto</option>
@@ -332,6 +336,7 @@ const ClientRegisterPage = () => {
                     </div>
                     <div>
                       <label style={labelStyle}>Confirmação de Entrega</label>
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Como o entregador confirma que entregou o pedido (código, foto, ou nenhum)</p>
                       <select name="delivery_confirmation_type" value={formData.delivery_confirmation_type} onChange={handleChange} style={inputStyle}>
                         <option value="code">Código</option>
                         <option value="photo">Foto</option>
