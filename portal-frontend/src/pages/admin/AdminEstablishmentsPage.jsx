@@ -646,15 +646,15 @@ const AdminEstablishmentsPage = () => {
                   <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km || 0).toFixed(2)}/km)</option>
                 ))}
               </select>
-              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
                 Selecione uma tabela específica ou deixe vazio para usar a padrão da praça
               </p>
             </FormField>
 
             <FormField label="Tempo de Preparo (minutos)">
               <input type="number" name="preparation_minutes" value={formData.preparation_minutes} onChange={handleFormChange} style={inputStyle} placeholder="10" min="1" max="120" />
-              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
-                Tempo estimado entre aceite e pedido pronto. O entregador é notificado após este tempo.
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                Tempo estimado que o estabelecimento leva para preparar um pedido. O entregador é notificado após este tempo para buscar o pedido.
               </p>
             </FormField>
 
@@ -666,8 +666,8 @@ const AdminEstablishmentsPage = () => {
                   <option value="code_and_photo">Código + Foto</option>
                   <option value="none">Nenhuma</option>
                 </select>
-                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Como o entregador confirma que coletou o pedido
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Como o entregador confirma que coletou o pedido no estabelecimento. Código é mais seguro, foto é mais rápido.
                 </p>
               </FormField>
 
@@ -678,8 +678,8 @@ const AdminEstablishmentsPage = () => {
                   <option value="code_and_photo">Código + Foto</option>
                   <option value="none">Nenhuma</option>
                 </select>
-                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Como o entregador confirma que entregou ao cliente
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Como o entregador confirma que entregou ao cliente. Recomendado: Código para evitar fraudes.
                 </p>
               </FormField>
             </div>
