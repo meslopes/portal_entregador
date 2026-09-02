@@ -45,6 +45,7 @@ const AdminDashboardPage = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  const cityCenterRef = useRef(null); // Coordenadas da cidade da praça selecionada
 
   useEffect(() => {
     loadDashboard();
@@ -82,6 +83,53 @@ const AdminDashboardPage = () => {
     }, 15000);
     return () => clearInterval(interval);
   }, [selectedSquare]);
+
+  // Geocodificar cidade da praça quando muda
+  useEffect(() => {
+    if (!selectedSquare?.city) {
+      cityCenterRef.current = null;
+      return;
+    }
+
+    const cityName = selectedSquare.city;
+    const state = selectedSquare.state || 'RS';
+    const cacheKey = `${cityName.toLowerCase()}-${state.toLowerCase()}`;
+
+    // Cache simples para evitar requisições repetidas
+    if (!geocodeCityCache.current[cacheKey]) {
+      geocodeCityCache.current[cacheKey] = geocodeCity(cityName, state);
+    }
+
+    geocodeCityCache.current[cacheKey].then(coords => {
+      cityCenterRef.current = coords;
+      // Se o mapa já existe, centraliza na cidade
+      if (mapInstanceRef.current && coords) {
+        mapInstanceRef.current.setView([coords.lat, coords.lng], 13);
+      }
+    });
+  }, [selectedSquare]);
+
+  // Cache de geocodificação de cidades
+  const geocodeCityCache = useRef({});
+
+  // Geocodifica nome da cidade usando Nominatim (gratuito)
+  const geocodeCity = async (city, state) => {
+    try {
+      const query = `${city}, ${state}, Brasil`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=br`,
+        { headers: { 'User-Agent': 'muvlog-portal/1.0' } }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+      return null;
+    } catch (err) {
+      console.warn('Erro ao geocodificar cidade:', err);
+      return null;
+    }
+  };
 
   const loadDashboard = async () => {
     try {
@@ -260,10 +308,15 @@ const AdminDashboardPage = () => {
       
       try {
         const L = window.L;
-        const map = L.map(node, { 
-          zoomControl: true, 
-          scrollWheelZoom: true 
-        }).setView([-29.72, -50.00], 12);
+        // Centro inicial: cidade da praça selecionada ou fallback
+        const initialCenter = cityCenterRef.current
+          ? [cityCenterRef.current.lat, cityCenterRef.current.lng]
+          : [-29.72, -50.00];
+        const initialZoom = cityCenterRef.current ? 13 : 12;
+        const map = L.map(node, {
+          zoomControl: true,
+          scrollWheelZoom: true
+        }).setView(initialCenter, initialZoom);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap'
@@ -404,12 +457,20 @@ const AdminDashboardPage = () => {
         map.fitBounds(group.getBounds().pad(0.1));
       } catch (e) {
         console.warn('Erro ao ajustar bounds do mapa:', e);
-        // Fallback para coordenadas padrao
-        map.setView([-29.72, -50.00], 12);
+        // Fallback: centro da cidade da praça ou coordenadas padrão
+        if (cityCenterRef.current) {
+          map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
+        } else {
+          map.setView([-29.72, -50.00], 12);
+        }
       }
     } else {
-      // Sem pontos, usar coordenadas padrao
-      map.setView([-29.72, -50.00], 12);
+      // Sem pontos: centro da cidade da praça ou coordenadas padrão
+      if (cityCenterRef.current) {
+        map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
+      } else {
+        map.setView([-29.72, -50.00], 12);
+      }
     }
   }, [tracking]);
 
@@ -1147,6 +1208,9 @@ const AdminDashboardPage = () => {
                   const group = L.featureGroup([]);
                   allPoints.forEach(p => group.addLayer(L.marker(p)));
                   mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+                } else if (cityCenterRef.current) {
+                  // Sem markers: centraliza na cidade da praça
+                  mapInstanceRef.current.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
                 }
               }
             }}
