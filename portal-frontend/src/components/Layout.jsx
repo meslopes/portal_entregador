@@ -31,8 +31,8 @@ const Layout = ({ children }) => {
   };
 
   const isAdmin = user?.user_type === 'ADMIN';
-  // Super admin: qualquer ADMIN sem tenant_id
-  const isSuperAdmin = user?.user_type === 'ADMIN' && !user?.tenant_id;
+  // Super admin: campo is_super_admin do backend
+  const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   const driverNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -252,6 +252,28 @@ const Layout = ({ children }) => {
                   Lançar Pedido
                 </Link>
               )}
+              {/* Botão para super admin alternar entre Platform e Admin */}
+              {isSuperAdmin && (
+                <Link
+                  to={location.pathname.startsWith('/platform') ? '/admin' : '/platform'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    background: location.pathname.startsWith('/platform') ? '#2563eb' : '#7c3aed',
+                    color: 'white',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Shield size={16} />
+                  {location.pathname.startsWith('/platform') ? 'Admin' : 'Plataforma'}
+                </Link>
+              )}
             </nav>
 
             {/* User Menu */}
@@ -308,6 +330,14 @@ const Layout = ({ children }) => {
                     <User size={16} style={{ marginRight: '0.75rem', color: '#64748b' }} />
                     <span style={{ fontSize: '0.875rem' }}>Perfil</span>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {/* Opção para super admin alternar entre Platform e Admin */}
+                  {isSuperAdmin && (
+                    <DropdownMenuItem onClick={() => navigate(location.pathname.startsWith('/platform') ? '/admin' : '/platform')} style={{ cursor: 'pointer', padding: '0.625rem 0.75rem' }}>
+                      <Shield size={16} style={{ marginRight: '0.75rem', color: location.pathname.startsWith('/platform') ? '#2563eb' : '#7c3aed' }} />
+                      <span style={{ fontSize: '0.875rem' }}>{location.pathname.startsWith('/platform') ? 'Painel Admin' : 'Painel Plataforma'}</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} style={{ cursor: 'pointer', padding: '0.625rem 0.75rem', color: '#dc2626' }}>
                     <LogOut size={16} style={{ marginRight: '0.75rem' }} />

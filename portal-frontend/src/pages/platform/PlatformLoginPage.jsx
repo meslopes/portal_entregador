@@ -36,8 +36,8 @@ const PlatformLoginPage = () => {
         return;
       }
 
-      // Verificar se é super admin (sem tenant_id)
-      if (user.tenant_id) {
+      // Verificar se é super admin (campo is_super_admin)
+      if (!user.is_super_admin) {
         setError('Acesso restrito a super administradores');
         setLoading(false);
         return;

@@ -1024,6 +1024,24 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: adicionar campo is_super_admin na tabela users
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_super_admin') THEN ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT FALSE NOT NULL; END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: marcar super admins existentes (admins sem tenant_id)
+        try:
+            db.session.execute(db.text(
+                "UPDATE users SET is_super_admin = TRUE WHERE user_type = 'ADMIN' AND tenant_id IS NULL AND is_super_admin = FALSE"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Iniciar background tasks (process_expired_offers, process_scheduled_orders)
     from src.utils.background_tasks import start_background_tasks
     start_background_tasks(app)

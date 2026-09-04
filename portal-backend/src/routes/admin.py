@@ -10226,7 +10226,7 @@ def cleanup_test_data():
     """Limpa dados em lotes para evitar timeout."""
     try:
         user = get_current_user()
-        if not user or user.tenant_id is not None:
+        if not user or not user.is_super_admin:
             return jsonify({'error': 'Apenas super admin'}), 403
 
         deleted = {}

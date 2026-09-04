@@ -24,9 +24,8 @@ const LoginPage = () => {
     try {
       const response = await login(formData.email, formData.password);
       const userType = response?.user?.user_type;
-      const tenantId = response?.user?.tenant_id;
-      // Super admin: qualquer ADMIN sem tenant_id
-      const isSuperAdmin = userType === 'ADMIN' && !tenantId;
+      const isSuperAdmin = response?.user?.is_super_admin;
+      // Super admin: campo is_super_admin do backend
 
       let target;
       if (userType === 'ADMIN' && isSuperAdmin) {

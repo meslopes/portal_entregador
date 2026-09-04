@@ -20,8 +20,8 @@ def platform_admin_required(f):
         user = User.query.get(user_id)
         if not user or user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Acesso restrito a administradores da plataforma'}), 403
-        # Verificar se é super admin (sem tenant_id)
-        if user.tenant_id is not None:
+        # Verificar se é super admin (campo is_super_admin)
+        if not user.is_super_admin:
             return jsonify({'error': 'Acesso restrito a super administradores'}), 403
         return f(*args, **kwargs)
     return decorated_function
@@ -231,7 +231,7 @@ def update_admin(admin_id):
             return jsonify({'error': 'Admin não encontrado'}), 404
         
         # Não permitir editar super admin
-        if admin.tenant_id is None:
+        if admin.is_super_admin:
             return jsonify({'error': 'Não é possível editar super admin'}), 400
         
         data = request.get_json()
@@ -278,7 +278,7 @@ def delete_admin(admin_id):
             return jsonify({'error': 'Admin não encontrado'}), 404
         
         # Não permitir excluir super admin
-        if admin.tenant_id is None:
+        if admin.is_super_admin:
             return jsonify({'error': 'Não é possível excluir super admin'}), 400
         
         # Verificar se tem dados vinculados
@@ -352,9 +352,10 @@ def setup_super_admin():
         if not user:
             return jsonify({'error': 'Admin não encontrado'}), 404
         
-        # Promover a super admin (remover tenant_id)
+        # Promover a super admin (remover tenant_id e setar is_super_admin)
         old_tenant_id = user.tenant_id
         user.tenant_id = None
+        user.is_super_admin = True
         db.session.commit()
         
         return jsonify({
@@ -517,9 +518,13 @@ def update_platform_user(user_id):
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
-        
+
+        # Não permitir editar super admin por esta rota
+        if user.is_super_admin:
+            return jsonify({'error': 'Não é possível editar super admin por esta rota'}), 400
+
         data = request.get_json()
-        
+
         if 'first_name' in data:
             user.first_name = data['first_name']
         if 'last_name' in data:
@@ -536,13 +541,17 @@ def update_platform_user(user_id):
             from src.models.portal_models import UserStatus
             user.status = UserStatus(data['status'])
         if 'tenant_id' in data:
+            # Apenas super admins podem alterar tenant_id de admins
+            # E não pode remover tenant_id de um admin (para evitar promoção acidental)
+            if user.user_type == UserType.ADMIN and data['tenant_id'] is None:
+                return jsonify({'error': 'Não é possível remover tenant_id de um admin. Use /setup-super-admin para promover a super admin.'}), 400
             user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
         if 'password' in data and data['password']:
             from werkzeug.security import generate_password_hash
             user.password_hash = generate_password_hash(data['password'])
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Usuário atualizado com sucesso',
             'user': {
@@ -552,7 +561,7 @@ def update_platform_user(user_id):
                 'last_name': user.last_name
             }
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao atualizar usuário: {e}")
@@ -570,7 +579,7 @@ def delete_platform_user(user_id):
             return jsonify({'error': 'Usuário não encontrado'}), 404
         
         # Não permitir excluir super admin
-        if user.user_type.value == 'ADMIN' and user.tenant_id is None:
+        if user.user_type.value == 'ADMIN' and user.is_super_admin:
             return jsonify({'error': 'Não é possível excluir o super admin'}), 400
         
         db.session.delete(user)
