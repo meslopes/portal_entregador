@@ -231,7 +231,8 @@ const Layout = ({ children }) => {
                   </Link>
                 );
               })}
-              {isAdmin && !isSuperAdmin && (
+              {/* Lançar Pedido - disponível para todos os admins no painel admin */}
+              {isAdmin && (!isSuperAdmin || location.pathname.startsWith('/admin')) && (
                 <Link
                   to="/client/new-order"
                   style={{
@@ -278,7 +279,8 @@ const Layout = ({ children }) => {
 
             {/* User Menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, position: 'relative', zIndex: 100001 }}>
-              {isAdmin && !isSuperAdmin && (
+              {/* SquareSelector e Refresh - disponíveis para todos os admins no painel admin */}
+              {isAdmin && (!isSuperAdmin || location.pathname.startsWith('/admin')) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <SquareSelector />
                   <button
