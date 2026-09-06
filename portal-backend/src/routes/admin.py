@@ -3533,10 +3533,17 @@ def create_establishment():
             return jsonify({'error': 'Nome e endereço são obrigatórios'}), 400
 
 
-
         # Obter tenant_id do admin atual
+        # Super admin pode especificar tenant_id no body; admin normal usa o seu próprio
+        current_user = get_current_user()
+        is_super_admin = current_user and current_user.user_type and current_user.user_type.value == 'ADMIN' and current_user.is_super_admin
 
-        tenant_id = get_current_tenant_id()
+        if is_super_admin and data.get('tenant_id'):
+            # Super admin pode criar em qualquer tenant
+            tenant_id = data['tenant_id']
+        else:
+            # Admin normal: usa o seu próprio tenant
+            tenant_id = get_current_tenant_id()
 
 
 
@@ -3827,6 +3834,12 @@ def update_establishment(establishment_id):
         if 'square_id' in data:
 
             est.square_id = data['square_id']
+
+        # Super admin pode alterar o tenant do estabelecimento
+        current_user = get_current_user()
+        is_super_admin = current_user and current_user.user_type and current_user.user_type.value == 'ADMIN' and current_user.is_super_admin
+        if is_super_admin and 'tenant_id' in data:
+            est.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
         if 'pricing_table_id' in data:
 

@@ -29,6 +29,11 @@ const AdminEstablishmentsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [squares, setSquares] = useState([]);
+  const [tenants, setTenants] = useState([]);
+
+  // Verificar se é super admin
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   // Modal states
   const [showForm, setShowForm] = useState(false);
@@ -38,20 +43,31 @@ const AdminEstablishmentsPage = () => {
     name: '', cnpj: '', phone: '', email: '', password: '123456',
     address_street: '', address_number: '', address_neighborhood: '',
     address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-    latitude: '', longitude: '', square_id: '', pricing_table_id: '',
+    latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
     pickup_confirmation_type: 'code', delivery_confirmation_type: 'code'
   });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [pricingTables, setPricingTables] = useState([]);
 
-  useEffect(() => { loadEstablishments(); loadSquares(); }, [page, search, squareId]);
+  useEffect(() => {
+    loadEstablishments();
+    loadSquares();
+    if (isSuperAdmin) loadTenants();
+  }, [page, search, squareId]);
 
   const loadSquares = async () => {
     try {
       const data = await adminService.getSquares();
       setSquares(data.squares || []);
     } catch (e) {}
+  };
+
+  const loadTenants = async () => {
+    try {
+      const response = await api.get('/api/admin/tenants');
+      setTenants(response.data.tenants || []);
+    } catch (e) { setTenants([]); }
   };
 
   const loadPricingTables = async (sqId) => {
@@ -107,7 +123,7 @@ const AdminEstablishmentsPage = () => {
       name: '', cnpj: '', phone: '', email: '', password: '123456',
       address_street: '', address_number: '', address_neighborhood: '',
       address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-      latitude: '', longitude: '', square_id: '', pricing_table_id: '',
+      latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
       preparation_minutes: '10',
       pickup_confirmation_type: 'code', delivery_confirmation_type: 'code'
     });
@@ -216,6 +232,7 @@ const AdminEstablishmentsPage = () => {
       address_zip: zip,
       latitude: est.latitude || '',
       longitude: est.longitude || '',
+      tenant_id: est.tenant_id || '',
       square_id: est.square_id || '',
       pricing_table_id: est.pricing_table_id || '',
       preparation_minutes: est.preparation_minutes || '10',
@@ -266,6 +283,11 @@ const AdminEstablishmentsPage = () => {
         pickup_confirmation_type: formData.pickup_confirmation_type || 'code',
         delivery_confirmation_type: formData.delivery_confirmation_type || 'code',
       };
+
+      // Super admin pode enviar tenant_id
+      if (isSuperAdmin && formData.tenant_id) {
+        payload.tenant_id = parseInt(formData.tenant_id);
+      }
 
       if (!editing && formData.password) {
         payload.password = formData.password;
@@ -627,6 +649,21 @@ const AdminEstablishmentsPage = () => {
               <FormField label="Senha de Acesso">
                 <input type="text" name="password" value={formData.password} onChange={handleFormChange} style={inputStyle} placeholder="123456 (padrão)" />
                 <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Senha para o estabelecimento fazer login no portal</p>
+              </FormField>
+            )}
+
+            {/* Seletor de Tenant - visível apenas para super admin */}
+            {isSuperAdmin && (
+              <FormField label="Organização (Tenant)">
+                <select name="tenant_id" value={formData.tenant_id} onChange={handleFormChange} style={inputStyle}>
+                  <option value="">Selecione uma organização</option>
+                  {tenants.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Selecione a qual organização este estabelecimento pertence
+                </p>
               </FormField>
             )}
 
