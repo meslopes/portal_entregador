@@ -1049,20 +1049,20 @@ def update_order_status(order_id):
         except ValueError:
             return jsonify({'error': 'Status inválido'}), 400
         
-        # Admin e Estabelecimento podem mudar de qualquer status para qualquer status
-        # Entregador segue transições válidas
-        if not is_admin and not is_client:
-            valid_transitions = {
-                OrderStatus.SCHEDULED: [OrderStatus.PENDING, OrderStatus.CANCELLED],
-                OrderStatus.PENDING: [OrderStatus.CANCELLED],
-                OrderStatus.ACCEPTED: [OrderStatus.PICKED_UP, OrderStatus.PREPARING, OrderStatus.CANCELLED],
-                OrderStatus.PREPARING: [OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
-                OrderStatus.READY: [OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
-                OrderStatus.PICKED_UP: [OrderStatus.DELIVERED]
-            }
-            
-            if order.status not in valid_transitions or new_status_enum not in valid_transitions[order.status]:
-                return jsonify({'error': 'Transição de status inválida'}), 400
+        # Validar transição usando máquina de estados central
+        from src.utils.order_state_machine import can_transition, get_user_role
+        
+        user_role = get_user_role(user)
+        # Entregadores próprios têm papel próprio
+        if user.user_type == UserType.DRIVER:
+            from src.models.portal_models import EstablishmentDriver
+            own_driver = EstablishmentDriver.query.filter_by(phone=user.phone).first()
+            if own_driver:
+                user_role = 'own_driver'
+        
+        can_change, error_msg = can_transition(order.status, new_status_enum, user_role)
+        if not can_change:
+            return jsonify({'error': error_msg}), 400
         
         # Validação de raio GPS para coleta e entrega
         if new_status_enum in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:

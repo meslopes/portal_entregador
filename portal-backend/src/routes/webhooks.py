@@ -15,10 +15,34 @@ logger = logging.getLogger(__name__)
 webhook_bp = Blueprint('webhook', __name__)
 
 def get_webhook_secret():
-    """Obtem a chave secreta do webhook do SystemConfig (sempre le do banco)"""
+    """Obtem a chave secreta do webhook do SystemConfig.
+    Em produção, exige que o secret esteja configurado (sem fallback previsível).
+    Em desenvolvimento, gera um secret aleatório se não existir.
+    """
+    import os
     from src.models.portal_models import SystemConfig
+    
     config = SystemConfig.query.filter_by(config_key='webhook_secret').first()
-    return config.config_value if config else 'muvlog-webhook-default-secret'
+    
+    if config and config.config_value:
+        return config.config_value
+    
+    # Em produção, não permitir fallback
+    if os.getenv('FLASK_ENV') == 'production':
+        raise RuntimeError("FATAL: webhook_secret não configurado em produção. Configure via SystemConfig no banco de dados.")
+    
+    # Em desenvolvimento, gerar secret aleatório e salvar
+    import secrets
+    dev_secret = secrets.token_hex(32)
+    try:
+        new_config = SystemConfig(config_key='webhook_secret', config_value=dev_secret)
+        db.session.add(new_config)
+        db.session.commit()
+        logger.warning("Webhook secret gerado automaticamente para desenvolvimento")
+    except Exception:
+        db.session.rollback()
+    
+    return dev_secret
 
 
 def verify_webhook_signature(payload, signature):
@@ -35,20 +59,19 @@ def ifood_webhook():
     Suporta formato real do iFood (Open Delivery) e formato adaptado.
     """
     try:
-        # Verificar autenticação do webhook (token no header ou query param)
+        # Verificar autenticação do webhook (apenas headers, não query string por segurança)
         from src.models.portal_models import SystemConfig
         ifood_token_config = SystemConfig.query.filter_by(config_key='ifood_webhook_token').first()
         if ifood_token_config and ifood_token_config.config_value:
-            # Verificar token no header Authorization ou X-Webhook-Token
+            # Verificar token no header Authorization ou X-Webhook-Token (NÃO query string)
             auth_header = request.headers.get('Authorization', '')
             webhook_token = request.headers.get('X-Webhook-Token', '')
-            query_token = request.args.get('token', '')
             
             expected_token = ifood_token_config.config_value
-            token_provided = auth_header.replace('Bearer ', '') or webhook_token or query_token
+            token_provided = auth_header.replace('Bearer ', '') or webhook_token
             
-            if token_provided != expected_token:
-                logger.warning("iFood webhook: token de autenticação inválido")
+            if not token_provided or token_provided != expected_token:
+                logger.warning("iFood webhook: token de autenticação inválido ou ausente")
                 return jsonify({'error': 'Não autorizado'}), 401
         
         # Log raw body for debugging
