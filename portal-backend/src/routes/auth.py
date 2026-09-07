@@ -91,6 +91,20 @@ def create_admin():
         return jsonify({'error': str(e)}), 500
 
 
+# Endpoint público para listar praças disponíveis (usado no cadastro de entregador)
+@auth_bp.route('/squares/public', methods=['GET'])
+def public_squares():
+    """Lista praças ativas disponíveis para cadastro"""
+    try:
+        from src.models.portal_models import Square
+        squares = Square.query.filter_by(is_active=True).order_by(Square.name).all()
+        return jsonify({
+            'squares': [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state} for s in squares]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # Endpoint para registro de entregador
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -176,7 +190,8 @@ def register():
             vehicle_model=data.get('vehicle_model'),
             vehicle_year=vehicle_year,
             pix_key=data.get('pix_key'),
-            bank_account=data.get('bank_account')
+            bank_account=data.get('bank_account'),
+            square_id=data.get('square_id') or None
         )
 
         if data.get('license_expiry_date'):

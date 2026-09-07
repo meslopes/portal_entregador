@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Truck, User, Car, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
@@ -9,15 +11,24 @@ const RegisterPage = () => {
     first_name: '', last_name: '', email: '', phone: '', cpf: '',
     password: '', confirmPassword: '',
     vehicle_type: '', vehicle_plate: '', vehicle_model: '', vehicle_year: '',
-    driver_license: '', pix_key: '',
+    driver_license: '', pix_key: '', square_id: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [squares, setSquares] = useState([]);
 
   const { register, error, clearError } = useAuth();
   const navigate = useNavigate();
+
+  // Carregar praças disponíveis
+  useEffect(() => {
+    fetch(`${API_URL}/api/squares/public`)
+      .then(res => res.json())
+      .then(data => setSquares(data.squares || []))
+      .catch(() => {});
+  }, []);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -251,6 +262,19 @@ const RegisterPage = () => {
               {/* Etapa 3 - Dados do Veículo */}
               {step === 3 && (
                 <div className="auth-animate-in">
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label className="auth-form-label">Praça de Atuação</label>
+                    <select name="square_id" className="auth-form-input" value={formData.square_id}
+                      onChange={handleChange} style={{ cursor: 'pointer' }}>
+                      <option value="">Selecione sua região (opcional)</option>
+                      {squares.map(sq => (
+                        <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                      Selecione a região onde pretende realizar entregas
+                    </p>
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
                       <label className="auth-form-label">Tipo de Veículo *</label>

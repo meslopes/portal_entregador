@@ -8740,7 +8740,18 @@ def list_establishment_drivers():
 
             return jsonify({'error': 'restaurant_id é obrigatório'}), 400
 
-        
+        # Verificação de ownership: CLIENT só pode ver drivers do seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and int(restaurant_id) != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode ver entregadores do seu próprio estabelecimento'}), 403
 
         drivers = EstablishmentDriver.query.filter_by(
 
@@ -8859,7 +8870,18 @@ def create_establishment_driver():
 
             return jsonify({'error': 'Estabelecimento e nome são obrigatórios'}), 400
 
-        
+        # Verificação de ownership: CLIENT só pode criar drivers no seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and int(data['restaurant_id']) != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode cadastrar entregadores no seu próprio estabelecimento'}), 403
 
         driver = EstablishmentDriver(
 
@@ -8935,7 +8957,18 @@ def update_establishment_driver(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+        # Verificação de ownership: CLIENT só pode editar drivers do seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and driver.restaurant_id != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode editar entregadores do seu próprio estabelecimento'}), 403
 
         data = request.get_json()
 
@@ -9013,7 +9046,18 @@ def delete_establishment_driver(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+        # Verificação de ownership: CLIENT só pode deletar drivers do seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and driver.restaurant_id != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode remover entregadores do seu próprio estabelecimento'}), 403
 
         driver.is_active = False
 

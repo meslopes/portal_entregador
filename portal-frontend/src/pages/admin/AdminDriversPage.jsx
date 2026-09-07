@@ -70,10 +70,14 @@ const AdminDriversPage = () => {
       last_name: driver.user?.last_name || '',
       phone: driver.user?.phone || '',
       email: driver.user?.email || '',
+      cpf: driver.user?.cpf || '',
       vehicle_type: driver.vehicle_type || 'MOTORCYCLE',
       vehicle_plate: driver.vehicle_plate || '',
       vehicle_model: driver.vehicle_model || '',
+      vehicle_year: driver.vehicle_year || '',
+      driver_license: driver.driver_license || '',
       pix_key: driver.pix_key || '',
+      bank_account: driver.bank_account || '',
       max_concurrent_orders: driver.max_concurrent_orders || 3,
       square_id: driver.square_id || ''
     });
@@ -426,7 +430,10 @@ const AdminDriversPage = () => {
                 <FormField label="Nome"><input type="text" value={editData.first_name} onChange={e => setEditData(p => ({ ...p, first_name: e.target.value }))} style={inputStyle} /></FormField>
                 <FormField label="Sobrenome"><input type="text" value={editData.last_name} onChange={e => setEditData(p => ({ ...p, last_name: e.target.value }))} style={inputStyle} /></FormField>
               </div>
-              <FormField label="Telefone"><input type="text" value={editData.phone} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} /></FormField>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Telefone"><input type="text" value={editData.phone} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} /></FormField>
+                <FormField label="CPF"><input type="text" value={editData.cpf} onChange={e => setEditData(p => ({ ...p, cpf: e.target.value }))} style={inputStyle} placeholder="000.000.000-00" /></FormField>
+              </div>
               <FormField label="Email"><input type="email" value={editData.email} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} style={inputStyle} /></FormField>
               <FormField label="Praça">
                 <select value={editData.square_id} onChange={e => setEditData(p => ({ ...p, square_id: e.target.value }))} style={inputStyle}>
@@ -436,17 +443,29 @@ const AdminDriversPage = () => {
                   ))}
                 </select>
               </FormField>
-              <FormField label="Tipo de Veículo">
-                <select value={editData.vehicle_type} onChange={e => setEditData(p => ({ ...p, vehicle_type: e.target.value }))} style={inputStyle}>
-                  <option value="MOTORCYCLE">Moto</option>
-                  <option value="CAR">Carro</option>
-                  <option value="BICYCLE">Bicicleta</option>
-                  <option value="FOOT">A pé</option>
-                </select>
-              </FormField>
-              <FormField label="Placa"><input type="text" value={editData.vehicle_plate} onChange={e => setEditData(p => ({ ...p, vehicle_plate: e.target.value }))} style={inputStyle} /></FormField>
-              <FormField label="Chave PIX"><input type="text" value={editData.pix_key} onChange={e => setEditData(p => ({ ...p, pix_key: e.target.value }))} style={inputStyle} /></FormField>
-              <FormField label="Máx. Pedidos Simultâneos"><input type="number" min="1" max="10" value={editData.max_concurrent_orders} onChange={e => setEditData(p => ({ ...p, max_concurrent_orders: e.target.value }))} style={inputStyle} /></FormField>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Tipo de Veículo">
+                  <select value={editData.vehicle_type} onChange={e => setEditData(p => ({ ...p, vehicle_type: e.target.value }))} style={inputStyle}>
+                    <option value="MOTORCYCLE">Moto</option>
+                    <option value="CAR">Carro</option>
+                    <option value="BICYCLE">Bicicleta</option>
+                    <option value="FOOT">A pé</option>
+                  </select>
+                </FormField>
+                <FormField label="Placa"><input type="text" value={editData.vehicle_plate} onChange={e => setEditData(p => ({ ...p, vehicle_plate: e.target.value }))} style={inputStyle} /></FormField>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Modelo"><input type="text" value={editData.vehicle_model} onChange={e => setEditData(p => ({ ...p, vehicle_model: e.target.value }))} style={inputStyle} placeholder="Ex: Honda CG 160" /></FormField>
+                <FormField label="Ano"><input type="number" value={editData.vehicle_year} onChange={e => setEditData(p => ({ ...p, vehicle_year: e.target.value }))} style={inputStyle} placeholder="2020" /></FormField>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="CNH"><input type="text" value={editData.driver_license} onChange={e => setEditData(p => ({ ...p, driver_license: e.target.value }))} style={inputStyle} /></FormField>
+                <FormField label="Chave PIX"><input type="text" value={editData.pix_key} onChange={e => setEditData(p => ({ ...p, pix_key: e.target.value }))} style={inputStyle} /></FormField>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Conta Bancária"><input type="text" value={editData.bank_account} onChange={e => setEditData(p => ({ ...p, bank_account: e.target.value }))} style={inputStyle} /></FormField>
+                <FormField label="Máx. Pedidos Simultâneos"><input type="number" min="1" max="10" value={editData.max_concurrent_orders} onChange={e => setEditData(p => ({ ...p, max_concurrent_orders: e.target.value }))} style={inputStyle} /></FormField>
+              </div>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowEdit(false)} style={btnSecondary}>Cancelar</button>
                 <button type="submit" disabled={formLoading} style={{ ...btnPrimary, opacity: formLoading ? 0.7 : 1 }}>{formLoading ? 'Salvando...' : 'Salvar'}</button>

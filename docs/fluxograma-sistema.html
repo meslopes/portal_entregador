@@ -888,6 +888,7 @@
             <li><strong>Login próprio</strong> — rota separada <code>/own-driver/login</code> com token próprio <span class="route">POST /api/own-driver/login</span></li>
             <li><strong>Dados:</strong> nome, telefone, tipo de veículo</li>
             <li><strong>Praça herdada</strong> — não tem <code>square_id</code> próprio; herda do estabelecimento via <code>Restaurant.square_id</code></li>
+            <li><strong>Segurança</strong> — verificação de ownership: CLIENT só acessa drivers do seu próprio restaurante</li>
           </ul>
         </div>
 
