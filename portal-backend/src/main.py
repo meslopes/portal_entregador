@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from flask import Flask, send_from_directory
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, jwt_required
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -23,8 +23,19 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 app.url_map.strict_slashes = False
 
 # Configurações
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
+flask_env = os.getenv('FLASK_ENV', 'development')
+secret_key = os.getenv('SECRET_KEY')
+jwt_secret_key = os.getenv('JWT_SECRET_KEY')
+
+# Em produção, segredos são obrigatórios (falhar fechado)
+if flask_env == 'production':
+    if not secret_key or secret_key in ('dev-secret-key-change-in-production', ''):
+        raise RuntimeError("FATAL: SECRET_KEY deve ser definida em produção. Defina a variável de ambiente SECRET_KEY.")
+    if not jwt_secret_key or jwt_secret_key in ('jwt-secret-key-change-in-production', ''):
+        raise RuntimeError("FATAL: JWT_SECRET_KEY deve ser definida em produção. Defina a variável de ambiente JWT_SECRET_KEY.")
+
+app.config['SECRET_KEY'] = secret_key or 'dev-secret-key-local-nao-usar-em-producao'
+app.config['JWT_SECRET_KEY'] = jwt_secret_key or 'dev-jwt-secret-key-local-nao-usar-em-producao'
 
 # Configuração do banco de dados
 database_url = os.getenv('DATABASE_URL', f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}")
@@ -104,8 +115,9 @@ def health_check():
     return {'status': 'healthy', 'message': 'Portal API is running'}, 200
 
 @app.route('/uploads/proofs/<path:filename>')
+@jwt_required()
 def serve_proof(filename):
-    """Serve fotos de prova de entrega"""
+    """Serve fotos de prova de entrega (autenticação obrigatória)"""
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
     if os.path.exists(os.path.join(uploads_dir, filename)):
         return send_from_directory(uploads_dir, filename)

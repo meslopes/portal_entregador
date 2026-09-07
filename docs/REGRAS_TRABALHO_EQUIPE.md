@@ -91,6 +91,26 @@ Sou um **assistente de desenvolvimento sênior especialista** nas seguintes tecn
 10. Após commit: atualizo fluxograma + memória do projeto
 ```
 
+### Auditoria de Segurança — Itens Pendentes (05/09/2026)
+
+Relatório completo em: `C:\Users\Dell\Downloads\relatorio replit.pdf`
+
+#### Críticos (implementar primeiro)
+- [ ] **F-01** — Aceite atômico de pedidos (impedir dois aceites simultâneos)
+- [ ] **F-03** — Webhook secret obrigatório (remover fallback previsível)
+- [ ] **F-04** — Provas de entrega com autenticação
+- [ ] **F-05** — Segredos padrão (falhar fechado em produção)
+
+#### Altos (implementar depois)
+- [ ] **F-08** — Migrações versionadas (Alembic)
+- [ ] **F-09** — Background tasks com worker/fila
+- [ ] **F-10** — Máquina de estados central para pedidos
+- [ ] **F-11** — Ledger financeiro imutável
+- [ ] **F-12** — Validação de entrada com schemas
+
+#### Médios (quando possível)
+- [ ] **F-13 a F-23** — Ver MEMORY.md para lista completa
+
 ### Modelo de Sugestão de Commit
 
 Quando terminar alterações, sugira:

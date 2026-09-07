@@ -1069,8 +1069,9 @@ def create_app(config_name=None):
     def missing_token_callback(error):
         return jsonify({'error': 'Token de acesso necessário'}), 401
     
-    # Servir arquivos de upload (prova de entrega)
+    # Servir arquivos de upload (prova de entrega) - autenticação obrigatória
     @app.route('/uploads/proofs/<path:filename>')
+    @jwt_required()
     def serve_proof(filename):
         uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
         if os.path.exists(os.path.join(uploads_dir, filename)):

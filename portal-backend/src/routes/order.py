@@ -630,7 +630,7 @@ def get_available_orders():
 @order_bp.route('/<int:order_id>/accept', methods=['POST'])
 @jwt_required()
 def accept_order(order_id):
-    """Aceita um pedido"""
+    """Aceita um pedido de forma atômica (impede dois aceites simultâneos)"""
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
@@ -653,17 +653,28 @@ def accept_order(order_id):
                 driver.blocked_until = None
                 driver.rejection_count = 0
         
-        order = Order.query.get(order_id)
-        if not order:
-            return jsonify({'error': 'Pedido não encontrado'}), 404
+        # ACEITE ATÔMICO: UPDATE condicional que só funciona se o pedido ainda estiver disponível
+        now = datetime.utcnow()
+        result = db.session.execute(
+            db.text("""
+                UPDATE orders 
+                SET driver_id = :driver_id, 
+                    status = 'ACCEPTED', 
+                    updated_at = :now
+                WHERE id = :order_id 
+                  AND status = 'PENDING' 
+                  AND driver_id IS NULL
+            """),
+            {'driver_id': driver.id, 'now': now, 'order_id': order_id}
+        )
         
-        if order.status != OrderStatus.PENDING or order.driver_id:
-            return jsonify({'error': 'Pedido não está disponível'}), 400
+        # Se nenhuma linha foi afetada, o pedido não está mais disponível
+        if result.rowcount == 0:
+            db.session.rollback()
+            return jsonify({'error': 'Pedido não está mais disponível (já foi aceito por outro entregador)'}), 409
         
-        # Atribui o pedido ao entregador
-        order.driver_id = driver.id
-        order.status = OrderStatus.ACCEPTED
-        order.updated_at = datetime.utcnow()
+        # Recarregar o pedido atualizado
+        order = db.session.get(Order, order_id)
         
         # Resetar contagem de rejeições ao aceitar pedido
         driver.rejection_count = 0

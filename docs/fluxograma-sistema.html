@@ -1043,6 +1043,34 @@
     </div>
   </div>
 
+  <!-- ============================== -->
+  <!-- AUDITORIA - ITENS PENDENTES    -->
+  <!-- ============================== -->
+  <div class="hierarchy" style="border-left: 4px solid #ef4444;">
+    <div class="hierarchy-title" style="color: #ef4444;">Auditoria de Segurança — Itens Pendentes (05/09/2026)</div>
+    <div style="display: grid; gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem';">
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #dc2626; margin-bottom: 0.5rem;">Críticos</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>F-01</strong> — Aceite atômico de pedidos (impedir dois aceites simultâneos)</li>
+          <li><strong>F-03</strong> — Webhook secret obrigatório (remover fallback previsível)</li>
+          <li><strong>F-04</strong> — Provas de entrega com autenticação</li>
+          <li><strong>F-05</strong> — Segredos padrão (falhar fechado em produção)</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #ea580c; margin-bottom: 0.5rem;">Altos</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>F-08</strong> — Migrações versionadas (Alembic)</li>
+          <li><strong>F-09</strong> — Background tasks com worker/fila</li>
+          <li><strong>F-10</strong> — Máquina de estados central para pedidos</li>
+          <li><strong>F-11</strong> — Ledger financeiro imutável</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Relatório completo: C:\Users\Dell\Downloads\relatorio replit.pdf</p>
+  </div>
+
   <script>
     function toggleSection(id) {
       const section = document.getElementById(id);
