@@ -109,17 +109,22 @@ def public_squares():
 @auth_bp.route('/register', methods=['POST'])
 def register():
     try:
+        from src.utils.validation import validate_request, REGISTER_DRIVER_SCHEMA, ValidationError
+        
         data = request.get_json() or {}
+        
+        # Validar entrada
+        try:
+            data = validate_request(REGISTER_DRIVER_SCHEMA, data)
+        except ValidationError as e:
+            return jsonify({'error': '; '.join(e.errors)}), 400
 
-        email = data.get('email')
-        password = data.get('password')
-        first_name = data.get('first_name')
-        last_name = data.get('last_name')
+        email = data['email']
+        password = data['password']
+        first_name = data['first_name']
+        last_name = data['last_name']
         phone = data.get('phone')
         tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
-
-        if not email or not password or not first_name or not last_name:
-            return jsonify({'error': 'Email, senha, nome e sobrenome são obrigatórios'}), 400
 
         # Validar formato de email
         import re
@@ -388,13 +393,19 @@ def confirm_email():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     try:
+        from src.utils.validation import validate_request, LOGIN_SCHEMA, ValidationError
+        
         data = request.get_json() or {}
-        email = data.get('email')
-        password = data.get('password')
+        
+        # Validar entrada
+        try:
+            data = validate_request(LOGIN_SCHEMA, data)
+        except ValidationError as e:
+            return jsonify({'error': '; '.join(e.errors)}), 400
+        
+        email = data['email']
+        password = data['password']
         tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
-
-        if not email or not password:
-            return jsonify({'error': 'Email e senha são obrigatórios'}), 400
 
         # Buscar tenant se fornecido (com tratamento de erro)
         tenant = None
