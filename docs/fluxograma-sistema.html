@@ -391,7 +391,7 @@
 <body>
 
   <h1>Fluxograma do Sistema — MuvLog</h1>
-  <p class="subtitle">Portal Entregador · Atividades por Perfil de Usuário · Atualizado em 02/09/2026</p>
+  <p class="subtitle">Portal Entregador · Atividades por Perfil de Usuário · Atualizado em 06/09/2026</p>
 
   <!-- Legenda -->
   <div class="legend">
@@ -887,6 +887,7 @@
             <li><strong>Cadastrado pelo estabelecimento</strong> — admin ou estabelecimento cria o cadastro</li>
             <li><strong>Login próprio</strong> — rota separada <code>/own-driver/login</code> com token próprio <span class="route">POST /api/own-driver/login</span></li>
             <li><strong>Dados:</strong> nome, telefone, tipo de veículo</li>
+            <li><strong>Praça herdada</strong> — não tem <code>square_id</code> próprio; herda do estabelecimento via <code>Restaurant.square_id</code></li>
           </ul>
         </div>
 

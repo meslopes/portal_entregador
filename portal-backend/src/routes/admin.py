@@ -476,6 +476,21 @@ def get_all_users():
 
                     user_dict['customer'] = customer.to_dict()
 
+                    # Incluir dados do restaurante vinculado (square_id, etc.)
+                    restaurant = None
+                    if customer.restaurant_id:
+                        restaurant = Restaurant.query.get(customer.restaurant_id)
+                    if not restaurant:
+                        restaurant = Restaurant.query.filter_by(email=user.email).first()
+                    if restaurant:
+                        user_dict['restaurant'] = {
+                            'id': restaurant.id,
+                            'name': restaurant.name,
+                            'square_id': restaurant.square_id,
+                            'tenant_id': restaurant.tenant_id
+                        }
+                        user_dict['square_id'] = restaurant.square_id
+
             users_data.append(user_dict)
 
 
@@ -622,7 +637,37 @@ def update_user(user_id):
 
             try:
 
-                user.user_type = UserType(data['user_type'])
+                new_type = UserType(data['user_type'])
+
+                # Se mudando para CLIENT, garantir que Customer e Restaurant existam
+                if new_type == UserType.CLIENT and user.user_type != UserType.CLIENT:
+                    customer = Customer.query.filter_by(user_id=user.id).first()
+                    if not customer:
+                        customer = Customer(
+                            user_id=user.id,
+                            name=f"{user.first_name} {user.last_name}",
+                            phone=user.phone or '',
+                            email=user.email,
+                            tenant_id=user.tenant_id
+                        )
+                        db.session.add(customer)
+
+                    restaurant = Restaurant.query.filter_by(email=user.email).first()
+                    if not restaurant:
+                        restaurant = Restaurant(
+                            name=f"{user.first_name} {user.last_name}",
+                            email=user.email,
+                            address='',
+                            latitude=-29.95,
+                            longitude=-50.45,
+                            is_active=True,
+                            tenant_id=user.tenant_id,
+                            pickup_confirmation_type='code',
+                            delivery_confirmation_type='code'
+                        )
+                        db.session.add(restaurant)
+
+                user.user_type = new_type
 
             except ValueError:
 
@@ -703,13 +748,21 @@ def update_user(user_id):
                     customer.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
                 # Atualizar restaurante vinculado (praça, tenant)
+                # Encontrar restaurante via Customer se não fornecido restaurant_id
+                restaurant = None
                 if 'restaurant_id' in data and data['restaurant_id']:
                     restaurant = Restaurant.query.get(int(data['restaurant_id']))
-                    if restaurant:
-                        if 'square_id' in data:
-                            restaurant.square_id = data['square_id'] if data['square_id'] else None
-                        if 'tenant_id' in data:
-                            restaurant.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+                elif customer.restaurant_id:
+                    restaurant = Restaurant.query.get(customer.restaurant_id)
+                else:
+                    # Tentar encontrar pelo email do usuário
+                    restaurant = Restaurant.query.filter_by(email=user.email).first()
+
+                if restaurant:
+                    if 'square_id' in data:
+                        restaurant.square_id = data['square_id'] if data['square_id'] else None
+                    if 'tenant_id' in data:
+                        restaurant.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
 
 
