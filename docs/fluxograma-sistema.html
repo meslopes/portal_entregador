@@ -509,6 +509,16 @@
           </ul>
         </div>
 
+        <!-- Entregadores (Global) -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🏍️</span> Entregadores (Global)</div>
+          <ul class="activity-list">
+            <li><strong>Criar entregador</strong> — definindo tenant e praça <span class="route">POST /api/admin/drivers</span></li>
+            <li><strong>Editar entregador</strong> — alterar tenant, praça, dados <span class="route">PUT /api/admin/drivers/:id</span></li>
+            <li><strong>Converter para próprio</strong> — vincular a estabelecimento <span class="route">POST /api/admin/drivers/:id/convert-to-own</span></li>
+          </ul>
+        </div>
+
         <!-- Painel Global -->
         <div class="flow-group">
           <div class="flow-group-title"><span class="flow-group-icon">📊</span> Painel Global</div>
@@ -811,9 +821,21 @@
           <div class="flow-group-title"><span class="flow-group-icon">📝</span> Cadastro & Status</div>
           <ul class="activity-list">
             <li><strong>Registrar-se</strong> — nome, telefone, veículo, praça de atuação <span class="route">POST /api/auth/register</span></li>
+            <li><strong>Escolher praça no cadastro</strong> — seletor de região (opcional) <span class="route">GET /api/auth/squares/public</span></li>
             <li><strong>Ficar online/offline</strong> — toggle de disponibilidade <span class="route">POST /api/driver/status</span></li>
             <li><strong>Atualizar localização</strong> — GPS em tempo real <span class="route">POST /api/driver/location</span></li>
             <li><strong>Editar perfil</strong> — dados pessoais, veículo, foto</li>
+          </ul>
+        </div>
+
+        <!-- Gestão Admin -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">⚙️</span> Gestão pelo Admin</div>
+          <ul class="activity-list">
+            <li><strong>Criar entregador</strong> — com praça e tenant (super admin) <span class="route">POST /api/admin/drivers</span></li>
+            <li><strong>Editar entregador</strong> — dados, praça, tenant (super admin) <span class="route">PUT /api/admin/drivers/:id</span></li>
+            <li><strong>Converter para próprio</strong> — vincula a estabelecimento, desativa da plataforma <span class="route">POST /api/admin/drivers/:id/convert-to-own</span></li>
+            <li><strong>Aprovar cadastro</strong> — ativa e define praça/tenant <span class="route">POST /api/admin/users/:id/approve</span></li>
           </ul>
         </div>
 
