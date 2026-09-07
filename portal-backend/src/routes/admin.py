@@ -667,6 +667,17 @@ def update_user(user_id):
                         )
                         db.session.add(restaurant)
 
+                # Se mudando para DRIVER, garantir que Driver exista
+                if new_type == UserType.DRIVER and user.user_type != UserType.DRIVER:
+                    driver = Driver.query.filter_by(user_id=user.id).first()
+                    if not driver:
+                        driver = Driver(
+                            user_id=user.id,
+                            vehicle_type=VehicleType.MOTORCYCLE,
+                            tenant_id=user.tenant_id
+                        )
+                        db.session.add(driver)
+
                 user.user_type = new_type
 
             except ValueError:
@@ -2022,6 +2033,13 @@ def update_driver(driver_id):
 
             driver.square_id = data['square_id'] or None
 
+        # Super admin pode alterar tenant do entregador
+        current_user = get_current_user()
+        is_super_admin = current_user and current_user.user_type and current_user.user_type.value == 'ADMIN' and current_user.is_super_admin
+        if is_super_admin and 'tenant_id' in data:
+            driver.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+            user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+
         if 'max_concurrent_orders' in data:
 
             driver.max_concurrent_orders = int(data['max_concurrent_orders'])
@@ -2040,6 +2058,75 @@ def update_driver(driver_id):
 
         return jsonify({'error': str(e)}), 500
 
+
+@admin_bp.route('/drivers/<int:driver_id>/convert-to-own', methods=['POST'])
+
+@jwt_required()
+
+@admin_required
+
+def convert_driver_to_own(driver_id):
+
+    """Converte um entregador da plataforma em entregador próprio de um estabelecimento"""
+
+    try:
+
+        driver = Driver.query.get(driver_id)
+
+        if not driver:
+
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        data = request.get_json() or {}
+
+        restaurant_id = data.get('restaurant_id')
+
+        if not restaurant_id:
+
+            return jsonify({'error': 'restaurant_id é obrigatório'}), 400
+
+        restaurant = Restaurant.query.get(int(restaurant_id))
+
+        if not restaurant:
+
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        user = db.session.get(User, driver.user_id)
+
+        if not user:
+
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Criar EstablishmentDriver com dados do Driver
+        own_driver = EstablishmentDriver(
+            restaurant_id=restaurant.id,
+            name=f"{user.first_name} {user.last_name}",
+            phone=user.phone or '',
+            vehicle_type=driver.vehicle_type.value if driver.vehicle_type else 'MOTO',
+            vehicle_plate=driver.vehicle_plate or '',
+            vehicle_model=driver.vehicle_model or '',
+            is_active=True
+        )
+        db.session.add(own_driver)
+
+        # Desativar o Driver da plataforma (soft delete)
+        driver.is_online = False
+
+        # Marcar restaurante como tendo entregadores próprios
+        restaurant.has_own_drivers = True
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Entregador convertido com sucesso para {restaurant.name}',
+            'own_driver': own_driver.to_dict()
+        }), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        return jsonify({'error': str(e)}), 500
 
 
 @admin_bp.route('/drivers/<int:driver_id>/status', methods=['PUT'])
