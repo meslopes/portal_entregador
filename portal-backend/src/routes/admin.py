@@ -10507,6 +10507,103 @@ def database_map():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/database-restore', methods=['POST'])
+@jwt_required()
+@admin_required
+def database_restore():
+    """Restaura dados de um backup JSON (cria/atualiza tenants, squares, users, restaurants)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Dados de backup não fornecidos'}), 400
+
+        results = {'created': 0, 'updated': 0, 'errors': []}
+
+        # Restaurar Tenants
+        for t in data.get('tenants', []):
+            existing = Tenant.query.get(t['id']) or Tenant.query.filter_by(slug=t.get('slug')).first()
+            if existing:
+                existing.name = t.get('name', existing.name)
+                existing.is_active = t.get('is_active', existing.is_active)
+                results['updated'] += 1
+            else:
+                tenant = Tenant(id=t['id'], name=t['name'], slug=t['slug'], is_active=t.get('is_active', True))
+                db.session.add(tenant)
+                results['created'] += 1
+
+        # Restaurar Squares
+        from src.models.portal_models import Square
+        for s in data.get('squares', []):
+            existing = Square.query.get(s['id'])
+            if existing:
+                existing.name = s.get('name', existing.name)
+                existing.city = s.get('city', existing.city)
+                existing.state = s.get('state', existing.state)
+                existing.tenant_id = s.get('tenant_id', existing.tenant_id)
+                existing.is_active = s.get('is_active', existing.is_active)
+                results['updated'] += 1
+            else:
+                square = Square(id=s['id'], name=s['name'], city=s['city'], state=s['state'],
+                               tenant_id=s.get('tenant_id'), is_active=s.get('is_active', True))
+                db.session.add(square)
+                results['created'] += 1
+
+        # Restaurar Users (apenas se não existirem)
+        for u in data.get('users', []):
+            existing = User.query.filter_by(email=u['email']).first()
+            if existing:
+                results['updated'] += 1
+                continue
+            try:
+                user = User(
+                    id=u['id'], email=u['email'],
+                    first_name=u.get('first_name', ''),
+                    last_name=u.get('last_name', ''),
+                    user_type=UserType(u['user_type']),
+                    status=UserStatus(u.get('status', 'ACTIVE')),
+                    tenant_id=u.get('tenant_id'),
+                    phone=u.get('phone'),
+                    cpf=u.get('cpf')
+                )
+                user.set_password('restore123')  # Senha temporária
+                db.session.add(user)
+                results['created'] += 1
+            except Exception as e:
+                results['errors'].append(f"User {u.get('email')}: {str(e)}")
+
+        # Restaurar Restaurants (apenas se não existirem)
+        for r in data.get('restaurants', []):
+            existing = Restaurant.query.get(r['id'])
+            if existing:
+                results['updated'] += 1
+                continue
+            try:
+                restaurant = Restaurant(
+                    id=r['id'], name=r['name'],
+                    address=r.get('address', ''),
+                    latitude=-29.95, longitude=-50.45,
+                    tenant_id=r.get('tenant_id'),
+                    square_id=r.get('square_id'),
+                    has_own_drivers=r.get('has_own_drivers', False),
+                    is_active=r.get('is_active', True)
+                )
+                db.session.add(restaurant)
+                results['created'] += 1
+            except Exception as e:
+                results['errors'].append(f"Restaurant {r.get('name')}: {str(e)}")
+
+        db.session.commit()
+        return jsonify({
+            'message': 'Restauração concluída',
+            'created': results['created'],
+            'updated': results['updated'],
+            'errors': results['errors']
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 
 @admin_bp.route('/restaurants/<int:restaurant_id>', methods=['DELETE'])
 @jwt_required()

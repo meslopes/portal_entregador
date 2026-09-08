@@ -37,6 +37,31 @@ const DatabaseMapPage = () => {
     return () => { if (msgTimeoutRef.current) clearTimeout(msgTimeoutRef.current); };
   }, []);
 
+  // Download backup do banco de dados como JSON
+  const handleDownloadBackup = () => {
+    if (!data) {
+      showToast('Nenhum dado carregado para backup', 'error');
+      return;
+    }
+    const backup = {
+      exported_at: new Date().toISOString(),
+      source: 'muvlog-database-map',
+      version: '1.0',
+      ...data
+    };
+    const json = JSON.stringify(backup, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `muvlog-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Backup baixado com sucesso!', 'success');
+  };
+
   const handleDeleteUser = async (user) => {
     const isSuperAdmin = user.user_type === 'ADMIN' && user.is_super_admin;
     if (isSuperAdmin) { showToast('Não é possível excluir o super admin.', 'info'); return; }
@@ -214,7 +239,10 @@ const DatabaseMapPage = () => {
   @media print { body { padding: 10px; } .no-print { display: none; } }
 </style>
 </head><body>
-<button class="no-print" onclick="window.print()" style="position:fixed;top:10px;right:10px;padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;z-index:999">🖨️ Imprimir / Salvar PDF</button>
+<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">
+<button onclick="window.print()" style="padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">🖨️ Imprimir</button>
+<button onclick="downloadBackup()" style="padding:8px 16px;background:#16a34a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">💾 Baixar Backup JSON</button>
+</div>
 <h1>📊 Mapa do Banco de Dados — muv.log</h1>
 <p class="subtitle">Gerado em ${now} | Dados em tempo real</p>
 
@@ -422,6 +450,25 @@ const DatabaseMapPage = () => {
           <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(data, null, 2)); showMsg('JSON copiado! Cole no chat para gerar o PDF.'); }} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#7c3aed', color: 'white', cursor: 'pointer', fontWeight: 600 }}>📋 Copiar JSON</button>
           <button onClick={handleGeneratePDF} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', cursor: 'pointer', fontWeight: 600 }}>📄 Gerar PDF</button>
           <button onClick={loadData} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Atualizar</button>
+          <button onClick={handleDownloadBackup} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#16a34a', color: 'white', cursor: 'pointer', fontWeight: 600 }}>💾 Baixar Backup</button>
+          <label style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#ea580c', color: 'white', cursor: 'pointer', fontWeight: 600, display: 'inline-block' }}>
+            📂 Restaurar Backup
+            <input type="file" accept=".json" style={{ display: 'none' }} onChange={async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              if (!window.confirm(`Restaurar backup de "${file.name}"?\n\nIsso vai criar/atualizar tenants, praças, usuários e estabelecimentos. Dados existentes serão atualizados.`)) return;
+              try {
+                const text = await file.text();
+                const backupData = JSON.parse(text);
+                const res = await api.post('/api/admin/database-restore', backupData);
+                showToast(`Restauração concluída: ${res.data.created} criados, ${res.data.updated} atualizados`, 'success');
+                loadData();
+              } catch (err) {
+                showToast(err.response?.data?.error || 'Erro ao restaurar backup', 'error');
+              }
+              e.target.value = '';
+            }} />
+          </label>
         </div>
       </div>
 
