@@ -16,6 +16,11 @@ const AdminUsersPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [tenants, setTenants] = useState([]);
+  const [squares, setSquares] = useState([]);
+
+  // Verificar se é super admin
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   // Modais
   const [showForm, setShowForm] = useState(false);
@@ -26,12 +31,21 @@ const AdminUsersPage = () => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadUsers(); loadTenants(); }, [page, typeFilter]);
+  useEffect(() => { loadUsers(); loadTenants(); loadSquares(); }, [page, typeFilter]);
 
   const loadTenants = async () => {
     try {
       const res = await api.get('/api/platform/tenants');
       setTenants(res.data.tenants || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadSquares = async () => {
+    try {
+      const res = await api.get('/api/admin/squares');
+      setSquares(res.data.squares || []);
     } catch (err) {
       console.error(err);
     }
@@ -83,7 +97,9 @@ const AdminUsersPage = () => {
       last_name: user.last_name || '',
       phone: user.phone || '',
       email: user.email || '',
-      status: user.status || 'ACTIVE'
+      status: user.status || 'ACTIVE',
+      tenant_id: user.tenant_id || '',
+      square_id: user.square_id || ''
     });
     setShowEdit(user);
   };
@@ -270,6 +286,31 @@ const AdminUsersPage = () => {
                   <option value="SUSPENDED">Suspenso</option>
                 </select>
               </FormField>
+
+              {/* Tenant — visível apenas para super admin */}
+              {isSuperAdmin && (
+                <FormField label="Organização (Tenant)">
+                  <select value={editData.tenant_id || ''} onChange={e => setEditData(p => ({ ...p, tenant_id: e.target.value }))} style={inputStyle}>
+                    <option value="">Nenhuma</option>
+                    {tenants.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </FormField>
+              )}
+
+              {/* Praça — visível para usuários do tipo CLIENT */}
+              {showEdit?.user_type === 'CLIENT' && (
+                <FormField label="Praça">
+                  <select value={editData.square_id || ''} onChange={e => setEditData(p => ({ ...p, square_id: e.target.value }))} style={inputStyle}>
+                    <option value="">Selecione uma praça</option>
+                    {squares.map(sq => (
+                      <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
+                    ))}
+                  </select>
+                </FormField>
+              )}
+
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowEdit(null)} style={btnSecondary}>Cancelar</button>
                 <button type="submit" disabled={formLoading} style={{ ...btnPrimary, opacity: formLoading ? 0.7 : 1 }}>{formLoading ? 'Salvando...' : 'Salvar'}</button>

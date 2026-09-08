@@ -77,8 +77,8 @@ import './App.css';
 function SmartRedirect() {
   const { user } = useAuth();
   const userType = user?.user_type;
-  // Super admin: qualquer ADMIN sem tenant_id
-  const isSuperAdmin = user?.user_type === 'ADMIN' && !user?.tenant_id;
+  // Super admin: campo is_super_admin do backend
+  const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   // Usuario pendente de aprovacao
   if (user?.status === 'INACTIVE') {

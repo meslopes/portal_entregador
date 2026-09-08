@@ -91,21 +91,40 @@ def create_admin():
         return jsonify({'error': str(e)}), 500
 
 
+# Endpoint público para listar praças disponíveis (usado no cadastro de entregador)
+@auth_bp.route('/squares/public', methods=['GET'])
+def public_squares():
+    """Lista praças ativas disponíveis para cadastro"""
+    try:
+        from src.models.portal_models import Square
+        squares = Square.query.filter_by(is_active=True).order_by(Square.name).all()
+        return jsonify({
+            'squares': [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state} for s in squares]
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # Endpoint para registro de entregador
 @auth_bp.route('/register', methods=['POST'])
 def register():
     try:
+        from src.utils.validation import validate_request, REGISTER_DRIVER_SCHEMA, ValidationError
+        
         data = request.get_json() or {}
+        
+        # Validar entrada
+        try:
+            data = validate_request(REGISTER_DRIVER_SCHEMA, data)
+        except ValidationError as e:
+            return jsonify({'error': '; '.join(e.errors)}), 400
 
-        email = data.get('email')
-        password = data.get('password')
-        first_name = data.get('first_name')
-        last_name = data.get('last_name')
+        email = data['email']
+        password = data['password']
+        first_name = data['first_name']
+        last_name = data['last_name']
         phone = data.get('phone')
         tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
-
-        if not email or not password or not first_name or not last_name:
-            return jsonify({'error': 'Email, senha, nome e sobrenome são obrigatórios'}), 400
 
         # Validar formato de email
         import re
@@ -176,7 +195,8 @@ def register():
             vehicle_model=data.get('vehicle_model'),
             vehicle_year=vehicle_year,
             pix_key=data.get('pix_key'),
-            bank_account=data.get('bank_account')
+            bank_account=data.get('bank_account'),
+            square_id=data.get('square_id') or None
         )
 
         if data.get('license_expiry_date'):
@@ -373,13 +393,19 @@ def confirm_email():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     try:
+        from src.utils.validation import validate_request, LOGIN_SCHEMA, ValidationError
+        
         data = request.get_json() or {}
-        email = data.get('email')
-        password = data.get('password')
+        
+        # Validar entrada
+        try:
+            data = validate_request(LOGIN_SCHEMA, data)
+        except ValidationError as e:
+            return jsonify({'error': '; '.join(e.errors)}), 400
+        
+        email = data['email']
+        password = data['password']
         tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
-
-        if not email or not password:
-            return jsonify({'error': 'Email e senha são obrigatórios'}), 400
 
         # Buscar tenant se fornecido (com tratamento de erro)
         tenant = None

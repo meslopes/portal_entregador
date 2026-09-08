@@ -124,9 +124,10 @@ class Tenant(db.Model):
 
 class User(db.Model):
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # NULL = super admin (muv.log)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    is_super_admin = db.Column(db.Boolean, default=False, nullable=False)  # Super admin da plataforma (muv.log)
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
@@ -154,6 +155,7 @@ class User(db.Model):
         return {
             'id': self.id,
             'tenant_id': self.tenant_id,
+            'is_super_admin': self.is_super_admin,
             'email': self.email,
             'first_name': self.first_name,
             'last_name': self.last_name,

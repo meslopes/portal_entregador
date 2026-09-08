@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluxograma - Portal Entregador (MuvLog)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+      color: #0f172a;
+    }
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+    }
+
+    /* === Legenda === */
+    .legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+    .legend-color {
+      width: 1rem;
+      height: 1rem;
+      border-radius: 0.25rem;
+    }
+
+    /* === Seções de Usuário === */
+    .user-section {
+      background: white;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .user-header {
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .user-header:hover {
+      filter: brightness(0.97);
+    }
+    .user-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .user-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    .user-desc {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .user-badge {
+      margin-left: auto;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .toggle-icon {
+      margin-left: 0.5rem;
+      transition: transform 0.2s;
+      color: #94a3b8;
+    }
+    .user-section.collapsed .toggle-icon {
+      transform: rotate(-90deg);
+    }
+    .user-section.collapsed .user-body {
+      display: none;
+    }
+
+    /* Cores por perfil */
+    .role-super-admin .user-header { background: #fef3c7; }
+    .role-super-admin .user-icon { background: #f59e0b; color: white; }
+    .role-super-admin .user-badge { background: #fef3c7; color: #92400e; }
+    .role-super-admin { border-left: 4px solid #f59e0b; }
+
+    .role-admin .user-header { background: #dbeafe; }
+    .role-admin .user-icon { background: #2563eb; color: white; }
+    .role-admin .user-badge { background: #dbeafe; color: #1e40af; }
+    .role-admin { border-left: 4px solid #2563eb; }
+
+    .role-square .user-header { background: #f3e8ff; }
+    .role-square .user-icon { background: #7c3aed; color: white; }
+    .role-square .user-badge { background: #f3e8ff; color: #5b21b6; }
+    .role-square { border-left: 4px solid #7c3aed; }
+
+    .role-client .user-header { background: #dcfce7; }
+    .role-client .user-icon { background: #16a34a; color: white; }
+    .role-client .user-badge { background: #dcfce7; color: #166534; }
+    .role-client { border-left: 4px solid #16a34a; }
+
+    .role-driver .user-header { background: #cffafe; }
+    .role-driver .user-icon { background: #0891b2; color: white; }
+    .role-driver .user-badge { background: #cffafe; color: #155e75; }
+    .role-driver { border-left: 4px solid #0891b2; }
+
+    .role-own-driver .user-header { background: #fce7f3; }
+    .role-own-driver .user-icon { background: #db2777; color: white; }
+    .role-own-driver .user-badge { background: #fce7f3; color: #9d174d; }
+    .role-own-driver { border-left: 4px solid #db2777; }
+
+    /* === Corpo da seção === */
+    .user-body {
+      padding: 1rem 1.5rem 1.5rem;
+    }
+
+    /* === Fluxo de Atividades === */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .flow-group {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 1rem;
+    }
+    .flow-group-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .flow-group-icon {
+      font-size: 1rem;
+    }
+
+    /* === Itens de Atividade === */
+    .activity-list {
+      list-style: none;
+    }
+    .activity-list li {
+      position: relative;
+      padding: 0.5rem 0 0.5rem 1.75rem;
+      font-size: 0.8125rem;
+      color: #334155;
+      line-height: 1.5;
+      border-left: 2px solid #e2e8f0;
+      margin-left: 0.5rem;
+    }
+    .activity-list li::before {
+      content: '';
+      position: absolute;
+      left: -0.375rem;
+      top: 0.75rem;
+      width: 0.625rem;
+      height: 0.625rem;
+      border-radius: 50%;
+      background: #94a3b8;
+      border: 2px solid white;
+    }
+    .activity-list li:last-child {
+      border-left-color: transparent;
+    }
+    .activity-list li strong {
+      color: #1e293b;
+    }
+    .activity-list li code {
+      background: #e2e8f0;
+      padding: 0.0625rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      color: #7c3aed;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .activity-list li .route {
+      display: inline-block;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 0.0625rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      color: #6366f1;
+      font-family: 'Consolas', 'Monaco', monospace;
+      margin-top: 0.125rem;
+    }
+
+    /* === Conectores / Setas === */
+    .connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 0;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      gap: 0.5rem;
+    }
+    .connector-line {
+      flex: 1;
+      max-width: 100px;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, #cbd5e1, #cbd5e1 6px, transparent 6px, transparent 10px);
+    }
+    .connector-label {
+      font-weight: 600;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    /* === Diagrama de Hierarquia === */
+    .hierarchy {
+      background: white;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    .hierarchy-title {
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 1.5rem;
+    }
+    .hierarchy-tree {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .h-node {
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-align: center;
+      position: relative;
+      min-width: 180px;
+    }
+    .h-arrow {
+      width: 2px;
+      height: 1.5rem;
+      background: #cbd5e1;
+      position: relative;
+    }
+    .h-arrow::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid #cbd5e1;
+    }
+    .h-branch {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+    }
+    .h-branch::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: #cbd5e1;
+    }
+    .h-branch .h-node {
+      margin-top: 1.5rem;
+    }
+    .h-branch .h-arrow {
+      margin-top: 0;
+    }
+
+    /* Cores dos nós */
+    .h-super { background: #fef3c7; border: 2px solid #f59e0b; color: #92400e; }
+    .h-admin { background: #dbeafe; border: 2px solid #2563eb; color: #1e40af; }
+    .h-square { background: #f3e8ff; border: 2px solid #7c3aed; color: #5b21b6; }
+    .h-client { background: #dcfce7; border: 2px solid #16a34a; color: #166534; }
+    .h-driver { background: #cffafe; border: 2px solid #0891b2; color: #155e75; }
+    .h-own { background: #fce7f3; border: 2px solid #db2777; color: #9d174d; }
+
+    /* === Tabela de Rotas === */
+    .routes-table-wrapper {
+      background: white;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+    .routes-table-title {
+      padding: 1rem 1.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .routes-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+    .routes-table th {
+      background: #f1f5f9;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .routes-table td {
+      padding: 0.625rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+    .routes-table tr:last-child td {
+      border-bottom: none;
+    }
+    .routes-table tr:hover {
+      background: #f8fafc;
+    }
+    .routes-table code {
+      background: #e2e8f0;
+      padding: 0.0625rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      color: #6366f1;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+    .method-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      font-family: monospace;
+    }
+    .method-get { background: #dcfce7; color: #166534; }
+    .method-post { background: #dbeafe; color: #1e40af; }
+    .method-put { background: #fef3c7; color: #92400e; }
+    .method-delete { background: #fee2e2; color: #991b1b; }
+
+    /* === Print === */
+    @media print {
+      body { background: white; padding: 1rem; }
+      .user-section { break-inside: avoid; }
+      .user-body { display: block !important; }
+      .toggle-icon { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Fluxograma do Sistema — MuvLog</h1>
+  <p class="subtitle">Portal Entregador · Atividades por Perfil de Usuário · Atualizado em 06/09/2026</p>
+
+  <!-- Legenda -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div> Super Admin</div>
+    <div class="legend-item"><div class="legend-color" style="background:#2563eb"></div> Admin</div>
+    <div class="legend-item"><div class="legend-color" style="background:#7c3aed"></div> Praça (Square)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#16a34a"></div> Estabelecimento</div>
+    <div class="legend-item"><div class="legend-color" style="background:#0891b2"></div> Entregador Plataforma</div>
+    <div class="legend-item"><div class="legend-color" style="background:#db2777"></div> Entregador Próprio</div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- HIERARQUIA VISUAL              -->
+  <!-- ============================== -->
+  <div class="hierarchy">
+    <div class="hierarchy-title">Hierarquia do Sistema e Relacionamento entre Perfis</div>
+    <div class="hierarchy-tree">
+      <div class="h-node h-super">Super Admin</div>
+      <div class="h-arrow"></div>
+      <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.5rem;">cria e gerencia tenants, admins e praças</div>
+      <div class="h-branch">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div class="h-arrow"></div>
+          <div class="h-node h-admin">Admin (Tenant)</div>
+          <div class="h-arrow"></div>
+          <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.5rem;">gerencia praças, estabelecimentos, entregadores</div>
+          <div class="h-branch">
+            <div style="display:flex; flex-direction:column; align-items:center;">
+              <div class="h-arrow"></div>
+              <div class="h-node h-square">Praça (Square)</div>
+              <div class="h-arrow"></div>
+              <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.5rem;">agrupa estabelecimentos por região</div>
+              <div class="h-branch">
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                  <div class="h-arrow"></div>
+                  <div class="h-node h-client">Estabelecimento</div>
+                  <div class="h-arrow"></div>
+                  <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.5rem;">cria pedidos, contrata entregadores</div>
+                  <div class="h-branch">
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                      <div class="h-arrow"></div>
+                      <div class="h-node h-driver">Entregador Plataforma</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                      <div class="h-arrow"></div>
+                      <div class="h-node h-own">Entregador Próprio</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- 1. SUPER ADMIN                 -->
+  <!-- ============================== -->
+  <div class="user-section role-super-admin" id="section-super-admin">
+    <div class="user-header" onclick="toggleSection('section-super-admin')">
+      <div class="user-icon">SA</div>
+      <div>
+        <div class="user-title">Super Admin</div>
+        <div class="user-desc">Controle total do sistema · Gerencia tenants, admins e praças</div>
+      </div>
+      <span class="user-badge">ACESSO GLOBAL</span>
+      <span class="toggle-icon">&#9660;</span>
+    </div>
+    <div class="user-body">
+      <div class="flow-grid">
+        <!-- Gestão de Tenants -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🏢</span> Gestão de Tenants</div>
+          <ul class="activity-list">
+            <li><strong>Criar novo tenant</strong> — cada organização cliente da plataforma <span class="route">POST /api/admin/tenants</span></li>
+            <li><strong>Listar todos os tenants</strong> — visão global de todas as organizações <span class="route">GET /api/admin/tenants</span></li>
+            <li><strong>Ativar/Desativar tenant</strong> — suspender acesso de uma organização <span class="route">PUT /api/admin/tenants/:id/toggle-active</span></li>
+            <li><strong>Editar tenant</strong> — nome, plano, slug, configurações <span class="route">PUT /api/platform/tenants/:id</span></li>
+            <li><strong>Visualizar detalhes</strong> — estatísticas, admins, estabelecimentos do tenant <span class="route">GET /api/platform/tenants/:id</span></li>
+          </ul>
+        </div>
+
+        <!-- Gestão de Admins -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">👤</span> Gestão de Admins</div>
+          <ul class="activity-list">
+            <li><strong>Criar novo admin</strong> — vincula a um tenant (cria tenant automaticamente se novo) <span class="route">POST /api/platform/admins</span></li>
+            <li><strong>Listar todos os admins</strong> — com dados do tenant e estatísticas <span class="route">GET /api/platform/admins</span></li>
+            <li><strong>Editar admin</strong> — nome, email, tenant vinculado <span class="route">PUT /api/platform/admins/:id</span></li>
+            <li><strong>Excluir admin</strong> — com proteção se tiver dados vinculados <span class="route">DELETE /api/platform/admins/:id</span></li>
+            <li><strong>Resetar senha</strong> — definir nova senha para o admin <span class="route">POST /api/platform/admins/:id/reset-password</span></li>
+          </ul>
+        </div>
+
+        <!-- Gestão de Praças -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📍</span> Gestão de Praças</div>
+          <ul class="activity-list">
+            <li><strong>Criar praça</strong> — define cidade/estado, raio de cobertura <span class="route">POST /api/admin/squares</span></li>
+            <li><strong>Listar praças</strong> — todas as praças do sistema <span class="route">GET /api/admin/squares</span></li>
+            <li><strong>Editar praça</strong> — nome, cidade, estado, configurações <span class="route">PUT /api/admin/squares/:id</span></li>
+            <li><strong>Excluir praça</strong> — remove se não tiver estabelecimentos vinculados <span class="route">DELETE /api/admin/squares/:id</span></li>
+          </ul>
+        </div>
+
+        <!-- Gestão de Estabelecimentos (Super Admin) -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🏪</span> Estabelecimentos (Global)</div>
+          <ul class="activity-list">
+            <li><strong>Criar estabelecimento</strong> — selecionando tenant e praça manualmente <span class="route">POST /api/admin/establishments</span></li>
+            <li><strong>Editar estabelecimento</strong> — incluindo alterar tenant e praça <span class="route">PUT /api/admin/establishments/:id</span></li>
+            <li><strong>Visualizar todos</strong> — sem filtro de tenant (visão global) <span class="route">GET /api/admin/establishments</span></li>
+          </ul>
+        </div>
+
+        <!-- Entregadores (Global) -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🏍️</span> Entregadores (Global)</div>
+          <ul class="activity-list">
+            <li><strong>Criar entregador</strong> — definindo tenant e praça <span class="route">POST /api/admin/drivers</span></li>
+            <li><strong>Editar entregador</strong> — alterar tenant, praça, dados <span class="route">PUT /api/admin/drivers/:id</span></li>
+            <li><strong>Converter para próprio</strong> — vincular a estabelecimento <span class="route">POST /api/admin/drivers/:id/convert-to-own</span></li>
+          </ul>
+        </div>
+
+        <!-- Painel Global -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📊</span> Painel Global</div>
+          <ul class="activity-list">
+            <li><strong>Dashboard consolidado</strong> — métricas de todos os tenants <span class="route">GET /api/platform/dashboard</span></li>
+            <li><strong>Ranking de tenants</strong> — top tenants por volume de pedidos</li>
+            <li><strong>Mapa global</strong> — entregadores online e pedidos ativos de todas as praças</li>
+            <li><strong>Alternar para painel admin</strong> — acessar painel de qualquer tenant como admin</li>
+          </ul>
+        </div>
+
+        <!-- Usuários Pendentes -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">⏳</span> Aprovações</div>
+          <ul class="activity-list">
+            <li><strong>Listar usuários pendentes</strong> — cadastros aguardando aprovação <span class="route">GET /api/admin/pending-users</span></li>
+            <li><strong>Aprovar usuário</strong> — define tipo (admin/driver/client) e tenant <span class="route">POST /api/admin/users/:id/approve</span></li>
+            <li><strong>Rejeitar usuário</strong> — recusa cadastro <span class="route">POST /api/admin/users/:id/reject</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- 2. ADMIN (TENANT)              -->
+  <!-- ============================== -->
+  <div class="user-section role-admin" id="section-admin">
+    <div class="user-header" onclick="toggleSection('section-admin')">
+      <div class="user-icon">AD</div>
+      <div>
+        <div class="user-title">Admin (Tenant)</div>
+        <div class="user-desc">Gerencia sua organização · Praças, estabelecimentos, entregadores, pedidos</div>
+      </div>
+      <span class="user-badge">POR TENANT</span>
+      <span class="toggle-icon">&#9660;</span>
+    </div>
+    <div class="user-body">
+      <div class="flow-grid">
+        <!-- Dashboard -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📊</span> Dashboard</div>
+          <ul class="activity-list">
+            <li><strong>Visão geral</strong> — pedidos hoje, receita, entregadores online <span class="route">GET /api/admin/dashboard</span></li>
+            <li><strong>Filtrar por praça</strong> — métricas de uma praça específica <code>?square_id=X</code></li>
+            <li><strong>Mapa ao vivo</strong> — entregadores e pedidos em tempo real <span class="route">GET /api/admin/live-tracking</span></li>
+            <li><strong>Processar pedidos agendados</strong> — libera pedidos agendados <span class="route">POST /api/admin/process-scheduled</span></li>
+          </ul>
+        </div>
+
+        <!-- Gestão de Praças -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📍</span> Praças</div>
+          <ul class="activity-list">
+            <li><strong>Criar praça</strong> — define região de atuação <span class="route">POST /api/admin/squares</span></li>
+            <li><strong>Listar praças</strong> — apenas praças do seu tenant <span class="route">GET /api/admin/squares</span></li>
+            <li><strong>Editar praça</strong> — nome, cidade, estado <span class="route">PUT /api/admin/squares/:id</span></li>
+            <li><strong>Selecionar praça ativa</strong> — filtra todo o dashboard por praça</li>
+          </ul>
+        </div>
+
+        <!-- Estabelecimentos -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🏪</span> Estabelecimentos</div>
+          <ul class="activity-list">
+            <li><strong>Criar estabelecimento</strong> — com login, endereço, praça, tabela de preço <span class="route">POST /api/admin/establishments</span></li>
+            <li><strong>Listar estabelecimentos</strong> — com filtro por praça <span class="route">GET /api/admin/establishments</span></li>
+            <li><strong>Editar estabelecimento</strong> — dados, praça, tabela de preço <span class="route">PUT /api/admin/establishments/:id</span></li>
+            <li><strong>Ativar/Desativar</strong> — suspende ou reativa o estabelecimento</li>
+            <li><strong>Entregadores próprios</strong> — ativar/desativar feature por estabelecimento <span class="route">PUT /api/admin/establishments/:id/subscription</span></li>
+            <li><strong>Geocodificar endereço</strong> — obtém lat/lng via Google Maps <span class="route">POST /api/admin/establishments/:id/geocode</span></li>
+            <li><strong>Excluir</strong> — remove estabelecimento (com proteção se tiver pedidos) <span class="route">DELETE /api/admin/establishments/:id</span></li>
+          </ul>
+        </div>
+
+        <!-- Pedidos -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📦</span> Pedidos</div>
+          <ul class="activity-list">
+            <li><strong>Listar todos os pedidos</strong> — com filtros por status, data, praça <span class="route">GET /api/admin/orders</span></li>
+            <li><strong>Detalhes do pedido</strong> — endereços, entregador, valores <span class="route">GET /api/admin/orders/:id</span></li>
+            <li><strong>Atribuir entregador</strong> — designar entregador específico <span class="route">POST /api/admin/orders/:id/assign</span></li>
+            <li><strong>Chamar entregadores da plataforma</strong> — notifica disponíveis <span class="route">POST /api/orders/:id/call-platform</span></li>
+            <li><strong>Atribuir entregador próprio</strong> — do estabelecimento <span class="route">POST /api/orders/:id/assign-own</span></li>
+            <li><strong>Editar pedido</strong> — endereço, valor, status <span class="route">PUT /api/admin/orders/:id</span></li>
+            <li><strong>Excluir pedido</strong> — remove permanentemente <span class="route">DELETE /api/admin/orders/:id</span></li>
+            <li><strong>Criar pedido manual</strong> — "Lançar Pedido" <span class="route">POST /api/orders/</span></li>
+          </ul>
+        </div>
+
+        <!-- Entregadores -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🏍️</span> Entregadores</div>
+          <ul class="activity-list">
+            <li><strong>Listar entregadores</strong> — plataforma, com busca e filtros <span class="route">GET /api/admin/drivers</span></li>
+            <li><strong>Detalhes do entregador</strong> — histórico, avaliações, ganhos <span class="route">GET /api/admin/drivers/:id</span></li>
+            <li><strong>Alterar status</strong> — ativar, suspender, desativar <span class="route">PUT /api/admin/drivers/:id/status</span></li>
+            <li><strong>Excluir entregador</strong> — remove do sistema <span class="route">DELETE /api/admin/users/:id</span></li>
+          </ul>
+        </div>
+
+        <!-- Entregadores Próprios -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🚴</span> Entregadores Próprios</div>
+          <ul class="activity-list">
+            <li><strong>Listar entregadores próprios</strong> — por estabelecimento <span class="route">GET /api/admin/establishment-drivers</span></li>
+            <li><strong>Criar entregador próprio</strong> — vincula a estabelecimento <span class="route">POST /api/admin/establishment-drivers</span></li>
+            <li><strong>Gerenciar ganhos</strong> — registrar e pagar <span class="route">POST /api/admin/establishment-drivers/earnings/:id/pay</span></li>
+          </ul>
+        </div>
+
+        <!-- Financeiro -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">💰</span> Financeiro</div>
+          <ul class="activity-list">
+            <li><strong>Dashboard financeiro</strong> — receita, custos, por período <span class="route">GET /api/admin/finance</span></li>
+            <li><strong>Receita por estabelecimento</strong> — ranking de faturamento <span class="route">GET /api/admin/finance/establishments</span></li>
+            <li><strong>Tabelas de preço</strong> — criar/editar por praça <span class="route">GET /api/admin/pricing-tables</span></li>
+            <li><strong>Preços dinâmicos</strong> — taxas adicionais (noite, chuva, etc.) <span class="route">GET /api/admin/dynamic-pricing</span></li>
+            <li><strong>Faturas</strong> — gerar, cobrar, enviar link <span class="route">POST /api/admin/invoices/:id/charge</span></li>
+            <li><strong>Saques</strong> — processar saques de entregadores <span class="route">POST /api/admin/withdrawals/:id/process-auto</span></li>
+          </ul>
+        </div>
+
+        <!-- Relatórios -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📈</span> Relatórios</div>
+          <ul class="activity-list">
+            <li><strong>Pedidos por data</strong> — volume diário <span class="route">GET /api/admin/reports/orders-by-date</span></li>
+            <li><strong>Performance de entregadores</strong> — entregas, avaliações <span class="route">GET /api/admin/reports/drivers-performance</span></li>
+            <li><strong>Ranking de estabelecimentos</strong> — por volume <span class="route">GET /api/admin/reports/establishments-ranking</span></li>
+            <li><strong>Resumo financeiro</strong> — receita consolidada <span class="route">GET /api/admin/reports/financial-summary</span></li>
+            <li><strong>Cancelamentos</strong> — análise de cancelamentos <span class="route">GET /api/admin/reports/cancellations</span></li>
+            <li><strong>Avaliações</strong> — médias e distribuição <span class="route">GET /api/admin/reports/ratings</span></li>
+            <li><strong>Horários de pico</strong> — demanda por hora <span class="route">GET /api/admin/reports/peak-hours</span></li>
+          </ul>
+        </div>
+
+        <!-- Usuários e Configurações -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">⚙️</span> Usuários & Config</div>
+          <ul class="activity-list">
+            <li><strong>Listar usuários</strong> — todos os tipos, com busca <span class="route">GET /api/admin/users</span></li>
+            <li><strong>Criar admin</strong> — novo admin para o tenant <span class="route">POST /api/admin/create-admin</span></li>
+            <li><strong>Editar usuário</strong> — dados, tipo, status <span class="route">PUT /api/admin/users/:id</span></li>
+            <li><strong>White-label</strong> — logo, cores, nome do app <span class="route">PUT /api/admin/tenant/settings</span></li>
+            <li><strong>Integrações</strong> — credenciais de plataformas (iFood, etc.) <span class="route">POST /api/admin/platform-credentials</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- 3. PRAÇA (SQUARE)              -->
+  <!-- ============================== -->
+  <div class="user-section role-square" id="section-square">
+    <div class="user-header" onclick="toggleSection('section-square')">
+      <div class="user-icon">PR</div>
+      <div>
+        <div class="user-title">Praça (Square)</div>
+        <div class="user-desc">Unidade de organização regional · Agrupa estabelecimentos e entregadores por cidade/região</div>
+      </div>
+      <span class="user-badge">ENTIDADE DO SISTEMA</span>
+      <span class="toggle-icon">&#9660;</span>
+    </div>
+    <div class="user-body">
+      <div class="flow-grid">
+        <!-- O que é uma Praça -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📌</span> O que é uma Praça?</div>
+          <ul class="activity-list">
+            <li><strong>Definição:</strong> Uma praça é uma <strong>região geográfica</strong> de atuação (ex: Capão da Canoa/RS, Porto Alegre/RS)</li>
+            <li><strong>Função:</strong> Agrupa estabelecimentos, entregadores e pedidos de uma mesma área</li>
+            <li><strong>Filtragem:</strong> Todo o dashboard admin filtra por praça — cada dado pertence a uma praça</li>
+            <li><strong>Tabela de preço:</strong> Cada praça pode ter sua própria tabela de preços de entrega</li>
+          </ul>
+        </div>
+
+        <!-- Campos -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📋</span> Campos da Praça</div>
+          <ul class="activity-list">
+            <li><strong>name</strong> — Nome da praça (ex: "Capão da Canoa")</li>
+            <li><strong>city</strong> — Cidade (ex: "Capão da Canoa")</li>
+            <li><strong>state</strong> — Estado (ex: "RS")</li>
+            <li><strong>is_active</strong> — Se a praça está ativa</li>
+            <li><strong>tenant_id</strong> — Organização à qual pertence</li>
+          </ul>
+        </div>
+
+        <!-- Relacionamentos -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🔗</span> Relacionamentos</div>
+          <ul class="activity-list">
+            <li><strong>Estabelecimentos (Restaurant)</strong> — cada estabelecimento pertence a uma praça via <code>square_id</code></li>
+            <li><strong>Entregadores (Driver)</strong> — entregadores operam em uma praça via <code>square_id</code></li>
+            <li><strong>Pedidos (Order)</strong> — pedidos são filtrados pela praça do estabelecimento</li>
+            <li><strong>Tabela de Preço (PricingTable)</strong> — tabela vinculada à praça</li>
+            <li><strong>Preço Dinâmico (DynamicPricing)</strong> — regras de preço por praça</li>
+          </ul>
+        </div>
+
+        <!-- Como é usada no sistema -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">⚡</span> Como é Usada no Sistema</div>
+          <ul class="activity-list">
+            <li><strong>Seletor no Layout:</strong> Admin seleciona praça ativa no topo — todos os dados filtram automaticamente</li>
+            <li><strong>Query param:</strong> Endpoints aceitam <code>?square_id=X</code> para filtrar resultados</li>
+            <li><strong>Auto-roteirização:</strong> Motor de rotas agrupa pedidos por praça para otimizar entregas</li>
+            <li><strong>Mapa do dashboard:</strong> Centraliza na cidade da praça selecionada</li>
+            <li><strong>Cadastro de entregador:</strong> Entregador é vinculado a uma praça ao se cadastrar</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- 4. ESTABELECIMENTO (CLIENTE)   -->
+  <!-- ============================== -->
+  <div class="user-section role-client" id="section-client">
+    <div class="user-header" onclick="toggleSection('section-client')">
+      <div class="user-icon">CL</div>
+      <div>
+        <div class="user-title">Estabelecimento (Cliente)</div>
+        <div class="user-desc">Restaurante, farmácia, loja · Cria pedidos, gerencia entregas e entregadores próprios</div>
+      </div>
+      <span class="user-badge">POR ESTABELECIMENTO</span>
+      <span class="toggle-icon">&#9660;</span>
+    </div>
+    <div class="user-body">
+      <div class="flow-grid">
+        <!-- Dashboard -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📊</span> Dashboard</div>
+          <ul class="activity-list">
+            <li><strong>Visão geral</strong> — pedidos do dia, entregas em andamento <span class="route">GET /api/orders/my/stats</span></li>
+            <li><strong>Rastreamento ao vivo</strong> — onde estão os entregadores <span class="route">GET /api/orders/my/tracking</span></li>
+            <li><strong>Financeiro</strong> — gastos com entregas <span class="route">GET /api/orders/my/financial</span></li>
+          </ul>
+        </div>
+
+        <!-- Pedidos -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📦</span> Pedidos</div>
+          <ul class="activity-list">
+            <li><strong>Criar pedido</strong> — endereço de coleta e entrega, valor, forma de pagamento <span class="route">POST /api/orders/</span></li>
+            <li><strong>Listar meus pedidos</strong> — com filtros por status <span class="route">GET /api/orders/my</span></li>
+            <li><strong>Acompanhar pedido</strong> — status em tempo real (pendente → aceito → coletado → entregue)</li>
+            <li><strong>Cancelar pedido</strong> — antes de ser coletado <span class="route">POST /api/orders/:id/cancel</span></li>
+            <li><strong>Avaliar entregador</strong> — nota e feedback após entrega <span class="route">POST /api/orders/:id/rate</span></li>
+            <li><strong>Pedidos agendados</strong> — criar com data/hora futura</li>
+          </ul>
+        </div>
+
+        <!-- Entregadores Próprios -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🚴</span> Entregadores Próprios</div>
+          <ul class="activity-list">
+            <li><strong>Cadastrar entregador</strong> — nome, telefone, veículo <span class="route">POST /api/own-driver/register</span></li>
+            <li><strong>Listar entregadores</strong> — seus entregadores próprios <span class="route">GET /api/establishment-drivers</span></li>
+            <li><strong>Ativar/Desativar</strong> — habilitar entregador próprio para entregas</li>
+            <li><strong>Atribuir a pedido</strong> — designar entregador próprio a um pedido específico <span class="route">POST /api/orders/:id/assign-own</span></li>
+            <li><strong>Monitorar entregas</strong> — acompanhar entregadores em tempo real</li>
+          </ul>
+        </div>
+
+        <!-- Configurações -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">⚙️</span> Configurações</div>
+          <ul class="activity-list">
+            <li><strong>Perfil do estabelecimento</strong> — nome, endereço, horário <span class="route">PUT /api/admin/establishments/:id</span></li>
+            <li><strong>Integrações</strong> — conectar com iFood e outras plataformas</li>
+            <li><strong>Tipo de confirmação</strong> — código, foto ou ambos para coleta/entrega</li>
+            <li><strong>Tempo de preparo</strong> — minutos estimados para preparar pedido</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- 5. ENTREGADOR PLATAFORMA       -->
+  <!-- ============================== -->
+  <div class="user-section role-driver" id="section-driver">
+    <div class="user-header" onclick="toggleSection('section-driver')">
+      <div class="user-icon">EP</div>
+      <div>
+        <div class="user-title">Entregador da Plataforma</div>
+        <div class="user-desc">Autônomo · Aceita entregas de qualquer estabelecimento da praça</div>
+      </div>
+      <span class="user-badge">POR PRAÇA</span>
+      <span class="toggle-icon">&#9660;</span>
+    </div>
+    <div class="user-body">
+      <div class="flow-grid">
+        <!-- Cadastro e Status -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📝</span> Cadastro & Status</div>
+          <ul class="activity-list">
+            <li><strong>Registrar-se</strong> — nome, telefone, veículo, praça de atuação <span class="route">POST /api/auth/register</span></li>
+            <li><strong>Escolher praça no cadastro</strong> — seletor de região (opcional) <span class="route">GET /api/auth/squares/public</span></li>
+            <li><strong>Ficar online/offline</strong> — toggle de disponibilidade <span class="route">POST /api/driver/status</span></li>
+            <li><strong>Atualizar localização</strong> — GPS em tempo real <span class="route">POST /api/driver/location</span></li>
+            <li><strong>Editar perfil</strong> — dados pessoais, veículo, foto</li>
+          </ul>
+        </div>
+
+        <!-- Gestão Admin -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">⚙️</span> Gestão pelo Admin</div>
+          <ul class="activity-list">
+            <li><strong>Criar entregador</strong> — com praça e tenant (super admin) <span class="route">POST /api/admin/drivers</span></li>
+            <li><strong>Editar entregador</strong> — dados, praça, tenant (super admin) <span class="route">PUT /api/admin/drivers/:id</span></li>
+            <li><strong>Converter para próprio</strong> — vincula a estabelecimento, desativa da plataforma <span class="route">POST /api/admin/drivers/:id/convert-to-own</span></li>
+            <li><strong>Aprovar cadastro</strong> — ativa e define praça/tenant <span class="route">POST /api/admin/users/:id/approve</span></li>
+          </ul>
+        </div>
+
+        <!-- Entregas -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📦</span> Entregas</div>
+          <ul class="activity-list">
+            <li><strong>Receber ofertas</strong> — popup com detalhes do pedido (endereço, valor, distância)</li>
+            <li><strong>Aceitar pedido</strong> — assume a entrega <span class="route">POST /api/orders/:id/accept</span></li>
+            <li><strong>Rejeitar pedido</strong> — recusa a oferta <span class="route">POST /api/orders/:id/reject</span></li>
+            <li><strong>Ver pedido atual</strong> — detalhes da entrega em andamento <span class="route">GET /api/orders/current</span></li>
+            <li><strong>Confirmar coleta</strong> — marca que coletou no estabelecimento (código/foto) <span class="route">PUT /api/orders/:id/status</span></li>
+            <li><strong>Confirmar entrega</strong> — marca que entregou ao cliente (código/foto) <span class="route">PUT /api/orders/:id/status</span></li>
+            <li><strong>Enviar prova de entrega</strong> — foto como comprovante</li>
+          </ul>
+        </div>
+
+        <!-- Financeiro -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">💰</span> Financeiro</div>
+          <ul class="activity-list">
+            <li><strong>Ver ganhos</strong> — total do dia, semana, mês <span class="route">GET /api/driver/stats</span></li>
+            <li><strong>Histórico de ganhos</strong> — detalhamento por entrega <span class="route">GET /api/driver/earnings</span></li>
+            <li><strong>Histórico de entregas</strong> — todas as entregas realizadas <span class="route">GET /api/driver/delivery-history</span></li>
+            <li><strong>Solicitar saque</strong> — transferir para conta</li>
+          </ul>
+        </div>
+
+        <!-- Gamificação -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🏆</span> Gamificação</div>
+          <ul class="activity-list">
+            <li><strong>Ranking</strong> — posição entre entregadores da praça <span class="route">GET /api/driver/ranking</span></li>
+            <li><strong>Conquistas</strong> — badges e marcos <span class="route">GET /api/driver/achievements</span></li>
+            <li><strong>Avaliações</strong> — nota média recebida dos estabelecimentos</li>
+          </ul>
+        </div>
+
+        <!-- Rotas -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🗺️</span> Rotas</div>
+          <ul class="activity-list">
+            <li><strong>Mapa da entrega</strong> — rota do estabelecimento até o cliente</li>
+            <li><strong>Navegação</strong> — abrir no Google Maps/Waze</li>
+            <li><strong>Múltiplas entregas</strong> — otimização de rota quando há mais de uma</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- 6. ENTREGADOR PRÓPRIO          -->
+  <!-- ============================== -->
+  <div class="user-section role-own-driver" id="section-own-driver">
+    <div class="user-header" onclick="toggleSection('section-own-driver')">
+      <div class="user-icon">EV</div>
+      <div>
+        <div class="user-title">Entregador Próprio</div>
+        <div class="user-desc">Contratado do estabelecimento · Faz entregas apenas do seu estabelecimento</div>
+      </div>
+      <span class="user-badge">POR ESTABELECIMENTO</span>
+      <span class="toggle-icon">&#9660;</span>
+    </div>
+    <div class="user-body">
+      <div class="flow-grid">
+        <!-- Cadastro -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📝</span> Cadastro & Login</div>
+          <ul class="activity-list">
+            <li><strong>Cadastrado pelo estabelecimento</strong> — admin ou estabelecimento cria o cadastro</li>
+            <li><strong>Login próprio</strong> — rota separada <code>/own-driver/login</code> com token próprio <span class="route">POST /api/own-driver/login</span></li>
+            <li><strong>Dados:</strong> nome, telefone, tipo de veículo</li>
+            <li><strong>Praça herdada</strong> — não tem <code>square_id</code> próprio; herda do estabelecimento via <code>Restaurant.square_id</code></li>
+            <li><strong>Segurança</strong> — verificação de ownership: CLIENT só acessa drivers do seu próprio restaurante</li>
+          </ul>
+        </div>
+
+        <!-- Entregas -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📦</span> Entregas</div>
+          <ul class="activity-list">
+            <li><strong>Receber pedidos</strong> — designados pelo estabelecimento (não por oferta)</li>
+            <li><strong>Visualizar pedidos</strong> — lista de entregas atribuídas <span class="route">GET /api/own-driver/orders</span></li>
+            <li><strong>Aceitar/Rejeitar</strong> — confirma ou recusa a entrega</li>
+            <li><strong>Confirmar coleta</strong> — marca que coletou no estabelecimento <span class="route">POST /api/own-driver/orders/:id/collect</span></li>
+            <li><strong>Confirmar entrega</strong> — marca que entregou ao cliente <span class="route">POST /api/own-driver/orders/:id/deliver</span></li>
+            <li><strong>Enviar prova</strong> — foto de comprovação</li>
+          </ul>
+        </div>
+
+        <!-- Financeiro -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">💰</span> Ganhos</div>
+          <ul class="activity-list">
+            <li><strong>Visualizar ganhos</strong> — entregas realizadas e valores <span class="route">GET /api/own-driver/earnings</span></li>
+            <li><strong>Histórico</strong> — todas as entregas com detalhes</li>
+            <li><strong>Pagamento</strong> — controlado pelo estabelecimento/admin</li>
+          </ul>
+        </div>
+
+        <!-- Rotas -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🗺️</span> Rotas</div>
+          <ul class="activity-list">
+            <li><strong>Mapa de entrega</strong> — rota até o cliente</li>
+            <li><strong>Otimização</strong> — quando há múltiplas entregas simultâneas</li>
+            <li><strong>Visualização de rotas</strong> — histórico de rotas percorridas <span class="route">GET /api/own-driver/routes</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- TABELA DE ROTAS DA API         -->
+  <!-- ============================== -->
+  <div class="routes-table-wrapper">
+    <div class="routes-table-title">Resumo dos Blueprints (Rotas da API)</div>
+    <table class="routes-table">
+      <thead>
+        <tr>
+          <th>Blueprint</th>
+          <th>Prefixo</th>
+          <th>Responsável por</th>
+          <th>Quem usa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>auth_bp</code></td>
+          <td><code>/api/auth</code></td>
+          <td>Login, registro, perfil, alteração de senha</td>
+          <td>Todos os usuários</td>
+        </tr>
+        <tr>
+          <td><code>driver_bp</code></td>
+          <td><code>/api/driver</code></td>
+          <td>Status, localização, estatísticas, ganhos, ranking, conquistas</td>
+          <td>Entregador Plataforma</td>
+        </tr>
+        <tr>
+          <td><code>order_bp</code></td>
+          <td><code>/api/orders</code></td>
+          <td>Criar pedidos, listar, aceitar, rejeitar, atualizar status, avaliar</td>
+          <td>Estabelecimento + Entregadores</td>
+        </tr>
+        <tr>
+          <td><code>admin_bp</code></td>
+          <td><code>/api/admin</code></td>
+          <td>Dashboard, CRUD de tudo (estabelecimentos, praças, entregadores, pedidos, financeiro, relatórios, usuários)</td>
+          <td>Admin + Super Admin</td>
+        </tr>
+        <tr>
+          <td><code>platform_bp</code></td>
+          <td><code>/api/platform</code></td>
+          <td>Dashboard global, CRUD de tenants e admins, setup super admin</td>
+          <td>Super Admin</td>
+        </tr>
+        <tr>
+          <td><code>webhook_bp</code></td>
+          <td><code>/api/webhooks</code></td>
+          <td>Receber webhooks de plataformas externas (iFood, etc.)</td>
+          <td>Sistema (externo)</td>
+        </tr>
+        <tr>
+          <td><code>own_driver_bp</code></td>
+          <td><code>/api/own-driver</code></td>
+          <td>Login, pedidos, coleta, entrega, ganhos, rotas do entregador próprio</td>
+          <td>Entregador Próprio</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================== -->
+  <!-- FLUXO DE UM PEDIDO             -->
+  <!-- ============================== -->
+  <div class="hierarchy">
+    <div class="hierarchy-title">Fluxo Completo de um Pedido</div>
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.5rem; align-items:center;">
+      <div class="h-node h-client" style="min-width:140px;">Estabelecimento<br><span style="font-size:0.75rem;font-weight:400;">cria o pedido</span></div>
+      <span style="font-size:1.5rem; color:#94a3b8;">→</span>
+      <div class="h-node" style="min-width:140px; background:#fef9c3; border:2px solid #facc15; color:#713f12;">Pendente<br><span style="font-size:0.75rem;font-weight:400;">aguardando entregador</span></div>
+      <span style="font-size:1.5rem; color:#94a3b8;">→</span>
+      <div class="h-node h-driver" style="min-width:140px;">Aceito<br><span style="font-size:0.75rem;font-weight:400;">entregador aceitou</span></div>
+      <span style="font-size:1.5rem; color:#94a3b8;">→</span>
+      <div class="h-node" style="min-width:140px; background:#e0e7ff; border:2px solid #6366f1; color:#3730a3;">Coletado<br><span style="font-size:0.75rem;font-weight:400;">saiu do estabelecimento</span></div>
+      <span style="font-size:1.5rem; color:#94a3b8;">→</span>
+      <div class="h-node" style="min-width:140px; background:#dcfce7; border:2px solid #16a34a; color:#166534;">Entregue<br><span style="font-size:0.75rem;font-weight:400;">entrega concluída</span></div>
+    </div>
+    <div style="margin-top:1.5rem; display:flex; flex-wrap:wrap; justify-content:center; gap:2rem;">
+      <div style="text-align:center;">
+        <div style="font-size:0.75rem; color:#64748b; font-weight:600;">QUEM PODE CRIAR</div>
+        <div style="font-size:0.8125rem; margin-top:0.25rem;">Estabelecimento · Admin ("Lançar Pedido")</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:0.75rem; color:#64748b; font-weight:600;">QUEM PODE ACEITAR</div>
+        <div style="font-size:0.8125rem; margin-top:0.25rem;">Entregador Plataforma (por oferta) · Entregador Próprio (designado)</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:0.75rem; color:#64748b; font-weight:600;">QUEM ACOMPANHA</div>
+        <div style="font-size:0.8125rem; margin-top:0.25rem;">Estabelecimento · Admin · Entregador</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- AUDITORIA - ITENS PENDENTES    -->
+  <!-- ============================== -->
+  <div class="hierarchy" style="border-left: 4px solid #ef4444;">
+    <div class="hierarchy-title" style="color: #ef4444;">Auditoria de Segurança — Itens Pendentes (05/09/2026)</div>
+    <div style="display: grid; gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem';">
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #dc2626; margin-bottom: 0.5rem;">Críticos</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>F-01</strong> — Aceite atômico de pedidos (impedir dois aceites simultâneos)</li>
+          <li><strong>F-03</strong> — Webhook secret obrigatório (remover fallback previsível)</li>
+          <li><strong>F-04</strong> — Provas de entrega com autenticação</li>
+          <li><strong>F-05</strong> — Segredos padrão (falhar fechado em produção)</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #ea580c; margin-bottom: 0.5rem;">Altos</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>F-08</strong> — Migrações versionadas (Alembic)</li>
+          <li><strong>F-09</strong> — Background tasks com worker/fila</li>
+          <li><strong>F-10</strong> — Máquina de estados central para pedidos</li>
+          <li><strong>F-11</strong> — Ledger financeiro imutável</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Relatório completo: C:\Users\Dell\Downloads\relatorio replit.pdf</p>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PROBLEMAS IDENTIFICADOS        -->
+  <!-- ============================== -->
+  <div class="hierarchy" style="border-left: 4px solid #f59e0b;">
+    <div class="hierarchy-title" style="color: #f59e0b;">Problemas Identificados — Pendentes (06/09/2026)</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #dc2626; margin-bottom: 0.5rem;">Prova de Entrega</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>P-01</strong> — Sem verificação de ownership/tenant</li>
+          <li><strong>P-03</strong> — Storage efêmero (perde fotos no redeploy)</li>
+          <li><strong>P-05</strong> — WhatsApp de prova nunca enviado</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #ea580c; margin-bottom: 0.5rem;">Gamificação</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>G-01</strong> — Rating inicial 5.0 injusto</li>
+          <li><strong>G-02</strong> — Valores hardcoded no ranking</li>
+          <li><strong>G-03</strong> — Rating não influencia distribuição</li>
+          <li><strong>G-09</strong> — min_driver_rating não usado no backend</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #d97706; margin-bottom: 0.5rem;">Navegação</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>N-01</strong> — Waze não implementado</li>
+          <li><strong>N-02</strong> — Deep link Google Maps não implementado</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #b45309; margin-bottom: 0.5rem;">Conversão</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>C-01</strong> — Falta conversão inversa (próprio → plataforma)</li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Detalhes completos no MEMORY.md</p>
+  </div>
+
+  <script>
+    function toggleSection(id) {
+      const section = document.getElementById(id);
+      section.classList.toggle('collapsed');
+    }
+  </script>
+</body>
+</html>

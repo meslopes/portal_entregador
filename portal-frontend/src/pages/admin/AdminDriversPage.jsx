@@ -19,7 +19,13 @@ const AdminDriversPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [squares, setSquares] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [establishments, setEstablishments] = useState([]);
   const [dateRange, setDateRange] = useState(null);
+
+  // Verificar se é super admin
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   // Modal states
   const [showForm, setShowForm] = useState(false);
@@ -31,12 +37,12 @@ const AdminDriversPage = () => {
     email: '', password: '123456', first_name: '', last_name: '',
     phone: '', cpf: '', vehicle_type: 'MOTORCYCLE', vehicle_plate: '',
     vehicle_model: '', vehicle_year: '', driver_license: '',
-    pix_key: '', bank_account: '', square_id: '', max_concurrent_orders: '3'
+    pix_key: '', bank_account: '', tenant_id: '', square_id: '', max_concurrent_orders: '3'
   });
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadDrivers(); loadSquares(); }, [page, statusFilter, squareId]);
+  useEffect(() => { loadDrivers(); loadSquares(); loadEstablishments(); if (isSuperAdmin) loadTenants(); }, [page, statusFilter, squareId]);
 
   const loadDrivers = async () => {
     try {
@@ -70,11 +76,16 @@ const AdminDriversPage = () => {
       last_name: driver.user?.last_name || '',
       phone: driver.user?.phone || '',
       email: driver.user?.email || '',
+      cpf: driver.user?.cpf || '',
       vehicle_type: driver.vehicle_type || 'MOTORCYCLE',
       vehicle_plate: driver.vehicle_plate || '',
       vehicle_model: driver.vehicle_model || '',
+      vehicle_year: driver.vehicle_year || '',
+      driver_license: driver.driver_license || '',
       pix_key: driver.pix_key || '',
+      bank_account: driver.bank_account || '',
       max_concurrent_orders: driver.max_concurrent_orders || 3,
+      tenant_id: driver.tenant_id || '',
       square_id: driver.square_id || ''
     });
     setShowEdit(true);
@@ -102,12 +113,49 @@ const AdminDriversPage = () => {
     } catch (e) {}
   };
 
+  const loadTenants = async () => {
+    try {
+      const res = await api.get('/api/platform/tenants');
+      setTenants(res.data.tenants || []);
+    } catch (err) {}
+  };
+
+  const loadEstablishments = async () => {
+    try {
+      const data = await adminService.getEstablishments(1, 100, '', squareId);
+      setEstablishments(data.establishments || []);
+    } catch (err) {}
+  };
+
+  const handleConvertToOwn = async () => {
+    const select = document.getElementById('convert-restaurant');
+    const restaurantId = select?.value;
+    if (!restaurantId) {
+      showToast('Selecione um estabelecimento', 'error');
+      return;
+    }
+    const estName = establishments.find(e => e.id === parseInt(restaurantId))?.name || 'estabelecimento';
+    if (!window.confirm(`Converter "${editing.user?.first_name}" para entregador próprio de "${estName}"?\n\nO entregador será desativado da plataforma e criado como entregador próprio.`)) return;
+
+    try {
+      setFormLoading(true);
+      await api.post(`/api/admin/drivers/${editing.id}/convert-to-own`, { restaurant_id: parseInt(restaurantId) });
+      showToast(`Entregador convertido para ${estName}!`, 'success');
+      setShowEdit(false);
+      loadDrivers();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao converter entregador', 'error');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const openCreateForm = () => {
     setFormData({
       email: '', password: '123456', first_name: '', last_name: '',
       phone: '', cpf: '', vehicle_type: 'MOTORCYCLE', vehicle_plate: '',
       vehicle_model: '', vehicle_year: '', driver_license: '',
-      pix_key: '', bank_account: '', square_id: '', max_concurrent_orders: '3'
+      pix_key: '', bank_account: '', tenant_id: '', square_id: '', max_concurrent_orders: '3'
     });
     setFormError('');
     setShowForm(true);
@@ -320,6 +368,18 @@ const AdminDriversPage = () => {
                 </FormField>
               </div>
 
+              {/* Seletor de Tenant - visível apenas para super admin */}
+              {isSuperAdmin && (
+                <FormField label="Organização (Tenant)">
+                  <select name="tenant_id" value={formData.tenant_id} onChange={handleFormChange} style={inputStyle}>
+                    <option value="">Selecione uma organização</option>
+                    {tenants.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </FormField>
+              )}
+
               <FormField label="Praça">
                 <select name="square_id" value={formData.square_id} onChange={handleFormChange} style={inputStyle}>
                   <option value="">Selecione uma praça</option>
@@ -426,8 +486,24 @@ const AdminDriversPage = () => {
                 <FormField label="Nome"><input type="text" value={editData.first_name} onChange={e => setEditData(p => ({ ...p, first_name: e.target.value }))} style={inputStyle} /></FormField>
                 <FormField label="Sobrenome"><input type="text" value={editData.last_name} onChange={e => setEditData(p => ({ ...p, last_name: e.target.value }))} style={inputStyle} /></FormField>
               </div>
-              <FormField label="Telefone"><input type="text" value={editData.phone} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} /></FormField>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Telefone"><input type="text" value={editData.phone} onChange={e => setEditData(p => ({ ...p, phone: e.target.value }))} style={inputStyle} /></FormField>
+                <FormField label="CPF"><input type="text" value={editData.cpf} onChange={e => setEditData(p => ({ ...p, cpf: e.target.value }))} style={inputStyle} placeholder="000.000.000-00" /></FormField>
+              </div>
               <FormField label="Email"><input type="email" value={editData.email} onChange={e => setEditData(p => ({ ...p, email: e.target.value }))} style={inputStyle} /></FormField>
+
+              {/* Seletor de Tenant - visível apenas para super admin */}
+              {isSuperAdmin && (
+                <FormField label="Organização (Tenant)">
+                  <select value={editData.tenant_id || ''} onChange={e => setEditData(p => ({ ...p, tenant_id: e.target.value }))} style={inputStyle}>
+                    <option value="">Selecione uma organização</option>
+                    {tenants.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </FormField>
+              )}
+
               <FormField label="Praça">
                 <select value={editData.square_id} onChange={e => setEditData(p => ({ ...p, square_id: e.target.value }))} style={inputStyle}>
                   <option value="">Selecione uma praça</option>
@@ -436,17 +512,52 @@ const AdminDriversPage = () => {
                   ))}
                 </select>
               </FormField>
-              <FormField label="Tipo de Veículo">
-                <select value={editData.vehicle_type} onChange={e => setEditData(p => ({ ...p, vehicle_type: e.target.value }))} style={inputStyle}>
-                  <option value="MOTORCYCLE">Moto</option>
-                  <option value="CAR">Carro</option>
-                  <option value="BICYCLE">Bicicleta</option>
-                  <option value="FOOT">A pé</option>
-                </select>
-              </FormField>
-              <FormField label="Placa"><input type="text" value={editData.vehicle_plate} onChange={e => setEditData(p => ({ ...p, vehicle_plate: e.target.value }))} style={inputStyle} /></FormField>
-              <FormField label="Chave PIX"><input type="text" value={editData.pix_key} onChange={e => setEditData(p => ({ ...p, pix_key: e.target.value }))} style={inputStyle} /></FormField>
-              <FormField label="Máx. Pedidos Simultâneos"><input type="number" min="1" max="10" value={editData.max_concurrent_orders} onChange={e => setEditData(p => ({ ...p, max_concurrent_orders: e.target.value }))} style={inputStyle} /></FormField>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Tipo de Veículo">
+                  <select value={editData.vehicle_type} onChange={e => setEditData(p => ({ ...p, vehicle_type: e.target.value }))} style={inputStyle}>
+                    <option value="MOTORCYCLE">Moto</option>
+                    <option value="CAR">Carro</option>
+                    <option value="BICYCLE">Bicicleta</option>
+                    <option value="FOOT">A pé</option>
+                  </select>
+                </FormField>
+                <FormField label="Placa"><input type="text" value={editData.vehicle_plate} onChange={e => setEditData(p => ({ ...p, vehicle_plate: e.target.value }))} style={inputStyle} /></FormField>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Modelo"><input type="text" value={editData.vehicle_model} onChange={e => setEditData(p => ({ ...p, vehicle_model: e.target.value }))} style={inputStyle} placeholder="Ex: Honda CG 160" /></FormField>
+                <FormField label="Ano"><input type="number" value={editData.vehicle_year} onChange={e => setEditData(p => ({ ...p, vehicle_year: e.target.value }))} style={inputStyle} placeholder="2020" /></FormField>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="CNH"><input type="text" value={editData.driver_license} onChange={e => setEditData(p => ({ ...p, driver_license: e.target.value }))} style={inputStyle} /></FormField>
+                <FormField label="Chave PIX"><input type="text" value={editData.pix_key} onChange={e => setEditData(p => ({ ...p, pix_key: e.target.value }))} style={inputStyle} /></FormField>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <FormField label="Conta Bancária"><input type="text" value={editData.bank_account} onChange={e => setEditData(p => ({ ...p, bank_account: e.target.value }))} style={inputStyle} /></FormField>
+                <FormField label="Máx. Pedidos Simultâneos"><input type="number" min="1" max="10" value={editData.max_concurrent_orders} onChange={e => setEditData(p => ({ ...p, max_concurrent_orders: e.target.value }))} style={inputStyle} /></FormField>
+              </div>
+              {/* Botão para converter em entregador próprio */}
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.8125rem', color: '#166534', marginBottom: '0.5rem', fontWeight: 500 }}>
+                  Converter para Entregador Próprio
+                </p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                  Selecione um estabelecimento para vincular este entregador como próprio.
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <select id="convert-restaurant" style={{ ...inputStyle, flex: 1, marginBottom: 0 }}>
+                    <option value="">Selecione um estabelecimento</option>
+                    {establishments.map(est => (
+                      <option key={est.id} value={est.id}>{est.name}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={handleConvertToOwn} style={{
+                    padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
+                    background: '#16a34a', color: 'white', fontSize: '0.8125rem',
+                    fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
+                  }}>Converter</button>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button type="button" onClick={() => setShowEdit(false)} style={btnSecondary}>Cancelar</button>
                 <button type="submit" disabled={formLoading} style={{ ...btnPrimary, opacity: formLoading ? 0.7 : 1 }}>{formLoading ? 'Salvando...' : 'Salvar'}</button>

@@ -38,7 +38,7 @@ const DatabaseMapPage = () => {
   }, []);
 
   const handleDeleteUser = async (user) => {
-    const isSuperAdmin = user.user_type === 'ADMIN' && !user.tenant_id;
+    const isSuperAdmin = user.user_type === 'ADMIN' && user.is_super_admin;
     if (isSuperAdmin) { showToast('Não é possível excluir o super admin.', 'info'); return; }
     if (!window.confirm(`Excluir ${user.first_name} ${user.last_name} (${user.email})?\n\nSe tiver pedidos ou dados vinculados, serão desvinculados automaticamente.`)) return;
     try {
@@ -240,7 +240,7 @@ const DatabaseMapPage = () => {
     <table><tr><th>ID</th><th>Nome</th><th>Tipo</th><th>Email</th><th>Telefone</th><th>Tenant</th><th>Praça</th><th>Status</th><th>Vínculo</th></tr>`;
     (d.users || []).forEach(u => {
       const typeClass = u.user_type === 'ADMIN' ? 'b-admin' : u.user_type === 'CLIENT' ? 'b-client' : 'b-driver';
-      const isSuper = u.user_type === 'ADMIN' && !u.tenant_id;
+      const isSuper = u.user_type === 'ADMIN' && u.is_super_admin;
       html += `<tr>
         <td>${u.id}</td>
         <td><strong>${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</strong></td>
@@ -475,7 +475,7 @@ const DatabaseMapPage = () => {
         data.users?.length ? data.users.map(u => {
           const typeColors = { ADMIN: ['#7c3aed', '#f3e8ff'], CLIENT: ['#0d9488', '#f0fdfa'], DRIVER: ['#2563eb', '#dbeafe'] };
           const [c, bg] = typeColors[u.user_type] || ['#64748b', '#f1f5f9'];
-          const isSuperAdmin = u.user_type === 'ADMIN' && !u.tenant_id;
+          const isSuperAdmin = u.user_type === 'ADMIN' && u.is_super_admin;
           return card(
             <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>

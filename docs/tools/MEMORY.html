@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEMORY.md - Projeto MuvLog</title>
+<style>
+body { font-family: 'Segoe UI', system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+h2 { color: #1e40af; margin-top: 2rem; }
+h3 { color: #475569; }
+pre { background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.875rem; white-space: pre-wrap; }
+code { background: #e2e8f0; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
+ul, ol { padding-left: 1.5rem; }
+li { margin-bottom: 0.25rem; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
+th { background: #f1f5f9; font-weight: 600; }
+tr:hover { background: #f8fafc; }
+</style>
+</head>
+<body>
+<pre># Project memory
+_Durable project-level knowledge. Persists across all sessions in this project. Edit only content under italic instructions._
+
+Topic: Portal Entregador (MuvLog) — correções estabelecimentos, usuários, entregadores e metodologia de trabalho
+
+## Project context
+_What is this project? What's its goal? High-level identity._
+
+**Portal Entregador (MuvLog)** — Sistema de delivery SaaS multi-tenant.
+- Repositório: https://github.com/meslopes/portal_entregador
+- Código local: `C:\Users\Dell\portal_entregador\portal_entregador`
+- Frontend: `portal-frontend/` (React + Vite + Leaflet via CDN)
+- Backend: `portal-backend/` (Flask + SQLAlchemy + PostgreSQL)
+- Deploy Frontend: Vercel (portal-entregador-gamma.vercel.app)
+- Deploy Backend: Render (muvlog-api.onrender.com)
+- Equipe: Mauro (meslopes@gmail.com) + Éverton (programador Jr.)
+- Nível técnico da equipe: Intermediário
+
+## Rules
+_Hard constraints from user that every session must respect._
+
+- **NUNCA** fazer `git push` automaticamente
+- **NUNCA** fazer deploy automático
+- **SEMPRE** sugerir commit e aguardar autorização
+- Após autorização, fornecer comandos git completos
+- Commits: agrupar múltiplas alterações quando faz sentido; aguardar autorização; nomenclatura `feat: descrição` ou `fix: descrição`
+- Branches: aguardar autorização; usar `feature/nome` ou `bugfix/nome`
+- Código limpo e didático, bem comentado em português, nomes claros (considerar programador Jr)
+- Comunicação sempre em português, direta e objetiva
+- Usar tabelas para comparar opções, código para exemplos práticos
+- **AMBIENTE SEMPRE ATIVO:** Iniciar backend (localhost:5000) e frontend (localhost:5173) no início de cada sessão e manter terminais abertos durante todo o trabalho. Sem isso, não é possível testar ajustes no sistema.
+- **MOSTRAR ANTES DE IMPLEMENTAR:** Antes de alterar código, mostrar ao usuário o diagnóstico (tabelas, comparações) e depois o ANTES/DEPOIS do que será alterado. Aguardar autorização antes de implementar.
+- **CONSULTAR FLUXOGRAMA:** Antes de iniciar tarefas, consultar `docs/fluxograma-sistema.html`. Atualizar o fluxograma após cada commit que altere funcionalidades.
+- **REGISTRAR NA MEMÓRIA:** Registrar toda modificação na memória do projeto imediatamente após cada alteração, mesmo antes do commit.
+
+## Architecture decisions
+_Major design choices with rationale. The "why" matters more than the "what" for future sessions._
+
+- **Leaflet via CDN (não react-leaflet):** Mapa usa vanilla Leaflet via `window.L` global, não o pacote npm. Decisão existente no projeto.
+- **Mapa recriado a cada mudança de praça:** Usa `key` prop no container do mapa para forçar teardown/rebuild completo do Leaflet ao trocar de praça.
+- **Multi-tenant com square_id:** Praças (Square) são a unidade de filtragem em todos os endpoints admin. Cada endpoint aceita `?square_id=` como query param opcional.
+- **Super admin com campo `is_super_admin` (não `tenant_id is None`):** Usar booleano explícito no modelo User. O padrão antigo (`tenant_id is None`) era vulnerável — a rota `PUT /api/platform/users/&lt;id&gt;` permitia setar `tenant_id=None` e promover qualquer admin a super admin acidentalmente. Decisão: campo explícito + endpoint protegido `/setup-super-admin` com `ADMIN_SETUP_TOKEN`.
+- **Registro contínuo na memória:** Registrar toda modificação ou ajuste na memória do projeto imediatamente, mesmo antes de commit, para manter memória sempre atualizada.
+
+## Recent changes
+_Last commits and pending work for continuity._
+
+- **2026-09-02** — Commit `9f3306a3`: `feat: permitir botão lançar pedido para super admin no painel admin`
+  - Layout.jsx + main.py (migration is_super_admin)
+
+- **2026-09-02** — Commit `ada0923d`: `feat: permitir super admin criar/editar estabelecimentos com tenant e praça`
+  - Backend: `create_establishment` e `update_establishment` aceitam `tenant_id` do body para super admin
+  - Frontend: seletor de "Organização (Tenant)" no formulário (visível apenas para super admin)
+
+- **2026-09-02** — Commit `2cc0f354`: `docs: fluxograma completo do sistema com atividades de todos os perfis`
+  - `docs/fluxograma-sistema.html` — fluxograma HTML/CSS com 6 perfis + hierarquia + fluxo de pedido
+
+- **2026-09-02** — Registros faltantes criados (Restaurante1 e Restaurante2)
+  - Existiam apenas como Users (CLIENT), sem Restaurant nem Customer
+  - Criados via script: Restaurant ID 2 e 3, tenant_id=1, square_id=None
+
+- **2026-09-02** — Correção update_user para CLIENT órfãos (IMPLEMENTADA)
+  - `PUT /api/admin/users/&lt;id&gt;` agora cria Customer + Restaurant automaticamente ao mudar tipo para CLIENT
+  - Backend: admin.py função `update_user` (linha ~636-670)
+
+- **2026-09-02** — Adicionados campos tenant e praça no modal de edição de usuários
+  - Frontend: `AdminUsersPage.jsx` — seletor de Tenant (super admin) e Praça (usuários CLIENT)
+  - Backend: `admin.py` — `get_all_users` retorna `square_id` e dados do restaurante para CLIENT
+  - Backend: `admin.py` — `update_user` encontra restaurante via Customer/email para atualizar `square_id`
+
+- **2026-09-02** — Commit `efd6beeb`: `feat: metodologia de trabalho, correção CLIENT órfãos, campos tenant/square em edição de usuários`
+  - REGRAS_TRABALHO_EQUIPE.md: seção 7 Metodologia + fluxo atualizado
+  - fluxograma-sistema.html: data atualizada, nota sobre praça herdada
+  - admin.py: update_user cria Customer+Restaurant para CLIENT
+  - AdminUsersPage.jsx: seletor de Tenant e Praça
+
+- **2026-09-06** — Correções de entregadores (IMPLEMENTADAS)
+  - **Segurança establishment-drivers:** verificação de ownership em list/create/update/delete — CLIENT só acessa drivers do seu restaurante
+  - **Registro público com praça:** endpoint `GET /api/auth/squares/public` + seletor de praça no RegisterPage.jsx
+  - **Formulário de edição completo:** AdminDriversPage.jsx agora tem cpf, modelo, ano, CNH, conta bancária (5 campos que faltavam)
+  - Arquivos: admin.py, auth.py, RegisterPage.jsx, AdminDriversPage.jsx
+
+- **2026-09-06** — Correção entregadores DRIVER órfãos
+  - Mesmo bug dos CLIENT: User existia sem registro de Driver
+  - Entregador1 (user ID 3): Driver ID 1 criado via script, mas SEM tenant_id
+  - Driver ID 1 corrigido: tenant_id=1 adicionado
+  - Backend: `update_user` em admin.py agora cria Driver com `tenant_id` do user ao mudar tipo para DRIVER
+
+- **2026-09-06** — Commit `0b4c5191`: `feat: segurança establishment-drivers, praça no registro público, campos completos na edição`
+  - admin.py: verificação de ownership em establishment-drivers (list/create/update/delete)
+  - auth.py: endpoint público `GET /api/auth/squares/public` + square_id no registro
+  - RegisterPage.jsx: seletor de praça no cadastro de entregador
+  - AdminDriversPage.jsx: +5 campos na edição (cpf, modelo, ano, CNH, conta bancária)
+  - Correções DRIVER órfãos: update_user agora cria Driver com tenant_id ao mudar tipo; Driver 1 corrigido com tenant_id=1
+
+- **2026-09-06** — Seletor de Tenant no AdminDriversPage.jsx (commit `b8bae24c`)
+  - Criação e edição: campo "Organização (Tenant)" visível apenas para super admin
+  - Carrega tenants via `GET /api/platform/tenants` quando `isSuperAdmin`
+
+- **2026-09-06** — Commit `b8bae24c`: `feat: conversão de entregador plataforma para próprio e tenant_id em edição de drivers`
+  - Backend: `POST /api/admin/drivers/:id/convert-to-own` — cria EstablishmentDriver, desativa Driver, marca has_own_drivers
+  - Frontend: seletor de estabelecimento + botão "Converter" no modal de edição
+  - Backend: `update_driver` agora aceita `tenant_id` para super admin
+
+- **2026-09-06** — Commit `437e886d`: `docs: atualização do fluxograma com novas funcionalidades de entregadores`
+  - fluxograma-sistema.html: +Seção "Gestão Admin" no Entregador Plataforma, +Seção "Entregadores (Global)" no Super Admin
+
+- **2026-09-06** — Auditoria de segurança/produto recebida (relatório externo)
+  - Arquivo: `C:\Users\Dell\Downloads\relatorio replit.pdf`
+  - 4 riscos críticos, 8 altos, 11 médios identificados
+  - Itens críticos pendentes: F-01 (aceite concorrente), F-03 (webhook secret), F-04 (provas sem auth), F-05 (segredos padrão)
+  - Plano de ação registrado na seção "Auditoria - Itens Pendentes" abaixo
+
+- **2026-09-06** — Commit `d0f5b98f`: `docs: índice de seções no admin.py para facilitar navegação`
+  - admin.py: índice completo com 24 seções mapeadas (linhas 1-150)
+  - Objetivo: ajudar Éverton a navegar no arquivo de 10.400+ linhas
+
+- **2026-09-06** — Commit `30d2089d`: `feat: F-03 webhook secret seguro, F-08 script migrações Alembic, F-09 background tasks com lock, F-10 máquina de estados`
+  - F-03: webhook.py - secret gerado aleatoriamente em dev, obrigatório em produção
+  - F-08: migrations.py - script para gerenciar migrações Alembic (init/migrate/upgrade)
+  - F-09: background_tasks.py - file-based locking para evitar execução duplicada
+  - F-10: order_state_machine.py - transições válidas por papel (admin/client/driver/own_driver)
+
+- **2026-09-06** — Commit `bb30eb75`: `feat: F-12 validação de entrada com schemas em login e registro`
+  - validation.py: módulo de validação leve sem dependências externas
+  - Schemas pré-definidos: LOGIN, REGISTER_DRIVER, CREATE_ESTABLISHMENT, CREATE_ORDER, UPDATE_ORDER_STATUS, CREATE_SQUARE, CREATE_DRIVER
+  - Integração: auth.py login e register agora validam entrada
+
+- **2026-09-06** — Commit `353878ab`: `fix: correções críticas de segurança - F-01 aceite atômico, F-04 provas com auth, F-05 segredos obrigatórios`
+  - F-01: order.py accept_order agora usa UPDATE condicional atômico (previne dois aceites)
+  - F-04: main.py e main_production.py - @jwt_required() em /uploads/proofs/
+  - F-05: main.py - falhar fechado em produção se SECRET_KEY/JWT_SECRET_KEY não definidas
+
+- **2026-09-06** — Todos na branch `feature/mapa-centralizado-cidade`, push pendente
+
+## Auditoria - Itens Pendentes
+_Itens da auditoria de 05/09/2026 que devem ser implementados. Prioridade: CRÍTICO &gt; ALTO &gt; MÉDIO._
+
+### CRÍTICOS (implementar primeiro)
+- [x] **F-01** — Aceite atômico de pedidos: UPDATE condicional WHERE status=PENDING AND driver_id IS NULL (commit 353878ab)
+- [x] **F-03** — Webhook secret obrigatório: remover fallback previsível, exigir assinatura por integração (implementado, pendente commit)
+- [x] **F-04** — Provas de entrega com autenticação: @jwt_required() adicionado em main.py e main_production.py (commit 353878ab)
+- [x] **F-05** — Segredos padrão: falhar fechado em produção, rejeitar valores conhecidos (commit 353878ab)
+
+### ALTOS (implementar depois)
+- [ ] **F-06** — JWT: migrar para cookie HttpOnly (longo prazo)
+- [ ] **F-07** — Confirmação de email: token com expiração, serviço de email real
+- [x] **F-08** — Migrações: script migrations.py para Alembic versionado (commit 30d2089d)
+- [x] **F-09** — Background tasks: file-based locking para evitar execução duplicada (commit 30d2089d)
+- [x] **F-10** — Máquina de estados: order_state_machine.py com transições válidas por papel (commit 30d2089d)
+- [ ] **F-11** — Financeiro: ledger imutável, Decimal, snapshot de preço
+- [x] **F-12** — Validação de entrada: validation.py com schemas em login/registro (commit bb30eb75)
+
+### MÉDIOS (implementar quando possível)
+- [ ] **F-13** — CORS: consolidar configuração em fonte única
+- [ ] **F-14** — Health check: verificar dependências (DB, schema, fila)
+- [ ] **F-15** — Entrypoints: consolidar main.py e main_production.py via app factory
+- [ ] **F-16** — Caminho do banco: definir caminho único documentado
+- [ ] **F-17** — Modelo User duplicado: remover models/user.py legado
+- [ ] **F-18** — Geocoding: não usar coordenada fictícia para pedidos reais
+- [ ] **F-19** — Roteirização: introduzir motor de ETA/road distance
+- [ ] **F-20** — Testes: criar suíte automatizada
+- [ ] **F-21** — Arquivos grandes: extrair casos de uso de admin.py
+- [ ] **F-22** — Logs: mascarar PII e dados sensíveis
+- [ ] **F-23** — CI: corrigir workflow para subprojetos
+
+## Discovered durable knowledge
+_Cross-task facts that survive across sessions. Promoted from session checkpoints' §7 when proven durable._
+
+- **Square model (portal_models.py:862-900):** Tem `city` (String 100) e `state` (String 2), mas NÃO tem `latitude`/`longitude`. Será necessário adicionar campos ou usar geocoding para centralizar mapa na cidade.
+- **Driver model (portal_models.py:170-261):** Tem `current_latitude`, `current_longitude`, `is_online`, `square_id`. Tracking GPS já implementado.
+- **Order model (portal_models.py:591-702):** Tem `restaurant_id`, `driver_id`, `square_id`, `establishment_driver_id`.
+- **live-tracking endpoint (admin.py:2955-3269):** Retorna entregadores online + estabelecimentos com pedidos ativos + endereços de entrega. Filtra por `square_id`.
+- **Centro padrão do mapa:** `[-29.72, -50.00]` zoom 12 (Cachoeirinha/Porto Alegre, RS) — hardcoded em AdminDashboardPage.jsx.
+- **`.env` files are outside the Git repo:** Both `.env` and `.env.production` live at `C:\Users\Dell\portal_entregador\portal-backend\` (parent of the repo checkout). The repo `.gitignore` covers `.env` patterns but they were never inside the repo tree.
+- **Frontend has no `.env` file:** `VITE_API_URL` defaults to `https://muvlog-api.onrender.com` in `portal-frontend/src/lib/api.js:2`. For local dev, create `portal-frontend/.env` with `VITE_API_URL=http://localhost:5000`.
+- **Production `.env` has all placeholders:** Real production env vars (SECRET_KEY, JWT_SECRET_KEY, DATABASE_URL) must be set in the Render dashboard, not via `.env.production`.
+- **User model `is_super_admin` field:** Boolean, default=False. Detects super admin explicitly. Backend routes in `platform.py` and frontend components check `user.is_super_admin` instead of `!user.tenant_id`. Promotion via `POST /api/platform/setup-super-admin` with `ADMIN_SETUP_TOKEN`.
+- **Two platform dashboard components:** `pages/platform/PlatformDashboard.jsx` (standalone) and `pages/admin/PlatformDashboardPage.jsx` (uses Layout). App.jsx routes `/platform` to PlatformDashboardPage.
+- **Shell é PowerShell no ambiente local:** Comandos com `&amp;&amp;` falham. Usar `;` como separador: `cd path; git status`.
+- **Arquivos .bat para iniciar ambiente:** `start-backend.bat` e `start-frontend.bat` na raiz do projeto. Backend usa venv + SQLite local; frontend usa Vite na porta 5173.
+- **Diretório database criado:** `portal-backend/src/database/` — necessário para SQLite local.
+- **Frontend .env configurado:** `portal-frontend/.env` com `VITE_API_URL=http://localhost:5000` para desenvolvimento local.
+- **`get_current_tenant_id()` retorna None para super admin:** Função em `src/utils/tenant.py:31-34` retorna `user.tenant_id`. Super admin não tem tenant_id → endpoints que usam essa função para criar registros precisam aceitar `tenant_id` do request body quando o usuário é super admin.
+- **Endpoint `GET /api/admin/tenants` já existe** (admin.py:6169-6183): Retorna lista de todos os tenants. Usar no frontend para popular seletor de tenant quando super admin cria/edita estabelecimento.
+- **Fluxo que gera Users CLIENT órfãos:** `PUT /api/admin/users/&lt;id&gt;` (admin.py:621-625) permite mudar `user_type` para CLIENT sem criar Customer/Restaurant. Usuários ficam com login mas sem ser estabelecimento. Correção necessária: ao mudar tipo para CLIENT, criar Customer + Restaurant automaticamente.
+- **Restaurant.latitude é NOT NULL:** Campo obrigatório no modelo. Ao criar Restaurant programaticamente (sem endereço), usar coordenadas default `-29.95, -50.45`.
+- **Fluxograma do sistema:** `docs/fluxograma-sistema.html` — documento HTML/CSS com hierarquia de perfis, atividades detalhadas, tabela de blueprints, e fluxo de pedido. Atualizar após cada commit que altere funcionalidades.
+- **Driver.square_id já funciona em todos os fluxos:** O campo `square_id` já é suportado em criação (admin.py:1887), edição (admin.py:2021), aprovação (admin.py:243) e listagem com filtro (admin.py:1609). Frontend já tem seletor de praça em AdminDriversPage.jsx.
+- **EstablishmentDriver não tem square_id próprio:** A praça é herdada indiretamente via `Restaurant.square_id`. Quando admin muda praça do estabelecimento, todos os entregadores próprios mudam automaticamente. Propagação via `to_dict()` em portal_models.py:382-390.
+- **Problema de segurança em establishment-drivers (CORRIGIDO):** Rotas agora verificam ownership — CLIENT só pode acessar/criar/editar/deletar drivers do seu próprio restaurante. Verificação via Customer → Restaurant.
+- **Fluxo que gera Users DRIVER órfãos:** `PUT /api/admin/users/&lt;id&gt;` permitia mudar user_type para DRIVER sem criar registro de Driver. Corrigido: agora cria Driver com `tenant_id` do user automaticamente.
+- **Driver sem tenant_id fica invisível na listagem:** O endpoint `GET /api/admin/drivers` filtra por `tenant_id` do admin logado. Driver sem `tenant_id` não aparece para admins normais (apenas super admin). Sempre herdar `user.tenant_id` ao criar Driver.
+- **Endpoint público de praças:** `GET /api/auth/squares/public` (auth.py) — retorna squares ativas sem autenticação. Usado no cadastro público de entregadores.
+- **Máquina de estados de pedidos:** `src/utils/order_state_machine.py` — define transições válidas por papel (admin/client/driver/own_driver). Usada em `order.py:update_order_status` e `accept_order`.
+- **Background tasks com locking:** `src/utils/background_tasks.py` — usa file-based locking (`fcntl`) para evitar execução duplicada entre instâncias. Locks em `src/locks/`.
+- **Script de migrações:** `portal-backend/migrations.py` — gerencia Alembic via CLI (`init`, `migrate`, `upgrade`, `downgrade`, `status`).
+- **Conversão plataforma → próprio:** `POST /api/admin/drivers/:id/convert-to-own` — cria EstablishmentDriver com dados do Driver (nome, telefone, veículo), desativa Driver da plataforma, marca restaurant.has_own_drivers=True. Super admin pode converter entregadores.
+- **Análise externa do sistema:** Usuário buscou análise via Replit/Reddit. Arquivo PDF encontrado em `C:\Users\Dell\Downloads\relatorio replit sobre o muv.log`. Texto extraído com sucesso usando `pypdf.PdfReader`. Relatório completo: 4 críticos, 8 altos, 11 médios.
+- **PDF pode ser lido com pypdf:** Biblioteca disponível no ambiente. `PdfReader(path).pages[i].extract_text()` para extrair texto.
+- **fcntl é Unix-only:** File-based locking em `background_tasks.py` usa `fcntl` que não funciona no Windows. Pode precisar de ajuste (usar `portalocker` ou `msvcrt`).
+- **Trabalho contínuo autorizado para auditoria:** Usuário autorizou implementação dos itens da auditoria sem autorização individual, desde que não desfaça algo importante existente.
+- **Refatoração admin.py (FUTURO):** Dividir admin.py (10.400+ linhas) em módulos menores é recomendado para manutenção, mas NÃO urgente. Decisão: manter índice atual + melhorar gradualmente quando houver testes automatizados. Registrar como item futuro, não implementar agora.
+- **Schemas de validação:** `src/utils/validation.py` — módulo leve sem dependências externas. Schemas: LOGIN, REGISTER_DRIVER, CREATE_ESTABLISHMENT, CREATE_ORDER, UPDATE_ORDER_STATUS, CREATE_SQUARE, CREATE_DRIVER. Integrado em login e registro.
+
+### Discovered
+- **Shell é PowerShell no ambiente local:** Comandos com `&amp;&amp;` falham. Usar `;` como separador: `cd path; git status`.
+- **Arquivos .bat para iniciar ambiente:** `start-backend.bat` e `start-frontend.bat` na raiz do projeto. Backend usa venv + SQLite local; frontend usa Vite na porta 5173.
+
+### Dead ends
+(none)
+</pre>
+</body>
+</html>

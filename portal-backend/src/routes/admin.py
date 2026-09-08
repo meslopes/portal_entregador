@@ -1,3 +1,153 @@
+# ============================================================
+# ÍNDICE DO ARQUIVO admin.py
+# ============================================================
+# Este arquivo contém TODAS as rotas administrativas do sistema.
+# Use este índice para localizar rapidamente cada seção.
+#
+# 1. UTILITÁRIOS (linhas 34-50)
+#    - get_square_filter(), admin_required decorator
+#
+# 2. PEDIDOS - PROCESSAMENTO (linhas 101-134)
+#    - POST /process-scheduled
+#
+# 3. USUÁRIOS - APROVAÇÃO (linhas 135-398)
+#    - GET  /pending-users
+#    - POST /users/<id>/approve
+#    - POST /users/<id>/reject
+#
+# 4. USUÁRIOS - CRUD (linhas 399-1127)
+#    - GET    /users (listar todos)
+#    - GET    /users/<id> (detalhes)
+#    - PUT    /users/<id> (editar)
+#    - POST   /users/<id>/reset-password
+#    - DELETE /users/<id>
+#    - POST   /create-admin
+#
+# 5. DASHBOARD (linhas 1128-1333)
+#    - GET /dashboard
+#
+# 6. PEDIDOS - ADMIN (linhas 1334-1582)
+#    - PUT    /orders/<id> (editar)
+#    - DELETE /orders/<id>
+#
+# 7. ENTREGADORES PLATAFORMA (linhas 1583-2245)
+#    - GET    /drivers (listar)
+#    - GET    /drivers/<id> (detalhes)
+#    - POST   /drivers (criar)
+#    - PUT    /drivers/<id> (editar)
+#    - POST   /drivers/<id>/convert-to-own
+#    - PUT    /drivers/<id>/status
+#
+# 8. PEDIDOS - LISTAGEM (linhas 2246-2567)
+#    - GET  /orders (listar)
+#    - POST /orders/<id>/assign
+#
+# 9. FINANCEIRO - DASHBOARD (linhas 2568-3094)
+#    - GET /reports/earnings
+#    - GET /finance
+#    - GET /finance/establishments
+#
+# 10. MAPA AO VIVO (linhas 3095-3422)
+#     - GET /live-tracking
+#
+# 11. ESTABELECIMENTOS (linhas 3423-4281)
+#     - GET    /establishments (listar)
+#     - GET    /establishments/<id> (detalhes)
+#     - POST   /establishments (criar)
+#     - PUT    /establishments/<id> (editar)
+#     - POST   /establishments/geocode
+#     - POST   /establishments/<id>/geocode
+#     - DELETE /establishments/<id>
+#
+# 12. RELATÓRIOS (linhas 4282-5207)
+#     - GET /reports/orders-by-date
+#     - GET /reports/drivers-performance
+#     - GET /reports/establishments-ranking
+#     - GET /reports/financial-summary
+#     - GET /reports/cancellations
+#     - GET /reports/ratings
+#     - GET /reports/peak-hours
+#     - GET /reports/deliveries-by-driver
+#
+# 13. CONFIGURAÇÕES (linhas 5208-5319)
+#     - GET /settings
+#     - PUT /settings
+#
+# 14. TENANT - CONFIGURAÇÕES (linhas 5320-5511)
+#     - GET /tenant/settings
+#     - PUT /tenant/settings
+#
+# 15. TABELAS DE PREÇO (linhas 5512-5877)
+#     - GET    /pricing-tables
+#     - POST   /pricing-tables
+#     - GET    /pricing-tables/<id>
+#     - PUT    /pricing-tables/<id>
+#     - DELETE /pricing-tables/<id>
+#
+# 16. PREÇOS DINÂMICOS (linhas 5878-6123)
+#     - GET    /dynamic-pricing
+#     - POST   /dynamic-pricing
+#     - PUT    /dynamic-pricing/<id>
+#     - DELETE /dynamic-pricing/<id>
+#
+# 17. TENANT - LOGO (linhas 6124-6227)
+#     - POST /tenant/logo
+#
+# 18. TENANTS - CRUD (linhas 6228-6353)
+#     - POST /tenants
+#     - GET  /tenants
+#
+# 19. PRAÇAS (linhas 6354-6668)
+#     - GET    /squares
+#     - POST   /squares
+#     - PUT    /squares/<id>
+#     - DELETE /squares/<id>
+#     - PUT    /squares/<id>/toggle-active
+#
+# 20. PAGAMENTOS DE ENTREGADORES (linhas 6669-6867)
+#     - GET  /driver-payments
+#     - POST /driver-payments/<id>/pay
+#
+# 21. FATURAS E COBRANÇA (linhas 6868-8187)
+#     - POST /invoices/<id>/generate
+#     - GET  /withdrawals
+#     - POST /withdrawals/<id>/process
+#     - GET  /invoices
+#     - POST /invoices/generate
+#     - POST /invoices/<id>/pay
+#     - GET  /asaas/config
+#     - PUT  /asaas/config
+#     - POST /asaas/test
+#     - POST /invoices/generate-auto
+#     - POST /invoices/<id>/charge
+#     - POST /invoices/<id>/send-link
+#     - POST /withdrawals/<id>/process-auto
+#
+# 22. CREDENCIAIS DE PLATAFORMA (linhas 8304-8549)
+#     - GET    /platform-credentials
+#     - POST   /platform-credentials
+#     - DELETE /platform-credentials/<id>
+#     - POST   /platform-credentials/<id>/test
+#
+# 23. ENTREGADORES PRÓPRIOS (linhas 8550-10000+)
+#     - GET    /establishment-drivers
+#     - POST   /establishment-drivers
+#     - PUT    /establishment-drivers/<id>
+#     - DELETE /establishment-drivers/<id>
+#     - PUT    /establishment-drivers/<id>/toggle-online
+#     - GET    /establishment-drivers/payment-config
+#     - PUT    /establishment-drivers/payment-config
+#     - GET    /establishment-drivers/earnings
+#     - POST   /establishment-drivers/earnings/<id>/pay
+#     - POST   /establishment-drivers/earnings/pay-all
+#     - GET    /establishment-drivers/earnings/comparison
+#     - GET    /establishment-drivers/metrics
+#
+# 24. MAPA DE DADOS (linhas 10000+)
+#     - GET /database-map
+#
+# ============================================================
+
 from flask import Blueprint, jsonify, request
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -476,6 +626,21 @@ def get_all_users():
 
                     user_dict['customer'] = customer.to_dict()
 
+                    # Incluir dados do restaurante vinculado (square_id, etc.)
+                    restaurant = None
+                    if customer.restaurant_id:
+                        restaurant = Restaurant.query.get(customer.restaurant_id)
+                    if not restaurant:
+                        restaurant = Restaurant.query.filter_by(email=user.email).first()
+                    if restaurant:
+                        user_dict['restaurant'] = {
+                            'id': restaurant.id,
+                            'name': restaurant.name,
+                            'square_id': restaurant.square_id,
+                            'tenant_id': restaurant.tenant_id
+                        }
+                        user_dict['square_id'] = restaurant.square_id
+
             users_data.append(user_dict)
 
 
@@ -622,7 +787,48 @@ def update_user(user_id):
 
             try:
 
-                user.user_type = UserType(data['user_type'])
+                new_type = UserType(data['user_type'])
+
+                # Se mudando para CLIENT, garantir que Customer e Restaurant existam
+                if new_type == UserType.CLIENT and user.user_type != UserType.CLIENT:
+                    customer = Customer.query.filter_by(user_id=user.id).first()
+                    if not customer:
+                        customer = Customer(
+                            user_id=user.id,
+                            name=f"{user.first_name} {user.last_name}",
+                            phone=user.phone or '',
+                            email=user.email,
+                            tenant_id=user.tenant_id
+                        )
+                        db.session.add(customer)
+
+                    restaurant = Restaurant.query.filter_by(email=user.email).first()
+                    if not restaurant:
+                        restaurant = Restaurant(
+                            name=f"{user.first_name} {user.last_name}",
+                            email=user.email,
+                            address='',
+                            latitude=-29.95,
+                            longitude=-50.45,
+                            is_active=True,
+                            tenant_id=user.tenant_id,
+                            pickup_confirmation_type='code',
+                            delivery_confirmation_type='code'
+                        )
+                        db.session.add(restaurant)
+
+                # Se mudando para DRIVER, garantir que Driver exista
+                if new_type == UserType.DRIVER and user.user_type != UserType.DRIVER:
+                    driver = Driver.query.filter_by(user_id=user.id).first()
+                    if not driver:
+                        driver = Driver(
+                            user_id=user.id,
+                            vehicle_type=VehicleType.MOTORCYCLE,
+                            tenant_id=user.tenant_id
+                        )
+                        db.session.add(driver)
+
+                user.user_type = new_type
 
             except ValueError:
 
@@ -703,13 +909,21 @@ def update_user(user_id):
                     customer.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
                 # Atualizar restaurante vinculado (praça, tenant)
+                # Encontrar restaurante via Customer se não fornecido restaurant_id
+                restaurant = None
                 if 'restaurant_id' in data and data['restaurant_id']:
                     restaurant = Restaurant.query.get(int(data['restaurant_id']))
-                    if restaurant:
-                        if 'square_id' in data:
-                            restaurant.square_id = data['square_id'] if data['square_id'] else None
-                        if 'tenant_id' in data:
-                            restaurant.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+                elif customer.restaurant_id:
+                    restaurant = Restaurant.query.get(customer.restaurant_id)
+                else:
+                    # Tentar encontrar pelo email do usuário
+                    restaurant = Restaurant.query.filter_by(email=user.email).first()
+
+                if restaurant:
+                    if 'square_id' in data:
+                        restaurant.square_id = data['square_id'] if data['square_id'] else None
+                    if 'tenant_id' in data:
+                        restaurant.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
 
 
@@ -1969,6 +2183,13 @@ def update_driver(driver_id):
 
             driver.square_id = data['square_id'] or None
 
+        # Super admin pode alterar tenant do entregador
+        current_user = get_current_user()
+        is_super_admin = current_user and current_user.user_type and current_user.user_type.value == 'ADMIN' and current_user.is_super_admin
+        if is_super_admin and 'tenant_id' in data:
+            driver.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+            user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+
         if 'max_concurrent_orders' in data:
 
             driver.max_concurrent_orders = int(data['max_concurrent_orders'])
@@ -1987,6 +2208,75 @@ def update_driver(driver_id):
 
         return jsonify({'error': str(e)}), 500
 
+
+@admin_bp.route('/drivers/<int:driver_id>/convert-to-own', methods=['POST'])
+
+@jwt_required()
+
+@admin_required
+
+def convert_driver_to_own(driver_id):
+
+    """Converte um entregador da plataforma em entregador próprio de um estabelecimento"""
+
+    try:
+
+        driver = Driver.query.get(driver_id)
+
+        if not driver:
+
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        data = request.get_json() or {}
+
+        restaurant_id = data.get('restaurant_id')
+
+        if not restaurant_id:
+
+            return jsonify({'error': 'restaurant_id é obrigatório'}), 400
+
+        restaurant = Restaurant.query.get(int(restaurant_id))
+
+        if not restaurant:
+
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        user = db.session.get(User, driver.user_id)
+
+        if not user:
+
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Criar EstablishmentDriver com dados do Driver
+        own_driver = EstablishmentDriver(
+            restaurant_id=restaurant.id,
+            name=f"{user.first_name} {user.last_name}",
+            phone=user.phone or '',
+            vehicle_type=driver.vehicle_type.value if driver.vehicle_type else 'MOTO',
+            vehicle_plate=driver.vehicle_plate or '',
+            vehicle_model=driver.vehicle_model or '',
+            is_active=True
+        )
+        db.session.add(own_driver)
+
+        # Desativar o Driver da plataforma (soft delete)
+        driver.is_online = False
+
+        # Marcar restaurante como tendo entregadores próprios
+        restaurant.has_own_drivers = True
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Entregador convertido com sucesso para {restaurant.name}',
+            'own_driver': own_driver.to_dict()
+        }), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        return jsonify({'error': str(e)}), 500
 
 
 @admin_bp.route('/drivers/<int:driver_id>/status', methods=['PUT'])
@@ -3533,10 +3823,17 @@ def create_establishment():
             return jsonify({'error': 'Nome e endereço são obrigatórios'}), 400
 
 
-
         # Obter tenant_id do admin atual
+        # Super admin pode especificar tenant_id no body; admin normal usa o seu próprio
+        current_user = get_current_user()
+        is_super_admin = current_user and current_user.user_type and current_user.user_type.value == 'ADMIN' and current_user.is_super_admin
 
-        tenant_id = get_current_tenant_id()
+        if is_super_admin and data.get('tenant_id'):
+            # Super admin pode criar em qualquer tenant
+            tenant_id = data['tenant_id']
+        else:
+            # Admin normal: usa o seu próprio tenant
+            tenant_id = get_current_tenant_id()
 
 
 
@@ -3827,6 +4124,12 @@ def update_establishment(establishment_id):
         if 'square_id' in data:
 
             est.square_id = data['square_id']
+
+        # Super admin pode alterar o tenant do estabelecimento
+        current_user = get_current_user()
+        is_super_admin = current_user and current_user.user_type and current_user.user_type.value == 'ADMIN' and current_user.is_super_admin
+        if is_super_admin and 'tenant_id' in data:
+            est.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
         if 'pricing_table_id' in data:
 
@@ -8674,7 +8977,18 @@ def list_establishment_drivers():
 
             return jsonify({'error': 'restaurant_id é obrigatório'}), 400
 
-        
+        # Verificação de ownership: CLIENT só pode ver drivers do seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and int(restaurant_id) != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode ver entregadores do seu próprio estabelecimento'}), 403
 
         drivers = EstablishmentDriver.query.filter_by(
 
@@ -8793,7 +9107,18 @@ def create_establishment_driver():
 
             return jsonify({'error': 'Estabelecimento e nome são obrigatórios'}), 400
 
-        
+        # Verificação de ownership: CLIENT só pode criar drivers no seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and int(data['restaurant_id']) != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode cadastrar entregadores no seu próprio estabelecimento'}), 403
 
         driver = EstablishmentDriver(
 
@@ -8869,7 +9194,18 @@ def update_establishment_driver(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+        # Verificação de ownership: CLIENT só pode editar drivers do seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and driver.restaurant_id != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode editar entregadores do seu próprio estabelecimento'}), 403
 
         data = request.get_json()
 
@@ -8947,7 +9283,18 @@ def delete_establishment_driver(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+        # Verificação de ownership: CLIENT só pode deletar drivers do seu próprio restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = None
+                if customer.restaurant_id:
+                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
+                if not user_restaurant:
+                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                if user_restaurant and driver.restaurant_id != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode remover entregadores do seu próprio estabelecimento'}), 403
 
         driver.is_active = False
 
@@ -10226,7 +10573,7 @@ def cleanup_test_data():
     """Limpa dados em lotes para evitar timeout."""
     try:
         user = get_current_user()
-        if not user or user.tenant_id is not None:
+        if not user or not user.is_super_admin:
             return jsonify({'error': 'Apenas super admin'}), 403
 
         deleted = {}

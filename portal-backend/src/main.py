@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from flask import Flask, send_from_directory
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, jwt_required
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -23,8 +23,23 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 app.url_map.strict_slashes = False
 
 # Configurações
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
+flask_env = os.getenv('FLASK_ENV', 'development')
+secret_key = os.getenv('SECRET_KEY')
+jwt_secret_key = os.getenv('JWT_SECRET_KEY')
+
+# Em produção, segredos são obrigatórios (falhar fechado)
+if flask_env == 'production':
+    if not secret_key or secret_key in ('dev-secret-key-change-in-production', ''):
+        raise RuntimeError("FATAL: SECRET_KEY deve ser definida em produção. Defina a variável de ambiente SECRET_KEY.")
+    if not jwt_secret_key or jwt_secret_key in ('jwt-secret-key-change-in-production', ''):
+        raise RuntimeError("FATAL: JWT_SECRET_KEY deve ser definida em produção. Defina a variável de ambiente JWT_SECRET_KEY.")
+
+app.config['SECRET_KEY'] = secret_key or 'dev-secret-key-local-nao-usar-em-producao'
+app.config['JWT_SECRET_KEY'] = jwt_secret_key or 'dev-jwt-secret-key-local-nao-usar-em-producao'
+
+# Token JWT expira em 24 horas (não usar padrão de 15 minutos)
+from datetime import timedelta
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
 # Configuração do banco de dados
 database_url = os.getenv('DATABASE_URL', f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}")
@@ -77,27 +92,26 @@ app.register_blueprint(platform_routes_bp)
 db.init_app(app)
 with app.app_context():
     db.create_all()
-    
-    # Cria usuário admin padrão se não existir
-    # (Comentado para evitar problemas de autoincrement)
-    # from src.models.portal_models import User, UserType, UserStatus
-    # try:
-    #     admin_user = User.query.filter_by(email='admin@portal.com').first()
-    #     if not admin_user:
-    #         admin_user = User(
-    #             email='admin@portal.com',
-    #             first_name='Admin',
-    #             last_name='Portal',
-    #             user_type=UserType.ADMIN,
-    #             status=UserStatus.ACTIVE
-    #         )
-    #         admin_user.set_password('admin123')
-    #         db.session.add(admin_user)
-    #         db.session.commit()
-    #         print("Usuário admin criado: admin@portal.com / admin123")
-    # except Exception as e:
-    #     print(f"Erro ao criar usuário admin: {e}")
-    #     db.session.rollback()
+
+    # Migration: adicionar campo is_super_admin na tabela users (SQLite)
+    try:
+        # Verificar se a coluna já existe
+        result = db.session.execute(db.text("PRAGMA table_info(users)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'is_super_admin' not in columns:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT 0 NOT NULL"))
+            db.session.commit()
+            print("Coluna is_super_admin adicionada à tabela users")
+
+            # Marcar super admins existentes (admins sem tenant_id)
+            db.session.execute(db.text(
+                "UPDATE users SET is_super_admin = 1 WHERE user_type = 'ADMIN' AND tenant_id IS NULL"
+            ))
+            db.session.commit()
+            print("Super admins existentes atualizados")
+    except Exception as e:
+        print(f"Migração is_super_admin: {e}")
+        db.session.rollback()
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -105,8 +119,9 @@ def health_check():
     return {'status': 'healthy', 'message': 'Portal API is running'}, 200
 
 @app.route('/uploads/proofs/<path:filename>')
+@jwt_required()
 def serve_proof(filename):
-    """Serve fotos de prova de entrega"""
+    """Serve fotos de prova de entrega (autenticação obrigatória)"""
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
     if os.path.exists(os.path.join(uploads_dir, filename)):
         return send_from_directory(uploads_dir, filename)
