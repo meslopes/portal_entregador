@@ -627,11 +627,8 @@ def get_all_users():
                     user_dict['customer'] = customer.to_dict()
 
                     # Incluir dados do restaurante vinculado (square_id, etc.)
-                    restaurant = None
-                    if customer.restaurant_id:
-                        restaurant = Restaurant.query.get(customer.restaurant_id)
-                    if not restaurant:
-                        restaurant = Restaurant.query.filter_by(email=user.email).first()
+                    from src.utils.restaurant import find_restaurant_by_name
+                    restaurant = find_restaurant_by_name(customer.name)
                     if restaurant:
                         user_dict['restaurant'] = {
                             'id': restaurant.id,
@@ -910,14 +907,12 @@ def update_user(user_id):
 
                 # Atualizar restaurante vinculado (praça, tenant)
                 # Encontrar restaurante via Customer se não fornecido restaurant_id
+                from src.utils.restaurant import find_restaurant_by_name
                 restaurant = None
                 if 'restaurant_id' in data and data['restaurant_id']:
                     restaurant = Restaurant.query.get(int(data['restaurant_id']))
-                elif customer.restaurant_id:
-                    restaurant = Restaurant.query.get(customer.restaurant_id)
                 else:
-                    # Tentar encontrar pelo email do usuário
-                    restaurant = Restaurant.query.filter_by(email=user.email).first()
+                    restaurant = find_restaurant_by_name(customer.name)
 
                 if restaurant:
                     if 'square_id' in data:
@@ -8980,13 +8975,10 @@ def list_establishment_drivers():
         # Verificação de ownership: CLIENT só pode ver drivers do seu próprio restaurante
         current_user = get_current_user()
         if current_user and current_user.user_type == UserType.CLIENT:
+            from src.utils.restaurant import find_restaurant_by_name
             customer = Customer.query.filter_by(user_id=current_user.id).first()
             if customer:
-                user_restaurant = None
-                if customer.restaurant_id:
-                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
-                if not user_restaurant:
-                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                user_restaurant = find_restaurant_by_name(customer.name)
                 if user_restaurant and int(restaurant_id) != user_restaurant.id:
                     return jsonify({'error': 'Acesso negado: você só pode ver entregadores do seu próprio estabelecimento'}), 403
 
@@ -9110,13 +9102,10 @@ def create_establishment_driver():
         # Verificação de ownership: CLIENT só pode criar drivers no seu próprio restaurante
         current_user = get_current_user()
         if current_user and current_user.user_type == UserType.CLIENT:
+            from src.utils.restaurant import find_restaurant_by_name
             customer = Customer.query.filter_by(user_id=current_user.id).first()
             if customer:
-                user_restaurant = None
-                if customer.restaurant_id:
-                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
-                if not user_restaurant:
-                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                user_restaurant = find_restaurant_by_name(customer.name)
                 if user_restaurant and int(data['restaurant_id']) != user_restaurant.id:
                     return jsonify({'error': 'Acesso negado: você só pode cadastrar entregadores no seu próprio estabelecimento'}), 403
 
@@ -9197,13 +9186,10 @@ def update_establishment_driver(driver_id):
         # Verificação de ownership: CLIENT só pode editar drivers do seu próprio restaurante
         current_user = get_current_user()
         if current_user and current_user.user_type == UserType.CLIENT:
+            from src.utils.restaurant import find_restaurant_by_name
             customer = Customer.query.filter_by(user_id=current_user.id).first()
             if customer:
-                user_restaurant = None
-                if customer.restaurant_id:
-                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
-                if not user_restaurant:
-                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                user_restaurant = find_restaurant_by_name(customer.name)
                 if user_restaurant and driver.restaurant_id != user_restaurant.id:
                     return jsonify({'error': 'Acesso negado: você só pode editar entregadores do seu próprio estabelecimento'}), 403
 
@@ -9286,13 +9272,10 @@ def delete_establishment_driver(driver_id):
         # Verificação de ownership: CLIENT só pode deletar drivers do seu próprio restaurante
         current_user = get_current_user()
         if current_user and current_user.user_type == UserType.CLIENT:
+            from src.utils.restaurant import find_restaurant_by_name
             customer = Customer.query.filter_by(user_id=current_user.id).first()
             if customer:
-                user_restaurant = None
-                if customer.restaurant_id:
-                    user_restaurant = Restaurant.query.get(customer.restaurant_id)
-                if not user_restaurant:
-                    user_restaurant = Restaurant.query.filter_by(email=current_user.email).first()
+                user_restaurant = find_restaurant_by_name(customer.name)
                 if user_restaurant and driver.restaurant_id != user_restaurant.id:
                     return jsonify({'error': 'Acesso negado: você só pode remover entregadores do seu próprio estabelecimento'}), 403
 
