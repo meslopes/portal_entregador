@@ -239,10 +239,7 @@ const DatabaseMapPage = () => {
   @media print { body { padding: 10px; } .no-print { display: none; } }
 </style>
 </head><body>
-<div class="no-print" style="position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:999">
-<button onclick="window.print()" style="padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">🖨️ Imprimir</button>
-<button onclick="downloadBackup()" style="padding:8px 16px;background:#16a34a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px">💾 Baixar Backup JSON</button>
-</div>
+<button class="no-print" onclick="window.print()" style="position:fixed;top:10px;right:10px;padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;z-index:999">🖨️ Imprimir / Salvar PDF</button>
 <h1>📊 Mapa do Banco de Dados — muv.log</h1>
 <p class="subtitle">Gerado em ${now} | Dados em tempo real</p>
 
