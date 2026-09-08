@@ -3,6 +3,14 @@
 ## Como Usar
 Cole este documento no início de cada nova sessão do MiMoCode para garantir que a IA siga as regras da equipe.
 
+### Instruções para Nova Sessão
+Ao colar este documento, inclua também:
+> Leia a memória do projeto em MEMORY.md para contexto completo.
+> Branch atual: feature/mapa-centralizado-cidade.
+> Continuar trabalhando nos itens pendentes.
+
+Isso garante que a IA saiba exatamente de onde paramos.
+
 ---
 
 ## INÍCIO DAS REGRAS
