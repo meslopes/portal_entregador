@@ -582,7 +582,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
               <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prova de Entrega</p>
               <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
                 <img
-                  src={`${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
+                  src={order.delivery.proof_of_delivery_url.startsWith('http') ? order.delivery.proof_of_delivery_url : `${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
                   alt="Prova de entrega"
                   style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', background: '#f8fafc' }}
                   onError={(e) => { e.target.style.display = 'none'; }}

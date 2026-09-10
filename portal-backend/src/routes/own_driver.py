@@ -522,24 +522,14 @@ def update_order_status(order_id):
                             route.status = 'COMPLETED'
                             route.completed_at = datetime.utcnow()
 
-            # Salvar prova de entrega se fornecida
+            # Salvar prova de entrega - upload para Supabase Storage
             proof_data = data.get('proof_of_delivery')
             if proof_data and order.delivery:
                 try:
-                    import base64
-                    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'proofs')
-                    os.makedirs(uploads_dir, exist_ok=True)
-
-                    if ',' in proof_data:
-                        proof_data = proof_data.split(',')[1]
-
-                    filename = f"proof_{order.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                    filepath = os.path.join(uploads_dir, filename)
-
-                    with open(filepath, 'wb') as f:
-                        f.write(base64.b64decode(proof_data))
-
-                    order.delivery.proof_of_delivery_url = f"/uploads/proofs/{filename}"
+                    from src.utils.supabase_storage import upload_proof
+                    proof_url = upload_proof(proof_data, order.id)
+                    if proof_url:
+                        order.delivery.proof_of_delivery_url = proof_url
                 except Exception as e:
                     logger.error(f"Erro ao salvar prova de entrega: {e}")
 

@@ -548,7 +548,7 @@ const ActiveDeliveryPage = () => {
           {order.delivery?.proof_of_delivery_url && (
             <div style={{ marginTop: '1rem', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #bbf7d0' }}>
               <img
-                src={`${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
+                src={order.delivery.proof_of_delivery_url.startsWith('http') ? order.delivery.proof_of_delivery_url : `${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
                 alt="Prova de entrega"
                 style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', background: '#f0fdf4' }}
                 onError={(e) => { e.target.style.display = 'none'; }}
