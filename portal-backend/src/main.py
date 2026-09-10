@@ -46,6 +46,7 @@ database_url = os.getenv('DATABASE_URL', f"sqlite:///{os.path.join(os.path.dirna
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+
 # Inicializa extensões
 jwt = JWTManager(app)
 cors_origins = [
@@ -93,19 +94,28 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-    # Migration: adicionar campo is_super_admin na tabela users (SQLite)
+    # Migration: adicionar campo is_super_admin na tabela users
     try:
-        # Verificar se a coluna já existe
-        result = db.session.execute(db.text("PRAGMA table_info(users)"))
-        columns = [row[1] for row in result.fetchall()]
+        # Detecta o tipo de banco e usa a sintaxe correta
+        dialect = db.engine.dialect.name
+        if dialect == 'sqlite':
+            result = db.session.execute(db.text("PRAGMA table_info(users)"))
+            columns = [row[1] for row in result.fetchall()]
+        else:
+            # PostgreSQL: consulta information_schema
+            result = db.session.execute(db.text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'users'"
+            ))
+            columns = [row[0] for row in result.fetchall()]
+
         if 'is_super_admin' not in columns:
-            db.session.execute(db.text("ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT 0 NOT NULL"))
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT FALSE NOT NULL"))
             db.session.commit()
             print("Coluna is_super_admin adicionada à tabela users")
 
             # Marcar super admins existentes (admins sem tenant_id)
             db.session.execute(db.text(
-                "UPDATE users SET is_super_admin = 1 WHERE user_type = 'ADMIN' AND tenant_id IS NULL"
+                "UPDATE users SET is_super_admin = TRUE WHERE user_type = 'ADMIN' AND tenant_id IS NULL"
             ))
             db.session.commit()
             print("Super admins existentes atualizados")
