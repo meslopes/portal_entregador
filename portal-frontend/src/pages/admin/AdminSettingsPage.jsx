@@ -255,6 +255,10 @@ const DeliverySettings = ({ config, onChange }) => (
       <input type="number" value={config.delivery_radius || '200'} onChange={e => onChange('delivery_radius', e.target.value)} style={inputStyle} />
       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Distância máxima para buscar entregadores disponíveis</p>
     </FormField>
+    <FormField label="Raio GPS para Coleta/Entrega (metros)">
+      <input type="number" min="50" max="5000" step="50" value={config.gps_radius_meters || '500'} onChange={e => onChange('gps_radius_meters', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Distância máxima que o entregador pode estar do ponto de coleta ou entrega para confirmar o status. Padrão: 500m</p>
+    </FormField>
     <FormField label="Timeout para Notificar Admin (segundos)">
       <input type="number" value={config.order_timeout_seconds || '120'} onChange={e => onChange('order_timeout_seconds', e.target.value)} style={inputStyle} />
       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Tempo máximo sem atendimento antes de notificar o admin via mensagem e alerta sonoro (padrão: 120s = 2 minutos)</p>
