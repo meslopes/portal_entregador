@@ -46,6 +46,7 @@ const AdminDashboardPage = () => {
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
   const cityCenterRef = useRef(null); // Coordenadas da cidade da praça selecionada
+  const hasUserInteractedRef = useRef(false); // Se o usuário interagiu com o mapa (zoom/pan)
 
   useEffect(() => {
     loadDashboard();
@@ -323,6 +324,9 @@ const AdminDashboardPage = () => {
         }).addTo(map);
         
         mapInstanceRef.current = map;
+        // Detectar interação do usuário para parar auto-centralizar
+        map.on('zoomstart', () => { hasUserInteractedRef.current = true; });
+        map.on('dragstart', () => { hasUserInteractedRef.current = true; });
         setMapReady(true);
       } catch (e) {
         console.error('Erro ao inicializar mapa:', e);
@@ -453,19 +457,23 @@ const AdminDashboardPage = () => {
 
     if (allPoints.length > 0) {
       try {
-        const group = L.featureGroup(markersRef.current);
-        map.fitBounds(group.getBounds().pad(0.1));
+        // Só centraliza automaticamente se o usuário NÃO interagiu com o mapa
+        if (!hasUserInteractedRef.current) {
+          const group = L.featureGroup(markersRef.current);
+          map.fitBounds(group.getBounds().pad(0.1));
+        }
       } catch (e) {
         console.warn('Erro ao ajustar bounds do mapa:', e);
-        // Fallback: centro da cidade da praça ou coordenadas padrão
-        if (cityCenterRef.current) {
-          map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
-        } else {
-          map.setView([-29.72, -50.00], 12);
+        if (!hasUserInteractedRef.current) {
+          if (cityCenterRef.current) {
+            map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
+          } else {
+            map.setView([-29.72, -50.00], 12);
+          }
         }
       }
-    } else {
-      // Sem pontos: centro da cidade da praça ou coordenadas padrão
+    } else if (!hasUserInteractedRef.current) {
+      // Sem pontos e sem interação: centro da cidade da praça ou coordenadas padrão
       if (cityCenterRef.current) {
         map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
       } else {
@@ -1188,6 +1196,7 @@ const AdminDashboardPage = () => {
           <button
             onClick={() => {
               if (tracking && mapInstanceRef.current) {
+                hasUserInteractedRef.current = false; // Permite centralizar novamente
                 const allPoints = [];
                 if (tracking.drivers) {
                   tracking.drivers.forEach(d => {
