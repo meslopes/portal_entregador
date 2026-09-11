@@ -5,10 +5,10 @@ MuvScore - Sistema de Gamificação e Ranking para Entregadores
 Gerencia pontuação, níveis e ranking semanal.
 """
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, time as dt_time
 from src.models.portal_models import (
     db, Driver, DriverPointsLog, DriverWeeklyScore,
-    Order, Delivery, SystemConfig
+    Order, Delivery, SystemConfig, SpecialDay, PeakHour
 )
 from sqlalchemy import func
 import logging
@@ -124,11 +124,44 @@ def award_delivery_points(driver, order):
     """
     Pontua entrega concluída.
     Chamado quando um pedido muda para DELIVERED.
+    Verifica bônus de dia especial e horário de pico.
     """
     points_per_delivery = get_config_value('points_per_delivery', POINTS_PER_DELIVERY)
+    now = datetime.utcnow()
+    today = now.date()
+    current_time = now.time()
 
+    # Pontos base
+    base_points = points_per_delivery
     description = f"Entrega #{order.order_number} concluída"
-    return award_points(driver, points_per_delivery, 'delivery', description, order.id)
+    award_points(driver, base_points, 'delivery', description, order.id)
+
+    # Verificar dia especial
+    special = SpecialDay.query.filter_by(
+        tenant_id=driver.tenant_id,
+        date=today,
+        is_active=True
+    ).first()
+    if special:
+        bonus = int(base_points * (float(special.multiplier) - 1.0))
+        if bonus > 0:
+            award_points(driver, bonus, 'special_day',
+                        f"Bônus dia especial ({special.reason}): {special.multiplier}x", order.id)
+
+    # Verificar horário de pico
+    peak = PeakHour.query.filter(
+        PeakHour.tenant_id == driver.tenant_id,
+        PeakHour.is_active == True,
+        PeakHour.start_time <= current_time,
+        PeakHour.end_time >= current_time
+    ).first()
+    if peak:
+        bonus = int(base_points * (float(peak.multiplier) - 1.0))
+        if bonus > 0:
+            award_points(driver, bonus, 'peak_hour',
+                        f"Bônus horário de pico ({peak.start_time.strftime('%H:%M')}-{peak.end_time.strftime('%H:%M')}): {peak.multiplier}x", order.id)
+
+    return True
 
 
 def award_rating_points(driver, rating, order=None):

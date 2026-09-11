@@ -163,3 +163,155 @@ def admin_ranking():
     except Exception as e:
         logger.error(f"Erro ao buscar ranking admin: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# ADMIN - Dias Especiais
+# ============================================================
+
+@muvscore_bp.route('/admin/special-days', methods=['GET'])
+@jwt_required()
+def list_special_days():
+    """Lista dias especiais do tenant"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.models.portal_models import SpecialDay
+        days = SpecialDay.query.filter_by(tenant_id=user.tenant_id).order_by(SpecialDay.date.desc()).all()
+        return jsonify({'special_days': [d.to_dict() for d in days]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@muvscore_bp.route('/admin/special-days', methods=['POST'])
+@jwt_required()
+def create_special_day():
+    """Cria um dia especial"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.models.portal_models import SpecialDay
+        data = request.get_json()
+
+        if not data.get('date') or not data.get('reason'):
+            return jsonify({'error': 'Data e motivo são obrigatórios'}), 400
+
+        day = SpecialDay(
+            tenant_id=user.tenant_id,
+            date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
+            reason=data['reason'],
+            multiplier=float(data.get('multiplier', 1.5)),
+            is_active=data.get('is_active', True)
+        )
+        db.session.add(day)
+        db.session.commit()
+
+        return jsonify({'message': 'Dia especial criado', 'special_day': day.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@muvscore_bp.route('/admin/special-days/<int:day_id>', methods=['DELETE'])
+@jwt_required()
+def delete_special_day(day_id):
+    """Remove um dia especial"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.models.portal_models import SpecialDay
+        day = SpecialDay.query.filter_by(id=day_id, tenant_id=user.tenant_id).first()
+        if not day:
+            return jsonify({'error': 'Dia especial não encontrado'}), 404
+
+        db.session.delete(day)
+        db.session.commit()
+        return jsonify({'message': 'Dia especial removido'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# ADMIN - Horários de Pico
+# ============================================================
+
+@muvscore_bp.route('/admin/peak-hours', methods=['GET'])
+@jwt_required()
+def list_peak_hours():
+    """Lista horários de pico do tenant"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.models.portal_models import PeakHour
+        hours = PeakHour.query.filter_by(tenant_id=user.tenant_id).order_by(PeakHour.start_time).all()
+        return jsonify({'peak_hours': [h.to_dict() for h in hours]}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@muvscore_bp.route('/admin/peak-hours', methods=['POST'])
+@jwt_required()
+def create_peak_hour():
+    """Cria um horário de pico"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.models.portal_models import PeakHour
+        data = request.get_json()
+
+        if not data.get('start_time') or not data.get('end_time'):
+            return jsonify({'error': 'Horário início e fim são obrigatórios'}), 400
+
+        hour = PeakHour(
+            tenant_id=user.tenant_id,
+            start_time=datetime.strptime(data['start_time'], '%H:%M').time(),
+            end_time=datetime.strptime(data['end_time'], '%H:%M').time(),
+            multiplier=float(data.get('multiplier', 1.3)),
+            is_active=data.get('is_active', True)
+        )
+        db.session.add(hour)
+        db.session.commit()
+
+        return jsonify({'message': 'Horário de pico criado', 'peak_hour': hour.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@muvscore_bp.route('/admin/peak-hours/<int:hour_id>', methods=['DELETE'])
+@jwt_required()
+def delete_peak_hour(hour_id):
+    """Remove um horário de pico"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.models.portal_models import PeakHour
+        hour = PeakHour.query.filter_by(id=hour_id, tenant_id=user.tenant_id).first()
+        if not hour:
+            return jsonify({'error': 'Horário de pico não encontrado'}), 404
+
+        db.session.delete(hour)
+        db.session.commit()
+        return jsonify({'message': 'Horário de pico removido'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

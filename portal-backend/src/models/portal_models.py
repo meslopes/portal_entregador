@@ -1591,3 +1591,55 @@ class DriverWeeklyScore(db.Model):
         else:
             return 'bronze'
 
+
+class SpecialDay(db.Model):
+    """Dias especiais marcados pelo admin (chuva, feriado, alta demanda)"""
+    __tablename__ = 'special_days'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.String(100), nullable=False)  # chuva, feriado, alta_demanda, evento
+    multiplier = db.Column(db.Numeric(3, 2), default=1.50)  # Multiplicador de pontos
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('tenant_id', 'date', name='uq_special_day_tenant_date'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'date': self.date.isoformat() if self.date else None,
+            'reason': self.reason,
+            'multiplier': float(self.multiplier) if self.multiplier else 1.5,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class PeakHour(db.Model):
+    """Horários de pico configuráveis pelo admin"""
+    __tablename__ = 'peak_hours'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    multiplier = db.Column(db.Numeric(3, 2), default=1.30)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'start_time': self.start_time.strftime('%H:%M') if self.start_time else None,
+            'end_time': self.end_time.strftime('%H:%M') if self.end_time else None,
+            'multiplier': float(self.multiplier) if self.multiplier else 1.3,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+

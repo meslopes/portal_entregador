@@ -1112,6 +1112,40 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: tabelas de dias especiais e horários de pico
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS special_days (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    date DATE NOT NULL,
+                    reason VARCHAR(100) NOT NULL,
+                    multiplier NUMERIC(3,2) DEFAULT 1.50,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(tenant_id, date)
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS peak_hours (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    start_time TIME NOT NULL,
+                    end_time TIME NOT NULL,
+                    multiplier NUMERIC(3,2) DEFAULT 1.30,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Iniciar background tasks (process_expired_offers, process_scheduled_orders)
     from src.utils.background_tasks import start_background_tasks
     start_background_tasks(app)
