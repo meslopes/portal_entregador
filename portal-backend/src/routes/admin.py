@@ -2179,7 +2179,19 @@ def update_driver(driver_id):
 
         if 'square_id' in data:
 
-            driver.square_id = data['square_id'] or None
+            new_square_id = data['square_id'] or None
+            # Validar que a praça pertence ao mesmo tenant do admin
+            if new_square_id:
+                from src.models.portal_models import Square
+                target_square = Square.query.get(int(new_square_id))
+                if not target_square:
+                    return jsonify({'error': 'Praça não encontrada'}), 404
+                tenant_id = get_current_tenant_id()
+                if tenant_id and target_square.tenant_id != tenant_id:
+                    return jsonify({'error': 'Só é possível transferir para praças da sua organização'}), 403
+            driver.square_id = new_square_id
+            # Resetar posição na fila (fila é por praça)
+            driver.queue_position = 0
 
         # Super admin pode alterar tenant do entregador
         current_user = get_current_user()
