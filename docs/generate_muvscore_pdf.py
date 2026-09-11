@@ -72,7 +72,8 @@ def build_pdf(output_path="Plano_MuvScore.pdf"):
         "6. Modelo de Dados",
         "7. Fluxo de Cálculo",
         "8. Telas Propostas",
-        "9. Plano de Implementação",
+        "9. Sistema de Premiação Semanal",
+        "10. Plano de Implementação",
     ]
     for item in sumario:
         story.append(Paragraph(item, bullet_style))
@@ -417,16 +418,207 @@ def build_pdf(output_path="Plano_MuvScore.pdf"):
         story.append(Paragraph(f"• {item}", bullet_style))
     story.append(PageBreak())
 
-    # === 9. PLANO DE IMPLEMENTAÇÃO ===
-    story.append(Paragraph("9. Plano de Implementação", h1_style))
+    # === 9. SISTEMA DE PREMIAÇÃO SEMANAL ===
+    story.append(Paragraph("9. Sistema de Premiação Semanal", h1_style))
+    story.append(Paragraph(
+        "Os 5% destinados à gamificação formam um <b>pool de premiação semanal</b> "
+        "que é distribuído aos entregadores melhor rankeados. O sistema é auto-sustentável: "
+        "nunca paga mais do que arrecada.",
+        body_style))
+
+    story.append(Paragraph("9.1 Como o Pool é Formado", h2_style))
+    story.append(Paragraph(
+        "A cada entrega concluída, 5% do valor do frete é reservado para o pool de gamificação. "
+        "No domingo à noite, o pool da semana é calculado e distribuído proporcionalmente.",
+        body_style))
+
+    pool_ex = [
+        ["Exemplo Semanal", "Valor"],
+        ["Total de fretes da semana", "R$ 10.000,00"],
+        ["5% destinado à gamificação", "R$ 500,00"],
+        ["Pool disponível para premiação", "R$ 500,00"],
+    ]
+    pool_tbl = Table(pool_ex, colWidths=[8*cm, 5*cm])
+    pool_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), AMBER),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D0D5DD")),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fef3c7")),
+    ]))
+    story.append(pool_tbl)
+
+    story.append(Spacer(1, 6*mm))
+    story.append(Paragraph("9.2 Distribuição por Posição no Ranking", h2_style))
+    story.append(Paragraph(
+        "O pool é dividido em percentuais fixos por posição. Os percentuais são aplicados "
+        "sobre o total do pool — se houver menos entregadores elegíveis, o valor restante "
+        "acumula para a semana seguinte.",
+        body_style))
+
+    dist_data = [
+        ["Posição", "% do Pool", "Exemplo (pool R$500)", "Condição"],
+        ["1º lugar", "15%", "R$ 75,00", "Mín. 5 entregas na semana"],
+        ["2º lugar", "10%", "R$ 50,00", "Mín. 5 entregas na semana"],
+        ["3º lugar", "8%", "R$ 40,00", "Mín. 5 entregas na semana"],
+        ["4º ao 5º", "6% cada (12% total)", "R$ 30,00 cada", "Mín. 5 entregas na semana"],
+        ["6º ao 10º", "4% cada (20% total)", "R$ 20,00 cada", "Mín. 5 entregas na semana"],
+        ["11º ao 20º", "2% cada (20% total)", "R$ 10,00 cada", "Mín. 5 entregas na semana"],
+        ["21º ao 30º", "1% cada (10% total)", "R$ 5,00 cada", "Mín. 5 entregas na semana"],
+        ["Bônus streak", "5% (reservado)", "R$ 25,00", "7+ dias consecutivos"],
+    ]
+    dist_tbl = Table(dist_data, colWidths=[2.5*cm, 3.5*cm, 3.5*cm, 5*cm])
+    dist_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [LIGHT_BG, colors.white]),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D0D5DD")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fef3c7")),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+    ]))
+    story.append(dist_tbl)
+
+    story.append(Spacer(1, 6*mm))
+    story.append(Paragraph("9.3 Regras de Distribuição", h2_style))
+    rules = [
+        "<b>Percentual fixo por posição:</b> os percentuais são fixos e aplicados sobre o pool total. "
+        "Nunca extrapolam o valor arrecadado.",
+        "<b>Mínimo de entregas:</b> entregador precisa de pelo menos 5 entregas na semana para ser elegível.",
+        "<b>Acúmulo:</b> se uma posição não for preenchida (ex: não há30 entregadores com5+ entregas), "
+        "o valor acumula para o pool da próxima semana.",
+        "<b>Bônus streak:</b>5% reservado para entregadores com7+ dias consecutivos trabalhando. "
+        "Distribuído igualmente entre todos os elegíveis.",
+        "<b>Pagamento:</b> valores são creditados na carteira do entregador automaticamente todo domingo à noite.",
+        "<b>Transparência:</b> entregador vê no dashboard quanto ganhou, de onde veio (posição, streak), "
+        "e o valor total do pool da semana.",
+    ]
+    for rule in rules:
+        story.append(Paragraph(f"• {rule}", bullet_style))
+
+    story.append(Spacer(1, 6*mm))
+    story.append(Paragraph("9.4 Exemplo Completo de Distribuição", h2_style))
+    story.append(Paragraph(
+        "Cenário: pool de R$500,00 com15 entregadores elegíveis (5+ entregas na semana).",
+        body_style))
+
+    ex_dist = [
+        ["Entregador", "Posição", "Pontos", "Entregas", "Prêmio"],
+        ["João", "1º", "2.340", "42", "R$ 75,00"],
+        ["Maria", "2º", "2.100", "38", "R$ 50,00"],
+        ["Pedro", "3º", "1.890", "35", "R$ 40,00"],
+        ["Ana", "4º", "1.750", "31", "R$ 30,00"],
+        ["Carlos", "5º", "1.600", "28", "R$ 30,00"],
+        ["Lucas", "6º", "1.450", "25", "R$ 20,00"],
+        ["Julia", "7º", "1.300", "22", "R$ 20,00"],
+        ["Marcos", "8º", "1.200", "20", "R$ 20,00"],
+        ["Fernanda", "9º", "1.100", "18", "R$ 20,00"],
+        ["Rafael", "10º", "1.000", "15", "R$ 20,00"],
+        ["11º ao 15º", "—", "—", "—", "R$ 50,00 (5×R$10)"],
+        ["Bônus streak", "—", "—", "7+ dias", "R$ 25,00"],
+        ["TOTAL DISTRIBUÍDO", "", "", "", "R$ 400,00"],
+        ["ACUMULA PRÓXIMA SEMANA", "", "", "", "R$ 100,00"],
+    ]
+    ex_tbl = Table(ex_dist, colWidths=[3*cm, 2*cm, 2*cm, 2.5*cm, 3.5*cm])
+    ex_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), GREEN),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+        ("ALIGN", (0, 0), (0, -1), "LEFT"),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -3), [LIGHT_BG, colors.white]),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D0D5DD")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("BACKGROUND", (0, -2), (-1, -2), colors.HexColor("#dcfce7")),
+        ("FONTNAME", (0, -2), (-1, -2), "Helvetica-Bold"),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#fef3c7")),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+    ]))
+    story.append(ex_tbl)
+
+    story.append(Spacer(1, 6*mm))
+    story.append(Paragraph("9.5 Modelo de Dados — Premiação", h2_style))
+    db_premio = [
+        ["Campo", "Tipo", "Descrição"],
+        ["id", "INTEGER PK", "Auto-incremento"],
+        ["tenant_id", "INTEGER FK", "Organização"],
+        ["week_start", "DATE", "Início da semana (segunda-feira)"],
+        ["week_end", "DATE", "Fim da semana (domingo)"],
+        ["total_pool", "NUMERIC(10,2)", "Total arrecadado com os5% na semana"],
+        ["total_distributed", "NUMERIC(10,2)", "Total efetivamente distribuído"],
+        ["carried_over", "NUMERIC(10,2)", "Valor acumulado para próxima semana"],
+        ["driver_count", "INTEGER", "Quantidade de entregadores elegíveis"],
+        ["status", "VARCHAR(20)", "pending / processing / completed"],
+        ["processed_at", "TIMESTAMP", "Data/hora do processamento"],
+    ]
+    db_tbl = Table(db_premio, colWidths=[3*cm, 3.5*cm, 9*cm])
+    db_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), DARK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [LIGHT_BG, colors.white]),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D0D5DD")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story.append(db_tbl)
+
+    story.append(Spacer(1, 4*mm))
+    db_premio2 = [
+        ["Campo", "Tipo", "Descrição"],
+        ["id", "INTEGER PK", "Auto-incremento"],
+        ["weekly_reward_id", "INTEGER FK", "Referência ao reward semanal"],
+        ["driver_id", "INTEGER FK", "Referência ao entregador"],
+        ["position", "INTEGER", "Posição no ranking da semana"],
+        ["points", "INTEGER", "MuvScore da semana"],
+        ["deliveries", "INTEGER", "Entregas realizadas na semana"],
+        ["reward_amount", "NUMERIC(10,2)", "Valor do prêmio em R$"],
+        ["reward_type", "VARCHAR(20)", "ranking / streak_bonus"],
+        ["paid", "BOOLEAN", "Se já foi creditado na carteira"],
+        ["paid_at", "TIMESTAMP", "Data/hora do crédito"],
+    ]
+    db_tbl2 = Table(db_premio2, colWidths=[3*cm, 3.5*cm, 9*cm])
+    db_tbl2.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), DARK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [LIGHT_BG, colors.white]),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D0D5DD")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story.append(Paragraph("weekly_rewards (controle do pool semanal)", ParagraphStyle("TblLabel",
+        parent=body_style, fontSize=9, textColor=GRAY, spaceBefore=3*mm, spaceAfter=1*mm)))
+    story.append(db_tbl)
+    story.append(Paragraph("weekly_reward_details (prêmios individuais)", ParagraphStyle("TblLabel",
+        parent=body_style, fontSize=9, textColor=GRAY, spaceBefore=3*mm, spaceAfter=1*mm)))
+    story.append(db_tbl2)
+    story.append(PageBreak())
+
+    # === 10. PLANO DE IMPLEMENTAÇÃO ===
+    story.append(Paragraph("10. Plano de Implementação", h1_style))
 
     impl_data = [
         ["Fase", "Escopo", "Complexidade", "Estimativa"],
         ["Fase 1", "Pontos base (entregas + avaliação) + modelo de dados + níveis", "Baixa", "2-3 sessões"],
         ["Fase 2", "Dias especiais + horários de pico + configurações admin", "Média", "3-4 sessões"],
         ["Fase 3", "Taxa de aceite/conclusão + tempo online + streak", "Média", "3-4 sessões"],
-        ["Fase 4", "Dashboard entregador + ranking visual + conquistas", "Média", "4-5 sessões"],
-        ["Fase 5", "Benefícios reais (antecipação saque, prioridade pedidos)", "Alta", "5+ sessões"],
+        ["Fase 4", "Pool de premiação semanal + processamento automático", "Média", "3-4 sessões"],
+        ["Fase 5", "Dashboard entregador + ranking visual + conquistas", "Média", "4-5 sessões"],
+        ["Fase 6", "Benefícios reais (antecipação saque, prioridade pedidos)", "Alta", "5+ sessões"],
     ]
     impl_table = Table(impl_data, colWidths=[2*cm, 7.5*cm, 2.5*cm, 3*cm])
     impl_table.setStyle(TableStyle([
