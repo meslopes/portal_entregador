@@ -1495,3 +1495,99 @@ class PlatformDriverStop(db.Model):
             'created_at': self.created_at.isoformat()
         }
 
+
+# ============================================================
+# MUVSCORE - Sistema de Gamificação e Ranking
+# ============================================================
+
+class DriverPointsLog(db.Model):
+    """Registro de pontos do entregador (cada evento de pontuação)"""
+    __tablename__ = 'driver_points_log'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    points = db.Column(db.Integer, nullable=False)  # Positivo = ganhou, negativo = perdeu
+    reason = db.Column(db.String(50), nullable=False)  # delivery, rating, special_day, peak_hour, streak, etc.
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=True)
+    description = db.Column(db.String(200))  # Descrição legível do evento
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='points_log')
+
+    # Índices
+    __table_args__ = (
+        db.Index('ix_points_driver_date', 'driver_id', 'created_at'),
+        db.Index('ix_points_tenant_date', 'tenant_id', 'created_at'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'points': self.points,
+            'reason': self.reason,
+            'order_id': self.order_id,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class DriverWeeklyScore(db.Model):
+    """Pontuação semanal consolidada do entregador (para ranking e níveis)"""
+    __tablename__ = 'driver_weekly_scores'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
+    week_start = db.Column(db.Date, nullable=False)  # Segunda-feira da semana
+    week_end = db.Column(db.Date, nullable=False)  # Domingo da semana
+    total_points = db.Column(db.Integer, default=0)
+    total_deliveries = db.Column(db.Integer, default=0)
+    avg_rating = db.Column(db.Numeric(3, 2))  # Média de avaliações na semana
+    streak_days = db.Column(db.Integer, default=0)  # Dias consecutivos trabalhando
+    level = db.Column(db.String(20), default='bronze')  # bronze, prata, ouro, diamante
+    position = db.Column(db.Integer)  # Posição no ranking da semana
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='weekly_scores')
+
+    # Índices
+    __table_args__ = (
+        db.UniqueConstraint('driver_id', 'week_start', name='uq_driver_week'),
+        db.Index('ix_weekly_tenant_week', 'tenant_id', 'week_start'),
+        db.Index('ix_weekly_square_week', 'square_id', 'week_start'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'week_start': self.week_start.isoformat() if self.week_start else None,
+            'week_end': self.week_end.isoformat() if self.week_end else None,
+            'total_points': self.total_points,
+            'total_deliveries': self.total_deliveries,
+            'avg_rating': float(self.avg_rating) if self.avg_rating else None,
+            'streak_days': self.streak_days,
+            'level': self.level,
+            'position': self.position,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+    @staticmethod
+    def calculate_level(points):
+        """Calcula o nível do entregador com base nos pontos semanais"""
+        if points >= 1000:
+            return 'diamante'
+        elif points >= 500:
+            return 'ouro'
+        elif points >= 100:
+            return 'prata'
+        else:
+            return 'bronze'
+

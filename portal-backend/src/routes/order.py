@@ -1152,7 +1152,14 @@ def update_order_status(order_id):
             # Lógica específica do entregador (só quando entregador muda status)
             if driver:
                 driver.total_deliveries = (driver.total_deliveries or 0) + 1
-                
+
+                # MuvScore: pontos por entrega concluída
+                try:
+                    from src.utils.muvscore import award_delivery_points
+                    award_delivery_points(driver, order)
+                except Exception as e:
+                    logger.error(f"Erro ao registrar pontos MuvScore: {e}")
+
                 # Salva prova de entrega (foto) - upload para Supabase Storage
                 proof_url = None
                 proof_data = data.get('proof_of_delivery')
@@ -2846,6 +2853,13 @@ def rate_delivery(order_id):
                     # Alerta ao admin se avaliacao for baixa (menor que 3.0)
                     if driver.rating and float(driver.rating) < 3.0:
                         notify_admin_low_rating(driver, rating, feedback, order)
+
+                    # MuvScore: pontos por avaliação recebida
+                    try:
+                        from src.utils.muvscore import award_rating_points
+                        award_rating_points(driver, rating, order)
+                    except Exception as e:
+                        logger.error(f"Erro ao registrar pontos MuvScore por avaliação: {e}")
 
         db.session.commit()
 
