@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Truck, User, Car, Shield } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Truck, User, Car, Shield, MapPin, Loader } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
@@ -18,17 +18,125 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
   const [squares, setSquares] = useState([]);
+  const [locationStatus, setLocationStatus] = useState('idle'); // idle, detecting, found, error
+  const [nearestSquare, setNearestSquare] = useState(null);
+  const [searchParams] = useSearchParams();
+  const geocodeCache = useRef({});
 
   const { register, error, clearError } = useAuth();
   const navigate = useNavigate();
 
-  // Carregar praças disponíveis
+  // Função Haversine para calcular distância entre coordenadas (em km)
+  const haversineDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  // Geocodificar cidade usando Nominatim
+  const geocodeCity = async (city, state) => {
+    const cacheKey = `${city.toLowerCase()}-${state.toLowerCase()}`;
+    if (geocodeCache.current[cacheKey]) return geocodeCache.current[cacheKey];
+    try {
+      const query = `${city}, ${state}, Brasil`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=br`,
+        { headers: { 'User-Agent': 'muvlog-portal/1.0' } }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        geocodeCache.current[cacheKey] = coords;
+        return coords;
+      }
+    } catch (err) {}
+    return null;
+  };
+
+  // Carregar praças e detectar localização
   useEffect(() => {
+    // Verificar se veio de um link de convite (?square=X)
+    const inviteSquareId = searchParams.get('square');
+
     fetch(`${API_URL}/api/squares/public`)
       .then(res => res.json())
-      .then(data => setSquares(data.squares || []))
+      .then(data => {
+        const loadedSquares = data.squares || [];
+        setSquares(loadedSquares);
+
+        // Se link de convite, selecionar direto
+        if (inviteSquareId) {
+          const found = loadedSquares.find(s => s.id === parseInt(inviteSquareId));
+          if (found) {
+            setFormData(prev => ({ ...prev, square_id: String(found.id) }));
+            setNearestSquare(found);
+            setLocationStatus('found');
+            return;
+          }
+        }
+
+        // Caso contrário, tentar GPS
+        detectNearestSquare(loadedSquares);
+      })
       .catch(() => {});
   }, []);
+
+  // Detectar praça mais próxima via GPS
+  const detectNearestSquare = async (loadedSquares) => {
+    if (!loadedSquares || loadedSquares.length === 0) return;
+
+    // Se só tem1praça, selecionar automaticamente
+    if (loadedSquares.length === 1) {
+      setFormData(prev => ({ ...prev, square_id: String(loadedSquares[0].id) }));
+      setNearestSquare(loadedSquares[0]);
+      setLocationStatus('found');
+      return;
+    }
+
+    // Tentar obter localização GPS
+    if (!navigator.geolocation) {
+      setLocationStatus('error');
+      return;
+    }
+
+    setLocationStatus('detecting');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        let bestSquare = null;
+        let bestDistance = Infinity;
+
+        // Geocodificar cada praça e calcular distância
+        for (const sq of loadedSquares) {
+          const coords = await geocodeCity(sq.city, sq.state);
+          if (coords) {
+            const dist = haversineDistance(latitude, longitude, coords.lat, coords.lng);
+            if (dist < bestDistance) {
+              bestDistance = dist;
+              bestSquare = sq;
+            }
+          }
+        }
+
+        // Se encontrou praça a menos de 100km, selecionar
+        if (bestSquare && bestDistance < 100) {
+          setFormData(prev => ({ ...prev, square_id: String(bestSquare.id) }));
+          setNearestSquare(bestSquare);
+          setLocationStatus('found');
+        } else {
+          setLocationStatus('error');
+        }
+      },
+      () => {
+        // GPS negado ou erro
+        setLocationStatus('error');
+      },
+      { timeout: 10000, enableHighAccuracy: false }
+    );
+  };
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -264,9 +372,32 @@ const RegisterPage = () => {
                 <div className="auth-animate-in">
                   <div style={{ marginBottom: '1rem' }}>
                     <label className="auth-form-label">Praça de Atuação</label>
+                    {/* Status da detecção automática */}
+                    {locationStatus === 'detecting' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: '#eff6ff', borderRadius: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8125rem', color: '#2563eb' }}>
+                        <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> Detectando sua localização...
+                      </div>
+                    )}
+                    {locationStatus === 'found' && nearestSquare && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: '#f0fdf4', borderRadius: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8125rem', color: '#16a34a' }}>
+                        <MapPin size={14} /> Praça detectada: <strong>{nearestSquare.name}</strong>
+                      </div>
+                    )}
+                    {locationStatus === 'error' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: '#fef3c7', borderRadius: '0.5rem', marginBottom: '0.5rem', fontSize: '0.8125rem', color: '#92400e' }}>
+                        Não foi possível detectar. Selecione manualmente:
+                      </div>
+                    )}
                     <select name="square_id" className="auth-form-input" value={formData.square_id}
-                      onChange={handleChange} style={{ cursor: 'pointer' }}>
-                      <option value="">Selecione sua região (opcional)</option>
+                      onChange={(e) => {
+                        handleChange(e);
+                        const sq = squares.find(s => s.id === parseInt(e.target.value));
+                        setNearestSquare(sq || null);
+                        if (sq) setLocationStatus('found');
+                      }} style={{ cursor: 'pointer' }}>
+                      <option value="">
+                        {locationStatus === 'detecting' ? 'Detectando...' : 'Selecione sua região'}
+                      </option>
                       {squares.map(sq => (
                         <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
                       ))}

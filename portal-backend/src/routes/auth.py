@@ -99,7 +99,7 @@ def public_squares():
         from src.models.portal_models import Square
         squares = Square.query.filter_by(is_active=True).order_by(Square.name).all()
         return jsonify({
-            'squares': [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state} for s in squares]
+            'squares': [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id} for s in squares]
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -142,6 +142,14 @@ def register():
             tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
             if tenant:
                 tenant_id = tenant.id
+
+        # Herdar tenant_id da praça selecionada (se não veio via slug)
+        square_id = data.get('square_id')
+        if not tenant_id and square_id:
+            from src.models.portal_models import Square
+            square = Square.query.get(int(square_id))
+            if square and square.tenant_id:
+                tenant_id = square.tenant_id
 
         # Verificar se email já existe no tenant
         if tenant_id:
@@ -189,6 +197,7 @@ def register():
 
         driver = Driver(
             user_id=user.id,
+            tenant_id=tenant_id,
             driver_license=data.get('driver_license'),
             vehicle_type=vehicle_type,
             vehicle_plate=data.get('vehicle_plate'),
@@ -196,7 +205,7 @@ def register():
             vehicle_year=vehicle_year,
             pix_key=data.get('pix_key'),
             bank_account=data.get('bank_account'),
-            square_id=data.get('square_id') or None
+            square_id=square_id or None
         )
 
         if data.get('license_expiry_date'):
