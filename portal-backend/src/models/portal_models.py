@@ -252,6 +252,7 @@ class Driver(db.Model):
         if self.square:
             data['square_name'] = self.square.name
             data['square_city'] = self.square.city
+            data['square_state'] = self.square.state
         return data
 
     def to_admin_dict(self):
