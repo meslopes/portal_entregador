@@ -149,6 +149,16 @@ def create_app(config_name=None):
             except Exception:
                 db.session.rollback()
 
+        # Migration: gamification_percentage em squares e pricing_tables
+        for table in ['squares', 'pricing_tables']:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'gamification_percentage') THEN ALTER TABLE {table} ADD COLUMN gamification_percentage NUMERIC(5,2) DEFAULT 5.0; END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
         # Migration: adicionar colunas de status de pedidos na tabela route_settings
         for col, col_type in [
             ('include_scheduled', 'BOOLEAN DEFAULT FALSE'),

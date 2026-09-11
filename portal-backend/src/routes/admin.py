@@ -5778,7 +5778,9 @@ def create_pricing_table():
 
             max_delivery_fee=safe_float(data.get('max_delivery_fee'), 50.0),
 
-            driver_percentage=safe_float(data.get('driver_percentage'), 70.0),
+            driver_percentage=safe_float(data.get('driver_percentage'), 65.0),
+
+            gamification_percentage=safe_float(data.get('gamification_percentage'), 5.0),
 
             is_active=data.get('is_active', True)
 
@@ -5941,6 +5943,14 @@ def update_pricing_table(table_id):
             if val is not None:
 
                 table.driver_percentage = val
+
+        if 'gamification_percentage' in data:
+
+            val = safe_float(data['gamification_percentage'])
+
+            if val is not None:
+
+                table.gamification_percentage = val
 
         if 'is_active' in data:
 
@@ -6622,7 +6632,9 @@ def create_square():
 
             max_delivery_fee=data.get('max_delivery_fee', 50.00),
 
-            driver_percentage=data.get('driver_percentage', 70.0),
+            driver_percentage=data.get('driver_percentage', 65.0),
+
+            gamification_percentage=data.get('gamification_percentage', 5.0),
 
             tenant_id=tenant_id
 
@@ -6701,6 +6713,10 @@ def update_square(square_id):
         if data.get('driver_percentage') is not None:
 
             square.driver_percentage = data['driver_percentage']
+
+        if data.get('gamification_percentage') is not None:
+
+            square.gamification_percentage = data['gamification_percentage']
 
 
 

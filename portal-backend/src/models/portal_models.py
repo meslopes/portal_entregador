@@ -878,7 +878,8 @@ class Square(db.Model):
     price_per_km = db.Column(db.Numeric(10, 2), default=2.95)
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)  # Distancia minima cobrada (4km padrao)
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
-    driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)  # Percentual do entregador (70% padrao)
+    driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)  # Percentual do entregador (65% padrao)
+    gamification_percentage = db.Column(db.Numeric(5, 2), default=5.0)  # Percentual para gamificação (5% padrao)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -898,7 +899,8 @@ class Square(db.Model):
             'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
             'min_delivery_fee': float(self.price_per_km * (self.min_distance_km or 4.0)),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
-            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 70.0,
+            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 65.0,
+            'gamification_percentage': float(self.gamification_percentage) if self.gamification_percentage else 5.0,
             'pricing_tables': [t.to_dict() for t in self.pricing_tables] if self.pricing_tables else [],
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
@@ -918,7 +920,8 @@ class PricingTable(db.Model):
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)
     min_delivery_fee = db.Column(db.Numeric(10, 2))
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
-    driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)
+    driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)
+    gamification_percentage = db.Column(db.Numeric(5, 2), default=5.0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
@@ -937,7 +940,8 @@ class PricingTable(db.Model):
             'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
             'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else float(self.price_per_km) * float(self.min_distance_km or 4.0),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
-            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 70.0,
+            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 65.0,
+            'gamification_percentage': float(self.gamification_percentage) if self.gamification_percentage else 5.0,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
