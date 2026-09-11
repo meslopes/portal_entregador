@@ -351,3 +351,130 @@ def calculate_completion_rate(driver, days=7):
     ).count()
 
     return round((total_delivered / total_accepted) * 100, 1)
+
+
+# ============================================================
+# PREMIAÇÃO SEMANAL - Pool de5%
+# ============================================================
+
+# Distribuição percentual do pool por posição
+REWARD_DISTRIBUTION = [
+    {'positions': [1], 'percent': 15},
+    {'positions': [2], 'percent': 10},
+    {'positions': [3], 'percent': 8},
+    {'positions': [4, 5], 'percent_each': 6},  # 6% cada =12% total
+    {'positions': list(range(6, 11)), 'percent_each': 4},  # 4% cada =20% total
+    {'positions': list(range(11, 21)), 'percent_each': 2},  # 2% cada =20% total
+    {'positions': list(range(21, 31)), 'percent_each': 1},  # 1% cada =10% total
+]
+STREAK_POOL_PERCENT = 5  # 5% do pool para bônus de streak
+
+
+def calculate_weekly_pool(tenant_id, week_start=None):
+    """
+    Calcula o pool de premiação da semana.
+    Soma5% de todas as taxas de entrega da semana.
+    """
+    if week_start is None:
+        week_start, _ = get_current_week()
+
+    week_end = week_start + timedelta(days=6)
+
+    # Buscar total de fretes da semana
+    from src.models.portal_models import Delivery, Order
+    total_fees = db.session.query(func.sum(Delivery.delivery_fee)).join(
+        Order, Delivery.order_id == Order.id
+    ).filter(
+        Order.tenant_id == tenant_id,
+        Order.status == OrderStatus.DELIVERED,
+        func.date(Order.delivery_time) >= week_start,
+        func.date(Order.delivery_time) <= week_end
+    ).scalar() or 0
+
+    # Buscar percentual de gamificação (default5%)
+    gamification_pct = get_config_value('gamification_percentage', 5.0) / 100.0
+
+    pool = float(total_fees) * gamification_pct
+    return round(pool, 2)
+
+
+def distribute_weekly_rewards(tenant_id, week_start=None):
+    """
+    Distribui o pool de premiação semanal aos top entregadores.
+    Retorna o resultado da distribuição.
+    """
+    if week_start is None:
+        week_start, _ = get_current_week()
+
+    pool = calculate_weekly_pool(tenant_id, week_start)
+    if pool <= 0:
+        return {'pool': 0, 'distributed': 0, 'rewards': []}
+
+    # Buscar ranking da semana
+    min_deliveries = get_config_value('min_deliveries_ranking', 5)
+    scores = DriverWeeklyScore.query.filter(
+        DriverWeeklyScore.tenant_id == tenant_id,
+        DriverWeeklyScore.week_start == week_start,
+        DriverWeeklyScore.total_deliveries >= min_deliveries
+    ).order_by(DriverWeeklyScore.total_points.desc()).limit(30).all()
+
+    rewards = []
+    total_distributed = 0
+
+    for dist in REWARD_DISTRIBUTION:
+        if 'percent' in dist:
+            # Posição única
+            pos = dist['positions'][0]
+            if pos <= len(scores):
+                score = scores[pos - 1]
+                amount = round(pool * (dist['percent'] / 100), 2)
+                rewards.append({
+                    'driver_id': score.driver_id,
+                    'position': pos,
+                    'points': score.total_points,
+                    'deliveries': score.total_deliveries,
+                    'amount': amount,
+                    'type': 'ranking'
+                })
+                total_distributed += amount
+        else:
+            # Múltiplas posições
+            for pos in dist['positions']:
+                if pos <= len(scores):
+                    score = scores[pos - 1]
+                    amount = round(pool * (dist['percent_each'] / 100), 2)
+                    rewards.append({
+                        'driver_id': score.driver_id,
+                        'position': pos,
+                        'points': score.total_points,
+                        'deliveries': score.total_deliveries,
+                        'amount': amount,
+                        'type': 'ranking'
+                    })
+                    total_distributed += amount
+
+    # Bônus de streak (5% do pool)
+    streak_pool = round(pool * (STREAK_POOL_PERCENT / 100), 2)
+    streak_drivers = [s for s in scores if s.streak_days >= 7]
+    if streak_drivers and streak_pool > 0:
+        streak_each = round(streak_pool / len(streak_drivers), 2)
+        for score in streak_drivers:
+            rewards.append({
+                'driver_id': score.driver_id,
+                'position': None,
+                'points': score.total_points,
+                'deliveries': score.total_deliveries,
+                'amount': streak_each,
+                'type': 'streak_bonus'
+            })
+            total_distributed += streak_each
+
+    carried_over = round(pool - total_distributed, 2)
+
+    return {
+        'pool': pool,
+        'distributed': round(total_distributed, 2),
+        'carried_over': carried_over,
+        'driver_count': len(scores),
+        'rewards': rewards
+    }

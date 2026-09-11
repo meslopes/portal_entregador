@@ -347,3 +347,68 @@ def delete_peak_hour(hour_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# ADMIN - Premiação Semanal
+# ============================================================
+
+@muvscore_bp.route('/admin/pool', methods=['GET'])
+@jwt_required()
+def get_weekly_pool():
+    """Retorna o pool de premiação da semana atual"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.utils.muvscore import calculate_weekly_pool, distribute_weekly_rewards
+
+        pool = calculate_weekly_pool(user.tenant_id)
+        preview = distribute_weekly_rewards(user.tenant_id)
+
+        return jsonify({
+            'pool': pool,
+            'preview': preview
+        }), 200
+    except Exception as e:
+        logger.error(f"Erro ao calcular pool: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@muvscore_bp.route('/admin/pool/process', methods=['POST'])
+@jwt_required()
+def process_weekly_pool():
+    """Processa e distribui o pool de premiação da semana"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or user.user_type.value != 'ADMIN':
+            return jsonify({'error': 'Acesso restrito'}), 403
+
+        from src.utils.muvscore import distribute_weekly_rewards
+
+        result = distribute_weekly_rewards(user.tenant_id)
+
+        # Creditar valores na carteira dos entregadores
+        from src.models.portal_models import Driver
+        from decimal import Decimal
+
+        credited = 0
+        for reward in result.get('rewards', []):
+            driver = Driver.query.get(reward['driver_id'])
+            if driver:
+                driver.balance = (driver.balance or Decimal('0')) + Decimal(str(reward['amount']))
+                credited += 1
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Premiação processada: {credited} entregadores creditados',
+            'result': result
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao processar pool: {e}")
+        return jsonify({'error': str(e)}), 500
