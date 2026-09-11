@@ -507,7 +507,7 @@ const OrderDetailPage = () => {
           </h3>
           <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
             <img
-              src={`${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
+              src={order.delivery.proof_of_delivery_url.startsWith('http') ? order.delivery.proof_of_delivery_url : `${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
               alt="Prova de entrega"
               style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#f8fafc' }}
               onError={(e) => { e.target.style.display = 'none'; }}
