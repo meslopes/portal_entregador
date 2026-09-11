@@ -57,7 +57,7 @@ def build_pdf(output_path="Plano_MuvScore.pdf"):
     story.append(Paragraph("Plano MuvScore", title_style))
     story.append(Paragraph("Sistema de Ranking e Gamificação para Entregadores", subtitle_style))
     story.append(HRFlowable(width="60%", thickness=2, color=PRIMARY, spaceAfter=8*mm))
-    story.append(Paragraph("Versão 1.0 — Setembro 2026", small_style))
+    story.append(Paragraph("Versão 1.1 — Setembro 2026", small_style))
     story.append(Paragraph("Portal Entregador (MuvLog) — Delivery SaaS Multi-tenant", small_style))
     story.append(Spacer(1, 20*mm))
 
@@ -169,15 +169,15 @@ def build_pdf(output_path="Plano_MuvScore.pdf"):
     story.append(Paragraph("4. Níveis e Benefícios", h1_style))
     story.append(Paragraph(
         "Os entregadores são classificados em 4 níveis com base nos pontos acumulados "
-        "no mês. Cada nível desbloqueia benefícios progressivos.",
+        "na semana. Cada nível desbloqueia benefícios progressivos.",
         body_style))
 
     lvl_data = [
-        ["Nível", "Pontos/mês", "Benefícios"],
-        ["Bronze", "0 — 499", "Acesso básico ao sistema"],
-        ["Prata", "500 — 1.499", "Prioridade em pedidos de maior valor"],
-        ["Ouro", "1.500 — 3.499", "Antecipação de saque, badge dourado"],
-        ["Diamante", "3.500+", "Saque instantâneo, prioridade máxima, badge especial"],
+        ["Nível", "Pontos/semana", "Benefícios"],
+        ["Bronze", "0 — 99", "Acesso básico ao sistema"],
+        ["Prata", "100 — 499", "Prioridade em pedidos de maior valor"],
+        ["Ouro", "500 — 999", "Prioridade em alguns estabelecimentos, prioridade em pedidos de maior valor, badge dourado"],
+        ["Diamante", "1.000+", "Prioridade máxima, badge especial"],
     ]
     lvl_colors = [None, colors.HexColor("#CD7F32"), colors.HexColor("#C0C0C0"),
                   colors.HexColor("#FFD700"), colors.HexColor("#B9F2FF")]
@@ -391,6 +391,7 @@ def build_pdf(output_path="Plano_MuvScore.pdf"):
         "Pontos do dia detalhados por eixo",
         "Histórico semanal de pontos",
         "Dias especiais e horários de pico ativos",
+        "Premiação semanal recebida e posição no ranking",
     ]
     for item in dash_items:
         story.append(Paragraph(f"• {item}", bullet_style))
@@ -616,11 +617,10 @@ def build_pdf(output_path="Plano_MuvScore.pdf"):
         ["Fase 1", "Pontos base (entregas + avaliação) + modelo de dados + níveis", "Baixa", "2-3 sessões"],
         ["Fase 2", "Dias especiais + horários de pico + configurações admin", "Média", "3-4 sessões"],
         ["Fase 3", "Taxa de aceite/conclusão + tempo online + streak", "Média", "3-4 sessões"],
-        ["Fase 4", "Pool de premiação semanal + processamento automático", "Média", "3-4 sessões"],
-        ["Fase 5", "Dashboard entregador + ranking visual + conquistas", "Média", "4-5 sessões"],
-        ["Fase 6", "Benefícios reais (antecipação saque, prioridade pedidos)", "Alta", "5+ sessões"],
+        ["Fase 4", "Dashboard entregador + ranking visual + pool de premiação semanal", "Média", "4-5 sessões"],
+        ["Fase 5", "Benefícios reais (prioridade pedidos, badges, estabelecimentos)", "Alta", "5+ sessões"],
     ]
-    impl_table = Table(impl_data, colWidths=[2*cm, 7.5*cm, 2.5*cm, 3*cm])
+    impl_table = Table(impl_data, colWidths=[2*cm, 8*cm, 2.5*cm, 3*cm])
     impl_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
