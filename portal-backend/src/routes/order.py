@@ -7,7 +7,7 @@ from src.models.portal_models import (
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from src.utils.geo import haversine_distance
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import uuid
 import os
 import base64
@@ -3063,8 +3063,27 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         if not available_drivers:
             return None
 
-        # Ordena por distancia (mais proximo primeiro)
-        available_drivers.sort(key=lambda x: x['distance'])
+        # Ordena por distância, mas com prioridade para níveis MuvScore mais altos
+        # Bônus de prioridade: Diamante=30%, Ouro=20%, Prata=10%, Bronze=0%
+        level_priority = {'diamante': 0.7, 'ouro': 0.8, 'prata': 0.9, 'bronze': 1.0}
+
+        def sort_key(item):
+            driver = item['driver']
+            distance = item['distance']
+            # Buscar nível do entregador na semana atual
+            try:
+                from src.models.portal_models import DriverWeeklyScore
+                week_start = date.today() - timedelta(days=date.today().weekday())
+                score = DriverWeeklyScore.query.filter_by(
+                    driver_id=driver.id, week_start=week_start
+                ).first()
+                level = score.level if score else 'bronze'
+            except Exception:
+                level = 'bronze'
+            multiplier = level_priority.get(level, 1.0)
+            return distance * multiplier  # Menor distância × prioridade = melhor posição
+
+        available_drivers.sort(key=sort_key)
 
         return available_drivers[0]['driver']
 

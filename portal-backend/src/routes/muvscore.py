@@ -36,12 +36,14 @@ def get_my_score():
         score = get_driver_current_score(driver)
 
         # Buscar posição no ranking
-        week_start = DriverWeeklyScore.query.filter_by(
-            driver_id=driver.id
-        ).order_by(DriverWeeklyScore.week_start.desc()).first()
+        from src.models.portal_models import DriverWeeklyScore
+        from src.utils.muvscore import LEVELS
+
+        level_info = LEVELS.get(score.get('level', 'bronze'), LEVELS['bronze'])
 
         return jsonify({
             'score': score,
+            'level_info': level_info,
             'driver_id': driver.id
         }), 200
 
