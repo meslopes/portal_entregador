@@ -133,6 +133,38 @@ def get_levels():
         return jsonify({'error': str(e)}), 500
 
 
+@muvscore_bp.route('/rates', methods=['GET'])
+@jwt_required()
+def get_my_rates():
+    """Retorna as taxas de aceite e conclusão do entregador"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+
+        if not user or user.user_type.value != 'DRIVER':
+            return jsonify({'error': 'Usuário não é um entregador'}), 403
+
+        driver = user.driver
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        from src.utils.muvscore import calculate_acceptance_rate, calculate_completion_rate, calculate_streak
+
+        acceptance = calculate_acceptance_rate(driver)
+        completion = calculate_completion_rate(driver)
+        streak = calculate_streak(driver)
+
+        return jsonify({
+            'acceptance_rate': acceptance,
+            'completion_rate': completion,
+            'streak_days': streak
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Erro ao buscar taxas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @muvscore_bp.route('/admin/ranking', methods=['GET'])
 @jwt_required()
 def admin_ranking():

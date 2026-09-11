@@ -161,6 +161,12 @@ def award_delivery_points(driver, order):
             award_points(driver, bonus, 'peak_hour',
                         f"Bônus horário de pico ({peak.start_time.strftime('%H:%M')}-{peak.end_time.strftime('%H:%M')}): {peak.multiplier}x", order.id)
 
+    # Verificar e atualizar streak
+    try:
+        check_and_award_streak(driver)
+    except Exception as e:
+        logger.error(f"Erro ao verificar streak: {e}")
+
     return True
 
 
@@ -242,3 +248,106 @@ def get_driver_points_history(driver_id, limit=20):
     ).limit(limit).all()
 
     return [log.to_dict() for log in logs]
+
+
+def calculate_streak(driver):
+    """
+    Calcula quantos dias consecutivos o entregador trabalhou.
+    Um dia conta como "trabalhado" se teve pelo menos 1 entrega concluída.
+    """
+    today = date.today()
+    streak = 0
+    check_date = today
+
+    for _ in range(365):  # Máximo1ano
+        # Verificar se teve entrega neste dia
+        has_delivery = db.session.query(DriverPointsLog.query.filter(
+            DriverPointsLog.driver_id == driver.id,
+            DriverPointsLog.reason == 'delivery',
+            func.date(DriverPointsLog.created_at) == check_date
+        ).exists()).scalar()
+
+        if has_delivery:
+            streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+
+    return streak
+
+
+def check_and_award_streak(driver):
+    """
+    Verifica e premia streak do entregador.
+    Bônus de5% reservado do pool semanal para streak7+ dias.
+    """
+    streak = calculate_streak(driver)
+
+    # Atualizar streak no score semanal
+    score = get_or_create_weekly_score(driver)
+    score.streak_days = streak
+
+    # Bônus de streak (7+ dias consecutivos =50 pontos)
+    if streak >= 7:
+        streak_bonus = get_config_value('streak_bonus_7_days', 50)
+        # Verificar se já recebeu bônus de streak esta semana
+        existing = DriverPointsLog.query.filter(
+            DriverPointsLog.driver_id == driver.id,
+            DriverPointsLog.reason == 'streak',
+            func.date(DriverPointsLog.created_at) >= score.week_start
+        ).first()
+        if not existing:
+            award_points(driver, streak_bonus, 'streak',
+                        f"Bônus streak: {streak} dias consecutivos!")
+
+    db.session.commit()
+    return streak
+
+
+def calculate_acceptance_rate(driver, days=7):
+    """Calcula a taxa de aceite do entregador nos últimos N dias"""
+    from src.models.portal_models import Order, OrderStatus
+    since = datetime.utcnow() - timedelta(days=days)
+
+    # Pedidos ofertados (via driver_assignments ou offers)
+    # Por simplicidade, usar orders onde driver_id = driver.id
+    total_offered = Order.query.filter(
+        Order.driver_id == driver.id,
+        Order.created_at >= since
+    ).count()
+
+    if total_offered == 0:
+        return 100.0  # Sem ofertas = 100%
+
+    total_accepted = Order.query.filter(
+        Order.driver_id == driver.id,
+        Order.status.in_([OrderStatus.ACCEPTED, OrderStatus.PREPARING,
+                         OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.DELIVERED]),
+        Order.created_at >= since
+    ).count()
+
+    return round((total_accepted / total_offered) * 100, 1)
+
+
+def calculate_completion_rate(driver, days=7):
+    """Calcula a taxa de conclusão (entregas / pedidos aceitos) nos últimos N dias"""
+    from src.models.portal_models import Order, OrderStatus
+    since = datetime.utcnow() - timedelta(days=days)
+
+    total_accepted = Order.query.filter(
+        Order.driver_id == driver.id,
+        Order.status.in_([OrderStatus.ACCEPTED, OrderStatus.PREPARING,
+                         OrderStatus.READY, OrderStatus.PICKED_UP, OrderStatus.DELIVERED]),
+        Order.created_at >= since
+    ).count()
+
+    if total_accepted == 0:
+        return 100.0
+
+    total_delivered = Order.query.filter(
+        Order.driver_id == driver.id,
+        Order.status == OrderStatus.DELIVERED,
+        Order.created_at >= since
+    ).count()
+
+    return round((total_delivered / total_accepted) * 100, 1)
