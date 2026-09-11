@@ -199,6 +199,7 @@ class Driver(db.Model):
     rejection_count = db.Column(db.Integer, default=0)  # Rejeições consecutivas
     is_blocked = db.Column(db.Boolean, default=False)  # Bloqueado por rejeições excessivas
     blocked_until = db.Column(db.DateTime)  # Data de desbloqueio (se temporário)
+    converted_to_own = db.Column(db.Boolean, default=False)  # Convertido para entregador próprio
     # Carteira
     balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo disponível para saque
     locked_balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo bloqueado (em trânsito)
@@ -242,6 +243,7 @@ class Driver(db.Model):
             'rejection_count': self.rejection_count or 0,
             'is_blocked': self.is_blocked or False,
             'blocked_until': self.blocked_until.isoformat() if self.blocked_until else None,
+            'converted_to_own': self.converted_to_own or False,
             'balance': float(self.balance) if self.balance else 0,
             'locked_balance': float(self.locked_balance) if self.locked_balance else 0,
             'driver_type': 'PLATFORM',

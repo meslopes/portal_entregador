@@ -520,6 +520,9 @@ def create_app(config_name=None):
             db.session.execute(db.text(
                 "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'blocked_until') THEN ALTER TABLE drivers ADD COLUMN blocked_until TIMESTAMP; END IF; END $$"
             ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'converted_to_own') THEN ALTER TABLE drivers ADD COLUMN converted_to_own BOOLEAN DEFAULT FALSE; END IF; END $$"
+            ))
             db.session.commit()
         except Exception:
             db.session.rollback()

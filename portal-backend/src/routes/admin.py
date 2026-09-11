@@ -1753,6 +1753,9 @@ def get_drivers():
 
         query = Driver.query.join(User)
 
+        # Excluir entregadores convertidos para próprio
+        query = query.filter(Driver.converted_to_own == False)
+
 
 
         # Filtrar por tenant
@@ -2256,6 +2259,7 @@ def convert_driver_to_own(driver_id):
 
         # Desativar o Driver da plataforma (soft delete)
         driver.is_online = False
+        driver.converted_to_own = True
 
         # Marcar restaurante como tendo entregadores próprios
         restaurant.has_own_drivers = True
