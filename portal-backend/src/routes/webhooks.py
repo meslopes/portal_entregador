@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
 from src.models.portal_models import (
     Order, Restaurant, Customer, Address, Driver, User, UserType,
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
@@ -667,8 +668,12 @@ def generic_webhook():
 # ============================================
 
 @webhook_bp.route('/test', methods=['POST'])
+@jwt_required()
 def test_webhook():
-    """Endpoint de teste para simular um pedido iFood"""
+    """Endpoint de teste para simular um pedido iFood. Protegido por autenticação."""
+    import os
+    if os.getenv('FLASK_ENV') == 'production':
+        return jsonify({'error': 'Endpoint desabilitado em produção'}), 404
     try:
         test_data = {
             'event': 'order_placed',
