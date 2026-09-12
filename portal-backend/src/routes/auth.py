@@ -220,6 +220,31 @@ def register():
         db.session.add(driver)
         db.session.commit()
 
+        # Notificar admins sobre novo entregador pendente
+        try:
+            from src.services.push_notification import send_admin_alert
+            admin_users = User.query.filter_by(
+                user_type=UserType.ADMIN,
+                tenant_id=user.tenant_id
+            ).all()
+            for admin in admin_users:
+                send_admin_alert(
+                    admin.id,
+                    title='Novo entregador cadastrado',
+                    message=f'{user.first_name} {user.last_name} aguardando aprovação'
+                )
+                notification = Notification(
+                    user_id=admin.id,
+                    title='Novo entregador cadastrado',
+                    message=f'{user.first_name} {user.last_name} ({user.email}) aguardando aprovação',
+                    type=NotificationType.SYSTEM,
+                    related_id=user.id
+                )
+                db.session.add(notification)
+            db.session.commit()
+        except Exception:
+            pass
+
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
 
@@ -326,6 +351,32 @@ def register_client():
         customer.restaurant_id = restaurant.id
 
         db.session.commit()
+
+        # Notificar admins do tenant sobre novo cadastro pendente
+        try:
+            from src.services.push_notification import send_admin_alert
+            admin_users = User.query.filter_by(
+                user_type=UserType.ADMIN,
+                tenant_id=user.tenant_id
+            ).all()
+            for admin in admin_users:
+                send_admin_alert(
+                    admin.id,
+                    title='Novo cadastro pendente',
+                    message=f'{user.first_name} {user.last_name} aguardando aprovação'
+                )
+                # Também criar notificação no app
+                notification = Notification(
+                    user_id=admin.id,
+                    title='Novo cadastro pendente',
+                    message=f'{user.first_name} {user.last_name} ({user.email}) aguardando aprovação',
+                    type=NotificationType.SYSTEM,
+                    related_id=user.id
+                )
+                db.session.add(notification)
+            db.session.commit()
+        except Exception:
+            pass  # Notificação é secundária — não bloqueia cadastro
 
         return jsonify({
             'message': 'Conta criada com sucesso. Aguarde aprovação do administrador.',
