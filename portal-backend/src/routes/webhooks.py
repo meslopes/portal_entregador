@@ -809,7 +809,7 @@ def create_order_from_whatsapp(phone, parts):
 
         try:
             total_amount = float(amount_str.replace('R$', '').replace(',', '.').strip())
-        except:
+        except (ValueError, TypeError):
             total_amount = 0
 
         # Busca restaurante
