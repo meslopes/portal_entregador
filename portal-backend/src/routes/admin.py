@@ -1113,7 +1113,11 @@ def delete_user(user_id):
                     DriverRestaurant.query.filter_by(driver_id=driver.id).delete()
                     # Limpar ganhos de entregadores próprios vinculados
                     from src.models.portal_models import EstablishmentDriver, OwnDriverEarning
-                    est_drivers = EstablishmentDriver.query.filter_by(user_id=user.id).all()
+                    # Buscar via restaurante do driver (EstablishmentDriver não tem user_id)
+                    if driver.restaurant_id:
+                        est_drivers = EstablishmentDriver.query.filter_by(restaurant_id=driver.restaurant_id).all()
+                    else:
+                        est_drivers = []
                     for ed in est_drivers:
                         OwnDriverEarning.query.filter_by(establishment_driver_id=ed.id).delete()
                         db.session.delete(ed)
