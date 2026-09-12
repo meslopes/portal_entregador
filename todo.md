@@ -160,8 +160,19 @@
 - [ ] Testes manuais completos
 - [ ] Integração iFood - testar webhook com estabelecimento correto
 - [ ] Integracao WhatsApp Business API (depende de custos)
-- [ ] Icones PWA (icon-192.png, icon-512.png) - usar logo do projeto
-- [ ] Importacao de pedidos em lote (upload de planilha)
+- [ ] Migrações versionadas (Alembic)
+- [ ] Máquina de estados central para pedidos
+- [ ] Ledger financeiro imutável
+
+## ✅ Itens Resolvidos (12/09/2026)
+- [x] Icones PWA criados a partir do logo
+- [x] Importacao de pedidos em lote via CSV
+- [x] Exportacao CSV de pedidos e entregadores
+- [x] PWA instalavel (celular + desktop)
+- [x] Sistema offline com IndexedDB
+- [x] Integracao offline nos botoes de aceitar/coletar/entregar
+- [x] Icone do entregador trocado para Bike
+- [x] Fluxograma atualizado com novas funcionalidades
 
 ## 📊 Metricas do Projeto
 - **Total de commits:** 90+
