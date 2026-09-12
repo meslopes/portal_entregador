@@ -399,7 +399,7 @@ def approve_user(user_id):
 
         user.status = UserStatus.ACTIVE
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
 
         # Atribuir praca se fornecida
         square_id = data.get('square_id')
@@ -934,7 +934,7 @@ def update_user(user_id):
 
 
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -1348,7 +1348,7 @@ def get_dashboard():
 
         # Estatísticas do dia atual (filtradas por tenant e square)
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
 
         today_orders_query = Order.query.filter(func.date(Order.created_at) == today)
 
@@ -1402,7 +1402,7 @@ def get_dashboard():
 
         # Entregadores mais ativos (últimos 7 dias, filtrados por tenant)
 
-        week_ago = datetime.utcnow() - timedelta(days=7)
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
         top_drivers_query = db.session.query(
 
@@ -1531,11 +1531,11 @@ def admin_update_order(order_id):
 
                 if new_status == OrderStatus.DELIVERED:
 
-                    order.delivery_time = datetime.utcnow()
+                    order.delivery_time = datetime.now(timezone.utc)
 
                 elif new_status == OrderStatus.PICKED_UP:
 
-                    order.pickup_time = datetime.utcnow()
+                    order.pickup_time = datetime.now(timezone.utc)
 
             except ValueError:
 
@@ -1611,7 +1611,7 @@ def admin_update_order(order_id):
 
                     customer.phone = data['customer_phone']
 
-                customer.updated_at = datetime.utcnow()
+                customer.updated_at = datetime.now(timezone.utc)
 
 
 
@@ -1663,11 +1663,11 @@ def admin_update_order(order_id):
 
                         address.longitude = geo['longitude']
 
-                address.updated_at = datetime.utcnow()
+                address.updated_at = datetime.now(timezone.utc)
 
 
 
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -1913,7 +1913,7 @@ def get_driver_details(driver_id):
 
         # Entregas dos últimos 30 dias
 
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
         recent_deliveries = Order.query.filter(
 
@@ -2358,7 +2358,7 @@ def update_driver_status(driver_id):
 
             driver.is_online = (new_status == 'ONLINE')
 
-            driver.updated_at = datetime.utcnow()
+            driver.updated_at = datetime.now(timezone.utc)
 
             # Se ficar online, atualiza localização se fornecida
 
@@ -2368,7 +2368,7 @@ def update_driver_status(driver_id):
 
                 driver.current_longitude = data['longitude']
 
-                driver.last_location_update = datetime.utcnow()
+                driver.last_location_update = datetime.now(timezone.utc)
 
         else:
 
@@ -2376,7 +2376,7 @@ def update_driver_status(driver_id):
 
             driver.user.status = UserStatus(new_status)
 
-            driver.user.updated_at = datetime.utcnow()
+            driver.user.updated_at = datetime.now(timezone.utc)
 
             # Se suspender ou desativar, colocar offline
 
@@ -2384,7 +2384,7 @@ def update_driver_status(driver_id):
 
                 driver.is_online = False
 
-                driver.updated_at = datetime.utcnow()
+                driver.updated_at = datetime.now(timezone.utc)
 
         
 
@@ -2626,7 +2626,7 @@ def assign_order_to_driver(order_id):
 
         order.status = OrderStatus.ACCEPTED
 
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
 
         
 
@@ -2873,7 +2873,7 @@ def get_finance_dashboard():
 
         # Define data de inicio baseado no periodo
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if period == 'today':
 
@@ -3167,7 +3167,7 @@ def get_finance_by_establishment():
 
         tenant_id = get_current_tenant_id()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
 
 
@@ -3687,7 +3687,7 @@ def get_establishments():
 
             # Pedidos esta semana
 
-            week_ago = datetime.utcnow() - timedelta(days=7)
+            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
             week_orders = Order.query.filter(
 
@@ -3701,7 +3701,7 @@ def get_establishments():
 
             # Pedidos hoje
 
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
 
             today_orders = Order.query.filter(
 
@@ -4176,7 +4176,7 @@ def update_establishment(establishment_id):
 
 
 
-        est.updated_at = datetime.utcnow()
+        est.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -4299,7 +4299,7 @@ def re_geocode_establishment(establishment_id):
 
             est.longitude = geo['longitude']
 
-            est.updated_at = datetime.utcnow()
+            est.updated_at = datetime.now(timezone.utc)
 
             db.session.commit()
 
@@ -4470,7 +4470,7 @@ def report_orders_by_date():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4560,7 +4560,7 @@ def report_drivers_performance():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4664,7 +4664,7 @@ def report_establishments_ranking():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4768,7 +4768,7 @@ def report_financial_summary():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4934,7 +4934,7 @@ def report_cancellations():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5034,7 +5034,7 @@ def report_ratings():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5168,7 +5168,7 @@ def report_peak_hours():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5276,7 +5276,7 @@ def report_deliveries_by_driver():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5468,7 +5468,7 @@ def update_settings():
 
                 config.config_value = str(value)
 
-                config.updated_at = datetime.utcnow()
+                config.updated_at = datetime.now(timezone.utc)
 
 
 
@@ -5654,7 +5654,7 @@ def update_tenant_settings():
 
 
 
-        tenant.updated_at = datetime.utcnow()
+        tenant.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -5974,7 +5974,7 @@ def update_pricing_table(table_id):
 
 
 
-        table.updated_at = datetime.utcnow()
+        table.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -6246,7 +6246,7 @@ def update_dynamic_pricing(config_id):
 
 
 
-        config.updated_at = datetime.utcnow()
+        config.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -6388,7 +6388,7 @@ def upload_tenant_logo():
 
         tenant.logo_url = logo_url
 
-        tenant.updated_at = datetime.utcnow()
+        tenant.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -6736,7 +6736,7 @@ def update_square(square_id):
 
 
 
-        square.updated_at = datetime.utcnow()
+        square.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -7020,7 +7020,7 @@ def pay_driver(driver_id):
 
             payment.status = PaymentStatus.PROCESSED
 
-            payment.processed_at = datetime.utcnow()
+            payment.processed_at = datetime.now(timezone.utc)
 
 
 
@@ -7102,7 +7102,7 @@ def generate_invoice(restaurant_id):
 
             # Semana atual
 
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
 
             days_since_monday = now.weekday()
 
@@ -7449,7 +7449,7 @@ def process_withdrawal(withdrawal_id):
 
         
 
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -7566,7 +7566,7 @@ def generate_invoices():
 
         else:
 
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
 
             days_since_monday = today.weekday()
 
@@ -7766,7 +7766,7 @@ def pay_invoice(invoice_id):
 
                     driver.balance = (driver.balance or Decimal('0')) + earnings
 
-                    driver.updated_at = datetime.utcnow()
+                    driver.updated_at = datetime.now(timezone.utc)
 
                     drivers_unlocked[driver.id] = drivers_unlocked.get(driver.id, 0) + float(earnings)
 
@@ -7776,9 +7776,9 @@ def pay_invoice(invoice_id):
 
         invoice.status = 'PAID'
 
-        invoice.paid_at = datetime.utcnow()
+        invoice.paid_at = datetime.now(timezone.utc)
 
-        invoice.updated_at = datetime.utcnow()
+        invoice.updated_at = datetime.now(timezone.utc)
 
         
 
@@ -7880,7 +7880,7 @@ def update_asaas_config():
 
                 config.config_value = data[field]
 
-                config.updated_at = datetime.utcnow()
+                config.updated_at = datetime.now(timezone.utc)
 
             else:
 
@@ -7964,7 +7964,7 @@ def generate_auto_invoices():
 
         # Calcular período da semana anterior
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
 
         week_end = today - timedelta(days=today.weekday() + 1)
 
@@ -8180,7 +8180,7 @@ def create_invoice_charge(invoice_id):
 
             billing_type='PIX',
 
-            due_date=(datetime.utcnow().date() + timedelta(days=3)).isoformat(),
+            due_date=(datetime.now(timezone.utc).date() + timedelta(days=3)).isoformat(),
 
             description=f'Fatura muv.log - Semana {invoice.week_start.date()} a {invoice.week_end.date()} - {invoice.deliveries_count} entregas',
 
@@ -8454,7 +8454,7 @@ def process_withdrawal_auto(withdrawal_id):
 
             withdrawal.status = PaymentStatus.PROCESSED
 
-            withdrawal.updated_at = datetime.utcnow()
+            withdrawal.updated_at = datetime.now(timezone.utc)
 
             driver.locked_balance = (driver.locked_balance or 0) - amount
 
@@ -8598,7 +8598,7 @@ def create_platform_credential():
 
                 existing.is_active = data['is_active']
 
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
 
             db.session.commit()
 
@@ -8736,7 +8736,7 @@ def test_platform_credential(cred_id):
 
                 from datetime import timedelta
 
-                cred.expires_at = datetime.utcnow() + timedelta(seconds=result.get('expires_in', 3600))
+                cred.expires_at = datetime.now(timezone.utc) + timedelta(seconds=result.get('expires_in', 3600))
 
                 cred.is_active = True
 
@@ -9719,7 +9719,7 @@ def get_own_driver_earnings():
 
             from datetime import timedelta
 
-            week_ago = datetime.utcnow() - timedelta(days=7)
+            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
             query = query.filter(OwnDriverEarning.created_at >= week_ago)
 
@@ -9727,7 +9727,7 @@ def get_own_driver_earnings():
 
             from datetime import timedelta
 
-            month_ago = datetime.utcnow() - timedelta(days=30)
+            month_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
             query = query.filter(OwnDriverEarning.created_at >= month_ago)
 
@@ -9817,7 +9817,7 @@ def mark_earning_paid(earning_id):
 
         earning.is_paid = True
 
-        earning.paid_at = datetime.utcnow()
+        earning.paid_at = datetime.now(timezone.utc)
 
         earning.payment_method = data.get('payment_method', 'PIX')
 
@@ -9917,7 +9917,7 @@ def pay_all_earnings():
 
             earning.is_paid = True
 
-            earning.paid_at = datetime.utcnow()
+            earning.paid_at = datetime.now(timezone.utc)
 
             earning.payment_method = data.get('payment_method', 'PIX')
 
@@ -10005,11 +10005,11 @@ def get_cost_comparison():
 
         if period == 'week':
 
-            start_date = datetime.utcnow() - timedelta(days=7)
+            start_date = datetime.now(timezone.utc) - timedelta(days=7)
 
         else:
 
-            start_date = datetime.utcnow() - timedelta(days=30)
+            start_date = datetime.now(timezone.utc) - timedelta(days=30)
 
         
 
@@ -10179,11 +10179,11 @@ def get_own_driver_metrics():
 
         if period == 'week':
 
-            start_date = datetime.utcnow() - timedelta(days=7)
+            start_date = datetime.now(timezone.utc) - timedelta(days=7)
 
         else:
 
-            start_date = datetime.utcnow() - timedelta(days=30)
+            start_date = datetime.now(timezone.utc) - timedelta(days=30)
 
 
 

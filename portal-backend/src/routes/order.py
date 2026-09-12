@@ -115,7 +115,7 @@ def find_nearest_own_driver(order, exclude_driver_id=None):
 def process_scheduled_orders():
     """Converte pedidos SCHEDULED para PENDING quando o tempo de preparo expirou"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         scheduled_orders = Order.query.filter(
             Order.status == OrderStatus.SCHEDULED,
             Order.scheduled_at <= now
@@ -181,7 +181,7 @@ def process_scheduled_orders():
                 notified_driver = find_nearest_available_driver(order)
                 if notified_driver:
                     # Oferta ao entregador mais próximo (via special_instructions)
-                    offer_ts = int(datetime.utcnow().timestamp())
+                    offer_ts = int(datetime.now(timezone.utc).timestamp())
                     offer_tag = f"|OFFERED_TO_{notified_driver.id}_{offer_ts}|"
                     current_si = order.special_instructions or ''
                     # Remove ofertas antigas antes de adicionar nova
@@ -219,7 +219,7 @@ def process_expired_offers():
             Order.driver_id.is_(None)
         ).all()
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         now_ts = int(now.timestamp())
         
         logger.debug(f"[PROCESS_EXPIRED] Checking {len(pending_orders)} pending orders, timeout={timeout_seconds}s")
@@ -303,7 +303,7 @@ def process_expired_offers():
                     
                     if next_driver:
                         # Oferece ao próximo
-                        offer_ts = int(datetime.utcnow().timestamp())
+                        offer_ts = int(datetime.now(timezone.utc).timestamp())
                         offer_tag = f"OFFERED_TO_{next_driver.id}_{offer_ts}"
                         current_si = order.special_instructions or ''
                         # Remove ofertas antigas antes de adicionar nova
@@ -525,7 +525,7 @@ def update_driver_queue(driver, action):
                 Driver.tenant_id == driver.tenant_id
             ).scalar() or 0
             driver.queue_position = max_position + 1
-            driver.last_order_at = datetime.utcnow()
+            driver.last_order_at = datetime.now(timezone.utc)
             driver.total_orders_today = (driver.total_orders_today or 0) + 1
         elif action == 'reject':
             # Driver rejeitou - vai para o final, mas com penalização
@@ -533,7 +533,7 @@ def update_driver_queue(driver, action):
                 Driver.tenant_id == driver.tenant_id
             ).scalar() or 0
             driver.queue_position = max_position + 2  # Penalização: vai 2 posições atrás
-            driver.last_order_at = datetime.utcnow()
+            driver.last_order_at = datetime.now(timezone.utc)
         
         db.session.commit()
     except Exception as e:
@@ -659,8 +659,8 @@ def accept_order(order_id):
         
         # Verificar se entregador está bloqueado
         if driver.is_blocked:
-            if driver.blocked_until and driver.blocked_until > datetime.utcnow():
-                remaining = (driver.blocked_until - datetime.utcnow()).seconds // 60
+            if driver.blocked_until and driver.blocked_until > datetime.now(timezone.utc):
+                remaining = (driver.blocked_until - datetime.now(timezone.utc)).seconds // 60
                 return jsonify({'error': f'Entregador bloqueado por rejeições. Tente novamente em {remaining} minutos.'}), 403
             else:
                 # Desbloquear automaticamente
@@ -669,7 +669,7 @@ def accept_order(order_id):
                 driver.rejection_count = 0
         
         # ACEITE ATÔMICO: UPDATE condicional que só funciona se o pedido ainda estiver disponível
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         result = db.session.execute(
             db.text("""
                 UPDATE orders 
@@ -819,7 +819,7 @@ def reject_order(order_id):
             block_minutes = int(block_minutes_config.config_value) if block_minutes_config else 30
             
             driver.is_blocked = True
-            driver.blocked_until = datetime.utcnow() + timedelta(minutes=block_minutes)
+            driver.blocked_until = datetime.now(timezone.utc) + timedelta(minutes=block_minutes)
             
             # Registrar penalidade
             penalty = DriverPenalty(
@@ -856,7 +856,7 @@ def reject_order(order_id):
             timeout_count = len(re.findall(r'TIMEOUT_BY_(\d+)', order.special_instructions or ''))
             total_failures = rejection_count + timeout_count
             if total_failures >= 2:
-                _notify_admin_pending_order(order, total_failures, datetime.utcnow())
+                _notify_admin_pending_order(order, total_failures, datetime.now(timezone.utc))
             
             # Limpa rejeições e recomeça ciclo
             order.special_instructions = re.sub(r'\|?(REJECTED_BY|TIMEOUT_BY)_\d+', '', order.special_instructions or '').strip('|')
@@ -864,7 +864,7 @@ def reject_order(order_id):
         
         if next_driver:
             # Atualiza oferta para o próximo entregador (via special_instructions)
-            offer_ts = int(datetime.utcnow().timestamp())
+            offer_ts = int(datetime.now(timezone.utc).timestamp())
             offer_tag = f"OFFERED_TO_{next_driver.id}_{offer_ts}"
             current_si = order.special_instructions or ''
             # Remove ofertas antigas antes de adicionar nova
@@ -928,7 +928,7 @@ def reject_order(order_id):
             }), 200
         else:
             # Nenhum entregador disponivel - verifica timeout
-            time_elapsed = (datetime.utcnow() - order.created_at).total_seconds()
+            time_elapsed = (datetime.now(timezone.utc) - order.created_at).total_seconds()
             timeout_config = SystemConfig.query.filter_by(config_key='order_timeout_seconds').first()
             timeout_seconds = int(timeout_config.config_value) if timeout_config else 120
 
@@ -965,7 +965,7 @@ def notify_admin_no_drivers(order):
             reject_count = order.special_instructions.count('REJECTED_BY_')
         
         # Calcula tempo desde criacao do pedido
-        time_elapsed = (datetime.utcnow() - order.created_at).total_seconds()
+        time_elapsed = (datetime.now(timezone.utc) - order.created_at).total_seconds()
         
         # Busca timeout configuravel
         timeout_config = SystemConfig.query.filter_by(config_key='order_timeout_seconds').first()
@@ -1131,20 +1131,20 @@ def update_order_status(order_id):
 
         # Atualiza o status
         order.status = new_status_enum
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
         
         # Registra timestamps específicos
         if new_status_enum == OrderStatus.ACCEPTED:
-            order.accepted_at = datetime.utcnow()
+            order.accepted_at = datetime.now(timezone.utc)
         elif new_status_enum == OrderStatus.PREPARING:
-            order.preparing_at = datetime.utcnow()
+            order.preparing_at = datetime.now(timezone.utc)
         elif new_status_enum == OrderStatus.READY:
-            order.ready_at = datetime.utcnow()
+            order.ready_at = datetime.now(timezone.utc)
         elif new_status_enum == OrderStatus.PICKED_UP:
-            order.pickup_time = datetime.utcnow()
-            order.picked_up_at = datetime.utcnow()
+            order.pickup_time = datetime.now(timezone.utc)
+            order.picked_up_at = datetime.now(timezone.utc)
         elif new_status_enum == OrderStatus.DELIVERED:
-            order.delivery_time = datetime.utcnow()
+            order.delivery_time = datetime.now(timezone.utc)
             
             # Marcar parada como concluída na rota (se aplicável)
             if order.own_driver_route_id:
@@ -1155,14 +1155,14 @@ def update_order_status(order_id):
                 ).first()
                 if stop and stop.status != 'COMPLETED':
                     stop.status = 'COMPLETED'
-                    stop.completed_at = datetime.utcnow()
+                    stop.completed_at = datetime.now(timezone.utc)
                     # Verificar se todas as paradas foram concluídas
                     route = OwnDriverRoute.query.get(order.own_driver_route_id)
                     if route:
                         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
                         if all_completed:
                             route.status = 'COMPLETED'
-                            route.completed_at = datetime.utcnow()
+                            route.completed_at = datetime.now(timezone.utc)
             
             # Lógica específica do entregador (só quando entregador muda status)
             if driver:
@@ -1203,7 +1203,7 @@ def update_order_status(order_id):
                     # Creditar na carteira do entregador (vai para saldo bloqueado)
                     from decimal import Decimal
                     driver.locked_balance = (driver.locked_balance or Decimal('0')) + Decimal(str(order.delivery.driver_earnings))
-                    driver.updated_at = datetime.utcnow()
+                    driver.updated_at = datetime.now(timezone.utc)
 
             # Incrementar total_deliveries do entregador próprio
             if order.assigned_to_own_driver and order.establishment_driver_id:
@@ -1211,7 +1211,7 @@ def update_order_status(order_id):
                 est_driver = EstablishmentDriver.query.get(order.establishment_driver_id)
                 if est_driver:
                     est_driver.total_deliveries = (est_driver.total_deliveries or 0) + 1
-                    est_driver.updated_at = datetime.utcnow()
+                    est_driver.updated_at = datetime.now(timezone.utc)
 
         # Cria notificação
         status_messages = {
@@ -1251,7 +1251,7 @@ def update_order_status(order_id):
                     # Creditar de volta no balance (estorno completo)
                     if earnings > 0:
                         driver_obj.balance = (driver_obj.balance or Decimal('0')) + earnings
-                    driver_obj.updated_at = datetime.utcnow()
+                    driver_obj.updated_at = datetime.now(timezone.utc)
                 order.driver_id = None
             if order.delivery:
                 # Salva ganhos anteriores para remover depois
@@ -1286,7 +1286,7 @@ def update_order_status(order_id):
                 new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
                 if new_driver:
                     # Oferta ao próximo entregador (via special_instructions)
-                    offer_ts = int(datetime.utcnow().timestamp())
+                    offer_ts = int(datetime.now(timezone.utc).timestamp())
                     offer_tag = f"OFFERED_TO_{new_driver.id}_{offer_ts}"
                     current_si = order.special_instructions or ''
                     # Remove ofertas antigas antes de adicionar nova
@@ -1426,7 +1426,7 @@ def edit_order(order_id):
             order.delivery_fee = float(data['delivery_fee'])
             order.total_amount = float(order.subtotal or 0) + float(data['delivery_fee'])
         
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
         db.session.commit()
         
         return jsonify({
@@ -1493,11 +1493,11 @@ def cancel_order(order_id):
                     driver_refund = float(delivery.driver_earnings)
                     driver.balance = (driver.balance or Decimal('0')) + Decimal(str(driver_refund))
                     driver.locked_balance = max(Decimal('0'), (driver.locked_balance or Decimal('0')) - Decimal(str(driver_refund)))
-                    driver.updated_at = datetime.utcnow()
+                    driver.updated_at = datetime.now(timezone.utc)
 
         # Cancela
         order.status = OrderStatus.CANCELLED
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
         order.driver_id = None
 
         if order.delivery:
@@ -1920,7 +1920,7 @@ def create_order():
 
         # Cria o pedido com status SCHEDULED (agendado)
         preparation_minutes = restaurant.preparation_minutes or 10
-        scheduled_at = datetime.utcnow() + timedelta(minutes=preparation_minutes)
+        scheduled_at = datetime.now(timezone.utc) + timedelta(minutes=preparation_minutes)
 
         # Obter tenant_id do usuário atual
         tenant_id = get_current_tenant_id()
@@ -2187,8 +2187,8 @@ def assign_own_driver(order_id):
         order.assigned_to_own_driver = True
         order.establishment_driver_id = est_driver.id
         order.status = OrderStatus.ACCEPTED
-        order.accepted_at = datetime.utcnow()
-        order.updated_at = datetime.utcnow()
+        order.accepted_at = datetime.now(timezone.utc)
+        order.updated_at = datetime.now(timezone.utc)
         
         # Criar registro de entrega
         delivery = Delivery(
@@ -2492,8 +2492,8 @@ def get_my_stats():
         if not restaurant:
             return jsonify({'today_orders': 0, 'week_orders': 0, 'total_orders': 0, 'total_revenue': 0}), 200
 
-        today = datetime.utcnow().date()
-        week_ago = datetime.utcnow() - timedelta(days=7)
+        today = datetime.now(timezone.utc).date()
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
         today_orders = Order.query.filter(
             Order.restaurant_id == restaurant.id,
@@ -2730,7 +2730,7 @@ def get_my_financial():
         if not restaurant:
             return jsonify({'error': 'Estabelecimento não encontrado'}), 404
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Total de frete acumulado (o que deve ao admin)
         total_owed = db.session.query(func.sum(Order.delivery_fee)).filter(
@@ -2852,7 +2852,7 @@ def rate_delivery(order_id):
         if order.delivery:
             order.delivery.customer_rating = rating
             order.delivery.customer_feedback = feedback
-            order.delivery.updated_at = datetime.utcnow()
+            order.delivery.updated_at = datetime.now(timezone.utc)
 
             if order.assigned_to_own_driver and order.establishment_driver_id:
                 # Entregador próprio - atualiza EstablishmentDriver
@@ -2869,7 +2869,7 @@ def rate_delivery(order_id):
                     ).scalar()
                     if avg_rating:
                         est_driver.rating = round(float(avg_rating), 2)
-                    est_driver.updated_at = datetime.utcnow()
+                    est_driver.updated_at = datetime.now(timezone.utc)
             else:
                 # Entregador da plataforma - atualiza Driver
                 driver = order.delivery.driver
@@ -2880,7 +2880,7 @@ def rate_delivery(order_id):
                     ).scalar()
                     if avg_rating:
                         driver.rating = round(float(avg_rating), 2)
-                    driver.updated_at = datetime.utcnow()
+                    driver.updated_at = datetime.now(timezone.utc)
 
                     # Alerta ao admin se avaliacao for baixa (menor que 3.0)
                     if driver.rating and float(driver.rating) < 3.0:
@@ -2943,7 +2943,7 @@ def rate_restaurant(order_id):
         # Atualiza a avaliacao na entrega
         order.delivery.driver_rating = rating
         order.delivery.driver_feedback = feedback
-        order.delivery.updated_at = datetime.utcnow()
+        order.delivery.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 

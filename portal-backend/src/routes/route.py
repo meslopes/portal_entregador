@@ -726,7 +726,7 @@ def activate_route(route_id):
             return jsonify({'error': 'Rota já foi ativada ou concluída'}), 400
 
         route.status = 'ACTIVE'
-        route.started_at = datetime.utcnow()
+        route.started_at = datetime.now(timezone.utc)
 
         # Re-otimizar paradas (garantir ordem correta)
         stops_data = []
@@ -753,7 +753,7 @@ def activate_route(route_id):
             order = Order.query.get(stop.order_id)
             if order and order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
                 order.status = OrderStatus.ACCEPTED
-                order.accepted_at = datetime.utcnow()
+                order.accepted_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -793,7 +793,7 @@ def accept_route(route_id):
             return jsonify({'error': 'Rota já foi aceita ou rejeitada'}), 400
         
         route.status = 'ACTIVE'
-        route.started_at = datetime.utcnow()
+        route.started_at = datetime.now(timezone.utc)
         
         # Re-otimizar paradas
         stops_data = []
@@ -820,7 +820,7 @@ def accept_route(route_id):
             order = Order.query.get(stop.order_id)
             if order and order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
                 order.status = OrderStatus.ACCEPTED
-                order.accepted_at = datetime.utcnow()
+                order.accepted_at = datetime.now(timezone.utc)
         
         db.session.commit()
         
@@ -921,7 +921,7 @@ def complete_stop(route_id):
                 return jsonify({'error': 'Sem permissão'}), 403
 
         stop.status = 'COMPLETED'
-        stop.completed_at = datetime.utcnow()
+        stop.completed_at = datetime.now(timezone.utc)
 
         # Verificar se todas as paradas foram concluídas
         route = OwnDriverRoute.query.get(route_id)
@@ -929,7 +929,7 @@ def complete_stop(route_id):
         
         if all_completed:
             route.status = 'COMPLETED'
-            route.completed_at = datetime.utcnow()
+            route.completed_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -1052,7 +1052,7 @@ def create_platform_route():
             driver_id=driver_id,
             restaurant_id=restaurant_id,
             status='ACTIVE',
-            started_at=datetime.utcnow()
+            started_at=datetime.now(timezone.utc)
         )
         db.session.add(route)
         db.session.flush()
@@ -1124,7 +1124,7 @@ def create_platform_route():
             if order.status == OrderStatus.PENDING:
                 order.status = OrderStatus.OFFERED
                 order.driver_id = driver_id
-                order.offered_at = datetime.utcnow()
+                order.offered_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -1155,7 +1155,7 @@ def complete_platform_stop(route_id):
             return jsonify({'error': 'Parada não encontrada'}), 404
 
         stop.status = 'COMPLETED'
-        stop.completed_at = datetime.utcnow()
+        stop.completed_at = datetime.now(timezone.utc)
 
         # Verificar se todas as paradas foram concluídas
         route = PlatformDriverRoute.query.get(route_id)
@@ -1163,7 +1163,7 @@ def complete_platform_stop(route_id):
         
         if all_completed:
             route.status = 'COMPLETED'
-            route.completed_at = datetime.utcnow()
+            route.completed_at = datetime.now(timezone.utc)
 
         db.session.commit()
 

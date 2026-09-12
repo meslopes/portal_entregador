@@ -32,13 +32,13 @@ def toggle_online_status():
         is_online = data.get('is_online', not driver.is_online)
         
         driver.is_online = is_online
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
         
         # Se está ficando online, atualiza a localização
         if is_online and 'latitude' in data and 'longitude' in data:
             driver.current_latitude = data['latitude']
             driver.current_longitude = data['longitude']
-            driver.last_location_update = datetime.utcnow()
+            driver.last_location_update = datetime.now(timezone.utc)
         
         db.session.commit()
         
@@ -94,8 +94,8 @@ def update_location():
         
         driver.current_latitude = lat
         driver.current_longitude = lng
-        driver.last_location_update = datetime.utcnow()
-        driver.updated_at = datetime.utcnow()
+        driver.last_location_update = datetime.now(timezone.utc)
+        driver.updated_at = datetime.now(timezone.utc)
         
         db.session.commit()
         
@@ -137,7 +137,7 @@ def get_driver_stats():
         ).scalar() or 0
         
         # Ganhos do dia atual
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         today_earnings = db.session.query(func.sum(Payment.amount)).filter(
             Payment.driver_id == driver.id,
             func.date(Payment.created_at) == today
@@ -344,7 +344,7 @@ def get_ranking():
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
         # Ranking por entregas (ultimos 30 dias)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
         ranking_query = db.session.query(
             Driver.id,
@@ -466,7 +466,7 @@ def get_driver_achievements(driver_id):
         achievements.append({'id': 'good_rating', 'title': 'Bom', 'description': 'Avaliação média 4.0+', 'icon': '✨', 'unlocked': True})
 
     # Conquista de sequencia (simulada - ultimas 7 dias)
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     week_deliveries = Order.query.filter(
         Order.driver_id == driver_id,
         Order.status == OrderStatus.DELIVERED,
@@ -564,7 +564,7 @@ def request_withdrawal():
         from decimal import Decimal
         driver.balance = Decimal(str(float(driver.balance or 0))) - Decimal(str(amount))
         driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) + Decimal(str(amount))
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
         
         db.session.commit()
         
@@ -600,7 +600,7 @@ def update_pix_key():
             return jsonify({'error': 'Chave PIX é obrigatória'}), 400
         
         driver.pix_key = pix_key
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
         db.session.commit()
         
         return jsonify({

@@ -317,7 +317,7 @@ def process_ifood_cancellation_by_id(order_id):
             return
         
         order.status = OrderStatus.CANCELLED
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
         if order.driver_id:
             order.driver_id = None
         db.session.commit()
@@ -347,7 +347,7 @@ def update_order_from_ifood_status_by_id(order_id, ifood_status):
         new_status = IFOOD_STATUS_MAP.get(ifood_status)
         if new_status and hasattr(OrderStatus, new_status):
             order.status = OrderStatus[new_status]
-            order.updated_at = datetime.utcnow()
+            order.updated_at = datetime.now(timezone.utc)
             db.session.commit()
             logger.info(f"Status do pedido iFood {order.order_number} atualizado para {new_status}")
         
@@ -470,7 +470,7 @@ def process_ifood_cancellation_real(order_data):
         
         if order and order.status not in [OrderStatus.DELIVERED, OrderStatus.CANCELLED]:
             order.status = OrderStatus.CANCELLED
-            order.updated_at = datetime.utcnow()
+            order.updated_at = datetime.now(timezone.utc)
             if order.delivery:
                 db.session.delete(order.delivery)
             db.session.commit()
@@ -496,7 +496,7 @@ def update_order_from_ifood_status(order_data, ifood_status):
         new_status = IFOOD_STATUS_MAP.get(ifood_status)
         if new_status and hasattr(OrderStatus, new_status):
             order.status = OrderStatus[new_status]
-            order.updated_at = datetime.utcnow()
+            order.updated_at = datetime.now(timezone.utc)
             db.session.commit()
             logger.info(f"Status do pedido iFood {order.order_number} atualizado para {new_status}")
     except Exception as e:
@@ -632,7 +632,7 @@ def process_ifood_cancellation(order_data):
 
         # Cancela
         order.status = OrderStatus.CANCELLED
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
         order.driver_id = None
 
         if order.delivery:
@@ -1128,7 +1128,7 @@ def process_platform_cancellation(order_data, platform):
 
         # Cancela
         order.status = OrderStatus.CANCELLED
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
         order.driver_id = None
 
         if order.delivery:
@@ -1175,7 +1175,7 @@ def process_driver_response_whatsapp(phone, action):
             # Aceita o pedido
             pending_order.driver_id = driver.id
             pending_order.status = OrderStatus.ACCEPTED
-            pending_order.updated_at = datetime.utcnow()
+            pending_order.updated_at = datetime.now(timezone.utc)
 
             # Cria registro de entrega
             from src.models.portal_models import Delivery
@@ -1336,7 +1336,7 @@ def process_asaas_payment_received(payment_id, external_ref, payment_data):
             invoice = SubscriptionInvoice.query.get(int(invoice_id))
             if invoice and invoice.status != 'PAID':
                 invoice.status = 'PAID'
-                invoice.paid_at = datetime.utcnow()
+                invoice.paid_at = datetime.now(timezone.utc)
                 invoice.payment_method = 'PIX'
                 
                 # Atualizar assinatura
@@ -1354,7 +1354,7 @@ def process_asaas_payment_received(payment_id, external_ref, payment_data):
             invoice = Invoice.query.get(int(invoice_id))
             if invoice and invoice.status != 'PAID':
                 invoice.status = 'PAID'
-                invoice.paid_at = datetime.utcnow()
+                invoice.paid_at = datetime.now(timezone.utc)
 
                 # Desbloquear saldo dos entregadores
                 deliveries = Delivery.query.join(Order).filter(
@@ -1370,7 +1370,7 @@ def process_asaas_payment_received(payment_id, external_ref, payment_data):
                         earnings = Decimal(str(float(delivery.driver_earnings or 0)))
                         driver.locked_balance = (driver.locked_balance or Decimal('0')) - earnings
                         driver.balance = (driver.balance or Decimal('0')) + earnings
-                        driver.updated_at = datetime.utcnow()
+                        driver.updated_at = datetime.now(timezone.utc)
 
                 db.session.commit()
                 logger.info(f"Fatura #{invoice.id} marcada como paga via Asaas - saldos desbloqueados")

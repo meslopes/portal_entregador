@@ -381,7 +381,7 @@ def confirm_email():
             return jsonify({'error': 'Conta já foi confirmada ou está ativa'}), 400
 
         user.status = UserStatus.ACTIVE
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
         try:

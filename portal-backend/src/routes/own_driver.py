@@ -24,7 +24,7 @@ def create_own_driver_token(driver_id, restaurant_id):
         'driver_id': driver_id,
         'restaurant_id': restaurant_id,
         'type': 'own_driver',
-        'exp': datetime.utcnow() + timedelta(days=30)
+        'exp': datetime.now(timezone.utc) + timedelta(days=30)
     }
     return jwt.encode(payload, OWN_DRIVER_SECRET, algorithm='HS256')
 
@@ -189,7 +189,7 @@ def toggle_status():
             driver.current_latitude = data['latitude']
         if 'longitude' in data:
             driver.current_longitude = data['longitude']
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -216,7 +216,7 @@ def update_location():
 
         driver.current_latitude = data['latitude']
         driver.current_longitude = data['longitude']
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -289,8 +289,8 @@ def accept_order(order_id):
 
         # Aceitar o pedido
         order.status = OrderStatus.ACCEPTED
-        order.accepted_at = datetime.utcnow()
-        order.updated_at = datetime.utcnow()
+        order.accepted_at = datetime.now(timezone.utc)
+        order.updated_at = datetime.now(timezone.utc)
 
         # Criar registro de ganhos
         restaurant = order.restaurant
@@ -387,7 +387,7 @@ def reject_order(order_id):
         order.assigned_to_own_driver = False
         order.establishment_driver_id = None
         order.status = OrderStatus.PENDING
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -399,7 +399,7 @@ def reject_order(order_id):
                 order.assigned_to_own_driver = True
                 order.establishment_driver_id = next_driver.id
                 order.status = OrderStatus.OFFERED
-                order.offered_at = datetime.utcnow()
+                order.offered_at = datetime.now(timezone.utc)
                 order.offer_attempts = (order.offer_attempts or 0) + 1
                 db.session.commit()
         except Exception as e:
@@ -496,13 +496,13 @@ def update_order_status(order_id):
 
         # Atualizar status
         order.status = new_status_enum
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
 
         if new_status_enum == OrderStatus.PICKED_UP:
-            order.pickup_time = datetime.utcnow()
-            order.picked_up_at = datetime.utcnow()
+            order.pickup_time = datetime.now(timezone.utc)
+            order.picked_up_at = datetime.now(timezone.utc)
         elif new_status_enum == OrderStatus.DELIVERED:
-            order.delivery_time = datetime.utcnow()
+            order.delivery_time = datetime.now(timezone.utc)
 
             # Marcar parada como concluída na rota (se aplicável)
             if order.own_driver_route_id:
@@ -513,14 +513,14 @@ def update_order_status(order_id):
                 ).first()
                 if stop and stop.status != 'COMPLETED':
                     stop.status = 'COMPLETED'
-                    stop.completed_at = datetime.utcnow()
+                    stop.completed_at = datetime.now(timezone.utc)
                     # Verificar se todas as paradas foram concluídas
                     route = OwnDriverRoute.query.get(order.own_driver_route_id)
                     if route:
                         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
                         if all_completed:
                             route.status = 'COMPLETED'
-                            route.completed_at = datetime.utcnow()
+                            route.completed_at = datetime.now(timezone.utc)
 
             # Salvar prova de entrega - upload para Supabase Storage
             proof_data = data.get('proof_of_delivery')
@@ -535,7 +535,7 @@ def update_order_status(order_id):
 
             # Incrementar entregas do entregador
             driver.total_deliveries = (driver.total_deliveries or 0) + 1
-            driver.updated_at = datetime.utcnow()
+            driver.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -561,11 +561,11 @@ def get_stats():
 
     from datetime import timedelta
     if period == 'day':
-        start_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == 'week':
-        start_date = datetime.utcnow() - timedelta(days=7)
+        start_date = datetime.now(timezone.utc) - timedelta(days=7)
     else:
-        start_date = datetime.utcnow() - timedelta(days=30)
+        start_date = datetime.now(timezone.utc) - timedelta(days=30)
 
     # Pedidos no período
     orders = Order.query.filter(
@@ -628,11 +628,11 @@ def get_earnings():
 
     from datetime import timedelta
     if period == 'day':
-        start_date = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == 'week':
-        start_date = datetime.utcnow() - timedelta(days=7)
+        start_date = datetime.now(timezone.utc) - timedelta(days=7)
     else:
-        start_date = datetime.utcnow() - timedelta(days=30)
+        start_date = datetime.now(timezone.utc) - timedelta(days=30)
 
     earnings = OwnDriverEarning.query.filter(
         OwnDriverEarning.establishment_driver_id == driver.id,
@@ -745,7 +745,7 @@ def update_pix_key():
             return jsonify({'error': 'Chave PIX é obrigatória'}), 400
         
         driver.pix_key = pix_key
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
         
         db.session.commit()
         

@@ -49,7 +49,7 @@ def get_platform_dashboard():
         orders = Order.query.count()
         
         # Pedidos dos últimos 7 dias
-        week_ago = datetime.utcnow() - timedelta(days=7)
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
         week_orders = Order.query.filter(Order.created_at >= week_ago).count()
         
         # Receita total (soma de delivery_fee de pedidos entregues)
@@ -109,7 +109,7 @@ def get_admins():
         for admin in admins:
             establishments = Restaurant.query.filter_by(tenant_id=admin.tenant_id).count()
             drivers = Driver.query.filter_by(tenant_id=admin.tenant_id).count()
-            first_day = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            first_day = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             orders_month = Order.query.filter(
                 Order.tenant_id == admin.tenant_id,
                 Order.created_at >= first_day
