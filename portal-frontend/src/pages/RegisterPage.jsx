@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Truck, User, Car, Shield, MapPin, Loader } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+import api from '@/lib/api';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
@@ -181,14 +180,10 @@ const RegisterPage = () => {
     setIsLoading(true);
     try {
       const { confirmPassword, ...registerData } = formData;
-      // Chamar API diretamente sem fazer login
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registerData),
-      });
-      const data = await response.json();
-      if (!response.ok) {
+      // Chamar API via axios (com interceptor e base URL configurada)
+      const response = await api.post('/api/auth/register', registerData);
+      const data = response.data;
+      if (response.status >= 400) {
         setLocalError(data.error || 'Erro ao criar conta');
         return;
       }
