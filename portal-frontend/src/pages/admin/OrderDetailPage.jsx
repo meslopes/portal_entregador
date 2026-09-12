@@ -576,6 +576,21 @@ const OrderDetailPage = () => {
             {order.driver.user?.first_name} {order.driver.user?.last_name}
           </p>
           <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{order.driver.vehicle_type}</p>
+          {order.driver.user?.phone && (
+            <a
+              href={`https://wa.me/55${order.driver.user.phone.replace(/\D/g, '')}?text=Olá ${order.driver.user?.first_name}, sobre o pedido #${order.order_number}...`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                marginTop: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                background: '#25d366', color: 'white', fontSize: '0.75rem', fontWeight: 600,
+                textDecoration: 'none', cursor: 'pointer'
+              }}
+            >
+              💬 WhatsApp
+            </a>
+          )}
         </div>
       )}
 

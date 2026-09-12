@@ -406,6 +406,20 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                       {(order.own_driver?.phone || order.driver?.phone) ? ` • ${order.own_driver?.phone || order.driver?.phone}` : ''}
                       {order.own_driver?.vehicle_type ? ` • ${order.own_driver.vehicle_type}` : ''}
                     </p>
+                    {(order.own_driver?.phone || order.driver?.user?.phone) && (
+                      <a
+                        href={`https://wa.me/55${(order.own_driver?.phone || order.driver?.user?.phone || '').replace(/\D/g, '')}?text=Olá, sobre o pedido #${order.order_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                          marginTop: '0.25rem', fontSize: '0.6875rem', color: '#25d366',
+                          textDecoration: 'none', fontWeight: 600
+                        }}
+                      >
+                        💬 WhatsApp
+                      </a>
+                    )}
                   </div>
                 </div>
                 {/* Botão para trocar entregador */}
