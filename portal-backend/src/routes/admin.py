@@ -2306,6 +2306,56 @@ def convert_driver_to_own(driver_id):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/drivers/<int:driver_id>/convert-from-own', methods=['POST'])
+@jwt_required()
+@admin_required
+def convert_own_to_platform(driver_id):
+    """Converte um entregador próprio de volta para a plataforma"""
+    try:
+        driver = Driver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        if not driver.converted_to_own:
+            return jsonify({'error': 'Entregador já está na plataforma'}), 400
+
+        data = request.get_json() or {}
+        restaurant_id = data.get('restaurant_id')
+
+        # Desativar EstablishmentDriver correspondente
+        if restaurant_id:
+            user = db.session.get(User, driver.user_id)
+            if user:
+                est_driver = EstablishmentDriver.query.filter_by(
+                    restaurant_id=restaurant_id, phone=user.phone
+                ).first()
+                if est_driver:
+                    est_driver.is_active = False
+
+            # Verificar se restaurante ainda tem outros entregadores próprios ativos
+            remaining = EstablishmentDriver.query.filter_by(
+                restaurant_id=restaurant_id, is_active=True
+            ).count()
+            if remaining == 0:
+                restaurant = Restaurant.query.get(restaurant_id)
+                if restaurant:
+                    restaurant.has_own_drivers = False
+
+        # Reativar na plataforma
+        driver.converted_to_own = False
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Entregador reativado na plataforma com sucesso',
+            'driver': driver.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/drivers/<int:driver_id>/status', methods=['PUT'])
 
 @jwt_required()
