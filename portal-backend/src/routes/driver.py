@@ -292,11 +292,15 @@ def get_nearby_drivers():
         
         # Fórmula de Haversine para calcular distância
         # Simplificada para demonstração - em produção usar PostGIS ou similar
-        drivers = Driver.query.filter(
+        query = Driver.query.filter(
             Driver.is_online == True,
             Driver.current_latitude.isnot(None),
             Driver.current_longitude.isnot(None)
-        ).all()
+        )
+        # Filtrar por tenant do usuário logado (super admin vê todos)
+        if not user.is_super_admin and user.tenant_id:
+            query = query.filter(Driver.tenant_id == user.tenant_id)
+        drivers = query.all()
         
         nearby_drivers = []
         for driver in drivers:
