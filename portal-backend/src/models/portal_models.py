@@ -128,6 +128,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     is_super_admin = db.Column(db.Boolean, default=False, nullable=False)  # Super admin da plataforma (muv.log)
+    totp_secret = db.Column(db.String(32))  # Secret para 2FA (TOTP)
+    totp_enabled = db.Column(db.Boolean, default=False)  # Se 2FA está ativado
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)

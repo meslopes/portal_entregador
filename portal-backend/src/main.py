@@ -141,6 +141,31 @@ with app.app_context():
         print(f"Migração is_super_admin: {e}")
         db.session.rollback()
 
+    # Migration: adicionar campos 2FA na tabela users
+    try:
+        dialect = db.engine.dialect.name
+        if dialect == 'sqlite':
+            result = db.session.execute(db.text("PRAGMA table_info(users)"))
+            columns = [row[1] for row in result.fetchall()]
+        else:
+            result = db.session.execute(db.text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'users'"
+            ))
+            columns = [row[0] for row in result.fetchall()]
+
+        if 'totp_secret' not in columns:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32)"))
+            db.session.commit()
+            print("Coluna totp_secret adicionada à tabela users")
+
+        if 'totp_enabled' not in columns:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE"))
+            db.session.commit()
+            print("Coluna totp_enabled adicionada à tabela users")
+    except Exception as e:
+        print(f"Migração 2FA: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

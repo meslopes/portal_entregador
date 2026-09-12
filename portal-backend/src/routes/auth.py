@@ -460,6 +460,19 @@ def login():
             if tenant and user.tenant_id and user.tenant_id != tenant.id:
                 return jsonify({'error': 'Credenciais inválidas'}), 401
 
+            # Verificar 2FA se ativado
+            if user.totp_enabled:
+                totp_code = data.get('totp_code')
+                if not totp_code:
+                    return jsonify({
+                        'requires_2fa': True,
+                        'message': 'Digite o código do autenticador'
+                    }), 200
+                import pyotp
+                totp = pyotp.TOTP(user.totp_secret)
+                if not totp.verify(totp_code):
+                    return jsonify({'error': 'Código 2FA inválido'}), 401
+
             access_token = create_access_token(identity=str(user.id))
             user_data = _build_user_response(user)
             return jsonify(access_token=access_token, user=user_data), 200
@@ -569,3 +582,131 @@ def change_password():
 def protected():
     current_user_id = get_jwt_identity()
     return jsonify(logged_in_as=int(current_user_id)), 200
+
+
+# ============================================================
+# 2FA (Autenticação em 2 Fatores) — TOTP
+# ============================================================
+
+@auth_bp.route('/2fa/enable', methods=['POST'])
+@jwt_required()
+def enable_2fa():
+    """Gera um secret TOTP e retorna como QR code (base64) para o admin escanear."""
+    try:
+        import pyotp
+        import qrcode
+        import io
+        import base64
+
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user or user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Apenas admins podem ativar 2FA'}), 403
+
+        if user.totp_enabled:
+            return jsonify({'error': '2FA já está ativado'}), 400
+
+        # Gerar secret
+        secret = pyotp.random_base32()
+        user.totp_secret = secret
+        db.session.commit()
+
+        # Gerar QR code
+        totp = pyotp.TOTP(secret)
+        uri = totp.provisioning_uri(
+            name=user.email,
+            issuer_name='muv.log'
+        )
+
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(uri)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        # Converter para base64
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        return jsonify({
+            'secret': secret,
+            'qr_code': f'data:image/png;base64,{qr_base64}',
+            'message': 'Escaneie o QR code com Google Authenticator ou Authy'
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/2fa/verify', methods=['POST'])
+@jwt_required()
+def verify_2fa():
+    """Verifica o código TOTP e ativa o2FA."""
+    try:
+        import pyotp
+
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user or not user.totp_secret:
+            return jsonify({'error': '2FA não foi iniciado. Chame /2fa/enable primeiro'}), 400
+
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if totp.verify(code):
+            user.totp_enabled = True
+            db.session.commit()
+            return jsonify({'message': '2FA ativado com sucesso!'}), 200
+        else:
+            return jsonify({'error': 'Código inválido'}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/2fa/disable', methods=['POST'])
+@jwt_required()
+def disable_2fa():
+    """Desativa o2FA (requer código atual)."""
+    try:
+        import pyotp
+
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user or not user.totp_enabled:
+            return jsonify({'error': '2FA não está ativado'}), 400
+
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if totp.verify(code):
+            user.totp_enabled = False
+            user.totp_secret = None
+            db.session.commit()
+            return jsonify({'message': '2FA desativado'}), 200
+        else:
+            return jsonify({'error': 'Código inválido'}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/2fa/status', methods=['GET'])
+@jwt_required()
+def get_2fa_status():
+    """Retorna se o2FA está ativado para o usuário atual."""
+    try:
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        return jsonify({
+            'enabled': bool(user.totp_enabled),
+            'has_secret': bool(user.totp_secret)
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
