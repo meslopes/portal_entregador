@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy import func
 from src.models.portal_models import (
     User, UserType, UserStatus, db
 )
@@ -34,7 +35,7 @@ def get_platform_dashboard():
     """Retorna métricas gerais da plataforma"""
     try:
         from src.models.portal_models import Driver, Restaurant, Order, Tenant
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         
         # Contar tenants ativos
         tenants = Tenant.query.filter_by(is_active=True).count()

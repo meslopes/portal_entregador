@@ -7,7 +7,7 @@ from src.models.portal_models import (
     PlatformDriverRoute, PlatformDriverStop, RouteSettings
 )
 from src.utils.geo import haversine_distance
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -41,8 +41,8 @@ def get_pending_orders(tenant_id=None, settings=None):
     
     # Incluir agendados se configurado
     if settings.include_scheduled:
-        from datetime import datetime, timedelta
-        now = datetime.utcnow()
+        from datetime import datetime, timedelta, timezone
+        now = datetime.now(timezone.utc)
         advance_time = now + timedelta(minutes=settings.scheduled_advance_min)
         
         # Buscar agendados que devem ser preparados em breve
@@ -439,7 +439,7 @@ def create_auto_route(orders, driver, settings):
             order.platform_route_id = route.id
             order.driver_id = driver.id
             order.status = OrderStatus.OFFERED
-            order.offered_at = datetime.utcnow()
+            order.offered_at = datetime.now(timezone.utc)
         
         # Enviar notificações
         if settings.notify_driver_auto_route:

@@ -5,7 +5,7 @@ from src.models.portal_models import (
     OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
 )
 from src.utils.geo import haversine_distance
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import hashlib
 import hmac

@@ -13,7 +13,7 @@ from src.models.portal_models import (
 from src.routes.own_driver import own_driver_required
 from src.utils.tenant import get_current_tenant_id, get_current_user
 from src.utils.geo import haversine_distance
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -895,7 +895,7 @@ def complete_stop(route_id):
             user_id = get_jwt_identity()
             if user_id:
                 user = User.query.get(int(user_id))
-        except:
+        except Exception:
             pass
         
         # Se não tem JWT regular, tentar own_driver_token

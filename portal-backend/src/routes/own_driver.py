@@ -4,7 +4,7 @@ from src.models.portal_models import (
     db, EstablishmentDriver, Order, OrderStatus, Delivery,
     OwnDriverEarning, Restaurant, Customer, User, UserType, UserStatus
 )
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 import jwt
 import os

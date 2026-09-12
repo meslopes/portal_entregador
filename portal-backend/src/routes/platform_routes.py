@@ -10,7 +10,7 @@ from src.models.portal_models import (
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id
 from src.utils.geo import haversine_distance
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,7 @@ from src.models.portal_models import (
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from src.utils.geo import haversine_distance
 from sqlalchemy import func
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 import uuid
 import os
 import base64

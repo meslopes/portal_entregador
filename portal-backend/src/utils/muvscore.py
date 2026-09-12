@@ -5,7 +5,7 @@ MuvScore - Sistema de Gamificação e Ranking para Entregadores
 Gerencia pontuação, níveis e ranking semanal.
 """
 
-from datetime import datetime, date, timedelta, time as dt_time
+from datetime import datetime, date, timedelta, time as dt_time, timezone
 from src.models.portal_models import (
     db, Driver, DriverPointsLog, DriverWeeklyScore,
     Order, Delivery, SystemConfig, SpecialDay, PeakHour
@@ -140,7 +140,7 @@ def award_points(driver, points, reason, description=None, order_id=None):
 
         # Recalcular nível
         score.level = DriverWeeklyScore.calculate_level(score.total_points)
-        score.updated_at = datetime.utcnow()
+        score.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -160,7 +160,7 @@ def award_delivery_points(driver, order):
     Verifica bônus de dia especial e horário de pico.
     """
     points_per_delivery = get_config_value('points_per_delivery', POINTS_PER_DELIVERY)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today = now.date()
     current_time = now.time()
 
@@ -340,7 +340,7 @@ def check_and_award_streak(driver):
 def calculate_acceptance_rate(driver, days=7):
     """Calcula a taxa de aceite do entregador nos últimos N dias"""
     from src.models.portal_models import Order, OrderStatus
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Pedidos ofertados (via driver_assignments ou offers)
     # Por simplicidade, usar orders onde driver_id = driver.id
@@ -365,7 +365,7 @@ def calculate_acceptance_rate(driver, days=7):
 def calculate_completion_rate(driver, days=7):
     """Calcula a taxa de conclusão (entregas / pedidos aceitos) nos últimos N dias"""
     from src.models.portal_models import Order, OrderStatus
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
 
     total_accepted = Order.query.filter(
         Order.driver_id == driver.id,

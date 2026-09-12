@@ -5,7 +5,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask import request, jsonify
 from src.models.portal_models import db, User, Driver, Customer, Restaurant, Tenant, UserType, UserStatus, VehicleType
 from flask import Blueprint
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 

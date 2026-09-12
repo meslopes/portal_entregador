@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import Driver, User, UserType, Order, OrderStatus, Payment, PaymentStatus, PaymentType, PaymentMethod, db
 from src.utils.geo import haversine_distance
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 
 driver_bp = Blueprint('driver', __name__)

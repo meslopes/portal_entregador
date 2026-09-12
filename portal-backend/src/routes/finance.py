@@ -10,7 +10,7 @@ from src.models.portal_models import (
     User, UserType, Customer, EstablishmentSubscription, SubscriptionInvoice
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 import logging
 

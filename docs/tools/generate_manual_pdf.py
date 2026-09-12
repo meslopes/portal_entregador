@@ -95,8 +95,8 @@ def create_manual():
     pdf.ln(20)
     pdf.set_font('Helvetica', '', 12)
     pdf.set_text_color(150, 150, 150)
-    pdf.cell(0, 8, 'Versão 1.0', 0, 1, 'C')
-    pdf.cell(0, 8, 'Agosto 2026', 0, 1, 'C')
+    pdf.cell(0, 8, 'Versão 2.0', 0, 1, 'C')
+    pdf.cell(0, 8, 'Setembro 2026', 0, 1, 'C')
     
     # Table of Contents
     pdf.add_page()

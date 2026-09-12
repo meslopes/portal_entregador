@@ -7,7 +7,7 @@ from src.models.portal_models import (
     db, User, Driver, Order, OrderStatus, DriverScore, DriverBonus,
     DriverAchievement, DynamicPricing, Square, Delivery
 )
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 
 bonus_bp = Blueprint('bonus', __name__)
