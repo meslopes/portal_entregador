@@ -612,3 +612,23 @@ def update_pix_key():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@driver_bp.route('/push-token', methods=['POST'])
+@jwt_required()
+def register_push_token():
+    """Registra um token FCM para receber push notifications"""
+    try:
+        user_id = int(get_jwt_identity())
+        data = request.get_json() or {}
+        token = data.get('token')
+
+        if not token:
+            return jsonify({'error': 'Token é obrigatório'}), 400
+
+        from src.services.push_notification import register_token
+        register_token(user_id, token)
+
+        return jsonify({'message': 'Token registrado com sucesso'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
