@@ -63,6 +63,7 @@ def get_payment_reports():
         period = request.args.get('period', 'month')  # week, month, all
         
         # Determinar escopo baseado no tipo de usuário
+        restaurant_ids = None
         if user.user_type == UserType.CLIENT:
             # Estabelecimento: ver apenas seus próprios entregadores
             customer = Customer.query.filter_by(user_id=user.id).first()
