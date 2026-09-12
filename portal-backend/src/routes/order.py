@@ -1861,8 +1861,8 @@ def create_order():
             if not restaurant:
                 return jsonify({'error': 'Estabelecimento não encontrado. Envie restaurant_id ou restaurant_name.'}), 400
 
-        # Busca ou cria cliente final
-        customer = Customer.query.filter_by(phone=data['customer_phone']).first()
+        # Busca ou cria cliente final (filtrando por tenant)
+        customer = Customer.query.filter_by(phone=data['customer_phone'], tenant_id=order.tenant_id).first()
         if not customer:
             customer = Customer(
                 name=data['customer_name'],
