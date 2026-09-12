@@ -125,7 +125,7 @@ const Layout = ({ children }) => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflow: 'visible' }}>
+            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflow: 'auto', scrollbarWidth: 'none' }}>
               {navigation.map((item) => {
                 const Icon = item.icon;
                 
