@@ -634,10 +634,16 @@ def accept_order(order_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         driver = user.driver
         if not driver or not driver.is_online:
             return jsonify({'error': 'Entregador deve estar online'}), 400
@@ -1770,6 +1776,12 @@ def create_order():
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
 
         data = request.get_json()
         if not data:

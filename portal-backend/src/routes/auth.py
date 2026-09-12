@@ -437,6 +437,15 @@ def login():
             if user.status == UserStatus.SUSPENDED:
                 return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
 
+            # Verificar se o tenant do usuário está ativo
+            if user.tenant_id:
+                try:
+                    user_tenant = Tenant.query.get(user.tenant_id)
+                    if user_tenant and not user_tenant.is_active:
+                        return jsonify({'error': 'Esta organização está desativada. Entre em contato com o suporte.'}), 403
+                except Exception:
+                    pass
+
             # Verificar se o usuário pertence ao tenant correto
             if tenant and user.tenant_id and user.tenant_id != tenant.id:
                 return jsonify({'error': 'Credenciais inválidas'}), 401

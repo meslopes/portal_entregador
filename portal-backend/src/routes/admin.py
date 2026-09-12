@@ -214,6 +214,12 @@ def admin_required(f):
 
             return jsonify({'error': 'Acesso restrito a administradores'}), 403
 
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         return f(*args, **kwargs)
 
     return decorated_function
@@ -239,6 +245,12 @@ def client_or_admin_required(f):
         if not user or user.user_type not in (UserType.ADMIN, UserType.CLIENT):
 
             return jsonify({'error': 'Acesso restrito'}), 403
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
 
         return f(*args, **kwargs)
 

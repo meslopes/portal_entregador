@@ -17,11 +17,17 @@ def toggle_online_status():
         
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         data = request.get_json() or {}
         is_online = data.get('is_online', not driver.is_online)
         
@@ -57,13 +63,19 @@ def update_location():
         
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         data = request.get_json()
-        
+
         if 'latitude' not in data or 'longitude' not in data:
             return jsonify({'error': 'Latitude e longitude são obrigatórias'}), 400
         
