@@ -32,6 +32,12 @@ const STATUS_ACTIONS = {
   PICKED_UP: { label: 'Entregar Pedido', next: 'DELIVERED', color: '#22c55e' },
 };
 
+// Proteção contra XSS em popups do Leaflet
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
+
 const ActiveDeliveryPage = () => {
   const navigate = useNavigate();
   const { orderId } = useParams();
@@ -296,7 +302,7 @@ const ActiveDeliveryPage = () => {
       });
       L.marker([order.restaurant.latitude, order.restaurant.longitude], { icon: restaurantIcon })
         .addTo(map)
-        .bindPopup(`<b>${order.restaurant.name}</b><br>${order.restaurant.address}`);
+        .bindPopup(`<b>${escapeHtml(order.restaurant.name)}</b><br>${escapeHtml(order.restaurant.address)}`);
     }
 
     // Marcador do cliente
@@ -309,7 +315,7 @@ const ActiveDeliveryPage = () => {
       });
       L.marker([order.delivery_address.latitude, order.delivery_address.longitude], { icon: customerIcon })
         .addTo(map)
-        .bindPopup(`<b>${order.customer?.name}</b><br>${order.delivery_address.street}`);
+        .bindPopup(`<b>${escapeHtml(order.customer?.name)}</b><br>${escapeHtml(order.delivery_address.street)}`);
     }
 
     // Ajusta zoom para mostrar ambos

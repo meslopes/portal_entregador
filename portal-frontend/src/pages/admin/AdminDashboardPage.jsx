@@ -8,6 +8,12 @@ import {
 import { adminService, orderService, utils } from '@/lib/api';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Proteção contra XSS em popups do Leaflet
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
 import { useSquare } from '@/contexts/SquareContext';
 import { showToast } from '@/components/Toast';
 import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
@@ -376,7 +382,7 @@ const AdminDashboardPage = () => {
 
           const marker = L.marker([driver.latitude, driver.longitude], { icon })
             .addTo(map)
-            .bindPopup(`<b>${driver.name}</b><br>${driver.vehicle_type}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
+            .bindPopup(`<b>${escapeHtml(driver.name)}</b><br>${escapeHtml(driver.vehicle_type)}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
           markersRef.current.push(marker);
           allPoints.push([driver.latitude, driver.longitude]);
         }
@@ -405,9 +411,9 @@ const AdminDashboardPage = () => {
               const color = statusCfg?.color || '#64748b';
               const label = statusCfg?.label || o.status;
               ordersHtml += `<div style="padding:4px 6px;margin:2px 0;background:#f8fafc;border-radius:4px;font-size:11px;border-left:3px solid ${color}">`;
-              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${o.order_number}</b><span style="color:${color}">${label}</span></div>`;
-              ordersHtml += `<div style="color:#64748b;">${o.customer_name || 'Cliente'}</div>`;
-              if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${o.driver_name}</div>`;
+              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${escapeHtml(o.order_number)}</b><span style="color:${color}">${escapeHtml(label)}</span></div>`;
+              ordersHtml += `<div style="color:#64748b;">${escapeHtml(o.customer_name) || 'Cliente'}</div>`;
+              if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${escapeHtml(o.driver_name)}</div>`;
               ordersHtml += `<div style="color:#64748b;">R$ ${(o.total_amount || 0).toFixed(2)}</div>`;
               ordersHtml += '</div>';
             });
@@ -416,8 +422,8 @@ const AdminDashboardPage = () => {
 
           const popupContent = `
             <div style="min-width:200px;">
-              <b style="font-size:13px;">${est.name}</b>
-              <div style="font-size:11px;color:#64748b;margin-top:2px;">${est.address || ''}</div>
+              <b style="font-size:13px;">${escapeHtml(est.name)}</b>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(est.address)}</div>
               <div style="font-size:11px;color:#475569;margin-top:4px;font-weight:600;">Pedidos ativos: ${est.active_orders}</div>
               ${ordersHtml}
             </div>
@@ -448,7 +454,7 @@ const AdminDashboardPage = () => {
 
           const marker = L.marker([del.latitude, del.longitude], { icon })
             .addTo(map)
-            .bindPopup(`<b>#${del.order_number}</b><br>${del.customer_name}<br>${del.street}`);
+            .bindPopup(`<b>#${escapeHtml(del.order_number)}</b><br>${escapeHtml(del.customer_name)}<br>${escapeHtml(del.street)}`);
           markersRef.current.push(marker);
           allPoints.push([del.latitude, del.longitude]);
         }
