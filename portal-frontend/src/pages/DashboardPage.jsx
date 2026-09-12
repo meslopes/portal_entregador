@@ -11,6 +11,12 @@ import {
   requestNotificationPermission
 } from '@/lib/notify';
 
+// Proteção contra XSS em popups do Leaflet
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
+
 const DashboardPage = () => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -69,7 +75,7 @@ const DashboardPage = () => {
             iconAnchor: [12, 12]
           });
           L.marker([currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude], { icon: orderIcon }).addTo(map)
-            .bindPopup(`Pedido #${currentOrder.order_number}`);
+            .bindPopup(`Pedido #${escapeHtml(currentOrder.order_number)}`);
           
           // Ajustar zoom para mostrar ambos os pontos
           const bounds = L.latLngBounds([
