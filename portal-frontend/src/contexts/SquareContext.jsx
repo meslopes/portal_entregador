@@ -19,10 +19,14 @@ export const SquareProvider = ({ children }) => {
 
   const [squares, setSquares] = useState([]);
 
-  // Validar praça do localStorage contra o backend ao carregar
+  // Validar praça do localStorage contra o backend ao carregar (apenas para admins)
   useEffect(() => {
     const validateSquare = async () => {
       try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // Apenas admins precisam validar praças
+        if (!user || user.user_type !== 'ADMIN') return;
+
         const res = await api.get('/api/admin/squares');
         const validSquares = res.data.squares || res.data || [];
         setSquares(validSquares);
