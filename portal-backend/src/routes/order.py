@@ -604,7 +604,7 @@ def get_available_orders():
             order_dict['customer'] = order.customer.to_dict() if order.customer else None
             order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
             order_dict['distance_to_restaurant_km'] = round(distance_to_restaurant, 2)
-            
+
             # Calcula distância do restaurante ao cliente
             if order.restaurant.latitude and order.delivery_address.latitude:
                 delivery_distance = haversine_distance(
@@ -612,10 +612,16 @@ def get_available_orders():
                     order.delivery_address.latitude, order.delivery_address.longitude
                 )
                 order_dict['delivery_distance_km'] = round(delivery_distance, 2)
-                
+
                 # Estima tempo de entrega (assumindo 30 km/h de velocidade média)
                 estimated_time = (delivery_distance / 30) * 60  # em minutos
                 order_dict['estimated_delivery_time_minutes'] = round(estimated_time, 0)
+
+            # Calcula ganhos estimados do entregador usando % configurável
+            driver_pct = get_driver_percentage(order)
+            driver_earnings = float(order.delivery_fee or 0) * driver_pct
+            order_dict['estimated_driver_earnings'] = round(driver_earnings, 2)
+            order_dict['driver_percentage'] = round(driver_pct * 100, 0)
             
             orders_data.append(order_dict)
         
