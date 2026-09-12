@@ -72,6 +72,15 @@ class ProductionConfig(Config):
     if not os.getenv('DATABASE_URL') or 'sqlite' in os.getenv('DATABASE_URL', ''):
         raise ValueError("DATABASE_URL deve ser configurado com PostgreSQL para produção")
     
+    # Configurações de conexão para evitar SSL stale connections (Render free tier)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,          # Testa conexão antes de usar
+        'pool_recycle': 300,            # Recicla conexões a cada 5min
+        'pool_timeout': 30,             # Timeout ao obter conexão
+        'pool_size': 5,                 # Tamanho do pool
+        'max_overflow': 10,             # Conexões extras permitidas
+    }
+    
     # Validar secret keys em produção
     if os.getenv('SECRET_KEY') and os.getenv('SECRET_KEY') != 'dev-secret-key-change-in-production':
         SECRET_KEY = os.getenv('SECRET_KEY')

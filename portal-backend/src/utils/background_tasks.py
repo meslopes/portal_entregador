@@ -7,9 +7,16 @@ import threading
 import time
 import logging
 import os
-import fcntl
 
 logger = logging.getLogger(__name__)
+
+# fcntl é Unix-only (funciona no Render/Linux, não no Windows)
+try:
+    import fcntl
+    HAS_FCNTL = True
+except ImportError:
+    HAS_FCNTL = False
+    import msvcrt  # Windows alternative
 
 # Diretório para locks
 LOCK_DIR = os.path.join(os.path.dirname(__file__), '..', 'locks')
@@ -21,7 +28,11 @@ def acquire_lock(lock_name):
     lock_path = os.path.join(LOCK_DIR, f'{lock_name}.lock')
     try:
         lock_file = open(lock_path, 'w')
-        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if HAS_FCNTL:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        else:
+            # Windows: usar msvcrt
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
         lock_file.write(str(os.getpid()))
         lock_file.flush()
         return lock_file
@@ -33,7 +44,11 @@ def release_lock(lock_file):
     """Libera um lock file-based."""
     if lock_file:
         try:
-            fcntl.flock(lock_file, fcntl.LOCK_UN)
+            if HAS_FCNTL:
+                fcntl.flock(lock_file, fcntl.LOCK_UN)
+            else:
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
             lock_file.close()
         except Exception:
             pass
@@ -44,6 +59,9 @@ def start_background_tasks(app):
     
     def run_expired_offers():
         """Process expired offers every 30 seconds."""
+        # Aguardar30s antes de iniciar para garantir que o banco está pronto
+        logger.info("[BG_TASK] Expired offers processor waiting 30s for DB readiness...")
+        time.sleep(30)
         logger.info("[BG_TASK] Expired offers processor started")
         while True:
             lock = acquire_lock('expired_offers')
@@ -54,6 +72,10 @@ def start_background_tasks(app):
                         process_expired_offers()
                 except Exception as e:
                     logger.error(f"[BG_TASK] process_expired_offers error: {e}")
+                    # Se for erro de conexão, aguardar mais tempo
+                    if 'SSL' in str(e) or 'OperationalError' in str(e) or 'connection' in str(e).lower():
+                        logger.warning("[BG_TASK] DB connection error, waiting 60s before retry...")
+                        time.sleep(60)
                 finally:
                     release_lock(lock)
             else:
@@ -62,6 +84,8 @@ def start_background_tasks(app):
     
     def run_scheduled_orders():
         """Process scheduled orders every 60 seconds."""
+        logger.info("[BG_TASK] Scheduled orders processor waiting 45s for DB readiness...")
+        time.sleep(45)
         logger.info("[BG_TASK] Scheduled orders processor started")
         while True:
             lock = acquire_lock('scheduled_orders')
@@ -72,6 +96,9 @@ def start_background_tasks(app):
                         process_scheduled_orders()
                 except Exception as e:
                     logger.error(f"[BG_TASK] process_scheduled_orders error: {e}")
+                    if 'SSL' in str(e) or 'OperationalError' in str(e) or 'connection' in str(e).lower():
+                        logger.warning("[BG_TASK] DB connection error, waiting 60s before retry...")
+                        time.sleep(60)
                 finally:
                     release_lock(lock)
             else:
@@ -80,6 +107,8 @@ def start_background_tasks(app):
     
     def run_auto_routing():
         """Run auto-routing analysis every 5 minutes."""
+        logger.info("[BG_TASK] Auto-routing processor waiting 60s for DB readiness...")
+        time.sleep(60)
         logger.info("[BG_TASK] Auto-routing processor started")
         while True:
             lock = acquire_lock('auto_routing')
@@ -98,6 +127,9 @@ def start_background_tasks(app):
                                 logger.info(f"[AUTO-ROUTE] {result['message']}")
                 except Exception as e:
                     logger.error(f"[BG_TASK] run_auto_routing error: {e}")
+                    if 'SSL' in str(e) or 'OperationalError' in str(e) or 'connection' in str(e).lower():
+                        logger.warning("[BG_TASK] DB connection error, waiting 60s before retry...")
+                        time.sleep(60)
                 finally:
                     release_lock(lock)
             else:
