@@ -427,8 +427,14 @@ def login():
                 # Tabela tenants pode não existir ainda
                 pass
 
-        # Buscar usuário (backward compatibility)
-        user = User.query.filter_by(email=email).first()
+        # Buscar usuário — se tenant_slug fornecido, filtra por tenant
+        if tenant:
+            user = User.query.filter_by(email=email, tenant_id=tenant.id).first()
+            if not user:
+                # Fallback: buscar sem tenant para backward compatibility
+                user = User.query.filter_by(email=email).first()
+        else:
+            user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password_hash, password):
             # Verifica se o usuario esta ativo
