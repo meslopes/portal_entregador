@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Package, MapPin, DollarSign, Clock, CheckCircle, X, Navigation, Store } from 'lucide-react';
 import api from '@/lib/api';
 import { startSiren, stopSiren } from '@/lib/notify';
+import { showToast } from '@/components/Toast';
 
 const OrderOfferPopup = () => {
   const [offer, setOffer] = useState(null);
@@ -83,7 +84,7 @@ const OrderOfferPopup = () => {
       window.location.href = `/delivery/${offer.id}`;
     } catch (err) {
       console.error('Erro ao aceitar pedido:', err);
-      alert(err.response?.data?.error || 'Erro ao aceitar pedido');
+      showToast(err.response?.data?.error || 'Erro ao aceitar pedido', 'error');
     } finally {
       setIsAccepting(false);
     }
