@@ -33,7 +33,22 @@ api.interceptors.request.use(
 let isRedirecting = false;
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config;
+
+    // Retry automático para erros de rede ou cold start do Render (GETs apenas)
+    const isGetRequest = config?.method === 'get';
+    const isNetworkError = !error.response;
+    const isColdStart = [502, 503, 504].includes(error.response?.status);
+    const notRetriedYet = !config?._retryCount;
+
+    if (isGetRequest && (isNetworkError || isColdStart) && notRetriedYet) {
+      config._retryCount = 1;
+      // Aguardar 3s para o Render acordar, depois tentar de novo
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return api.request(config);
+    }
+
     if (error.response?.status === 401 && !isRedirecting) {
       // NÃO redirecionar se o 401 veio do próprio endpoint de login
       const isLoginRequest = error.config?.url?.includes('/api/auth/login');
