@@ -12,20 +12,24 @@ from src.models.portal_models import (
 )
 from sqlalchemy import func
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
 # ============================================================
 # Constantes de pontuação (defaults - configuráveis via SystemConfig)
+# Para configurar: inserir registro na tabela system_configs
+# com config_key e config_value (JSON para estruturas complexas)
 # ============================================================
 POINTS_PER_DELIVERY = 10
-RATING_POINTS = {5: 20, 4: 10, 3: 5, 2: -5, 1: -15}
-LEVELS = {
+RATING_POINTS_DEFAULT = {5: 20, 4: 10, 3: 5, 2: -5, 1: -15}
+LEVELS_DEFAULT = {
     'diamante': {'min': 1000, 'label': 'Diamante', 'color': '#B9F2FF'},
     'ouro': {'min': 500, 'label': 'Ouro', 'color': '#FFD700'},
     'prata': {'min': 100, 'label': 'Prata', 'color': '#C0C0C0'},
     'bronze': {'min': 0, 'label': 'Bronze', 'color': '#CD7F32'},
 }
+REWARD_DISTRIBUTION_DEFAULT = {1: 0.30, 2: 0.20, 3: 0.15, 'others': 0.35}
 
 
 def get_config_value(key, default):
@@ -37,6 +41,35 @@ def get_config_value(key, default):
     except Exception:
         pass
     return default
+
+
+def get_json_config(key, default):
+    """Busca valor JSON de configuração do SystemConfig.
+    Usado para estruturas complexas (dicts, lists).
+    Exemplo de config_value no banco: '{"5": 20, "4": 10, "3": 5}'
+    """
+    try:
+        config = SystemConfig.query.filter_by(config_key=key).first()
+        if config and config.config_value:
+            return json.loads(config.config_value)
+    except (json.JSONDecodeError, Exception):
+        pass
+    return default
+
+
+def get_rating_points():
+    """Retorna pontos por avaliação, configurável via SystemConfig (key: muvscore_rating_points)"""
+    return get_json_config('muvscore_rating_points', RATING_POINTS_DEFAULT)
+
+
+def get_levels():
+    """Retorna níveis e thresholds, configurável via SystemConfig (key: muvscore_levels)"""
+    return get_json_config('muvscore_levels', LEVELS_DEFAULT)
+
+
+def get_reward_distribution():
+    """Retorna distribuição do pool por posição, configurável via SystemConfig (key: muvscore_reward_distribution)"""
+    return get_json_config('muvscore_reward_distribution', REWARD_DISTRIBUTION_DEFAULT)
 
 
 def get_current_week():
@@ -175,7 +208,7 @@ def award_rating_points(driver, rating, order=None):
     Pontua avaliação recebida.
     Chamado quando estabelecimento avalia o entregador.
     """
-    points = RATING_POINTS.get(rating, 0)
+    points = get_rating_points().get(str(rating), get_rating_points().get(rating, 0))
 
     if points == 0:
         return False

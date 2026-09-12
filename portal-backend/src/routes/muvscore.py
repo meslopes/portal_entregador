@@ -37,9 +37,9 @@ def get_my_score():
 
         # Buscar posição no ranking
         from src.models.portal_models import DriverWeeklyScore
-        from src.utils.muvscore import LEVELS
-
-        level_info = LEVELS.get(score.get('level', 'bronze'), LEVELS['bronze'])
+        from src.utils.muvscore import get_levels
+        levels = get_levels()
+        level_info = levels.get(score.get('level', 'bronze'), levels.get('bronze', {}))
 
         return jsonify({
             'score': score,
@@ -129,8 +129,8 @@ def get_history():
 def get_levels():
     """Retorna os níveis e thresholds"""
     try:
-        from src.utils.muvscore import LEVELS
-        return jsonify({'levels': LEVELS}), 200
+        from src.utils.muvscore import get_levels
+        return jsonify({'levels': get_levels()}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
