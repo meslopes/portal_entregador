@@ -6,6 +6,7 @@ from flask import request, jsonify
 from src.models.portal_models import db, User, Driver, Customer, Restaurant, Tenant, UserType, UserStatus, VehicleType
 from flask import Blueprint
 from datetime import datetime, timezone
+from src.utils.rate_limit import login_limit as login_rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -402,6 +403,7 @@ def confirm_email():
 
 # Endpoint para login
 @auth_bp.route('/login', methods=['POST'])
+@login_rate_limit
 def login():
     try:
         from src.utils.validation import validate_request, LOGIN_SCHEMA, ValidationError
