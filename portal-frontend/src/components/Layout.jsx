@@ -118,9 +118,9 @@ const Layout = ({ children }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '4.5rem' }}>
             {/* Logo */}
             <Link to={isSuperAdmin && location.pathname.startsWith('/platform') ? '/platform' : isAdmin ? '/admin' : '/dashboard'} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}>
-              <img src="/logo-muvy.jpg" alt="muv.log" style={{ height: '2.5rem', borderRadius: '0.5rem' }} />
-              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-                {isSuperAdmin && location.pathname.startsWith('/platform') ? 'muv.log Platform' : 'muv.log'}
+              <img src={user?.tenant?.logo_url || '/logo-muvy.jpg'} alt={user?.tenant?.name || 'muv.log'} style={{ height: '2.5rem', borderRadius: '0.5rem', objectFit: 'contain' }} />
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: user?.tenant?.primary_color || '#1e293b' }}>
+                {user?.tenant?.name || (isSuperAdmin && location.pathname.startsWith('/platform') ? 'muv.log Platform' : 'muv.log')}
               </span>
             </Link>
 
