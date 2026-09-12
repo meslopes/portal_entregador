@@ -363,7 +363,7 @@ def confirm_email():
 
         # Verificar assinatura HMAC
         from flask import current_app
-    secret = os.environ.get('JWT_SECRET_KEY') or current_app.config.get('SECRET_KEY', 'fallback-dev-only')
+        secret = os.environ.get('JWT_SECRET_KEY') or current_app.config.get('SECRET_KEY', 'fallback-dev-only')
         expected_sig = hmac_mod.new(
             secret.encode(),
             str(user_id).encode(),
