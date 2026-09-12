@@ -6,6 +6,8 @@ import {
   Camera, Image, X
 } from 'lucide-react';
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
+import { offlineDB, isOnline } from '@/lib/offline';
+import { showToast } from '@/components/Toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -226,14 +228,26 @@ const ActiveDeliveryPage = () => {
         payload.proof_of_delivery = proofPhoto;
       }
 
-      const response = await orderService.updateOrderStatus(order.id, status, payload);
+      if (!isOnline()) {
+        // Sem internet: salva na fila offline
+        const actionType = status === 'PICKED_UP' ? 'CONFIRM_COLLECT' : 'CONFIRM_DELIVERY';
+        await offlineDB.addToQueue({
+          type: actionType,
+          orderId: order.id,
+          ...payload
+        });
+        setOrder(prev => prev ? { ...prev, status } : prev);
+        setShowCodeModal(false);
+        setCodeInput('');
+        showToast('Ação salva offline. Será sincronizada quando a internet voltar.', 'info');
+      } else {
+        // Com internet: envia direto
+        await orderService.updateOrderStatus(order.id, status, payload);
+        setOrder(prev => prev ? { ...prev, status } : prev);
+        setShowCodeModal(false);
+        setCodeInput('');
+      }
 
-      // Atualiza o status localmente
-      setOrder(prev => prev ? { ...prev, status } : prev);
-      setShowCodeModal(false);
-      setCodeInput('');
-
-      // Se entregue, mostra modal de avaliação
       if (status === 'DELIVERED') {
         setShowRating(true);
       }
