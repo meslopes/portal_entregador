@@ -139,11 +139,37 @@ def health_check():
 @app.route('/uploads/proofs/<path:filename>')
 @jwt_required()
 def serve_proof(filename):
-    """Serve fotos de prova de entrega (autenticação obrigatória)"""
+    """Serve fotos de prova de entrega (autenticação obrigatória + verificação de ownership)"""
+    from flask import current_app
+    from werkzeug.utils import safe_join
+    from src.utils.tenant import get_current_user, get_current_tenant_id
+
+    # Proteção contra path traversal
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
-    if os.path.exists(os.path.join(uploads_dir, filename)):
-        return send_from_directory(uploads_dir, filename)
-    return {'error': 'File not found'}, 404
+    try:
+        safe_path = safe_join(uploads_dir, filename)
+    except Exception:
+        return {'error': 'Caminho inválido'}, 400
+
+    if not safe_path or not os.path.exists(safe_path):
+        return {'error': 'File not found'}, 404
+
+    # Verificar ownership: apenas membros do mesmo tenant podem ver a prova
+    user = get_current_user()
+    if user and not user.is_super_admin:
+        # Extrair order_id do filename (formato: order_{id}_{hash}.ext)
+        try:
+            from src.models.portal_models import Order as OrderModel
+            parts = filename.split('_')
+            if len(parts) >= 2:
+                order_id = int(parts[1])
+                order = OrderModel.query.get(order_id)
+                if order and order.tenant_id and order.tenant_id != get_current_tenant_id():
+                    return {'error': 'Sem permissão para acessar este arquivo'}, 403
+        except (ValueError, IndexError):
+            pass
+
+    return send_from_directory(uploads_dir, filename)
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
