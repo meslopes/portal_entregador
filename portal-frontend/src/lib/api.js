@@ -35,6 +35,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && !isRedirecting) {
+      // NÃO redirecionar se o 401 veio do próprio endpoint de login
+      const isLoginRequest = error.config?.url?.includes('/api/auth/login');
+      if (isLoginRequest) {
+        // Deixa o erro propagar para o componente tratar
+        return Promise.reject(error);
+      }
+
       isRedirecting = true;
       // Verificar se é rota de own-driver
       const isOwnDriverRequest = error.config?.url?.includes('/api/own-driver/');
