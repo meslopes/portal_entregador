@@ -565,6 +565,9 @@ def get_available_orders():
         )
         if driver.tenant_id:
             query = query.filter(Order.tenant_id == driver.tenant_id)
+        else:
+            # Entregador sem tenant não deve ver pedidos de ninguém
+            return jsonify({'orders': []}), 200
 
         # Exclui pedidos que este entregador já recusou
         reject_log = f"|REJECTED_BY_{user_id}|"
