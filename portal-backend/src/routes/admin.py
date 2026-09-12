@@ -10933,3 +10933,91 @@ def export_drivers_csv():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/import/orders', methods=['POST'])
+@jwt_required()
+@admin_required
+def import_orders_csv():
+    """Importa pedidos em lote a partir de um arquivo CSV.
+    Formato esperado do CSV:
+    cliente,telefone,endereco,bairro,cidade,itens,valor_total,taxa_entrega,forma_pagamento
+    """
+    try:
+        import csv
+        import io
+
+        if 'file' not in request.files:
+            return jsonify({'error': 'Envie um arquivo CSV no campo "file"'}), 400
+
+        file = request.files['file']
+        if not file.filename.endswith('.csv'):
+            return jsonify({'error': 'Arquivo deve ser .csv'}), 400
+
+        content = file.read().decode('utf-8-sig')
+        reader = csv.DictReader(io.StringIO(content))
+
+        user = get_current_user()
+        tenant_id = get_current_tenant_id()
+
+        created = 0
+        errors = []
+
+        for i, row in enumerate(reader, start=2):
+            try:
+                customer_name = row.get('cliente', '').strip()
+                customer_phone = row.get('telefone', '').strip()
+                delivery_address = row.get('endereco', '').strip()
+
+                if not customer_name or not customer_phone or not delivery_address:
+                    errors.append(f'Linha {i}: campos obrigatorios ausentes')
+                    continue
+
+                customer = Customer.query.filter_by(phone=customer_phone, tenant_id=tenant_id).first()
+                if not customer:
+                    customer = Customer(name=customer_name, phone=customer_phone, tenant_id=tenant_id)
+                    db.session.add(customer)
+                    db.session.flush()
+
+                address = Address(
+                    customer_id=customer.id,
+                    street=delivery_address,
+                    neighborhood=row.get('bairro', '').strip(),
+                    city=row.get('cidade', '').strip()
+                )
+                db.session.add(address)
+                db.session.flush()
+
+                items_str = row.get('itens', '').strip()
+                items = [{'name': items_str, 'quantity': 1}] if items_str else []
+
+                from datetime import datetime as dt
+                order = Order(
+                    tenant_id=tenant_id,
+                    customer_id=customer.id,
+                    delivery_address_id=address.id,
+                    order_number=f"IMP{dt.now().strftime('%Y%m%d%H%M%S')}{i:04d}",
+                    items=items,
+                    subtotal=float(row.get('valor_total', 0) or 0),
+                    delivery_fee=float(row.get('taxa_entrega', 0) or 0),
+                    total_amount=float(row.get('valor_total', 0) or 0) + float(row.get('taxa_entrega', 0) or 0),
+                    payment_method=PaymentMethod(row.get('forma_pagamento', 'CASH').strip().upper() or 'CASH'),
+                    status=OrderStatus.PENDING
+                )
+                db.session.add(order)
+                created += 1
+
+            except Exception as e:
+                errors.append(f'Linha {i}: {str(e)[:80]}')
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'{created} pedidos importados com sucesso',
+            'created': created,
+            'errors': errors[:20]
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
