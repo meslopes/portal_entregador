@@ -545,10 +545,16 @@ def request_withdrawal():
         
         if amount <= 0:
             return jsonify({'error': 'Valor inválido'}), 400
-        
-        if amount > float(driver.balance or 0):
+
+        # Saque atômico: debita somente se saldo suficiente (previne race condition)
+        from decimal import Decimal
+        result = db.session.execute(
+            db.text("UPDATE drivers SET balance = balance - :amount, locked_balance = locked_balance + :amount, updated_at = NOW() WHERE id = :id AND balance >= :amount"),
+            {'amount': amount, 'id': driver.id}
+        )
+        if result.rowcount == 0:
             return jsonify({'error': 'Saldo insuficiente'}), 400
-        
+
         # Criar solicitação de saque
         from src.models.portal_models import PaymentType
         withdrawal = Payment(
@@ -559,15 +565,10 @@ def request_withdrawal():
             status=PaymentStatus.PENDING
         )
         db.session.add(withdrawal)
-        
-        # Bloquear valor
-        from decimal import Decimal
-        driver.balance = Decimal(str(float(driver.balance or 0))) - Decimal(str(amount))
-        driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) + Decimal(str(amount))
-        driver.updated_at = datetime.now(timezone.utc)
-        
+
         db.session.commit()
-        
+        db.session.refresh(driver)
+
         return jsonify({
             'message': 'Solicitação de saque enviada',
             'amount': amount,
