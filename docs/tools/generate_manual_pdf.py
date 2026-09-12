@@ -114,8 +114,12 @@ def create_manual():
         '10. Painel do Estabelecimento',
         '11. App do Entregador Próprio',
         '12. Rastreamento em Tempo Real',
-        '13. Mapa do Banco de Dados',
-        '14. Solução de Problemas',
+        '13. Segurança (2FA e Rate Limiting)',
+        '14. White-Label',
+        '15. Métodos de Tarifa',
+        '16. Sistema Offline',
+        '17. Mapa do Banco de Dados',
+        '18. Solução de Problemas',
     ]
     for item in toc:
         pdf.numbered_item(item.split('.')[0], item.split('. ', 1)[1])
@@ -381,9 +385,96 @@ def create_manual():
     pdf.numbered_item(2, 'O cliente acessa o link e vê a localização do entregador')
     pdf.numbered_item(3, 'O link mostra o status do pedido e a rota')
     
-    # Chapter 13
+    # Chapter 13 - Segurança
     pdf.add_page()
-    pdf.chapter_title('13. Mapa do Banco de Dados')
+    pdf.chapter_title('13. Segurança (2FA e Rate Limiting)')
+    pdf.section_title('Autenticação em 2 Fatores (2FA)')
+    pdf.body_text('O2FA adiciona uma camada extra de segurança ao login do admin. Após digitar a senha, é necessário inserir um código temporário gerado pelo app autenticador.')
+    pdf.subsection_title('Como ativar')
+    pdf.numbered_item(1, 'Acesse o painel admin')
+    pdf.numbered_item(2, 'Chame o endpoint POST /api/auth/2fa/enable')
+    pdf.numbered_item(3, 'Escaneie o QR code com Google Authenticator ou Authy')
+    pdf.numbered_item(4, 'Digite o código exibido no app para confirmar')
+    pdf.numbered_item(5, 'A partir daí, todo login exigirá o código')
+    pdf.subsection_title('Como desativar')
+    pdf.body_text('Chame POST /api/auth/2fa/disable com o código atual do autenticador.')
+    pdf.section_title('Rate Limiting')
+    pdf.body_text('O sistema limita a quantidade de requisições para proteger contra abuso:')
+    pdf.table_row(['Endpoint', 'Limite', 'O que acontece'], True)
+    pdf.table_row(['Login', '5 por minuto', 'Bloqueia por 1 minuto após 5 tentativas'])
+    pdf.table_row(['Global', '300 por minuto', 'Bloqueia requisições excedentes'])
+    pdf.body_text('Se você ver "Too Many Requests", aguarde 1 minuto e tente novamente.')
+    
+    # Chapter 14 - White-Label
+    pdf.add_page()
+    pdf.chapter_title('14. White-Label')
+    pdf.section_title('Personalização da Marca')
+    pdf.body_text('Cada tenant (organização) pode personalizar a aparência do sistema com sua marca.')
+    pdf.section_title('Configurações Disponíveis')
+    pdf.table_row(['Configuração', 'Descrição', 'Onde aparece'], True)
+    pdf.table_row(['Logo', 'Logotipo da empresa', 'Topo de todas as telas'])
+    pdf.table_row(['Nome', 'Nome da empresa', 'Ao lado do logo'])
+    pdf.table_row(['Cor primária', 'Cor principal (hex)', 'Botões, links, destaques'])
+    pdf.table_row(['Cor secundária', 'Cor de fundo (hex)', 'Fundos, cards'])
+    pdf.section_title('Como configurar')
+    pdf.numbered_item(1, 'Acesse Configurações > White-Label no painel admin')
+    pdf.numbered_item(2, 'Envie o logotipo (PNG ou JPG)')
+    pdf.numbered_item(3, 'Defina as cores primária e secundária')
+    pdf.numbered_item(4, 'Clique em "Salvar"')
+    pdf.body_text('As alterações são aplicadas imediatamente para todos os usuários do tenant.')
+    
+    # Chapter 15 - Métodos de Tarifa
+    pdf.add_page()
+    pdf.chapter_title('15. Métodos de Tarifa')
+    pdf.section_title('Tipos de Cálculo')
+    pdf.table_row(['Método', 'Descrição', 'Configuração'], True)
+    pdf.table_row(['Por Km', 'Distância x Preço/km', 'price_per_km na praça/tabela'])
+    pdf.table_row(['Tarifa Fixa', 'Valor fixo independente da distância', 'fixed_fee na praça/tabela'])
+    pdf.table_row(['Mínimo', 'Valor mínimo do frete', 'min_delivery_fee'])
+    pdf.table_row(['Máximo', 'Valor máximo do frete', 'max_delivery_fee'])
+    pdf.section_title('Taxas Dinâmicas')
+    pdf.body_text('Adicionadas automaticamente ao frete quando ativas:')
+    pdf.table_row(['Taxa', 'Quando se aplica', 'Configuração'], True)
+    pdf.table_row(['Chuva', 'Dias de chuva', 'DynamicPricing: rainy_day_active + rainy_day_bonus'])
+    pdf.table_row(['Alta Demanda', 'Muitos pedidos simultâneos', 'DynamicPricing: high_demand_active + high_demand_bonus'])
+    pdf.table_row(['Feriado', 'Feriados configurados', 'DynamicPricing: holiday_active + holiday_bonus'])
+    pdf.table_row(['Cancelamento', 'Quando pedido é cancelado', 'DynamicPricing: cancellation_fee_active + cancellation_fee'])
+    pdf.section_title('Configurar Tarifa Fixa')
+    pdf.numbered_item(1, 'Acesse Configurações > Praças ou Tabelas de Preço')
+    pdf.numbered_item(2, 'No campo "Tarifa Fixa", insira o valor (ex: 10.00)')
+    pdf.numbered_item(3, 'Se o valor for maior que 0, será usado em vez do cálculo por km')
+    pdf.numbered_item(4, 'Se o valor for 0, o sistema usa o preço por km normalmente')
+    
+    # Chapter 16 - Sistema Offline
+    pdf.add_page()
+    pdf.chapter_title('16. Sistema Offline')
+    pdf.section_title('Como Funciona')
+    pdf.body_text('O sistema permite que entregadores continuem trabalhando mesmo sem internet. Quando a conexão é restaurada, todas as ações são sincronizadas automaticamente.')
+    pdf.section_title('O que funciona offline')
+    pdf.bullet_point('Aceitar pedidos (salvo localmente)')
+    pdf.bullet_point('Confirmar coleta (salvo localmente)')
+    pdf.bullet_point('Confirmar entrega (salvo localmente)')
+    pdf.bullet_point('Visualizar pedidos já carregados')
+    pdf.section_title('Sincronização')
+    pdf.bullet_point('Automática: quando a internet volta')
+    pdf.bullet_point('Periódica: a cada 30 segundos se online')
+    pdf.bullet_point('Máximo de 5 tentativas por ação')
+    pdf.section_title('Instalação como App (PWA)')
+    pdf.body_text('O sistema pode ser instalado como um aplicativo no celular e no computador:')
+    pdf.subsection_title('No celular (Android)')
+    pdf.numbered_item(1, 'Abra o site no Chrome')
+    pdf.numbered_item(2, 'Toque nos 3 pontos > "Adicionar à tela inicial"')
+    pdf.numbered_item(3, 'O app aparece na tela como um app nativo')
+    pdf.subsection_title('No celular (iPhone)')
+    pdf.numbered_item(1, 'Abra o site no Safari')
+    pdf.numbered_item(2, 'Toque no ícone de compartilhar > "Adicionar à Tela de Início"')
+    pdf.subsection_title('No computador')
+    pdf.numbered_item(1, 'Abra o site no Chrome ou Edge')
+    pdf.numbered_item(2, 'Na barra de endereço, clique no ícone de instalar')
+    
+    # Chapter 17 - Mapa do Banco de Dados
+    pdf.add_page()
+    pdf.chapter_title('17. Mapa do Banco de Dados')
     pdf.section_title('Funcionalidades')
     pdf.bullet_point('Visualizar todos os dados do sistema')
     pdf.bullet_point('Editar dados diretamente')

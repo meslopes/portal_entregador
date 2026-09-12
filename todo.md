@@ -158,8 +158,9 @@
 
 ## 📋 Pendencias Futuras
 - [ ] Testes manuais completos
-- [ ] Integração iFood - testar webhook com estabelecimento correto
+- [ ] Integracao iFood - testar webhook com estabelecimento correto
 - [ ] Integracao WhatsApp Business API (depende de custos)
+- [ ] Push notifications Firebase (conta criada, aguardando config)
 - [ ] Migrações versionadas (Alembic)
 - [ ] Máquina de estados central para pedidos
 - [ ] Ledger financeiro imutável
@@ -173,10 +174,23 @@
 - [x] Integracao offline nos botoes de aceitar/coletar/entregar
 - [x] Icone do entregador trocado para Bike
 - [x] Fluxograma atualizado com novas funcionalidades
+- [x] JWT expira em 4h (antes 24h)
+- [x] Rate limiting (5/min no login, 300/min global)
+- [x] 2FA para admins (TOTP via Google Authenticator)
+- [x] White-label - logo e nome do tenant nas layouts
+- [x] Botao WhatsApp para falar com entregador
+- [x] Tarifa fixa como alternativa ao preco por km
+- [x] Taxas dinamicas (chuva, demanda, feriado) no frete
+- [x] Race condition no saque corrigida (query atomica)
+- [x] Bug datetime em muvscore.py corrigido
+- [x] timezone import em 11 route files
+- [x] func import em platform.py
+- [x] Email stub criado (src/services/email.py)
+- [x] Manual PDF v2.0 gerado
 
 ## 📊 Metricas do Projeto
-- **Total de commits:** 90+
+- **Total de commits:** 100+
 - **Arquivos frontend:** 40+
 - **Arquivos backend:** 20+
-- **Endpoints API:** 50+
+- **Endpoints API:** 60+
 - **Tabelas banco:** 15+
