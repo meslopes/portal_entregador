@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SquareProvider } from '@/contexts/SquareContext';
@@ -8,6 +8,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
 import ToastContainer from '@/components/Toast';
 import ConfirmDialogContainer from '@/components/ConfirmDialog';
+import { initOfflineSync } from '@/lib/offline';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -98,6 +99,10 @@ function SmartRedirect() {
 }
 
 function App() {
+  useEffect(() => {
+    initOfflineSync();
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>
