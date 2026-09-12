@@ -1156,9 +1156,10 @@ def process_driver_response_whatsapp(phone, action):
         if not driver:
             return
 
-        # Busca o pedido pendente mais recente
+        # Busca o pedido pendente mais recente DO MESMO TENANT do entregador
         pending_order = Order.query.filter(
-            Order.status == OrderStatus.PENDING
+            Order.status == OrderStatus.PENDING,
+            Order.tenant_id == driver.tenant_id
         ).order_by(Order.created_at.desc()).first()
 
         if not pending_order:
