@@ -3042,6 +3042,11 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
             driver_query = driver_query.filter(Driver.tenant_id == order.tenant_id)
         online_drivers = driver_query.all()
 
+        # Filtrar entregadores com nota abaixo do mínimo configurado
+        min_rating_config = SystemConfig.query.filter_by(config_key='min_driver_rating').first()
+        min_rating = float(min_rating_config.config_value) if min_rating_config else 2.0
+        online_drivers = [d for d in online_drivers if float(d.rating or 5.0) >= min_rating]
+
         # Busca contagem de pedidos ativos por entregador em uma única query
         driver_ids = [d.id for d in online_drivers if d.id not in exclude_driver_ids]
         active_counts = {}
