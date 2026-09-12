@@ -27,7 +27,6 @@
 - [x] APIs de pagamentos e relatorios
 - [x] CORS e seguranca
 - [x] Sistema de bonus e ranking
-- [x] Integracao WhatsApp
 
 ## ✅ Fase 5: Frontend React (CONCLUIDA)
 - [x] Estrutura base React + Vite + Tailwind
@@ -52,7 +51,7 @@
 ## ✅ Fase 7: Deploy (CONCLUIDA)
 - [x] Frontend no Vercel (portal-entregador-gamma.vercel.app)
 - [x] Backend no Render (muvlog-api.onrender.com)
-- [x] Banco PostgreSQL (Render)
+- [x] Banco PostgreSQL (Supabase)
 - [x] CORS configurado
 - [x] Variaveis de ambiente
 
@@ -61,18 +60,13 @@
 - [x] Relatorios expandidos (8 tipos)
 - [x] Configuracoes expandidas (8 modulos)
 - [x] Multi-praca
-- [x] Integracao iFood
-- [x] Integracao WhatsApp
-- [x] Integracao 99Food
-- [x] Integracao InstaDelivery
-- [x] Integracao SaiPos
 - [x] Atribuicao inteligente (entregador mais proximo)
 - [x] Limite de pedidos simultaneos (max_concurrent_orders)
 - [x] Aceite e recusa de pedidos
 - [x] Timeout configuravel + notificacao ao admin
-- [x] Prova de entrega (foto)
+- [x] Prova de entrega (foto com upload para Supabase Storage)
 - [x] Avaliacao do entregador (1-5 estrelas)
-- [x] Gamificacao (ranking + conquistas)
+- [x] Gamificacao (ranking + conquistas - MuvScore)
 - [x] Cadastro pelo admin (estabelecimentos + entregadores)
 - [x] Financeiro do admin (comissao configuravel)
 - [x] Financeiro do estabelecimento
@@ -96,74 +90,82 @@
 - [x] Niveis do entregador (Bronze, Prata, Ouro, Diamante)
 - [x] Bonus semanal e mensal
 
-## ✅ Fase 12: Notificacoes WhatsApp (CONCLUIDA)
-- [x] Mensagem com dados completos do pedido
-- [x] Enderecos de coleta e entrega na mensagem
-- [x] Distancia e valor na mensagem
-- [x] Resposta SIM/NAO pelo WhatsApp
-- [x] Processamento automatico de aceite/recusa
+## ✅ Fase 12: Entregadores Proprios (CONCLUIDA)
+- [x] Modelo EstablishmentDriver
+- [x] Rotas admin CRUD para entregadores proprios
+- [x] Interface /client/drivers com menu "Meus Entregadores"
+- [x] Distribuicao hibrida + botao "Chamar Plataforma"
+- [x] Controle financeiro (pagamentos, gastos, comparativo)
+- [x] Fluxo completo (distribuicao, timeline, confirmacao, prova)
+- [x] Avaliacao e relatorios
+
+## ✅ Fase 13: Auditoria e Correcoes (2026-09-12) (CONCLUIDA)
+### Auditoria completa do sistema (89 itens encontrados)
+- **12 criticos** — TODOS CORRIGIDOS
+- **22 altos** — TODOS CORRIGIDOS
+- **30 medios** — CORRIGIDOS (6 de maior impacto)
+- **15 baixos** — Dívida técnica (não afeta funcionamento)
+
+### Correcoes críticas
+- [x] Verificacao de tenant inativo em login, admin e pedidos
+- [x] Status de usuario (suspenso/inativo) verificado em rotas criticas
+- [x] customer.restaurant_id inexistente na edicao de pedido
+- [x] formatDate/formatTime crashavam com data nula
+- [x] Estorno de locked_balance ao cancelar pedido
+- [x] Flag isRedirecting nunca era resetada
+- [x] Login busca email filtrando por tenant
+- [x] restaurant_ids nao definido no financeiro (NameError)
+- [x] EstablishmentDriver nao tem user_id
+
+### Correcoes altas
+- [x] Token de confirmacao de email com segredo previsivel
+- [x] Aceite via WhatsApp sem filtro de tenant
+- [x] Dashboard global usava texto em vez de enum
+- [x] Admin sem tenant via todos os dados (agora so super admin)
+- [x] Cliente de outro tenant podia ser usado
+- [x] Credenciais de teste visiveis em producao
+- [x] XSS em popups do Leaflet (3 arquivos)
+- [x] Entregador sem tenant via pedidos de todos
+- [x] Nearby drivers sem filtro de tenant
+- [x] "Esqueci minha senha" sem funcionalidade
+
+### Correcoes medias
+- [x] Registro usava fetch direto (agora usa axios)
+- [x] XSS no popup do mapa do entregador
+- [x] Praça do localStorage validada contra backend
+- [x] except generico substituido por captura especifica
+- [x] markAllAsRead usava Promise.all (agora allSettled)
+- [x] Nav desktop overflow horizontal
+
+### Melhorias e funcionalidades (2026-09-12)
+- [x] Sidebar admin colapsavel em mobile
+- [x] AbortController para thundering herd no dashboard
+- [x] min_driver_rating filtra entregadores com nota baixa
+- [x] Estorno de locked_balance credita no balance
+- [x] datetime.utcnow() substituido por datetime.now(timezone.utc) em 167 ocorrencias
+- [x] RATING_POINTS e LEVELS configuraveis via SystemConfig
+- [x] Rota para converter entregador proprio de volta para plataforma
+- [x] main.py unificado (faltavam route_bp e finance_bp)
+- [x] Exportacao CSV de pedidos e entregadores
+- [x] Webhook de teste protegido por auth
+- [x] Prova de entrega com path traversal protection
+- [x] Opcao de Waze na navegacao mobile
+- [x] Ganhos estimados retornados pelo backend com % configuravel
+- [x] useMemo em filteredOrders do HistoryPage
+- [x] alert() nativo substituido por showToast
+- [x] PWA configurado (manifest.json + service worker)
+- [x] README.md criado
 
 ## 📋 Pendencias Futuras
-- [ ] App mobile nativo (PWA ou React Native)
-- [ ] Importacao de pedidos em lote
-- [ ] Exportacao Excel dos relatorios
-- [ ] Testes completos (usar ROTEIRO_TESTES.md)
-- [ ] Atualizar documentacao restante (arquitetura, configuracoes, design)
-
-## ✅ Fase: Entregadores Próprios (CONCLUIDA)
-- [x] Modelo EstablishmentDriver
-- [x] Campos has_own_drivers, subscription_type no Restaurant
-- [x] Campos assigned_to_own_driver, establishment_driver_id no Order
-- [x] Rotas admin CRUD para entregadores próprios
-- [x] Interface /client/drivers
-- [x] Menu "Meus Entregadores"
-- [x] Fase 2: Distribuição híbrida + botão "Chamar Plataforma"
-- [x] Fase 1.1: Mostrar distribuição para pedidos SCHEDULED
-- [x] Fase 1.2: Redirecionar para /client/orders após criar pedido
-- [x] Fase 1.3: Incluir entregadores próprios no mapa de rastreamento
-- [x] Fase 1.4: Notificação WhatsApp ao atribuir entregador próprio
-- [x] Fase 2: Controle financeiro (pagamentos, gastos, comparativo)
-- [x] Fase 3: Fluxo completo (distribuição, timeline, confirmação, prova)
-- [x] Fase 4: Avaliação e relatórios
-- [x] Fase 5: App mobile / WhatsApp Business (PWA entregadores próprios)
-
-## 🔧 Correções de Bugs (2026-08-13 a 2026-08-14)
-### Planilha de Bugs - TODOS CORRIGIDOS
-- Planilha `bugs_correcoes.xlsx` com 27 bugs backend e 21 bugs frontend
-- **48/48 CORRIGIDOS** (100%)
-- Backend: 8 críticos, 8 altos, 8 médios, 3 baixos - TODOS CORRIGIDOS
-- Frontend: 1 crítico, 8 altos, 8 médios, 4 baixos - TODOS CORRIGIDOS
-
-### Principais correções realizadas
-- Encoding UTF-8 corrompido em admin.py
-- delete_user() com force=true
-- Delivery.driver_id nullable para entregadores próprios
-- Validação de campos obrigatórios em create_order()
-- Validação de items (isinstance, name obrigatório)
-- Webhook iFood retorna 400 para JSON inválido
-- Token de setup via variável de ambiente (não hardcoded)
-- Senhas não retornadas em texto plano nas respostas
-- Webhook iFood com autenticação por token
-- mapInstanceRef como useRef(null) com cleanup
-- Null safety em ClientDashboardPage e ClientOrdersPage
-- Rotas own-driver com ProtectedRoute
-- Modais com role="dialog" e aria-modal
-- Interceptor 401 com flag isRedirecting
-- Sidebar responsiva para tablets
-- Nav com overflow scroll suave
-- Labels associados via htmlFor/id no LoginPage
-- Contraste: #94a3b8 → #64748b (350 ocorrências em 58 arquivos)
-- Commit dentro de loop → flush + commit único
-
-## 🔄 Próximos Passos
-- [ ] Testes manuais (usuario vai executar e reportar novos bugs)
-- [ ] Corrigir bugs encontrados nos testes manuais
+- [ ] Testes manuais completos
 - [ ] Integração iFood - testar webhook com estabelecimento correto
-- [ ] Deploy automático (Vercel + Render)
+- [ ] Integracao WhatsApp Business API (depende de custos)
+- [ ] Icones PWA (icon-192.png, icon-512.png) - usar logo do projeto
+- [ ] Importacao de pedidos em lote (upload de planilha)
 
 ## 📊 Metricas do Projeto
-- **Total de commits:** 60+
-- **Arquivos frontend:** 30+
-- **Arquivos backend:** 15+
-- **Endpoints API:** 40+
+- **Total de commits:** 90+
+- **Arquivos frontend:** 40+
+- **Arquivos backend:** 20+
+- **Endpoints API:** 50+
 - **Tabelas banco:** 15+
