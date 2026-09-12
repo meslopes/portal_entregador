@@ -65,18 +65,29 @@ const ActiveDeliveryPage = () => {
   const mapInstanceRef = useRef(null);
   const isMounted = useRef(true);
 
-  // Funcao para abrir navegacao externa (Google Maps/Waze)
+  // Funcao para abrir navegacao externa (Google Maps ou Waze)
   const openNavigation = (lat, lng, label) => {
     if (!lat || !lng) {
-      // Se nao tem coordenadas, abre busca por endereco
       const address = mapTarget === 'restaurant' ? order?.restaurant?.address : order?.delivery_address?.street;
       if (address) {
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
       return;
     }
-    // Abre Google Maps com as coordenadas
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    // Detectar se é mobile para oferecer Waze
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      // Em mobile: pergunta qual app usar
+      const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+      if (useWaze) {
+        window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+      } else {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      }
+    } else {
+      // Em desktop: abre Google Maps direto
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    }
   };
 
   // Funcao para calcular distancia (Haversine)

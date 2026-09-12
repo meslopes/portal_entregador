@@ -367,8 +367,17 @@ const DashboardPage = () => {
                 onClick={() => {
                   const lat = currentOrder.delivery_address.latitude;
                   const lng = currentOrder.delivery_address.longitude;
-                  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-                  window.open(url, '_blank');
+                  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                  if (isMobile) {
+                    const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+                    if (useWaze) {
+                      window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+                    } else {
+                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                    }
+                  } else {
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                  }
                 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.375rem',
