@@ -53,7 +53,8 @@ const AdminDashboardPage = () => {
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
   const cityCenterRef = useRef(null); // Coordenadas da cidade da praça selecionada
-  const hasUserInteractedRef = useRef(false); // Se o usuário interagiu com o mapa (zoom/pan)
+  const hasUserInteractedRef = useRef(false);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     loadDashboard();
@@ -64,6 +65,10 @@ const AdminDashboardPage = () => {
     loadAllDrivers();
     loadTenants();
     loadPlatformRoutes();
+    return () => {
+      // Cancela requests pendentes ao desmontar
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
   }, []);
 
   // Atualiza establishments quando tracking muda
@@ -74,8 +79,10 @@ const AdminDashboardPage = () => {
   }, [tracking]);
 
   // Recarrega tracking, dashboard e pedidos quando muda a praça
-  // O mapa e recriado automaticamente pelo key prop no container
+  // Cancela requests anteriores para evitar thundering herd
   useEffect(() => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
     loadTracking();
     loadDashboard();
     loadOrders();
