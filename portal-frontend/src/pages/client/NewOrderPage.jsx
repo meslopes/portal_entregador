@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, User, Phone, MapPin, DollarSign, Package,
-  AlertCircle, CheckCircle, ShoppingCart, Truck, Info, Store, Map
+  AlertCircle, CheckCircle, ShoppingCart, Bike, Info, Store, Map
 } from 'lucide-react';
 import { orderService, adminService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -390,7 +390,7 @@ const NewOrderPage = () => {
 
           <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <Truck size={16} style={{ color: '#0d9488' }} />
+              <Bike size={16} style={{ color: '#0d9488' }} />
               <span style={{ fontWeight: 600, color: '#0f766e', fontSize: '0.875rem' }}>Valor da Entrega</span>
               {pricingTable && (
                 <span style={{ marginLeft: 'auto', padding: '0.125rem 0.5rem', background: '#dbeafe', borderRadius: '9999px', fontSize: '0.625rem', color: '#2563eb', fontWeight: 600 }}>

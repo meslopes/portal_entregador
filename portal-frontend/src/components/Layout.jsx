@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw, Route, Truck
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw, Route, Bike
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
@@ -50,7 +50,7 @@ const Layout = ({ children }) => {
       icon: Package,
       children: [
         { name: 'Pedidos', href: '/admin/orders', icon: Package },
-        { name: 'Rotas', href: '/admin/platform-routes', icon: Truck },
+        { name: 'Rotas', href: '/admin/platform-routes', icon: Bike },
         { name: 'Config. Rotas', href: '/admin/route-settings', icon: Route },
       ]
     },

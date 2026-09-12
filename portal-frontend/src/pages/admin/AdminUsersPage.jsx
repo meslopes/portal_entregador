@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Plus, Edit, Trash2, AlertCircle, X,
-  Truck, Store, Shield, Mail, Phone, CheckCircle
+  Bike, Store, Shield, Mail, Phone, CheckCircle
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
 import { showToast } from '@/components/Toast';
@@ -131,7 +131,7 @@ const AdminUsersPage = () => {
   const getTypeIcon = (type) => {
     switch (type) {
       case 'ADMIN': return <Shield size={14} style={{ color: '#8b5cf6' }} />;
-      case 'DRIVER': return <Truck size={14} style={{ color: '#2563eb' }} />;
+      case 'DRIVER': return <Bike size={14} style={{ color: '#2563eb' }} />;
       case 'CLIENT': return <Store size={14} style={{ color: '#0d9488' }} />;
       default: return <Users size={14} style={{ color: '#64748b' }} />;
     }

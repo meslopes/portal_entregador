@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Truck, User, Car, Shield, MapPin, Loader } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Bike, User, Car, Shield, MapPin, Loader } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 

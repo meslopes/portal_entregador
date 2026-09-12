@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Building2, Users, Package, DollarSign, TrendingUp,
   ChevronRight, Loader2, RefreshCw, Eye, Edit, ToggleLeft, ToggleRight,
-  Store, Truck, BarChart3, Globe, Shield, Calendar, Plus, Trash2, X
+  Store, Bike, BarChart3, Globe, Shield, Calendar, Plus, Trash2, X
 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast';
@@ -319,7 +319,7 @@ const PlatformDashboardPage = () => {
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '0.5rem', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={20} style={{ color: '#d97706' }} />
+                  <Bike size={20} style={{ color: '#d97706' }} />
                 </div>
                 <div>
                   <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Entregadores</p>

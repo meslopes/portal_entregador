@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, ShoppingBag,
   Plus, AlertCircle, ChevronRight, Store, User, Phone,
-  TrendingUp, Truck, CheckCircle, XCircle, Eye, Star, Navigation
+  TrendingUp, Bike, CheckCircle, XCircle, Eye, Star, Navigation
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
@@ -16,7 +16,7 @@ const STATUS_CONFIG = {
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
   READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Truck },
+  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Bike },
   DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue', icon: CheckCircle },
   CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelado', icon: XCircle },
 };
@@ -381,7 +381,7 @@ const ClientDashboardPage = () => {
                     {/* Entregador (se atribuído) */}
                     {order.driver && (
                       <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }}>
-                        <Truck size={14} style={{ color: '#0d9488' }} />
+                        <Bike size={14} style={{ color: '#0d9488' }} />
                         <span style={{ color: '#475569' }}>
                           Entregador: <strong>{order.driver.name}</strong>
                         </span>
@@ -617,7 +617,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregador</p>
               <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={16} style={{ color: '#2563eb' }} />
+                  <Bike size={16} style={{ color: '#2563eb' }} />
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.driver.name}</p>
@@ -633,7 +633,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregador Próprio</p>
               <div style={{ background: '#f0fdf4', borderRadius: '0.5rem', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid #bbf7d0' }}>
                 <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={16} style={{ color: '#16a34a' }} />
+                  <Bike size={16} style={{ color: '#16a34a' }} />
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>Entregador próprio atribuído</p>
@@ -689,7 +689,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                   opacity: callingPlatform ? 0.7 : 1
                 }}
               >
-                <Truck size={16} />
+                <Bike size={16} />
                 {callingPlatform ? 'Chamando...' : 'Chamar Entregador da Plataforma'}
               </button>
             </div>
@@ -867,7 +867,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
           {order.driver && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
               <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Truck size={20} style={{ color: '#2563eb' }} />
+                <Bike size={20} style={{ color: '#2563eb' }} />
               </div>
               <div>
                 <p style={{ fontWeight: 600, color: '#1e293b' }}>{order.driver.name}</p>

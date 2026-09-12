@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Users, Search, Plus, AlertCircle, Truck, Phone, Mail,
+  Users, Search, Plus, AlertCircle, Bike, Phone, Mail,
   Star, X, Edit, Eye, MapPin, User, Trash2, Clock, Link, Copy
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
@@ -276,7 +276,7 @@ const AdminDriversPage = () => {
         </div>
       ) : drivers.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <Truck size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
+          <Bike size={48} style={{ color: '#cbd5e1', margin: '0 auto 1rem' }} />
           <p style={{ fontWeight: 600, color: '#1e293b' }}>Nenhum entregador encontrado</p>
         </div>
       ) : (
@@ -309,7 +309,7 @@ const AdminDriversPage = () => {
                     <Edit size={14} />
                   </button>
                   <button onClick={async (e) => { e.stopPropagation(); try { await adminService.updateDriverStatus(driver.id, driver.is_online ? 'OFFLINE' : 'ONLINE'); loadDrivers(); } catch (err) { showToast(err.response?.data?.error || 'Erro', 'error'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: driver.is_online ? '#16a34a' : '#64748b' }} title={driver.is_online ? 'Colocar offline' : 'Colocar online'}>
-                    {driver.is_online ? <Truck size={14} /> : <Truck size={14} />}
+                    {driver.is_online ? <Bike size={14} /> : <Bike size={14} />}
                   </button>
                   <button onClick={async (e) => { e.stopPropagation(); if (!window.confirm('Suspender este entregador?')) return; try { await adminService.updateDriverStatus(driver.id, 'SUSPENDED'); loadDrivers(); } catch (err) { showToast(err.response?.data?.error || 'Erro', 'error'); } }} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#f59e0b' }} title="Suspender">
                     <Clock size={14} />
@@ -453,7 +453,7 @@ const AdminDriversPage = () => {
             <div style={{ padding: '1.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ width: '3.5rem', height: '3.5rem', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={24} style={{ color: '#2563eb' }} />
+                  <Bike size={24} style={{ color: '#2563eb' }} />
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{showDetails.user?.first_name} {showDetails.user?.last_name}</h3>

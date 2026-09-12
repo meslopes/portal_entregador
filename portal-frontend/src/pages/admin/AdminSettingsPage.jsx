@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings, Save, AlertCircle, CheckCircle, CreditCard,
-  Building2, Truck, Store, DollarSign, Clock, Shield,
+  Building2, Bike, Store, DollarSign, Clock, Shield,
   Bell, Globe, Users, MapPin, Package, Zap, ChevronRight, Mail, Palette
 } from 'lucide-react';
 
@@ -60,7 +60,7 @@ const AdminSettingsPage = () => {
     { key: 'payment', label: 'Pagamento', icon: CreditCard, color: '#16a34a' },
     { key: 'email', label: 'E-mail', icon: Mail, color: '#ea580c' },
     { key: 'pricing', label: 'Preços', icon: DollarSign, color: '#d97706' },
-    { key: 'delivery', label: 'Entregas', icon: Truck, color: '#8b5cf6' },
+    { key: 'delivery', label: 'Entregas', icon: Bike, color: '#8b5cf6' },
     { key: 'drivers', label: 'Entregadores', icon: Users, color: '#0d9488' },
     { key: 'establishments', label: 'Estabelecimentos', icon: Store, color: '#06b6d4' },
     { key: 'notifications', label: 'Notificações', icon: Bell, color: '#f59e0b' },
@@ -259,7 +259,7 @@ const PricingSettings = ({ config, onChange }) => (
 
 // Entregas
 const DeliverySettings = ({ config, onChange }) => (
-  <SettingsCard title="Configurações de Entregas" icon={<Truck size={18} />}>
+  <SettingsCard title="Configurações de Entregas" icon={<Bike size={18} />}>
     <FormField label="Raio Máximo de Busca (km)">
       <input type="number" value={config.delivery_radius || '200'} onChange={e => onChange('delivery_radius', e.target.value)} style={inputStyle} />
       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Distância máxima para buscar entregadores disponíveis</p>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Truck, MapPin, DollarSign, Clock, Star, Package,
+  Bike, MapPin, DollarSign, Clock, Star, Package,
   TrendingUp, AlertCircle, Navigation, Zap, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -329,7 +329,7 @@ const DashboardPage = () => {
           onClick={() => navigate('/orders')}
         />
         <ActionCard
-          icon={<Truck size={24} />}
+          icon={<Bike size={24} />}
           iconBg="#dbeafe"
           iconColor="#1d4ed8"
           title="Rotas da Plataforma"

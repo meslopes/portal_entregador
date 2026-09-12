@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Package, Clock, Truck, CheckCircle, XCircle,
+  ArrowLeft, Package, Clock, Bike, CheckCircle, XCircle,
   MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle, Map
 } from 'lucide-react';
 import api, { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
@@ -570,7 +570,7 @@ const OrderDetailPage = () => {
       {order.driver && (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Truck size={16} /> Entregador
+            <Bike size={16} /> Entregador
           </h3>
           <p style={{ fontWeight: 500, color: '#1e293b' }}>
             {order.driver.user?.first_name} {order.driver.user?.last_name}

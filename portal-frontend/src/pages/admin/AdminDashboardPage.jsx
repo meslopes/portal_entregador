@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Users, Truck, Package, DollarSign, TrendingUp,
+  Users, Bike, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, MapPin,
   Search, Filter, ChevronDown, ChevronRight, Store, X, Navigation, Plus, Route
 } from 'lucide-react';
@@ -1165,7 +1165,7 @@ const AdminDashboardPage = () => {
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Truck size={14} style={{ color: route.status === 'PENDING' ? '#f59e0b' : '#2563eb' }} />
+                    <Bike size={14} style={{ color: route.status === 'PENDING' ? '#f59e0b' : '#2563eb' }} />
                     <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>Rota #{route.id}</span>
                   </div>
                   <span style={{
