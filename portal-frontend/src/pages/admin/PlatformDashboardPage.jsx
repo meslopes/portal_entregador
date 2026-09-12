@@ -34,6 +34,7 @@ const PlatformDashboardPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [userEditForm, setUserEditForm] = useState({ first_name: '', last_name: '', email: '', phone: '', status: 'ACTIVE', tenant_id: '', password: '' });
   const [userEditLoading, setUserEditLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadDashboard();
@@ -48,6 +49,12 @@ const PlatformDashboardPage = () => {
     }
     if (activeTab === 'pending') {
       loadPendingUsers();
+    }
+    if (activeTab === 'overview') {
+      loadDashboard();
+    }
+    if (activeTab === 'tenants') {
+      loadTenants();
     }
   }, [activeTab, selectedTenantFilter]);
 
@@ -249,7 +256,7 @@ const PlatformDashboardPage = () => {
             🗺️ Mapa do Banco
           </a>
           <button
-            onClick={() => { loadDashboard(); loadTenants(); loadPendingUsers(); }}
+            onClick={() => { loadDashboard(); loadTenants(); loadPendingUsers(); loadUsers(); setRefreshKey(k => k + 1); }}
             style={{
               display: 'flex', alignItems: 'center', gap: '0.5rem',
               padding: '0.5rem 1rem', borderRadius: '0.5rem',
@@ -392,7 +399,7 @@ const PlatformDashboardPage = () => {
                       <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{tenant.slug} • {tenant.plan}</p>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 600, color: '#2563eb' }}>{tenant.order_count} pedidos</span>
+                  <span style={{ fontWeight: 600, color: '#2563eb' }}>{tenant.orders} pedidos</span>
                 </div>
               ))}
             </div>
@@ -640,7 +647,7 @@ const PlatformDashboardPage = () => {
 
       {/* Admins Tab */}
       {activeTab === 'admins' && (
-        <AdminsTab />
+        <AdminsTab key={refreshKey} />
       )}
 
       {/* Pending Users Tab */}

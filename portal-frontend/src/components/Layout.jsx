@@ -253,28 +253,6 @@ const Layout = ({ children }) => {
                   Lançar Pedido
                 </Link>
               )}
-              {/* Botão para super admin alternar entre Platform e Admin */}
-              {isSuperAdmin && (
-                <Link
-                  to={location.pathname.startsWith('/platform') ? '/admin' : '/platform'}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    background: location.pathname.startsWith('/platform') ? '#2563eb' : '#7c3aed',
-                    color: 'white',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <Shield size={16} />
-                  {location.pathname.startsWith('/platform') ? 'Admin' : 'Plataforma'}
-                </Link>
-              )}
             </nav>
 
             {/* User Menu */}
@@ -372,6 +350,29 @@ const Layout = ({ children }) => {
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div style={{ padding: '0.5rem 1rem 1rem', borderTop: '1px solid #f1f5f9' }}>
+            {/* Botão para super admin alternar entre Platform e Admin (mobile) */}
+            {isSuperAdmin && (
+              <Link
+                to={location.pathname.startsWith('/platform') ? '/admin' : '/platform'}
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.9375rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  marginBottom: '0.5rem',
+                  background: location.pathname.startsWith('/platform') ? '#2563eb' : '#7c3aed',
+                  color: 'white'
+                }}
+              >
+                <Shield size={18} />
+                {location.pathname.startsWith('/platform') ? 'Painel Admin' : 'Painel Plataforma'}
+              </Link>
+            )}
             {navigation.map((item) => {
               const Icon = item.icon;
               

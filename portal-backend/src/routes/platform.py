@@ -61,7 +61,7 @@ def get_platform_dashboard():
         # Top tenants por pedidos (usando contagem no banco, não em Python)
         top_tenants = []
         all_tenants = Tenant.query.filter_by(is_active=True).all()
-        for tenant in all_tenants[:5]:
+        for tenant in all_tenants:
             tenant_orders = db.session.query(func.count(Order.id)).filter(Order.tenant_id == tenant.id).scalar() or 0
             tenant_drivers = db.session.query(func.count(Driver.id)).filter(Driver.tenant_id == tenant.id).scalar() or 0
             top_tenants.append({
@@ -80,7 +80,7 @@ def get_platform_dashboard():
                 'total_revenue': round(total_revenue, 2),
                 'week_orders': week_orders
             },
-            'top_tenants': sorted(top_tenants, key=lambda x: x['orders'], reverse=True)
+            'top_tenants': sorted(top_tenants, key=lambda x: x['orders'], reverse=True)[:5]
         }), 200
         
     except Exception as e:
