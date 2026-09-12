@@ -72,6 +72,7 @@ import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import PendingApprovalPage from '@/pages/PendingApprovalPage';
+import InstallPwaBanner from '@/components/InstallPwaBanner';
 import './App.css';
 
 // Componente de redirecionamento inteligente baseado no tipo de usuario
@@ -110,6 +111,7 @@ function App() {
           <Router>
           <ToastContainer />
           <ConfirmDialogContainer />
+          <InstallPwaBanner />
           <Routes>
           {/* Rotas públicas */}
           <Route

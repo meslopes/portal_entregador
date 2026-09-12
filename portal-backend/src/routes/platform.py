@@ -100,10 +100,10 @@ def get_admins():
         # Pre-load tenants
         tenants_map = {t.id: t.name for t in Tenant.query.all()}
 
-        # Buscar admins com tenant_id (clientes da plataforma)
+        # Buscar admins (excluindo super admins)
         admins = User.query.filter(
             User.user_type == UserType.ADMIN,
-            User.tenant_id.isnot(None)
+            User.is_super_admin == False
         ).all()
         
         result = []
