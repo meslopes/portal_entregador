@@ -53,15 +53,16 @@ def get_platform_dashboard():
         week_orders = Order.query.filter(Order.created_at >= week_ago).count()
         
         # Receita total (soma de delivery_fee de pedidos entregues)
-        delivered_orders = Order.query.filter_by(status='DELIVERED').all()
-        total_revenue = sum(float(o.delivery_fee or 0) for o in delivered_orders)
+        from src.models.portal_models import OrderStatus
+        delivered_orders = Order.query.filter(Order.status == OrderStatus.DELIVERED).all()
+        total_revenue = db.session.query(func.sum(Order.delivery_fee)).filter(Order.status == OrderStatus.DELIVERED).scalar() or 0
         
-        # Top tenants por pedidos
+        # Top tenants por pedidos (usando contagem no banco, não em Python)
         top_tenants = []
         all_tenants = Tenant.query.filter_by(is_active=True).all()
         for tenant in all_tenants[:5]:
-            tenant_orders = Order.query.filter_by(tenant_id=tenant.id).count()
-            tenant_drivers = Driver.query.filter_by(tenant_id=tenant.id).count()
+            tenant_orders = db.session.query(func.count(Order.id)).filter(Order.tenant_id == tenant.id).scalar() or 0
+            tenant_drivers = db.session.query(func.count(Driver.id)).filter(Driver.tenant_id == tenant.id).scalar() or 0
             top_tenants.append({
                 'id': tenant.id,
                 'name': tenant.name,
