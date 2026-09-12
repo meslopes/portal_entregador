@@ -1348,7 +1348,8 @@ def edit_order(order_id):
         # Verificar permissão: admin ou dono do estabelecimento
         if user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
-            if not customer or order.restaurant_id != customer.restaurant_id:
+            restaurant = Restaurant.query.filter_by(name=customer.name).first()
+            if not customer or not restaurant or order.restaurant_id != restaurant.id:
                 return jsonify({'error': 'Sem permissão para editar este pedido'}), 403
         elif user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Sem permissão para editar pedidos'}), 403
