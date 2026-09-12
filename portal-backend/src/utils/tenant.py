@@ -88,8 +88,8 @@ def filter_by_tenant(query, model):
     """Filtra uma consulta pelo tenant_id do usuário atual."""
     tenant_id = get_current_tenant_id()
     user = get_current_user()
-    # Super admin (ADMIN sem tenant) vê tudo
-    if user and user.user_type and user.user_type.value == 'ADMIN' and not tenant_id:
+    # Super admin (is_super_admin=True, sem tenant) vê tudo
+    if user and user.is_super_admin and not tenant_id:
         return query
     if tenant_id:
         return query.filter(model.tenant_id == tenant_id)
