@@ -37,6 +37,7 @@ const AdminDashboardPage = () => {
   const [squares, setSquares] = useState([]);
   const [tenants, setTenants] = useState([]);
   const [timeInterval, setTimeInterval] = useState(60); // minutos
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768); // Fechado em mobile
   const [showSettings, setShowSettings] = useState(false);
   const [selectedOrderMenu, setSelectedOrderMenu] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -538,9 +539,26 @@ const AdminDashboardPage = () => {
   }
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9', position: 'relative' }}>
+      {/* Botão toggle sidebar (mobile) */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        style={{
+          position: 'absolute', top: '0.5rem', left: sidebarOpen ? '280px' : '0.5rem', zIndex: 1001,
+          background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.375rem',
+          padding: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)', transition: 'left 0.2s'
+        }}
+      >
+        {sidebarOpen ? <X size={16} /> : <Filter size={16} />}
+      </button>
+
       {/* Sidebar Esquerda */}
-      <div className="admin-sidebar" style={{ width: '320px', background: 'white', borderRight: '1px solid #e2e8f0', overflow: 'auto', flexShrink: 0 }}>
+      <div className="admin-sidebar" style={{
+        width: sidebarOpen ? '320px' : '0px', background: 'white', borderRight: '1px solid #e2e8f0',
+        overflow: sidebarOpen ? 'auto' : 'hidden', flexShrink: 0, transition: 'width 0.2s',
+        minWidth: sidebarOpen ? '320px' : '0px'
+      }}>
         {/* Filtros */}
         <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -1433,12 +1451,10 @@ const AdminDashboardPage = () => {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 900px) {
-          .dashboard-grid { grid-template-columns: 1fr !important; }
-          .admin-sidebar { width: 260px !important; }
-        }
         @media (max-width: 768px) {
-          .admin-sidebar { width: 100% !important; max-height: 300px; }
+          .admin-sidebar { display: none !important; }
+          .admin-sidebar.open { display: block !important; position: absolute; z-index: 1000; height: 100%; width: 85vw !important; max-width: 320px; }
+          .dashboard-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>
