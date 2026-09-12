@@ -1735,36 +1735,66 @@ def estimate_fee():
         # Calcular frete
         delivery_fee = 0
         price_per_km = 2.95
+        fixed_fee = 0
         min_km = 4.0
 
         logger.info(f"[FRETE] Distancia OSRM: {distance_km} km")
-        
+
         if restaurant.pricing_table_id:
             from src.models.portal_models import PricingTable
             pt = PricingTable.query.get(restaurant.pricing_table_id)
-            if pt and pt.price_per_km:
-                price_per_km = float(pt.price_per_km)
-                min_km = float(pt.min_distance_km or 4.0)
-                km_total = max(distance_km, min_km)
-                delivery_fee = round(km_total * price_per_km, 2)
-                logger.info(f"[FRETE] Pricing table: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
-                if pt.min_delivery_fee:
-                    delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
-                if pt.max_delivery_fee:
-                    delivery_fee = min(delivery_fee, float(pt.max_delivery_fee))
+            if pt:
+                fixed_fee = float(pt.fixed_fee or 0)
+                if fixed_fee > 0:
+                    # Tarifa fixa: valor independente da distância
+                    delivery_fee = fixed_fee
+                    logger.info(f"[FRETE] Tarifa fixa (pricing table): R${fixed_fee}")
+                elif pt.price_per_km:
+                    price_per_km = float(pt.price_per_km)
+                    min_km = float(pt.min_distance_km or 4.0)
+                    km_total = max(distance_km, min_km)
+                    delivery_fee = round(km_total * price_per_km, 2)
+                    logger.info(f"[FRETE] Pricing table: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
+                    if pt.min_delivery_fee:
+                        delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
+                    if pt.max_delivery_fee:
+                        delivery_fee = min(delivery_fee, float(pt.max_delivery_fee))
         elif restaurant.square_id:
             from src.models.portal_models import Square
             sq = Square.query.get(restaurant.square_id)
-            if sq and sq.price_per_km:
-                price_per_km = float(sq.price_per_km)
-                min_km = float(sq.min_distance_km or 4.0)
-                km_total = max(distance_km, min_km)
-                delivery_fee = round(km_total * price_per_km, 2)
-                logger.info(f"[FRETE] Square: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
+            if sq:
+                fixed_fee = float(sq.fixed_fee or 0)
+                if fixed_fee > 0:
+                    delivery_fee = fixed_fee
+                    logger.info(f"[FRETE] Tarifa fixa (square): R${fixed_fee}")
+                elif sq.price_per_km:
+                    price_per_km = float(sq.price_per_km)
+                    min_km = float(sq.min_distance_km or 4.0)
+                    km_total = max(distance_km, min_km)
+                    delivery_fee = round(km_total * price_per_km, 2)
+                    logger.info(f"[FRETE] Square: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
         else:
             logger.info(f"[FRETE] Usando padrao: price_per_km={price_per_km}, min_km={min_km}")
             km_total = max(distance_km, min_km)
             delivery_fee = round(km_total * price_per_km, 2)
+
+        # Aplicar taxas dinâmicas (chuva, demanda alta, feriado)
+        if restaurant.square_id:
+            from src.models.portal_models import DynamicPricing
+            dp = DynamicPricing.query.filter_by(square_id=restaurant.square_id).first()
+            if dp:
+                extras = []
+                if dp.rainy_day_active:
+                    delivery_fee += float(dp.rainy_day_bonus or 0)
+                    extras.append(f"chuva +R${dp.rainy_day_bonus}")
+                if dp.high_demand_active:
+                    delivery_fee += float(dp.high_demand_bonus or 0)
+                    extras.append(f"alta demanda +R${dp.high_demand_bonus}")
+                if dp.holiday_active:
+                    delivery_fee += float(dp.holiday_bonus or 0)
+                    extras.append(f"feriado +R${dp.holiday_bonus}")
+                if extras:
+                    logger.info(f"[FRETE] Taxas dinâmicas: {', '.join(extras)}")
 
         response_data = {
             'distance_km': round(distance_km, 2),

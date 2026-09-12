@@ -166,6 +166,26 @@ with app.app_context():
         print(f"Migração 2FA: {e}")
         db.session.rollback()
 
+    # Migration: adicionar fixed_fee em squares e pricing_tables
+    try:
+        for table in ['squares', 'pricing_tables']:
+            if dialect == 'sqlite':
+                result = db.session.execute(db.text(f"PRAGMA table_info({table})"))
+                cols = [row[1] for row in result.fetchall()]
+            else:
+                result = db.session.execute(db.text(
+                    f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table}'"
+                ))
+                cols = [row[0] for row in result.fetchall()]
+
+            if 'fixed_fee' not in cols:
+                db.session.execute(db.text(f"ALTER TABLE {table} ADD COLUMN fixed_fee NUMERIC(10,2) DEFAULT 0"))
+                db.session.commit()
+                print(f"Coluna fixed_fee adicionada à tabela {table}")
+    except Exception as e:
+        print(f"Migração fixed_fee: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:
