@@ -1753,6 +1753,9 @@ def get_drivers():
 
         query = Driver.query.join(User)
 
+        # Excluir entregadores convertidos para próprio
+        query = query.filter(Driver.converted_to_own == False)
+
 
 
         # Filtrar por tenant
@@ -2176,7 +2179,19 @@ def update_driver(driver_id):
 
         if 'square_id' in data:
 
-            driver.square_id = data['square_id'] or None
+            new_square_id = data['square_id'] or None
+            # Validar que a praça pertence ao mesmo tenant do admin
+            if new_square_id:
+                from src.models.portal_models import Square
+                target_square = Square.query.get(int(new_square_id))
+                if not target_square:
+                    return jsonify({'error': 'Praça não encontrada'}), 404
+                tenant_id = get_current_tenant_id()
+                if tenant_id and target_square.tenant_id != tenant_id:
+                    return jsonify({'error': 'Só é possível transferir para praças da sua organização'}), 403
+            driver.square_id = new_square_id
+            # Resetar posição na fila (fila é por praça)
+            driver.queue_position = 0
 
         # Super admin pode alterar tenant do entregador
         current_user = get_current_user()
@@ -2256,6 +2271,7 @@ def convert_driver_to_own(driver_id):
 
         # Desativar o Driver da plataforma (soft delete)
         driver.is_online = False
+        driver.converted_to_own = True
 
         # Marcar restaurante como tendo entregadores próprios
         restaurant.has_own_drivers = True
@@ -5762,7 +5778,9 @@ def create_pricing_table():
 
             max_delivery_fee=safe_float(data.get('max_delivery_fee'), 50.0),
 
-            driver_percentage=safe_float(data.get('driver_percentage'), 70.0),
+            driver_percentage=safe_float(data.get('driver_percentage'), 65.0),
+
+            gamification_percentage=safe_float(data.get('gamification_percentage'), 5.0),
 
             is_active=data.get('is_active', True)
 
@@ -5925,6 +5943,14 @@ def update_pricing_table(table_id):
             if val is not None:
 
                 table.driver_percentage = val
+
+        if 'gamification_percentage' in data:
+
+            val = safe_float(data['gamification_percentage'])
+
+            if val is not None:
+
+                table.gamification_percentage = val
 
         if 'is_active' in data:
 
@@ -6606,7 +6632,9 @@ def create_square():
 
             max_delivery_fee=data.get('max_delivery_fee', 50.00),
 
-            driver_percentage=data.get('driver_percentage', 70.0),
+            driver_percentage=data.get('driver_percentage', 65.0),
+
+            gamification_percentage=data.get('gamification_percentage', 5.0),
 
             tenant_id=tenant_id
 
@@ -6685,6 +6713,10 @@ def update_square(square_id):
         if data.get('driver_percentage') is not None:
 
             square.driver_percentage = data['driver_percentage']
+
+        if data.get('gamification_percentage') is not None:
+
+            square.gamification_percentage = data['gamification_percentage']
 
 
 

@@ -199,6 +199,7 @@ class Driver(db.Model):
     rejection_count = db.Column(db.Integer, default=0)  # Rejeições consecutivas
     is_blocked = db.Column(db.Boolean, default=False)  # Bloqueado por rejeições excessivas
     blocked_until = db.Column(db.DateTime)  # Data de desbloqueio (se temporário)
+    converted_to_own = db.Column(db.Boolean, default=False)  # Convertido para entregador próprio
     # Carteira
     balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo disponível para saque
     locked_balance = db.Column(db.Numeric(10, 2), default=0)  # Saldo bloqueado (em trânsito)
@@ -242,6 +243,7 @@ class Driver(db.Model):
             'rejection_count': self.rejection_count or 0,
             'is_blocked': self.is_blocked or False,
             'blocked_until': self.blocked_until.isoformat() if self.blocked_until else None,
+            'converted_to_own': self.converted_to_own or False,
             'balance': float(self.balance) if self.balance else 0,
             'locked_balance': float(self.locked_balance) if self.locked_balance else 0,
             'driver_type': 'PLATFORM',
@@ -252,6 +254,7 @@ class Driver(db.Model):
         if self.square:
             data['square_name'] = self.square.name
             data['square_city'] = self.square.city
+            data['square_state'] = self.square.state
         return data
 
     def to_admin_dict(self):
@@ -875,7 +878,8 @@ class Square(db.Model):
     price_per_km = db.Column(db.Numeric(10, 2), default=2.95)
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)  # Distancia minima cobrada (4km padrao)
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
-    driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)  # Percentual do entregador (70% padrao)
+    driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)  # Percentual do entregador (65% padrao)
+    gamification_percentage = db.Column(db.Numeric(5, 2), default=5.0)  # Percentual para gamificação (5% padrao)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -895,7 +899,8 @@ class Square(db.Model):
             'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
             'min_delivery_fee': float(self.price_per_km * (self.min_distance_km or 4.0)),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
-            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 70.0,
+            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 65.0,
+            'gamification_percentage': float(self.gamification_percentage) if self.gamification_percentage else 5.0,
             'pricing_tables': [t.to_dict() for t in self.pricing_tables] if self.pricing_tables else [],
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
@@ -915,7 +920,8 @@ class PricingTable(db.Model):
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)
     min_delivery_fee = db.Column(db.Numeric(10, 2))
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
-    driver_percentage = db.Column(db.Numeric(5, 2), default=70.0)
+    driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)
+    gamification_percentage = db.Column(db.Numeric(5, 2), default=5.0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
@@ -934,7 +940,8 @@ class PricingTable(db.Model):
             'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
             'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else float(self.price_per_km) * float(self.min_distance_km or 4.0),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
-            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 70.0,
+            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 65.0,
+            'gamification_percentage': float(self.gamification_percentage) if self.gamification_percentage else 5.0,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
@@ -1486,5 +1493,153 @@ class PlatformDriverStop(db.Model):
             'arrived_at': self.arrived_at.isoformat() if self.arrived_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'created_at': self.created_at.isoformat()
+        }
+
+
+# ============================================================
+# MUVSCORE - Sistema de Gamificação e Ranking
+# ============================================================
+
+class DriverPointsLog(db.Model):
+    """Registro de pontos do entregador (cada evento de pontuação)"""
+    __tablename__ = 'driver_points_log'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    points = db.Column(db.Integer, nullable=False)  # Positivo = ganhou, negativo = perdeu
+    reason = db.Column(db.String(50), nullable=False)  # delivery, rating, special_day, peak_hour, streak, etc.
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=True)
+    description = db.Column(db.String(200))  # Descrição legível do evento
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='points_log')
+
+    # Índices
+    __table_args__ = (
+        db.Index('ix_points_driver_date', 'driver_id', 'created_at'),
+        db.Index('ix_points_tenant_date', 'tenant_id', 'created_at'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'points': self.points,
+            'reason': self.reason,
+            'order_id': self.order_id,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class DriverWeeklyScore(db.Model):
+    """Pontuação semanal consolidada do entregador (para ranking e níveis)"""
+    __tablename__ = 'driver_weekly_scores'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
+    week_start = db.Column(db.Date, nullable=False)  # Segunda-feira da semana
+    week_end = db.Column(db.Date, nullable=False)  # Domingo da semana
+    total_points = db.Column(db.Integer, default=0)
+    total_deliveries = db.Column(db.Integer, default=0)
+    avg_rating = db.Column(db.Numeric(3, 2))  # Média de avaliações na semana
+    streak_days = db.Column(db.Integer, default=0)  # Dias consecutivos trabalhando
+    level = db.Column(db.String(20), default='bronze')  # bronze, prata, ouro, diamante
+    position = db.Column(db.Integer)  # Posição no ranking da semana
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('Driver', backref='weekly_scores')
+
+    # Índices
+    __table_args__ = (
+        db.UniqueConstraint('driver_id', 'week_start', name='uq_driver_week'),
+        db.Index('ix_weekly_tenant_week', 'tenant_id', 'week_start'),
+        db.Index('ix_weekly_square_week', 'square_id', 'week_start'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'driver_id': self.driver_id,
+            'week_start': self.week_start.isoformat() if self.week_start else None,
+            'week_end': self.week_end.isoformat() if self.week_end else None,
+            'total_points': self.total_points,
+            'total_deliveries': self.total_deliveries,
+            'avg_rating': float(self.avg_rating) if self.avg_rating else None,
+            'streak_days': self.streak_days,
+            'level': self.level,
+            'position': self.position,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+    @staticmethod
+    def calculate_level(points):
+        """Calcula o nível do entregador com base nos pontos semanais"""
+        if points >= 1000:
+            return 'diamante'
+        elif points >= 500:
+            return 'ouro'
+        elif points >= 100:
+            return 'prata'
+        else:
+            return 'bronze'
+
+
+class SpecialDay(db.Model):
+    """Dias especiais marcados pelo admin (chuva, feriado, alta demanda)"""
+    __tablename__ = 'special_days'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.String(100), nullable=False)  # chuva, feriado, alta_demanda, evento
+    multiplier = db.Column(db.Numeric(3, 2), default=1.50)  # Multiplicador de pontos
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('tenant_id', 'date', name='uq_special_day_tenant_date'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'date': self.date.isoformat() if self.date else None,
+            'reason': self.reason,
+            'multiplier': float(self.multiplier) if self.multiplier else 1.5,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class PeakHour(db.Model):
+    """Horários de pico configuráveis pelo admin"""
+    __tablename__ = 'peak_hours'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    multiplier = db.Column(db.Numeric(3, 2), default=1.30)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'start_time': self.start_time.strftime('%H:%M') if self.start_time else None,
+            'end_time': self.end_time.strftime('%H:%M') if self.end_time else None,
+            'multiplier': float(self.multiplier) if self.multiplier else 1.3,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

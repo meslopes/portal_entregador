@@ -96,9 +96,15 @@ const AdminDriversPage = () => {
     try {
       setFormLoading(true);
       await api.put(`/api/admin/drivers/${editing.id}`, editData);
+      // Mensagem específica para transferência de praça
+      if (editData.square_id && editing?.square_id && String(editData.square_id) !== String(editing.square_id)) {
+        const targetSquare = squares.find(s => s.id === parseInt(editData.square_id));
+        showToast(`Entregador transferido para ${targetSquare?.name || 'nova praça'} com sucesso!`, 'success');
+      } else {
+        showToast('Entregador atualizado com sucesso!', 'success');
+      }
       setEditing(null);
       loadDrivers();
-      showToast('Entregador atualizado com sucesso!', 'success');
     } catch (err) {
       setFormError(err.response?.data?.error || 'Erro ao atualizar entregador');
     } finally {
@@ -504,13 +510,23 @@ const AdminDriversPage = () => {
                 </FormField>
               )}
 
-              <FormField label="Praça">
+              <FormField label="Praça de Atuação">
+                {editing?.square_name && (
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.375rem' }}>
+                    Atual: <strong>{editing.square_name}</strong>{editing.square_city ? ` - ${editing.square_city}` : ''}
+                  </p>
+                )}
                 <select value={editData.square_id} onChange={e => setEditData(p => ({ ...p, square_id: e.target.value }))} style={inputStyle}>
                   <option value="">Selecione uma praça</option>
                   {squares.map(sq => (
                     <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
                   ))}
                 </select>
+                {editData.square_id && editing?.square_id && String(editData.square_id) !== String(editing.square_id) && (
+                  <p style={{ fontSize: '0.75rem', color: '#d97706', marginTop: '0.25rem', fontWeight: 500 }}>
+                    Transferência: o entregador será movido para a nova praça
+                  </p>
+                )}
               </FormField>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <FormField label="Tipo de Veículo">

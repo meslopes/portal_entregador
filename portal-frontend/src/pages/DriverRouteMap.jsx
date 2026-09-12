@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Store, Package, ArrowLeft, ExternalLink, CheckCircle } from 'lucide-react';
 import { orderService, utils } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STATUS_MAP = {
   ACCEPTED: { next: 'PREPARING', actionLabel: 'Coletar', color: '#f59e0b' },
@@ -19,6 +20,7 @@ const STATUS_TEXT = {
 
 const DriverRouteMap = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeOrders, setActiveOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,6 +29,51 @@ const DriverRouteMap = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  const cityCenterRef = useRef(null); // Coordenadas da cidade do entregador
+  const geocodeCityCache = useRef({}); // Cache de geocodificação
+
+  // Geocodifica cidade usando Nominatim (OpenStreetMap, gratuito)
+  const geocodeCity = async (city, state) => {
+    try {
+      const query = `${city}, ${state || 'RS'}, Brasil`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=br`,
+        { headers: { 'User-Agent': 'muvlog-portal/1.0' } }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+      return null;
+    } catch (err) {
+      console.warn('Erro ao geocodificar cidade:', err);
+      return null;
+    }
+  };
+
+  // Geocodificar cidade do entregador quando dados do usuário mudam
+  useEffect(() => {
+    const city = user?.driver?.square_city;
+    if (!city) {
+      cityCenterRef.current = null;
+      return;
+    }
+
+    const state = user?.driver?.square_state || 'RS';
+    const cacheKey = `${city.toLowerCase()}-${state.toLowerCase()}`;
+
+    if (!geocodeCityCache.current[cacheKey]) {
+      geocodeCityCache.current[cacheKey] = geocodeCity(city, state);
+    }
+
+    geocodeCityCache.current[cacheKey].then(coords => {
+      cityCenterRef.current = coords;
+      // Se o mapa já existe e não há pedidos, centraliza na cidade
+      if (mapInstanceRef.current && coords && activeOrders.length === 0) {
+        mapInstanceRef.current.setView([coords.lat, coords.lng], 13);
+      }
+    });
+  }, [user?.driver?.square_city]);
 
   useEffect(() => {
     loadActiveOrders();
@@ -43,8 +90,13 @@ const DriverRouteMap = () => {
       if (!node || mapInstanceRef.current) return;
       const L = window.L;
       if (!L) return;
+      // Centro: cidade do entregador (via geocoding) ou fallback
+      const initialCenter = cityCenterRef.current
+        ? [cityCenterRef.current.lat, cityCenterRef.current.lng]
+        : [-29.72, -50.00];
+      const initialZoom = cityCenterRef.current ? 13 : 12;
       mapInstanceRef.current = L.map(node, { zoomControl: true, scrollWheelZoom: true })
-        .setView([-29.72, -50.00], 12);
+        .setView(initialCenter, initialZoom);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
       }).addTo(mapInstanceRef.current);

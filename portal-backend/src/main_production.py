@@ -55,6 +55,9 @@ def create_app(config_name=None):
     from src.routes.bonus import bonus_bp
     app.register_blueprint(bonus_bp, url_prefix='/api/bonus')
 
+    from src.routes.muvscore import muvscore_bp
+    app.register_blueprint(muvscore_bp, url_prefix='/api/muvscore')
+
     from src.routes.platform import platform_bp
     app.register_blueprint(platform_bp, url_prefix='/api/platform')
 
@@ -144,6 +147,16 @@ def create_app(config_name=None):
             try:
                 db.session.execute(db.text(
                     f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'squares' AND column_name = '{col}') THEN ALTER TABLE squares ADD COLUMN {col} NUMERIC(10,2); END IF; END $$"
+                ))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        # Migration: gamification_percentage em squares e pricing_tables
+        for table in ['squares', 'pricing_tables']:
+            try:
+                db.session.execute(db.text(
+                    f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'gamification_percentage') THEN ALTER TABLE {table} ADD COLUMN gamification_percentage NUMERIC(5,2) DEFAULT 5.0; END IF; END $$"
                 ))
                 db.session.commit()
             except Exception:
@@ -519,6 +532,9 @@ def create_app(config_name=None):
             ))
             db.session.execute(db.text(
                 "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'blocked_until') THEN ALTER TABLE drivers ADD COLUMN blocked_until TIMESTAMP; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'drivers' AND column_name = 'converted_to_own') THEN ALTER TABLE drivers ADD COLUMN converted_to_own BOOLEAN DEFAULT FALSE; END IF; END $$"
             ))
             db.session.commit()
         except Exception:
@@ -1038,6 +1054,94 @@ def create_app(config_name=None):
             db.session.execute(db.text(
                 "UPDATE users SET is_super_admin = TRUE WHERE user_type = 'ADMIN' AND tenant_id IS NULL AND is_super_admin = FALSE"
             ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: tabelas MuvScore (gamificação)
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS driver_points_log (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER NOT NULL REFERENCES drivers(id),
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    points INTEGER NOT NULL,
+                    reason VARCHAR(50) NOT NULL,
+                    order_id INTEGER REFERENCES orders(id),
+                    description VARCHAR(200),
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
+            db.session.execute(db.text(
+                "CREATE INDEX IF NOT EXISTS ix_points_driver_date ON driver_points_log(driver_id, created_at)"
+            ))
+            db.session.execute(db.text(
+                "CREATE INDEX IF NOT EXISTS ix_points_tenant_date ON driver_points_log(tenant_id, created_at)"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS driver_weekly_scores (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER NOT NULL REFERENCES drivers(id),
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    square_id INTEGER REFERENCES squares(id),
+                    week_start DATE NOT NULL,
+                    week_end DATE NOT NULL,
+                    total_points INTEGER DEFAULT 0,
+                    total_deliveries INTEGER DEFAULT 0,
+                    avg_rating NUMERIC(3,2),
+                    streak_days INTEGER DEFAULT 0,
+                    level VARCHAR(20) DEFAULT 'bronze',
+                    position INTEGER,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(driver_id, week_start)
+                )
+            """))
+            db.session.execute(db.text(
+                "CREATE INDEX IF NOT EXISTS ix_weekly_tenant_week ON driver_weekly_scores(tenant_id, week_start)"
+            ))
+            db.session.execute(db.text(
+                "CREATE INDEX IF NOT EXISTS ix_weekly_square_week ON driver_weekly_scores(square_id, week_start)"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Migration: tabelas de dias especiais e horários de pico
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS special_days (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    date DATE NOT NULL,
+                    reason VARCHAR(100) NOT NULL,
+                    multiplier NUMERIC(3,2) DEFAULT 1.50,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    UNIQUE(tenant_id, date)
+                )
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        try:
+            db.session.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS peak_hours (
+                    id SERIAL PRIMARY KEY,
+                    tenant_id INTEGER REFERENCES tenants(id),
+                    start_time TIME NOT NULL,
+                    end_time TIME NOT NULL,
+                    multiplier NUMERIC(3,2) DEFAULT 1.30,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """))
             db.session.commit()
         except Exception:
             db.session.rollback()

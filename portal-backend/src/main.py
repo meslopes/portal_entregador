@@ -77,6 +77,9 @@ app.register_blueprint(user_bp, url_prefix='/api/user')
 from src.routes.bonus import bonus_bp
 app.register_blueprint(bonus_bp, url_prefix='/api/bonus')
 
+from src.routes.muvscore import muvscore_bp
+app.register_blueprint(muvscore_bp, url_prefix='/api/muvscore')
+
 from src.routes.platform import platform_bp
 app.register_blueprint(platform_bp, url_prefix='/api/platform')
 

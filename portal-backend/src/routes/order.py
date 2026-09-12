@@ -7,7 +7,7 @@ from src.models.portal_models import (
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 from src.utils.geo import haversine_distance
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import uuid
 import os
 import base64
@@ -1152,7 +1152,14 @@ def update_order_status(order_id):
             # Lógica específica do entregador (só quando entregador muda status)
             if driver:
                 driver.total_deliveries = (driver.total_deliveries or 0) + 1
-                
+
+                # MuvScore: pontos por entrega concluída
+                try:
+                    from src.utils.muvscore import award_delivery_points
+                    award_delivery_points(driver, order)
+                except Exception as e:
+                    logger.error(f"Erro ao registrar pontos MuvScore: {e}")
+
                 # Salva prova de entrega (foto) - upload para Supabase Storage
                 proof_url = None
                 proof_data = data.get('proof_of_delivery')
@@ -2847,6 +2854,13 @@ def rate_delivery(order_id):
                     if driver.rating and float(driver.rating) < 3.0:
                         notify_admin_low_rating(driver, rating, feedback, order)
 
+                    # MuvScore: pontos por avaliação recebida
+                    try:
+                        from src.utils.muvscore import award_rating_points
+                        award_rating_points(driver, rating, order)
+                    except Exception as e:
+                        logger.error(f"Erro ao registrar pontos MuvScore por avaliação: {e}")
+
         db.session.commit()
 
         return jsonify({
@@ -3049,8 +3063,27 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         if not available_drivers:
             return None
 
-        # Ordena por distancia (mais proximo primeiro)
-        available_drivers.sort(key=lambda x: x['distance'])
+        # Ordena por distância, mas com prioridade para níveis MuvScore mais altos
+        # Bônus de prioridade: Diamante=30%, Ouro=20%, Prata=10%, Bronze=0%
+        level_priority = {'diamante': 0.7, 'ouro': 0.8, 'prata': 0.9, 'bronze': 1.0}
+
+        def sort_key(item):
+            driver = item['driver']
+            distance = item['distance']
+            # Buscar nível do entregador na semana atual
+            try:
+                from src.models.portal_models import DriverWeeklyScore
+                week_start = date.today() - timedelta(days=date.today().weekday())
+                score = DriverWeeklyScore.query.filter_by(
+                    driver_id=driver.id, week_start=week_start
+                ).first()
+                level = score.level if score else 'bronze'
+            except Exception:
+                level = 'bronze'
+            multiplier = level_priority.get(level, 1.0)
+            return distance * multiplier  # Menor distância × prioridade = melhor posição
+
+        available_drivers.sort(key=sort_key)
 
         return available_drivers[0]['driver']
 
