@@ -97,6 +97,12 @@ app.register_blueprint(route_settings_bp)
 from src.routes.platform_routes import platform_routes_bp
 app.register_blueprint(platform_routes_bp)
 
+from src.routes.route import route_bp
+app.register_blueprint(route_bp)
+
+from src.routes.finance import finance_bp
+app.register_blueprint(finance_bp)
+
 # Inicializa banco de dados
 db.init_app(app)
 with app.app_context():
@@ -130,6 +136,15 @@ with app.app_context():
     except Exception as e:
         print(f"Migração is_super_admin: {e}")
         db.session.rollback()
+
+# Iniciar background tasks apenas em produção
+if flask_env == 'production':
+    try:
+        from src.utils.background_tasks import start_background_tasks
+        start_background_tasks(app)
+        print("Background tasks iniciadas")
+    except Exception as e:
+        print(f"Erro ao iniciar background tasks: {e}")
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
