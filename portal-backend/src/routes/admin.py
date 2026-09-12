@@ -10816,3 +10816,120 @@ def cleanup_test_data():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# EXPORTAÇÃO CSV (abre no Excel)
+# ============================================================
+
+@admin_bp.route('/export/orders', methods=['GET'])
+@jwt_required()
+@admin_required
+def export_orders_csv():
+    """Exporta pedidos em formato CSV (abre no Excel)"""
+    try:
+        import csv
+        import io
+        from flask import make_response
+
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        status = request.args.get('status')
+
+        query = Order.query
+        if start_date:
+            query = query.filter(Order.created_at >= datetime.fromisoformat(start_date))
+        if end_date:
+            query = query.filter(Order.created_at <= datetime.fromisoformat(end_date))
+        if status:
+            query = query.filter(Order.status == OrderStatus(status))
+
+        user = get_current_user()
+        if not user.is_super_admin and user.tenant_id:
+            query = query.filter(Order.tenant_id == user.tenant_id)
+
+        orders = query.order_by(Order.created_at.desc()).limit(10000).all()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            'Numero', 'Status', 'Restaurante', 'Cliente', 'Telefone',
+            'Endereco Entrega', 'Bairro', 'Cidade', 'Taxa Entrega',
+            'Total', 'Pagamento', 'Entregador', 'Criado em', 'Entregue em'
+        ])
+
+        for o in orders:
+            writer.writerow([
+                o.order_number,
+                o.status.value if o.status else '',
+                o.restaurant.name if o.restaurant else '',
+                o.customer.name if o.customer else '',
+                o.customer.phone if o.customer else '',
+                o.delivery_address.street if o.delivery_address else '',
+                o.delivery_address.neighborhood if o.delivery_address else '',
+                o.delivery_address.city if o.delivery_address else '',
+                float(o.delivery_fee or 0),
+                float(o.total_amount or 0),
+                o.payment_method.value if o.payment_method else '',
+                f"{o.driver.user.first_name} {o.driver.user.last_name}" if o.driver and o.driver.user else '',
+                o.created_at.strftime('%d/%m/%Y %H:%M') if o.created_at else '',
+                o.delivery_time.strftime('%d/%m/%Y %H:%M') if o.delivery_time else ''
+            ])
+
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = 'attachment; filename=pedidos.csv'
+        return response
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/export/drivers', methods=['GET'])
+@jwt_required()
+@admin_required
+def export_drivers_csv():
+    """Exporta entregadores em formato CSV (abre no Excel)"""
+    try:
+        import csv
+        import io
+        from flask import make_response
+
+        query = Driver.query.join(User)
+        user = get_current_user()
+        if not user.is_super_admin and user.tenant_id:
+            query = query.filter(Driver.tenant_id == user.tenant_id)
+
+        drivers = query.all()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            'ID', 'Nome', 'Telefone', 'Veiculo', 'Placa',
+            'Praça', 'Rating', 'Total Entregas', 'Saldo',
+            'Status', 'Online', 'Desde'
+        ])
+
+        for d in drivers:
+            writer.writerow([
+                d.id,
+                f"{d.user.first_name} {d.user.last_name}" if d.user else '',
+                d.user.phone if d.user else '',
+                d.vehicle_type.value if d.vehicle_type else '',
+                d.vehicle_plate or '',
+                d.square.name if d.square else '',
+                float(d.rating or 5.0),
+                d.total_deliveries,
+                float(d.balance or 0),
+                d.user.status.value if d.user and d.user.status else '',
+                'Sim' if d.is_online else 'Não',
+                d.created_at.strftime('%d/%m/%Y') if d.created_at else ''
+            ])
+
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = 'attachment; filename=entregadores.csv'
+        return response
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
