@@ -1233,6 +1233,13 @@ def update_order_status(order_id):
         if new_status_enum == OrderStatus.CANCELLED:
             old_driver_id = order.driver_id
             if order.driver_id:
+                # Estornar locked_balance do entregador antes de desvincular
+                from decimal import Decimal
+                driver_obj = Driver.query.get(order.driver_id)
+                if driver_obj and order.delivery and order.delivery.driver_earnings:
+                    earnings = Decimal(str(order.delivery.driver_earnings))
+                    driver_obj.locked_balance = max(Decimal('0'), (driver_obj.locked_balance or Decimal('0')) - earnings)
+                    driver_obj.updated_at = datetime.utcnow()
                 order.driver_id = None
             if order.delivery:
                 # Salva ganhos anteriores para remover depois
