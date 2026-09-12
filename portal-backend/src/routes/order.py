@@ -1248,6 +1248,9 @@ def update_order_status(order_id):
                 if driver_obj and order.delivery and order.delivery.driver_earnings:
                     earnings = Decimal(str(order.delivery.driver_earnings))
                     driver_obj.locked_balance = max(Decimal('0'), (driver_obj.locked_balance or Decimal('0')) - earnings)
+                    # Creditar de volta no balance (estorno completo)
+                    if earnings > 0:
+                        driver_obj.balance = (driver_obj.balance or Decimal('0')) + earnings
                     driver_obj.updated_at = datetime.utcnow()
                 order.driver_id = None
             if order.delivery:
