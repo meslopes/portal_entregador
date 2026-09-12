@@ -17,7 +17,8 @@ def _generate_confirmation_token(user_id):
     import hashlib
     import hmac as hmac_mod
     import os
-    secret = os.environ.get('JWT_SECRET_KEY', 'muvlog-secret-key')
+    from flask import current_app
+    secret = os.environ.get('JWT_SECRET_KEY') or current_app.config.get('SECRET_KEY', 'fallback-dev-only')
     sig = hmac_mod.new(
         secret.encode(),
         str(user_id).encode(),
@@ -361,7 +362,8 @@ def confirm_email():
             return jsonify({'error': 'Token inválido'}), 400
 
         # Verificar assinatura HMAC
-        secret = os.environ.get('JWT_SECRET_KEY', 'muvlog-secret-key')
+        from flask import current_app
+    secret = os.environ.get('JWT_SECRET_KEY') or current_app.config.get('SECRET_KEY', 'fallback-dev-only')
         expected_sig = hmac_mod.new(
             secret.encode(),
             str(user_id).encode(),
