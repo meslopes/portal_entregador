@@ -40,7 +40,7 @@ export async function requestNotificationPermission() {
 
     // Obter token FCM
     const token = await getToken(messaging, {
-      vapidKey: 'BCHGx1b2v3c4d5e6f7g8h9i0j' // Será configurado depois
+      vapidKey: 'BFxG3Cc9dr1bbuMbmTsYI3kI7UUb7-_e_xVvojCfRjGggZ5gHkJHuvgguj0SFTvtipaMQL2sru7LkdSXmlxfPho'
     });
 
     if (token) {
