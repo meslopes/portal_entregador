@@ -21,7 +21,6 @@ from src.routes.webhooks import webhook_bp
 
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-CORS(app, resources={r"/*": {"origins": "*"}})
 app.url_map.strict_slashes = False
 
 # Configurações
