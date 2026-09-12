@@ -4,7 +4,7 @@ services:
     runtime: python
     buildCommand: cd portal-backend && pip install -r requirements.txt
     startCommand: cd portal-backend && gunicorn src.main_production:app --timeout 120 --graceful-timeout 30 --keep-alive 5
-    autoDeploy: true
+    autoDeploy: false
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"
