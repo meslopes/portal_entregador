@@ -21,7 +21,6 @@ from src.routes.webhooks import webhook_bp
 
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-CORS(app, resources={r"/*": {"origins": "*"}})
 app.url_map.strict_slashes = False
 
 # Configurações
@@ -51,20 +50,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializa extensões
 jwt = JWTManager(app)
-cors_origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://muvlog.vercel.app",
-    "https://muvlog-frontend.vercel.app",
-    "http://muv.log.br",
-    "https://muv.log.br",
-    "http://www.muv.log.br",
-    "https://www.muv.log.br",
-    "http://api.muv.log.br",
-    "https://api.muv.log.br",
-]
-CORS(app, resources={r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}} )
+
+# CORS: permissivo em desenvolvimento (testes em rede local), restritivo em produção
+if flask_env == 'production':
+    cors_origins = [
+        "http://muv.log.br",
+        "https://muv.log.br",
+        "http://www.muv.log.br",
+        "https://www.muv.log.br",
+        "http://api.muv.log.br",
+        "https://api.muv.log.br",
+        "https://muvlog.vercel.app",
+        "https://muvlog-frontend.vercel.app",
+        "https://portal-entregador-gamma.vercel.app",
+    ]
+    CORS(app, resources={r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}})
+else:
+    # DEV: permite qualquer origem (testes em rede local, múltiplos dispositivos)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Registra blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
