@@ -48,6 +48,8 @@ api.interceptors.response.use(
         localStorage.removeItem('user');
         window.location.href = '/login';
       }
+      // Reseta flag após 2s para permitir novo redirect se necessário
+      setTimeout(() => { isRedirecting = false; }, 2000);
     }
     return Promise.reject(error);
   }
