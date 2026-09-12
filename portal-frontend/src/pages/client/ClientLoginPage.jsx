@@ -136,8 +136,8 @@ const ClientLoginPage = () => {
               </div>
 
               <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer' }}>
-                  Esqueci minha senha
+                <span style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
+                  Esqueceu a senha? Contate o administrador
                 </span>
               </div>
 
