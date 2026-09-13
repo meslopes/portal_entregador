@@ -34,6 +34,10 @@ const ClientLayout = ({ children }) => {
     loadProfile();
   }, []);
 
+  const isAdmin = user?.user_type === 'ADMIN';
+  const isSuperAdmin = isAdmin && user?.is_super_admin;
+  const isClient = user?.user_type === 'CLIENT';
+
   const handleLogout = () => {
     logout();
     navigate('/client/login');
@@ -81,7 +85,7 @@ const ClientLayout = ({ children }) => {
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '4rem' }}>
             {/* Logo */}
-            <Link to="/client" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+            <Link to={isSuperAdmin ? '/platform' : isAdmin ? '/admin' : '/client'} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
               <img src={user?.tenant?.logo_url || '/logo-muvy.jpg'} alt={user?.tenant?.name || 'muv.log'} style={{ height: '2rem', borderRadius: '0.375rem', objectFit: 'contain' }} />
               <span style={{ fontSize: '1.25rem', fontWeight: 700, color: user?.tenant?.primary_color || '#1e293b' }}>{user?.tenant?.name || 'muv.log'}</span>
               <span style={{
