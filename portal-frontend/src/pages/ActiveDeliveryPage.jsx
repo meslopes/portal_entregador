@@ -27,9 +27,10 @@ const STATUS_FLOW = [
   { key: 'DELIVERED', label: 'Entregue', icon: MapPin },
 ];
 
+// Ações do entregador: só a partir de PREPARING (estabelecimento muda ACCEPTED→PREPARING→READY)
+// Entregador pode coletar a partir de PREPARING ou READY
 const STATUS_ACTIONS = {
-  ACCEPTED: { label: 'Cheguei ao Restaurante', next: 'PREPARING', color: '#f59e0b' },
-  PREPARING: { label: 'Pedido Pronto para Retirada', next: 'READY', color: '#8b5cf6', waitMsg: 'Aguardando restaurante preparar...' },
+  PREPARING: { label: 'Coletar Pedido', next: 'PICKED_UP', color: '#2563eb' },
   READY: { label: 'Coletar Pedido', next: 'PICKED_UP', color: '#2563eb' },
   PICKED_UP: { label: 'Entregar Pedido', next: 'DELIVERED', color: '#22c55e' },
 };
@@ -883,11 +884,11 @@ const ActiveDeliveryPage = () => {
         </div>
       )}
 
-      {/* Mensagem de espera (PREPARING) */}
-      {order.status === 'PREPARING' && (
+      {/* Mensagem de espera (ACCEPTED - aguardando estabelecimento iniciar preparo) */}
+      {order.status === 'ACCEPTED' && (
         <div style={{
-          background: '#faf5ff',
-          border: '1px solid #e9d5ff',
+          background: '#fffbeb',
+          border: '1px solid #fde68a',
           borderRadius: '0.5rem',
           padding: '0.875rem 1rem',
           marginBottom: '1.5rem',
@@ -895,9 +896,9 @@ const ActiveDeliveryPage = () => {
           alignItems: 'center',
           gap: '0.5rem',
           fontSize: '0.875rem',
-          color: '#7c3aed'
+          color: '#92400e'
         }}>
-          <Clock size={16} /> Aguardando restaurante preparar o pedido...
+          <Clock size={16} /> Aguardando restaurante iniciar preparo do pedido...
         </div>
       )}
 
