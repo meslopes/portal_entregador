@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Building2, Users, Package, DollarSign, TrendingUp,
   ChevronRight, Loader2, RefreshCw, Eye, Edit, ToggleLeft, ToggleRight,
-  Store, Truck, BarChart3, Globe, Shield, Calendar, Plus, Trash2, X
+  Store, Bike, BarChart3, Globe, Shield, Calendar, Plus, Trash2, X
 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast';
@@ -34,6 +34,7 @@ const PlatformDashboardPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [userEditForm, setUserEditForm] = useState({ first_name: '', last_name: '', email: '', phone: '', status: 'ACTIVE', tenant_id: '', password: '' });
   const [userEditLoading, setUserEditLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadDashboard();
@@ -48,6 +49,12 @@ const PlatformDashboardPage = () => {
     }
     if (activeTab === 'pending') {
       loadPendingUsers();
+    }
+    if (activeTab === 'overview') {
+      loadDashboard();
+    }
+    if (activeTab === 'tenants') {
+      loadTenants();
     }
   }, [activeTab, selectedTenantFilter]);
 
@@ -249,7 +256,7 @@ const PlatformDashboardPage = () => {
             🗺️ Mapa do Banco
           </a>
           <button
-            onClick={() => { loadDashboard(); loadTenants(); loadPendingUsers(); }}
+            onClick={() => { loadDashboard(); loadTenants(); loadPendingUsers(); loadUsers(); setRefreshKey(k => k + 1); }}
             style={{
               display: 'flex', alignItems: 'center', gap: '0.5rem',
               padding: '0.5rem 1rem', borderRadius: '0.5rem',
@@ -319,7 +326,7 @@ const PlatformDashboardPage = () => {
             <div style={cardStyle}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '0.5rem', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={20} style={{ color: '#d97706' }} />
+                  <Bike size={20} style={{ color: '#d97706' }} />
                 </div>
                 <div>
                   <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Entregadores</p>
@@ -392,7 +399,7 @@ const PlatformDashboardPage = () => {
                       <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{tenant.slug} • {tenant.plan}</p>
                     </div>
                   </div>
-                  <span style={{ fontWeight: 600, color: '#2563eb' }}>{tenant.order_count} pedidos</span>
+                  <span style={{ fontWeight: 600, color: '#2563eb' }}>{tenant.orders} pedidos</span>
                 </div>
               ))}
             </div>
@@ -640,7 +647,7 @@ const PlatformDashboardPage = () => {
 
       {/* Admins Tab */}
       {activeTab === 'admins' && (
-        <AdminsTab />
+        <AdminsTab key={refreshKey} />
       )}
 
       {/* Pending Users Tab */}

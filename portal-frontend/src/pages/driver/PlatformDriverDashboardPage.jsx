@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Package, DollarSign, MapPin, Truck,
+  Package, DollarSign, MapPin, Bike,
   CheckCircle, RefreshCw, Route, Bell, Navigation, Trophy, Star
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -19,7 +19,7 @@ const STATUS_CONFIG = {
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
   READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Truck },
+  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Bike },
 };
 
 const PlatformDriverDashboardPage = () => {

@@ -10,7 +10,7 @@ from src.models.portal_models import (
     User, UserType, Customer, EstablishmentSubscription, SubscriptionInvoice
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 import logging
 
@@ -63,6 +63,7 @@ def get_payment_reports():
         period = request.args.get('period', 'month')  # week, month, all
         
         # Determinar escopo baseado no tipo de usuário
+        restaurant_ids = None
         if user.user_type == UserType.CLIENT:
             # Estabelecimento: ver apenas seus próprios entregadores
             customer = Customer.query.filter_by(user_id=user.id).first()
@@ -100,7 +101,7 @@ def get_payment_reports():
         drivers = query.all()
         
         # Período de busca
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if period == 'week':
             start_date = now - timedelta(days=7)
         elif period == 'month':
@@ -233,7 +234,7 @@ def pay_period():
         total_paid = 0
         for earning in earnings:
             earning.is_paid = True
-            earning.paid_at = datetime.utcnow()
+            earning.paid_at = datetime.now(timezone.utc)
             earning.payment_method = payment_method
             total_paid += float(earning.driver_earning or 0)
         
@@ -280,7 +281,7 @@ def pay_all():
         total_paid = 0
         for earning in earnings:
             earning.is_paid = True
-            earning.paid_at = datetime.utcnow()
+            earning.paid_at = datetime.now(timezone.utc)
             earning.payment_method = payment_method
             total_paid += float(earning.driver_earning or 0)
         
@@ -408,7 +409,7 @@ def create_subscription():
             return jsonify({'error': 'Restaurante não encontrado'}), 404
         
         # Calcular próxima data de cobrança
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if billing_cycle == 'WEEKLY':
             next_billing = now + timedelta(days=7)
         else:  # MONTHLY
@@ -489,7 +490,7 @@ def generate_invoice(subscription_id):
             return jsonify({'error': 'Assinatura não encontrada'}), 404
         
         # Contar entregadores ativos no período
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if subscription.billing_cycle == 'WEEKLY':
             period_start = now - timedelta(days=7)
         else:
@@ -661,7 +662,7 @@ def pay_invoice(invoice_id):
         payment_method = data.get('payment_method', 'PIX')
         
         invoice.status = 'PAID'
-        invoice.paid_at = datetime.utcnow()
+        invoice.paid_at = datetime.now(timezone.utc)
         invoice.payment_method = payment_method
         
         # Atualizar assinatura
@@ -691,7 +692,7 @@ def generate_all_invoices():
         if user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Apenas administradores podem gerar faturas em lote'}), 403
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Buscar assinaturas com cobrança pendente
         subscriptions = EstablishmentSubscription.query.filter(
@@ -937,7 +938,7 @@ def process_own_driver_withdrawal():
         # Marcar ganhos como pagos
         for earning in pending_earnings:
             earning.is_paid = True
-            earning.paid_at = datetime.utcnow()
+            earning.paid_at = datetime.now(timezone.utc)
             earning.payment_method = payment_method
         
         db.session.commit()
@@ -970,7 +971,7 @@ def check_invoice_due_dates():
         if user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Apenas administradores'}), 403
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         tomorrow = now + timedelta(days=1)
         three_days = now + timedelta(days=3)
         
@@ -1121,7 +1122,7 @@ def get_overdue_report():
                     query = query.filter_by(restaurant_id=restaurant.id)
         
         # Filtrar apenas vencidas
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         overdue = query.filter(SubscriptionInvoice.due_date < now).order_by(
             SubscriptionInvoice.due_date.asc()
         ).all()

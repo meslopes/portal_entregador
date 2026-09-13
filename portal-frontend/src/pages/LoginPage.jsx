@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, Truck, MapPin, BarChart3, Shield } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Bike, MapPin, BarChart3, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage = () => {
@@ -66,7 +66,7 @@ const LoginPage = () => {
 
           <div style={{ textAlign: 'left' }}>
             <div className="feature-item">
-              <div className="feature-icon"><Truck size={20} /></div>
+              <div className="feature-icon"><Bike size={20} /></div>
               <span>Gestão completa de entregadores</span>
             </div>
             <div className="feature-item">

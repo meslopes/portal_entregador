@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Store, Search, Plus, Phone, Mail, Package, DollarSign,
   Edit, Trash2, X, AlertCircle, MapPin, Clock, TrendingUp,
-  ChevronRight, User, CheckCircle, Truck, Users, ToggleLeft, ToggleRight, Copy
+  ChevronRight, User, CheckCircle, Bike, Users, ToggleLeft, ToggleRight, Copy
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import api from '@/lib/api';
@@ -874,7 +874,7 @@ const AdminEstablishmentsPage = () => {
                   }}>
                     {showDetails.has_own_drivers
                       ? <Users size={16} style={{ color: 'white' }} />
-                      : <Truck size={16} style={{ color: 'white' }} />
+                      : <Bike size={16} style={{ color: 'white' }} />
                     }
                   </div>
                   <div>
@@ -900,7 +900,7 @@ const AdminEstablishmentsPage = () => {
                   }}
                 >
                   {showDetails.has_own_drivers
-                    ? <><Truck size={14} /> Mudar p/ Plataforma</>
+                    ? <><Bike size={14} /> Mudar p/ Plataforma</>
                     : <><Users size={14} /> Mudar p/ Próprios</>
                   }
                 </button>

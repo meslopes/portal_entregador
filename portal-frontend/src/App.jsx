@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { SquareProvider } from '@/contexts/SquareContext';
@@ -8,6 +8,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
 import ToastContainer from '@/components/Toast';
 import ConfirmDialogContainer from '@/components/ConfirmDialog';
+import { initOfflineSync } from '@/lib/offline';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -71,6 +72,7 @@ import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
 import PendingApprovalPage from '@/pages/PendingApprovalPage';
+import InstallPwaBanner from '@/components/InstallPwaBanner';
 import './App.css';
 
 // Componente de redirecionamento inteligente baseado no tipo de usuario
@@ -98,6 +100,10 @@ function SmartRedirect() {
 }
 
 function App() {
+  useEffect(() => {
+    initOfflineSync();
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -105,6 +111,7 @@ function App() {
           <Router>
           <ToastContainer />
           <ConfirmDialogContainer />
+          <InstallPwaBanner />
           <Routes>
           {/* Rotas públicas */}
           <Route

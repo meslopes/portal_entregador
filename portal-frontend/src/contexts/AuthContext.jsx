@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }) => {
       // Salva no localStorage
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      
+
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: {
@@ -133,7 +133,18 @@ export const AuthProvider = ({ children }) => {
           token: response.access_token,
         },
       });
-      
+
+      // Registrar token FCM para push notifications (background, sem travar login)
+      try {
+        const { requestNotificationPermission } = await import('@/lib/firebase');
+        const fcmToken = await requestNotificationPermission();
+        if (fcmToken) {
+          api.post('/api/driver/push-token', { token: fcmToken }).catch(() => {});
+        }
+      } catch (e) {
+        // Push notification é opcional — não bloqueia login
+      }
+
       return response;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Erro ao fazer login';

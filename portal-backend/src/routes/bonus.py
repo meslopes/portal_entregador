@@ -7,7 +7,7 @@ from src.models.portal_models import (
     db, User, Driver, Order, OrderStatus, DriverScore, DriverBonus,
     DriverAchievement, DynamicPricing, Square, Delivery
 )
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 
 bonus_bp = Blueprint('bonus', __name__)
@@ -36,7 +36,7 @@ def get_ranking():
     """Obtem o ranking dos entregadores"""
     try:
         period = request.args.get('period', 'monthly')
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
 
         if period == 'weekly':
             start_date = today - timedelta(days=today.weekday())
@@ -233,7 +233,7 @@ def get_bonuses():
 def process_weekly_bonuses():
     """Processa bonus semanais (top 3)"""
     try:
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         week_start = today - timedelta(days=today.weekday())
         week_end = today
 
@@ -306,7 +306,7 @@ def process_weekly_bonuses():
 def process_monthly_bonuses():
     """Processa bonus mensais (top 5)"""
     try:
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         month_start = today.replace(day=1)
 
         # Busca ranking do mes

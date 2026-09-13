@@ -5,27 +5,31 @@ MuvScore - Sistema de Gamificação e Ranking para Entregadores
 Gerencia pontuação, níveis e ranking semanal.
 """
 
-from datetime import datetime, date, timedelta, time as dt_time
+from datetime import datetime, date, timedelta, time as dt_time, timezone
 from src.models.portal_models import (
     db, Driver, DriverPointsLog, DriverWeeklyScore,
     Order, Delivery, SystemConfig, SpecialDay, PeakHour
 )
 from sqlalchemy import func
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
 # ============================================================
 # Constantes de pontuação (defaults - configuráveis via SystemConfig)
+# Para configurar: inserir registro na tabela system_configs
+# com config_key e config_value (JSON para estruturas complexas)
 # ============================================================
 POINTS_PER_DELIVERY = 10
-RATING_POINTS = {5: 20, 4: 10, 3: 5, 2: -5, 1: -15}
-LEVELS = {
+RATING_POINTS_DEFAULT = {5: 20, 4: 10, 3: 5, 2: -5, 1: -15}
+LEVELS_DEFAULT = {
     'diamante': {'min': 1000, 'label': 'Diamante', 'color': '#B9F2FF'},
     'ouro': {'min': 500, 'label': 'Ouro', 'color': '#FFD700'},
     'prata': {'min': 100, 'label': 'Prata', 'color': '#C0C0C0'},
     'bronze': {'min': 0, 'label': 'Bronze', 'color': '#CD7F32'},
 }
+REWARD_DISTRIBUTION_DEFAULT = {1: 0.30, 2: 0.20, 3: 0.15, 'others': 0.35}
 
 
 def get_config_value(key, default):
@@ -37,6 +41,35 @@ def get_config_value(key, default):
     except Exception:
         pass
     return default
+
+
+def get_json_config(key, default):
+    """Busca valor JSON de configuração do SystemConfig.
+    Usado para estruturas complexas (dicts, lists).
+    Exemplo de config_value no banco: '{"5": 20, "4": 10, "3": 5}'
+    """
+    try:
+        config = SystemConfig.query.filter_by(config_key=key).first()
+        if config and config.config_value:
+            return json.loads(config.config_value)
+    except (json.JSONDecodeError, Exception):
+        pass
+    return default
+
+
+def get_rating_points():
+    """Retorna pontos por avaliação, configurável via SystemConfig (key: muvscore_rating_points)"""
+    return get_json_config('muvscore_rating_points', RATING_POINTS_DEFAULT)
+
+
+def get_levels():
+    """Retorna níveis e thresholds, configurável via SystemConfig (key: muvscore_levels)"""
+    return get_json_config('muvscore_levels', LEVELS_DEFAULT)
+
+
+def get_reward_distribution():
+    """Retorna distribuição do pool por posição, configurável via SystemConfig (key: muvscore_reward_distribution)"""
+    return get_json_config('muvscore_reward_distribution', REWARD_DISTRIBUTION_DEFAULT)
 
 
 def get_current_week():
@@ -107,7 +140,7 @@ def award_points(driver, points, reason, description=None, order_id=None):
 
         # Recalcular nível
         score.level = DriverWeeklyScore.calculate_level(score.total_points)
-        score.updated_at = datetime.utcnow()
+        score.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -127,7 +160,7 @@ def award_delivery_points(driver, order):
     Verifica bônus de dia especial e horário de pico.
     """
     points_per_delivery = get_config_value('points_per_delivery', POINTS_PER_DELIVERY)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today = now.date()
     current_time = now.time()
 
@@ -175,7 +208,7 @@ def award_rating_points(driver, rating, order=None):
     Pontua avaliação recebida.
     Chamado quando estabelecimento avalia o entregador.
     """
-    points = RATING_POINTS.get(rating, 0)
+    points = get_rating_points().get(str(rating), get_rating_points().get(rating, 0))
 
     if points == 0:
         return False
@@ -307,7 +340,7 @@ def check_and_award_streak(driver):
 def calculate_acceptance_rate(driver, days=7):
     """Calcula a taxa de aceite do entregador nos últimos N dias"""
     from src.models.portal_models import Order, OrderStatus
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Pedidos ofertados (via driver_assignments ou offers)
     # Por simplicidade, usar orders onde driver_id = driver.id
@@ -332,7 +365,7 @@ def calculate_acceptance_rate(driver, days=7):
 def calculate_completion_rate(driver, days=7):
     """Calcula a taxa de conclusão (entregas / pedidos aceitos) nos últimos N dias"""
     from src.models.portal_models import Order, OrderStatus
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
 
     total_accepted = Order.query.filter(
         Order.driver_id == driver.id,

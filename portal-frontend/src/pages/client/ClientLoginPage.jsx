@@ -136,8 +136,8 @@ const ClientLoginPage = () => {
               </div>
 
               <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer' }}>
-                  Esqueci minha senha
+                <span style={{ fontSize: '0.8125rem', color: '#94a3b8' }}>
+                  Esqueceu a senha? Contate o administrador
                 </span>
               </div>
 
@@ -172,17 +172,20 @@ const ClientLoginPage = () => {
             </p>
           </div>
 
-          <div style={{
-            marginTop: '2rem',
-            padding: '1rem',
-            background: '#f1f5f9',
-            borderRadius: '0.5rem',
-            fontSize: '0.75rem',
-            color: '#64748b',
-            textAlign: 'center'
-          }}>
-            <strong style={{ color: '#64748b' }}>Teste:</strong> cliente@teste.com / 123456
-          </div>
+          {/* Credenciais de teste — visíveis apenas em desenvolvimento */}
+          {import.meta.env.DEV && (
+            <div style={{
+              marginTop: '2rem',
+              padding: '1rem',
+              background: '#f1f5f9',
+              borderRadius: '0.5rem',
+              fontSize: '0.75rem',
+              color: '#64748b',
+              textAlign: 'center'
+            }}>
+              <strong style={{ color: '#64748b' }}>Teste:</strong> cliente@teste.com / 123456
+            </div>
+          )}
         </div>
       </div>
 

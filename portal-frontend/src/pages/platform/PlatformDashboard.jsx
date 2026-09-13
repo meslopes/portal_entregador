@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import {
-  Users, Building2, Truck, Package, DollarSign,
+  Users, Building2, Bike, Package, DollarSign,
   TrendingUp, Plus, Search, Edit, Trash2, Eye,
   Shield, LogOut, Loader2, AlertCircle, X, RefreshCw
 } from 'lucide-react';
@@ -254,7 +254,7 @@ const PlatformDashboard = () => {
             bg="#ecfdf5"
           />
           <MetricCard
-            icon={<Truck size={24} />}
+            icon={<Bike size={24} />}
             label="Entregadores"
             value={dashboard?.drivers || 0}
             color="#d97706"

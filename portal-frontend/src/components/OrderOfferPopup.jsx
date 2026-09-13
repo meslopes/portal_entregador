@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Package, MapPin, DollarSign, Clock, CheckCircle, X, Navigation, Store } from 'lucide-react';
 import api from '@/lib/api';
 import { startSiren, stopSiren } from '@/lib/notify';
+import { showToast } from '@/components/Toast';
+import { offlineDB, isOnline } from '@/lib/offline';
 
 const OrderOfferPopup = () => {
   const [offer, setOffer] = useState(null);
@@ -71,19 +73,27 @@ const OrderOfferPopup = () => {
 
   const handleAccept = async () => {
     if (!offer || isAccepting) return;
-    
+
     try {
       setIsAccepting(true);
       stopSiren();
-      await api.post(`/api/orders/${offer.id}/accept`);
+
+      if (!isOnline()) {
+        // Sem internet: salva na fila offline
+        await offlineDB.addToQueue({ type: 'ACCEPT_ORDER', orderId: offer.id });
+        showToast('Pedido salvo offline. Será aceito quando a internet voltar.', 'info');
+      } else {
+        // Com internet: envia direto
+        await api.post(`/api/orders/${offer.id}/accept`);
+      }
+
       setIsVisible(false);
       setOffer(null);
       if (timerRef.current) clearInterval(timerRef.current);
-      // Redirecionar para a pagina de pedidos ativos
       window.location.href = `/delivery/${offer.id}`;
     } catch (err) {
       console.error('Erro ao aceitar pedido:', err);
-      alert(err.response?.data?.error || 'Erro ao aceitar pedido');
+      showToast(err.response?.data?.error || 'Erro ao aceitar pedido', 'error');
     } finally {
       setIsAccepting(false);
     }

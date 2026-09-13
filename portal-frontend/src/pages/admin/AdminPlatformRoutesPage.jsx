@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Route, Plus, Users, Package, MapPin, CheckCircle,
-  AlertCircle, RefreshCw, X, ArrowRightLeft, Truck
+  AlertCircle, RefreshCw, X, ArrowRightLeft, Bike
 } from 'lucide-react';
 import api from '@/lib/api';
 import Tooltip from '@/components/Tooltip';
@@ -196,7 +196,7 @@ const AdminPlatformRoutesPage = () => {
               <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Truck size={20} style={{ color: '#2563eb' }} />
+                    <Bike size={20} style={{ color: '#2563eb' }} />
                   </div>
                   <div>
                     <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '1rem' }}>Rota #{route.id}</p>

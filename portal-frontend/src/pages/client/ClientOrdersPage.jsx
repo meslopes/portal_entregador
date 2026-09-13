@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Package, Search, Clock, CheckCircle, Truck,
+  Package, Search, Clock, CheckCircle, Bike,
   XCircle, AlertCircle, MapPin, User, Phone, DollarSign,
   Users, Send, Loader2
 } from 'lucide-react';
@@ -175,7 +175,7 @@ const ClientOrdersPage = () => {
                       </div>
                       {(order.driver || order.own_driver) && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                          {order.assigned_to_own_driver ? <Users size={14} style={{ color: '#2563eb' }} /> : <Truck size={14} style={{ color: '#64748b' }} />}
+                          {order.assigned_to_own_driver ? <Users size={14} style={{ color: '#2563eb' }} /> : <Bike size={14} style={{ color: '#64748b' }} />}
                           {order.own_driver?.name || order.driver?.name || 'Entregador'}
                         </div>
                       )}
@@ -395,7 +395,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: hasOwnDriver ? '#dbeafe' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {hasOwnDriver ? <Users size={16} style={{ color: '#2563eb' }} /> : <Truck size={16} style={{ color: '#16a34a' }} />}
+                    {hasOwnDriver ? <Users size={16} style={{ color: '#2563eb' }} /> : <Bike size={16} style={{ color: '#16a34a' }} />}
                   </div>
                   <div>
                     <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>
@@ -406,6 +406,20 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                       {(order.own_driver?.phone || order.driver?.phone) ? ` • ${order.own_driver?.phone || order.driver?.phone}` : ''}
                       {order.own_driver?.vehicle_type ? ` • ${order.own_driver.vehicle_type}` : ''}
                     </p>
+                    {(order.own_driver?.phone || order.driver?.user?.phone) && (
+                      <a
+                        href={`https://wa.me/55${(order.own_driver?.phone || order.driver?.user?.phone || '').replace(/\D/g, '')}?text=Olá, sobre o pedido #${order.order_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                          marginTop: '0.25rem', fontSize: '0.6875rem', color: '#25d366',
+                          textDecoration: 'none', fontWeight: 600
+                        }}
+                      >
+                        💬 WhatsApp
+                      </a>
+                    )}
                   </div>
                 </div>
                 {/* Botão para trocar entregador */}
@@ -558,7 +572,7 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                   </>
                 ) : calledPlatform ? (
                   <>
-                    <Truck size={14} style={{ color: '#16a34a' }} />
+                    <Bike size={14} style={{ color: '#16a34a' }} />
                     <span style={{ fontSize: '0.8125rem', color: '#1e293b' }}>Distribuído pela plataforma</span>
                   </>
                 ) : null}

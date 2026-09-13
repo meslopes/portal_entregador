@@ -10,7 +10,7 @@ from src.models.portal_models import (
 )
 from src.utils.tenant import get_current_user, get_current_tenant_id
 from src.utils.geo import haversine_distance
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -227,7 +227,7 @@ def create_platform_route():
             order.platform_route_id = route.id
             order.driver_id = driver_id
             order.status = OrderStatus.OFFERED
-            order.offered_at = datetime.utcnow()
+            order.offered_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -298,14 +298,14 @@ def accept_route(route_id):
             return jsonify({'error': 'Rota já foi aceita ou rejeitada'}), 400
 
         route.status = 'ACTIVE'
-        route.started_at = datetime.utcnow()
+        route.started_at = datetime.now(timezone.utc)
 
         # Atualizar status dos pedidos
         for stop in route.stops:
             order = Order.query.get(stop.order_id)
             if order and order.status in [OrderStatus.OFFERED, OrderStatus.PENDING]:
                 order.status = OrderStatus.ACCEPTED
-                order.accepted_at = datetime.utcnow()
+                order.accepted_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -401,14 +401,14 @@ def complete_stop(route_id):
             return jsonify({'error': 'Parada não encontrada'}), 404
 
         stop.status = 'COMPLETED'
-        stop.completed_at = datetime.utcnow()
+        stop.completed_at = datetime.now(timezone.utc)
 
         # Verificar se todas as paradas foram concluídas
         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
         
         if all_completed:
             route.status = 'COMPLETED'
-            route.completed_at = datetime.utcnow()
+            route.completed_at = datetime.now(timezone.utc)
 
         db.session.commit()
 

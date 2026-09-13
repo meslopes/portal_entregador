@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, Truck, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, Bike, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast';
 
@@ -325,7 +325,7 @@ const EstablishmentDriversPage = () => {
       {/* Info box */}
       <div style={{ marginTop: '2rem', padding: '1.25rem', background: '#eff6ff', borderRadius: '0.75rem', border: '1px solid #bfdbfe' }}>
         <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e40af', marginBottom: '0.75rem' }}>
-          <Truck size={16} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+          <Bike size={16} style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
           Como funciona
         </h3>
         <ul style={{ fontSize: '0.8125rem', color: '#1e3a5f', lineHeight: 1.8, paddingLeft: '1.25rem' }}>

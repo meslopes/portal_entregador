@@ -172,7 +172,7 @@ from src.models.portal_models import (
 
 from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, and_, or_
 
@@ -214,6 +214,12 @@ def admin_required(f):
 
             return jsonify({'error': 'Acesso restrito a administradores'}), 403
 
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         return f(*args, **kwargs)
 
     return decorated_function
@@ -239,6 +245,12 @@ def client_or_admin_required(f):
         if not user or user.user_type not in (UserType.ADMIN, UserType.CLIENT):
 
             return jsonify({'error': 'Acesso restrito'}), 403
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
 
         return f(*args, **kwargs)
 
@@ -387,7 +399,7 @@ def approve_user(user_id):
 
         user.status = UserStatus.ACTIVE
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
 
         # Atribuir praca se fornecida
         square_id = data.get('square_id')
@@ -922,7 +934,7 @@ def update_user(user_id):
 
 
 
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -1101,7 +1113,11 @@ def delete_user(user_id):
                     DriverRestaurant.query.filter_by(driver_id=driver.id).delete()
                     # Limpar ganhos de entregadores próprios vinculados
                     from src.models.portal_models import EstablishmentDriver, OwnDriverEarning
-                    est_drivers = EstablishmentDriver.query.filter_by(user_id=user.id).all()
+                    # Buscar via restaurante do driver (EstablishmentDriver não tem user_id)
+                    if driver.restaurant_id:
+                        est_drivers = EstablishmentDriver.query.filter_by(restaurant_id=driver.restaurant_id).all()
+                    else:
+                        est_drivers = []
                     for ed in est_drivers:
                         OwnDriverEarning.query.filter_by(establishment_driver_id=ed.id).delete()
                         db.session.delete(ed)
@@ -1332,7 +1348,7 @@ def get_dashboard():
 
         # Estatísticas do dia atual (filtradas por tenant e square)
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
 
         today_orders_query = Order.query.filter(func.date(Order.created_at) == today)
 
@@ -1386,7 +1402,7 @@ def get_dashboard():
 
         # Entregadores mais ativos (últimos 7 dias, filtrados por tenant)
 
-        week_ago = datetime.utcnow() - timedelta(days=7)
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
         top_drivers_query = db.session.query(
 
@@ -1515,11 +1531,11 @@ def admin_update_order(order_id):
 
                 if new_status == OrderStatus.DELIVERED:
 
-                    order.delivery_time = datetime.utcnow()
+                    order.delivery_time = datetime.now(timezone.utc)
 
                 elif new_status == OrderStatus.PICKED_UP:
 
-                    order.pickup_time = datetime.utcnow()
+                    order.pickup_time = datetime.now(timezone.utc)
 
             except ValueError:
 
@@ -1595,7 +1611,7 @@ def admin_update_order(order_id):
 
                     customer.phone = data['customer_phone']
 
-                customer.updated_at = datetime.utcnow()
+                customer.updated_at = datetime.now(timezone.utc)
 
 
 
@@ -1647,11 +1663,11 @@ def admin_update_order(order_id):
 
                         address.longitude = geo['longitude']
 
-                address.updated_at = datetime.utcnow()
+                address.updated_at = datetime.now(timezone.utc)
 
 
 
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -1897,7 +1913,7 @@ def get_driver_details(driver_id):
 
         # Entregas dos últimos 30 dias
 
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
         recent_deliveries = Order.query.filter(
 
@@ -2290,6 +2306,56 @@ def convert_driver_to_own(driver_id):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_bp.route('/drivers/<int:driver_id>/convert-from-own', methods=['POST'])
+@jwt_required()
+@admin_required
+def convert_own_to_platform(driver_id):
+    """Converte um entregador próprio de volta para a plataforma"""
+    try:
+        driver = Driver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        if not driver.converted_to_own:
+            return jsonify({'error': 'Entregador já está na plataforma'}), 400
+
+        data = request.get_json() or {}
+        restaurant_id = data.get('restaurant_id')
+
+        # Desativar EstablishmentDriver correspondente
+        if restaurant_id:
+            user = db.session.get(User, driver.user_id)
+            if user:
+                est_driver = EstablishmentDriver.query.filter_by(
+                    restaurant_id=restaurant_id, phone=user.phone
+                ).first()
+                if est_driver:
+                    est_driver.is_active = False
+
+            # Verificar se restaurante ainda tem outros entregadores próprios ativos
+            remaining = EstablishmentDriver.query.filter_by(
+                restaurant_id=restaurant_id, is_active=True
+            ).count()
+            if remaining == 0:
+                restaurant = Restaurant.query.get(restaurant_id)
+                if restaurant:
+                    restaurant.has_own_drivers = False
+
+        # Reativar na plataforma
+        driver.converted_to_own = False
+
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Entregador reativado na plataforma com sucesso',
+            'driver': driver.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_bp.route('/drivers/<int:driver_id>/status', methods=['PUT'])
 
 @jwt_required()
@@ -2342,7 +2408,7 @@ def update_driver_status(driver_id):
 
             driver.is_online = (new_status == 'ONLINE')
 
-            driver.updated_at = datetime.utcnow()
+            driver.updated_at = datetime.now(timezone.utc)
 
             # Se ficar online, atualiza localização se fornecida
 
@@ -2352,7 +2418,7 @@ def update_driver_status(driver_id):
 
                 driver.current_longitude = data['longitude']
 
-                driver.last_location_update = datetime.utcnow()
+                driver.last_location_update = datetime.now(timezone.utc)
 
         else:
 
@@ -2360,7 +2426,7 @@ def update_driver_status(driver_id):
 
             driver.user.status = UserStatus(new_status)
 
-            driver.user.updated_at = datetime.utcnow()
+            driver.user.updated_at = datetime.now(timezone.utc)
 
             # Se suspender ou desativar, colocar offline
 
@@ -2368,7 +2434,7 @@ def update_driver_status(driver_id):
 
                 driver.is_online = False
 
-                driver.updated_at = datetime.utcnow()
+                driver.updated_at = datetime.now(timezone.utc)
 
         
 
@@ -2610,7 +2676,7 @@ def assign_order_to_driver(order_id):
 
         order.status = OrderStatus.ACCEPTED
 
-        order.updated_at = datetime.utcnow()
+        order.updated_at = datetime.now(timezone.utc)
 
         
 
@@ -2857,7 +2923,7 @@ def get_finance_dashboard():
 
         # Define data de inicio baseado no periodo
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if period == 'today':
 
@@ -3151,7 +3217,7 @@ def get_finance_by_establishment():
 
         tenant_id = get_current_tenant_id()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
 
 
@@ -3671,7 +3737,7 @@ def get_establishments():
 
             # Pedidos esta semana
 
-            week_ago = datetime.utcnow() - timedelta(days=7)
+            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
             week_orders = Order.query.filter(
 
@@ -3685,7 +3751,7 @@ def get_establishments():
 
             # Pedidos hoje
 
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
 
             today_orders = Order.query.filter(
 
@@ -4160,7 +4226,7 @@ def update_establishment(establishment_id):
 
 
 
-        est.updated_at = datetime.utcnow()
+        est.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -4283,7 +4349,7 @@ def re_geocode_establishment(establishment_id):
 
             est.longitude = geo['longitude']
 
-            est.updated_at = datetime.utcnow()
+            est.updated_at = datetime.now(timezone.utc)
 
             db.session.commit()
 
@@ -4454,7 +4520,7 @@ def report_orders_by_date():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4544,7 +4610,7 @@ def report_drivers_performance():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4648,7 +4714,7 @@ def report_establishments_ranking():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4752,7 +4818,7 @@ def report_financial_summary():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -4918,7 +4984,7 @@ def report_cancellations():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5018,7 +5084,7 @@ def report_ratings():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5152,7 +5218,7 @@ def report_peak_hours():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5260,7 +5326,7 @@ def report_deliveries_by_driver():
 
         days = request.args.get('days', 30, type=int)
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         tenant_id = get_current_tenant_id()
 
@@ -5452,7 +5518,7 @@ def update_settings():
 
                 config.config_value = str(value)
 
-                config.updated_at = datetime.utcnow()
+                config.updated_at = datetime.now(timezone.utc)
 
 
 
@@ -5638,7 +5704,7 @@ def update_tenant_settings():
 
 
 
-        tenant.updated_at = datetime.utcnow()
+        tenant.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -5958,7 +6024,7 @@ def update_pricing_table(table_id):
 
 
 
-        table.updated_at = datetime.utcnow()
+        table.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -6230,7 +6296,7 @@ def update_dynamic_pricing(config_id):
 
 
 
-        config.updated_at = datetime.utcnow()
+        config.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -6372,7 +6438,7 @@ def upload_tenant_logo():
 
         tenant.logo_url = logo_url
 
-        tenant.updated_at = datetime.utcnow()
+        tenant.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -6720,7 +6786,7 @@ def update_square(square_id):
 
 
 
-        square.updated_at = datetime.utcnow()
+        square.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -7004,7 +7070,7 @@ def pay_driver(driver_id):
 
             payment.status = PaymentStatus.PROCESSED
 
-            payment.processed_at = datetime.utcnow()
+            payment.processed_at = datetime.now(timezone.utc)
 
 
 
@@ -7086,7 +7152,7 @@ def generate_invoice(restaurant_id):
 
             # Semana atual
 
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
 
             days_since_monday = now.weekday()
 
@@ -7433,7 +7499,7 @@ def process_withdrawal(withdrawal_id):
 
         
 
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -7550,7 +7616,7 @@ def generate_invoices():
 
         else:
 
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
 
             days_since_monday = today.weekday()
 
@@ -7750,7 +7816,7 @@ def pay_invoice(invoice_id):
 
                     driver.balance = (driver.balance or Decimal('0')) + earnings
 
-                    driver.updated_at = datetime.utcnow()
+                    driver.updated_at = datetime.now(timezone.utc)
 
                     drivers_unlocked[driver.id] = drivers_unlocked.get(driver.id, 0) + float(earnings)
 
@@ -7760,9 +7826,9 @@ def pay_invoice(invoice_id):
 
         invoice.status = 'PAID'
 
-        invoice.paid_at = datetime.utcnow()
+        invoice.paid_at = datetime.now(timezone.utc)
 
-        invoice.updated_at = datetime.utcnow()
+        invoice.updated_at = datetime.now(timezone.utc)
 
         
 
@@ -7864,7 +7930,7 @@ def update_asaas_config():
 
                 config.config_value = data[field]
 
-                config.updated_at = datetime.utcnow()
+                config.updated_at = datetime.now(timezone.utc)
 
             else:
 
@@ -7948,7 +8014,7 @@ def generate_auto_invoices():
 
         # Calcular período da semana anterior
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
 
         week_end = today - timedelta(days=today.weekday() + 1)
 
@@ -8164,7 +8230,7 @@ def create_invoice_charge(invoice_id):
 
             billing_type='PIX',
 
-            due_date=(datetime.utcnow().date() + timedelta(days=3)).isoformat(),
+            due_date=(datetime.now(timezone.utc).date() + timedelta(days=3)).isoformat(),
 
             description=f'Fatura muv.log - Semana {invoice.week_start.date()} a {invoice.week_end.date()} - {invoice.deliveries_count} entregas',
 
@@ -8438,7 +8504,7 @@ def process_withdrawal_auto(withdrawal_id):
 
             withdrawal.status = PaymentStatus.PROCESSED
 
-            withdrawal.updated_at = datetime.utcnow()
+            withdrawal.updated_at = datetime.now(timezone.utc)
 
             driver.locked_balance = (driver.locked_balance or 0) - amount
 
@@ -8582,7 +8648,7 @@ def create_platform_credential():
 
                 existing.is_active = data['is_active']
 
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(timezone.utc)
 
             db.session.commit()
 
@@ -8720,7 +8786,7 @@ def test_platform_credential(cred_id):
 
                 from datetime import timedelta
 
-                cred.expires_at = datetime.utcnow() + timedelta(seconds=result.get('expires_in', 3600))
+                cred.expires_at = datetime.now(timezone.utc) + timedelta(seconds=result.get('expires_in', 3600))
 
                 cred.is_active = True
 
@@ -9703,7 +9769,7 @@ def get_own_driver_earnings():
 
             from datetime import timedelta
 
-            week_ago = datetime.utcnow() - timedelta(days=7)
+            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
             query = query.filter(OwnDriverEarning.created_at >= week_ago)
 
@@ -9711,7 +9777,7 @@ def get_own_driver_earnings():
 
             from datetime import timedelta
 
-            month_ago = datetime.utcnow() - timedelta(days=30)
+            month_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
             query = query.filter(OwnDriverEarning.created_at >= month_ago)
 
@@ -9801,7 +9867,7 @@ def mark_earning_paid(earning_id):
 
         earning.is_paid = True
 
-        earning.paid_at = datetime.utcnow()
+        earning.paid_at = datetime.now(timezone.utc)
 
         earning.payment_method = data.get('payment_method', 'PIX')
 
@@ -9901,7 +9967,7 @@ def pay_all_earnings():
 
             earning.is_paid = True
 
-            earning.paid_at = datetime.utcnow()
+            earning.paid_at = datetime.now(timezone.utc)
 
             earning.payment_method = data.get('payment_method', 'PIX')
 
@@ -9989,11 +10055,11 @@ def get_cost_comparison():
 
         if period == 'week':
 
-            start_date = datetime.utcnow() - timedelta(days=7)
+            start_date = datetime.now(timezone.utc) - timedelta(days=7)
 
         else:
 
-            start_date = datetime.utcnow() - timedelta(days=30)
+            start_date = datetime.now(timezone.utc) - timedelta(days=30)
 
         
 
@@ -10163,11 +10229,11 @@ def get_own_driver_metrics():
 
         if period == 'week':
 
-            start_date = datetime.utcnow() - timedelta(days=7)
+            start_date = datetime.now(timezone.utc) - timedelta(days=7)
 
         else:
 
-            start_date = datetime.utcnow() - timedelta(days=30)
+            start_date = datetime.now(timezone.utc) - timedelta(days=30)
 
 
 
@@ -10746,6 +10812,211 @@ def cleanup_test_data():
             deleted['tramandai'] = f'erro: {str(e)[:60]}'
 
         return jsonify({'message': 'Limpeza concluida', 'deleted': deleted}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# EXPORTAÇÃO CSV (abre no Excel)
+# ============================================================
+
+@admin_bp.route('/export/orders', methods=['GET'])
+@jwt_required()
+@admin_required
+def export_orders_csv():
+    """Exporta pedidos em formato CSV (abre no Excel)"""
+    try:
+        import csv
+        import io
+        from flask import make_response
+
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        status = request.args.get('status')
+
+        query = Order.query
+        if start_date:
+            query = query.filter(Order.created_at >= datetime.fromisoformat(start_date))
+        if end_date:
+            query = query.filter(Order.created_at <= datetime.fromisoformat(end_date))
+        if status:
+            query = query.filter(Order.status == OrderStatus(status))
+
+        user = get_current_user()
+        if not user.is_super_admin and user.tenant_id:
+            query = query.filter(Order.tenant_id == user.tenant_id)
+
+        orders = query.order_by(Order.created_at.desc()).limit(10000).all()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            'Numero', 'Status', 'Restaurante', 'Cliente', 'Telefone',
+            'Endereco Entrega', 'Bairro', 'Cidade', 'Taxa Entrega',
+            'Total', 'Pagamento', 'Entregador', 'Criado em', 'Entregue em'
+        ])
+
+        for o in orders:
+            writer.writerow([
+                o.order_number,
+                o.status.value if o.status else '',
+                o.restaurant.name if o.restaurant else '',
+                o.customer.name if o.customer else '',
+                o.customer.phone if o.customer else '',
+                o.delivery_address.street if o.delivery_address else '',
+                o.delivery_address.neighborhood if o.delivery_address else '',
+                o.delivery_address.city if o.delivery_address else '',
+                float(o.delivery_fee or 0),
+                float(o.total_amount or 0),
+                o.payment_method.value if o.payment_method else '',
+                f"{o.driver.user.first_name} {o.driver.user.last_name}" if o.driver and o.driver.user else '',
+                o.created_at.strftime('%d/%m/%Y %H:%M') if o.created_at else '',
+                o.delivery_time.strftime('%d/%m/%Y %H:%M') if o.delivery_time else ''
+            ])
+
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = 'attachment; filename=pedidos.csv'
+        return response
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/export/drivers', methods=['GET'])
+@jwt_required()
+@admin_required
+def export_drivers_csv():
+    """Exporta entregadores em formato CSV (abre no Excel)"""
+    try:
+        import csv
+        import io
+        from flask import make_response
+
+        query = Driver.query.join(User)
+        user = get_current_user()
+        if not user.is_super_admin and user.tenant_id:
+            query = query.filter(Driver.tenant_id == user.tenant_id)
+
+        drivers = query.all()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            'ID', 'Nome', 'Telefone', 'Veiculo', 'Placa',
+            'Praça', 'Rating', 'Total Entregas', 'Saldo',
+            'Status', 'Online', 'Desde'
+        ])
+
+        for d in drivers:
+            writer.writerow([
+                d.id,
+                f"{d.user.first_name} {d.user.last_name}" if d.user else '',
+                d.user.phone if d.user else '',
+                d.vehicle_type.value if d.vehicle_type else '',
+                d.vehicle_plate or '',
+                d.square.name if d.square else '',
+                float(d.rating or 5.0),
+                d.total_deliveries,
+                float(d.balance or 0),
+                d.user.status.value if d.user and d.user.status else '',
+                'Sim' if d.is_online else 'Não',
+                d.created_at.strftime('%d/%m/%Y') if d.created_at else ''
+            ])
+
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = 'attachment; filename=entregadores.csv'
+        return response
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/import/orders', methods=['POST'])
+@jwt_required()
+@admin_required
+def import_orders_csv():
+    """Importa pedidos em lote a partir de um arquivo CSV.
+    Formato esperado do CSV:
+    cliente,telefone,endereco,bairro,cidade,itens,valor_total,taxa_entrega,forma_pagamento
+    """
+    try:
+        import csv
+        import io
+
+        if 'file' not in request.files:
+            return jsonify({'error': 'Envie um arquivo CSV no campo "file"'}), 400
+
+        file = request.files['file']
+        if not file.filename.endswith('.csv'):
+            return jsonify({'error': 'Arquivo deve ser .csv'}), 400
+
+        content = file.read().decode('utf-8-sig')
+        reader = csv.DictReader(io.StringIO(content))
+
+        user = get_current_user()
+        tenant_id = get_current_tenant_id()
+
+        created = 0
+        errors = []
+
+        for i, row in enumerate(reader, start=2):
+            try:
+                customer_name = row.get('cliente', '').strip()
+                customer_phone = row.get('telefone', '').strip()
+                delivery_address = row.get('endereco', '').strip()
+
+                if not customer_name or not customer_phone or not delivery_address:
+                    errors.append(f'Linha {i}: campos obrigatorios ausentes')
+                    continue
+
+                customer = Customer.query.filter_by(phone=customer_phone, tenant_id=tenant_id).first()
+                if not customer:
+                    customer = Customer(name=customer_name, phone=customer_phone, tenant_id=tenant_id)
+                    db.session.add(customer)
+                    db.session.flush()
+
+                address = Address(
+                    customer_id=customer.id,
+                    street=delivery_address,
+                    neighborhood=row.get('bairro', '').strip(),
+                    city=row.get('cidade', '').strip()
+                )
+                db.session.add(address)
+                db.session.flush()
+
+                items_str = row.get('itens', '').strip()
+                items = [{'name': items_str, 'quantity': 1}] if items_str else []
+
+                from datetime import datetime as dt
+                order = Order(
+                    tenant_id=tenant_id,
+                    customer_id=customer.id,
+                    delivery_address_id=address.id,
+                    order_number=f"IMP{dt.now().strftime('%Y%m%d%H%M%S')}{i:04d}",
+                    items=items,
+                    subtotal=float(row.get('valor_total', 0) or 0),
+                    delivery_fee=float(row.get('taxa_entrega', 0) or 0),
+                    total_amount=float(row.get('valor_total', 0) or 0) + float(row.get('taxa_entrega', 0) or 0),
+                    payment_method=PaymentMethod(row.get('forma_pagamento', 'CASH').strip().upper() or 'CASH'),
+                    status=OrderStatus.PENDING
+                )
+                db.session.add(order)
+                created += 1
+
+            except Exception as e:
+                errors.append(f'Linha {i}: {str(e)[:80]}')
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'{created} pedidos importados com sucesso',
+            'created': created,
+            'errors': errors[:20]
+        }), 200
 
     except Exception as e:
         db.session.rollback()

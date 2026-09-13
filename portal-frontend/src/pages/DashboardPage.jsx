@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Truck, MapPin, DollarSign, Clock, Star, Package,
+  Bike, MapPin, DollarSign, Clock, Star, Package,
   TrendingUp, AlertCircle, Navigation, Zap, ArrowRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,12 @@ import {
   startOrderMonitor, stopOrderMonitor,
   requestNotificationPermission
 } from '@/lib/notify';
+
+// Proteção contra XSS em popups do Leaflet
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
 
 const DashboardPage = () => {
   const { user, updateUser } = useAuth();
@@ -69,7 +75,7 @@ const DashboardPage = () => {
             iconAnchor: [12, 12]
           });
           L.marker([currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude], { icon: orderIcon }).addTo(map)
-            .bindPopup(`Pedido #${currentOrder.order_number}`);
+            .bindPopup(`Pedido #${escapeHtml(currentOrder.order_number)}`);
           
           // Ajustar zoom para mostrar ambos os pontos
           const bounds = L.latLngBounds([
@@ -323,7 +329,7 @@ const DashboardPage = () => {
           onClick={() => navigate('/orders')}
         />
         <ActionCard
-          icon={<Truck size={24} />}
+          icon={<Bike size={24} />}
           iconBg="#dbeafe"
           iconColor="#1d4ed8"
           title="Rotas da Plataforma"
@@ -361,8 +367,17 @@ const DashboardPage = () => {
                 onClick={() => {
                   const lat = currentOrder.delivery_address.latitude;
                   const lng = currentOrder.delivery_address.longitude;
-                  const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-                  window.open(url, '_blank');
+                  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                  if (isMobile) {
+                    const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+                    if (useWaze) {
+                      window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+                    } else {
+                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                    }
+                  } else {
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                  }
                 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.375rem',

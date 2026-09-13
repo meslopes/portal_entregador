@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, MapPin, Phone, Package, Truck, CheckCircle,
+  ArrowLeft, MapPin, Phone, Package, Bike, CheckCircle,
   Navigation, Camera, AlertCircle, Clock, Shield
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -125,12 +125,20 @@ const OwnDriverDeliveryPage = () => {
   const openNavigation = () => {
     const addr = order.delivery_address;
     if (addr?.latitude && addr?.longitude) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`;
-      window.open(url, '_blank');
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+        if (useWaze) {
+          window.open(`https://www.waze.com/ul?ll=${addr.latitude},${addr.longitude}&navigate=yes`, '_blank');
+        } else {
+          window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank');
+        }
+      } else {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank');
+      }
     } else if (addr?.street) {
       const query = encodeURIComponent(`${addr.street}, ${addr.neighborhood || ''}, ${addr.city || ''}`);
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
-      window.open(url, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank');
     }
   };
 

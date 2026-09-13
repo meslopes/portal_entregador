@@ -79,7 +79,8 @@ const NotificationBell = () => {
   const markAllAsRead = async () => {
     try {
       const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-      await Promise.all(unreadIds.map(id => api.put(`/api/user/notifications/${id}/read`)));
+      // Usar allSettled para não falhar tudo se uma request der erro
+      await Promise.allSettled(unreadIds.map(id => api.put(`/api/user/notifications/${id}/read`)));
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (err) {

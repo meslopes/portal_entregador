@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Package, Clock,
-  AlertCircle, Store, Truck, ArrowUpRight, BarChart3,
+  AlertCircle, Store, Bike, ArrowUpRight, BarChart3,
   Percent, Wallet, ArrowDownRight, CreditCard
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
@@ -217,7 +217,7 @@ const AdminFinancePage = () => {
       {/* Pendencias de Pagamento aos Entregadores */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Truck size={18} style={{ color: '#f59e0b' }} />
+          <Bike size={18} style={{ color: '#f59e0b' }} />
           <span style={{ fontWeight: 600, color: '#1e293b' }}>Pagamentos Pendentes aos Entregadores</span>
         </div>
         <div style={{ overflowX: 'auto' }}>

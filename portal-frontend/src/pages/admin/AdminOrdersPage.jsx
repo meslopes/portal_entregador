@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Package, AlertCircle, Store, User, MapPin, Clock,
-  ChevronLeft, ChevronRight, Truck, Filter, Edit, Trash2, X, Eye
+  ChevronLeft, ChevronRight, Bike, Filter, Edit, Trash2, X, Eye
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
@@ -363,7 +363,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
             {order.driver && (
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#2563eb', background: '#eff6ff', padding: '0.25rem 0.625rem', borderRadius: '9999px' }}>
-                <Truck size={11} /> {order.driver.name}
+                <Bike size={11} /> {order.driver.name}
               </span>
             )}
           </div>

@@ -38,9 +38,9 @@ if flask_env == 'production':
 app.config['SECRET_KEY'] = secret_key or 'dev-secret-key-local-nao-usar-em-producao'
 app.config['JWT_SECRET_KEY'] = jwt_secret_key or 'dev-jwt-secret-key-local-nao-usar-em-producao'
 
-# Token JWT expira em 24 horas (não usar padrão de 15 minutos)
+# Token JWT expira em 4 horas
 from datetime import timedelta
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=4)
 
 # Configuração do banco de dados
 database_url = os.getenv('DATABASE_URL', f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}")
@@ -50,6 +50,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializa extensões
 jwt = JWTManager(app)
+
+# Rate Limiting: protege contra abuso
+from src.utils.rate_limit import limiter
+limiter.init_app(app)
 
 # CORS: permissivo em desenvolvimento (testes em rede local), restritivo em produção
 if flask_env == 'production':
@@ -97,6 +101,12 @@ app.register_blueprint(route_settings_bp)
 from src.routes.platform_routes import platform_routes_bp
 app.register_blueprint(platform_routes_bp)
 
+from src.routes.route import route_bp
+app.register_blueprint(route_bp)
+
+from src.routes.finance import finance_bp
+app.register_blueprint(finance_bp)
+
 # Inicializa banco de dados
 db.init_app(app)
 with app.app_context():
@@ -131,6 +141,60 @@ with app.app_context():
         print(f"Migração is_super_admin: {e}")
         db.session.rollback()
 
+    # Migration: adicionar campos 2FA na tabela users
+    try:
+        dialect = db.engine.dialect.name
+        if dialect == 'sqlite':
+            result = db.session.execute(db.text("PRAGMA table_info(users)"))
+            columns = [row[1] for row in result.fetchall()]
+        else:
+            result = db.session.execute(db.text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'users'"
+            ))
+            columns = [row[0] for row in result.fetchall()]
+
+        if 'totp_secret' not in columns:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32)"))
+            db.session.commit()
+            print("Coluna totp_secret adicionada à tabela users")
+
+        if 'totp_enabled' not in columns:
+            db.session.execute(db.text("ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE"))
+            db.session.commit()
+            print("Coluna totp_enabled adicionada à tabela users")
+    except Exception as e:
+        print(f"Migração 2FA: {e}")
+        db.session.rollback()
+
+    # Migration: adicionar fixed_fee em squares e pricing_tables
+    try:
+        for table in ['squares', 'pricing_tables']:
+            if dialect == 'sqlite':
+                result = db.session.execute(db.text(f"PRAGMA table_info({table})"))
+                cols = [row[1] for row in result.fetchall()]
+            else:
+                result = db.session.execute(db.text(
+                    f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table}'"
+                ))
+                cols = [row[0] for row in result.fetchall()]
+
+            if 'fixed_fee' not in cols:
+                db.session.execute(db.text(f"ALTER TABLE {table} ADD COLUMN fixed_fee NUMERIC(10,2) DEFAULT 0"))
+                db.session.commit()
+                print(f"Coluna fixed_fee adicionada à tabela {table}")
+    except Exception as e:
+        print(f"Migração fixed_fee: {e}")
+        db.session.rollback()
+
+# Iniciar background tasks apenas em produção
+if flask_env == 'production':
+    try:
+        from src.utils.background_tasks import start_background_tasks
+        start_background_tasks(app)
+        print("Background tasks iniciadas")
+    except Exception as e:
+        print(f"Erro ao iniciar background tasks: {e}")
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Endpoint de verificação de saúde da API"""
@@ -139,11 +203,37 @@ def health_check():
 @app.route('/uploads/proofs/<path:filename>')
 @jwt_required()
 def serve_proof(filename):
-    """Serve fotos de prova de entrega (autenticação obrigatória)"""
+    """Serve fotos de prova de entrega (autenticação obrigatória + verificação de ownership)"""
+    from flask import current_app
+    from werkzeug.utils import safe_join
+    from src.utils.tenant import get_current_user, get_current_tenant_id
+
+    # Proteção contra path traversal
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
-    if os.path.exists(os.path.join(uploads_dir, filename)):
-        return send_from_directory(uploads_dir, filename)
-    return {'error': 'File not found'}, 404
+    try:
+        safe_path = safe_join(uploads_dir, filename)
+    except Exception:
+        return {'error': 'Caminho inválido'}, 400
+
+    if not safe_path or not os.path.exists(safe_path):
+        return {'error': 'File not found'}, 404
+
+    # Verificar ownership: apenas membros do mesmo tenant podem ver a prova
+    user = get_current_user()
+    if user and not user.is_super_admin:
+        # Extrair order_id do filename (formato: order_{id}_{hash}.ext)
+        try:
+            from src.models.portal_models import Order as OrderModel
+            parts = filename.split('_')
+            if len(parts) >= 2:
+                order_id = int(parts[1])
+                order = OrderModel.query.get(order_id)
+                if order and order.tenant_id and order.tenant_id != get_current_tenant_id():
+                    return {'error': 'Sem permissão para acessar este arquivo'}, 403
+        except (ValueError, IndexError):
+            pass
+
+    return send_from_directory(uploads_dir, filename)
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')

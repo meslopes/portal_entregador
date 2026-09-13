@@ -128,6 +128,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     is_super_admin = db.Column(db.Boolean, default=False, nullable=False)  # Super admin da plataforma (muv.log)
+    totp_secret = db.Column(db.String(32))  # Secret para 2FA (TOTP)
+    totp_enabled = db.Column(db.Boolean, default=False)  # Se 2FA está ativado
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
@@ -876,6 +878,7 @@ class Square(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     # Tabela de precos por km
     price_per_km = db.Column(db.Numeric(10, 2), default=2.95)
+    fixed_fee = db.Column(db.Numeric(10, 2), default=0)  # Tarifa fixa (0 = usar preço por km)
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)  # Distancia minima cobrada (4km padrao)
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
     driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)  # Percentual do entregador (65% padrao)
@@ -896,6 +899,7 @@ class Square(db.Model):
             'state': self.state,
             'is_active': self.is_active,
             'price_per_km': float(self.price_per_km) if self.price_per_km else 2.95,
+            'fixed_fee': float(self.fixed_fee) if self.fixed_fee else 0,
             'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
             'min_delivery_fee': float(self.price_per_km * (self.min_distance_km or 4.0)),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
@@ -917,6 +921,7 @@ class PricingTable(db.Model):
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(500))
     price_per_km = db.Column(db.Numeric(10, 2), nullable=False, default=2.95)
+    fixed_fee = db.Column(db.Numeric(10, 2), default=0)  # Tarifa fixa (0 = usar preço por km)
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)
     min_delivery_fee = db.Column(db.Numeric(10, 2))
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
@@ -937,6 +942,7 @@ class PricingTable(db.Model):
             'name': self.name,
             'description': self.description,
             'price_per_km': float(self.price_per_km),
+            'fixed_fee': float(self.fixed_fee) if self.fixed_fee else 0,
             'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
             'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else float(self.price_per_km) * float(self.min_distance_km or 4.0),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
