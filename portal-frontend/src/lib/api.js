@@ -40,12 +40,13 @@ api.interceptors.response.use(
     const isGetRequest = config?.method === 'get';
     const isNetworkError = !error.response;
     const isColdStart = [502, 503, 504].includes(error.response?.status);
-    const notRetriedYet = !config?._retryCount;
+    const retryCount = config?._retryCount || 0;
 
-    if (isGetRequest && (isNetworkError || isColdStart) && notRetriedYet) {
-      config._retryCount = 1;
-      // Aguardar 3s para o Render acordar, depois tentar de novo
-      await new Promise(resolve => setTimeout(resolve, 3000));
+    if (isGetRequest && (isNetworkError || isColdStart) && retryCount < 2) {
+      config._retryCount = retryCount + 1;
+      // Aguardar 3s na 1a tentativa, 5s na 2a para o Render acordar
+      const delay = retryCount === 0 ? 3000 : 5000;
+      await new Promise(resolve => setTimeout(resolve, delay));
       return api.request(config);
     }
 
