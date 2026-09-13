@@ -336,8 +336,8 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
             <p style={{ fontSize: '1.25rem', fontWeight: 700, color: config.color }}>{config.label}</p>
           </div>
 
-          {/* Botões de mudança de status para entregas próprias */}
-          {hasOwnDriver && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
+          {/* Botões de mudança de status */}
+          {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
             <div style={{ marginBottom: '1.5rem' }}>
               <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Alterar Status</p>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -345,6 +345,12 @@ const DetailsModal = ({ order, onClose, onOrderUpdated }) => {
                   <StatusBtn status="PENDING" label="Tocar Agora" color="#f59e0b" orderId={order.id} onUpdated={onOrderUpdated} />
                 )}
                 {order.status === 'ACCEPTED' && (
+                  <StatusBtn status="PREPARING" label="Marcar Preparando" color="#f59e0b" orderId={order.id} onUpdated={onOrderUpdated} />
+                )}
+                {order.status === 'PREPARING' && (
+                  <StatusBtn status="READY" label="Marcar Pronto" color="#8b5cf6" orderId={order.id} onUpdated={onOrderUpdated} />
+                )}
+                {order.status === 'READY' && (
                   <StatusBtn status="PICKED_UP" label="Marcar Coletado" color="#3b82f6" orderId={order.id} onUpdated={onOrderUpdated} />
                 )}
                 {order.status === 'PICKED_UP' && (
