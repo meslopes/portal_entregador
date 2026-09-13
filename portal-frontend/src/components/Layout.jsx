@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
-import SquareSelector from '@/components/SquareSelector';
+
 import OrderOfferPopup from '@/components/OrderOfferPopup';
 
 const Layout = ({ children }) => {
@@ -125,7 +125,7 @@ const Layout = ({ children }) => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflow: 'auto', scrollbarWidth: 'none' }}>
+            <nav style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap', overflow: 'visible' }}>
               {navigation.map((item) => {
                 const Icon = item.icon;
                 
@@ -257,29 +257,26 @@ const Layout = ({ children }) => {
 
             {/* User Menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, position: 'relative', zIndex: 100001 }}>
-              {/* SquareSelector e Refresh - disponíveis para todos os admins no painel admin */}
+              {/* Refresh - disponível para todos os admins no painel admin */}
               {isAdmin && (!isSuperAdmin || location.pathname.startsWith('/admin')) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <SquareSelector />
-                  <button
-                    onClick={() => window.location.reload()}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.5rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e2e8f0',
-                      background: 'white',
-                      cursor: 'pointer',
-                      color: '#64748b',
-                      transition: 'all 0.15s'
-                    }}
-                    title="Atualizar dados"
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => window.location.reload()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.5rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e2e8f0',
+                    background: 'white',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    transition: 'all 0.15s'
+                  }}
+                  title="Atualizar dados"
+                >
+                  <RefreshCw size={16} />
+                </button>
               )}
               <NotificationBell />
               <DropdownMenu>
@@ -459,19 +456,6 @@ const Layout = ({ children }) => {
         @media (max-width: 768px) {
           .mobile-menu-btn { display: block !important; }
           nav { display: none !important; }
-        }
-        nav::-webkit-scrollbar {
-          height: 8px;
-        }
-        nav::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        nav::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 2px;
-        }
-        nav::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
         }
       `}</style>
     </div>
