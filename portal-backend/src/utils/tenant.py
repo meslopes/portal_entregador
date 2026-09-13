@@ -34,8 +34,39 @@ def get_current_tenant_id():
     return user.tenant_id if user else None
 
 
+def check_user_and_tenant_status(user):
+    """
+    Verificação centralizada de status do usuário e do tenant.
+    Retorna None se tudo OK, ou uma tupla (jsonify_response, status_code) se bloqueado.
+    Super admins (is_super_admin=True, sem tenant) são isentos da verificação de tenant.
+    """
+    if not user:
+        return jsonify({'error': 'Usuário não autenticado'}), 401
+
+    # Verificar status do usuário
+    from src.models.portal_models import UserStatus
+    if user.status == UserStatus.INACTIVE:
+        return jsonify({'error': 'Sua conta está pendente de aprovação. Aguarde o administrador liberar seu acesso.'}), 403
+    if user.status == UserStatus.SUSPENDED:
+        return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
+
+    # Super admin sem tenant é isento de verificação de tenant
+    if user.is_super_admin and not user.tenant_id:
+        return None
+
+    # Verificar se o tenant está ativo (se o usuário pertence a um)
+    if user.tenant_id:
+        tenant = Tenant.query.get(user.tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Organização não encontrada'}), 403
+        if not tenant.is_active:
+            return jsonify({'error': 'Esta organização está desativada. Entre em contato com o suporte.'}), 403
+
+    return None
+
+
 def tenant_required(f):
-    """Decorator que exige que o usuário pertença a um tenant."""
+    """Decorator que exige que o usuário pertença a um tenant ativo."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_current_user()
@@ -43,6 +74,12 @@ def tenant_required(f):
             return jsonify({'error': 'Usuário não autenticado'}), 401
         if not user.tenant_id:
             return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 403
+
+        # Verificar status do usuário e do tenant
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         return f(*args, **kwargs)
     return decorated_function
 
@@ -51,8 +88,8 @@ def filter_by_tenant(query, model):
     """Filtra uma consulta pelo tenant_id do usuário atual."""
     tenant_id = get_current_tenant_id()
     user = get_current_user()
-    # Super admin (ADMIN sem tenant) vê tudo
-    if user and user.user_type and user.user_type.value == 'ADMIN' and not tenant_id:
+    # Super admin (is_super_admin=True, sem tenant) vê tudo
+    if user and user.is_super_admin and not tenant_id:
         return query
     if tenant_id:
         return query.filter(model.tenant_id == tenant_id)

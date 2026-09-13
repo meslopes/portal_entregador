@@ -10,11 +10,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Home, Package, DollarSign, Clock, User, Settings, LogOut,
-  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw, Route, Truck
+  Menu, X, LayoutDashboard, Users, ChevronDown, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Shield, Plus, Wallet, TrendingUp, Globe, AlertTriangle, RefreshCw, Route, Bike
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
-import SquareSelector from '@/components/SquareSelector';
+
 import OrderOfferPopup from '@/components/OrderOfferPopup';
 
 const Layout = ({ children }) => {
@@ -50,7 +50,7 @@ const Layout = ({ children }) => {
       icon: Package,
       children: [
         { name: 'Pedidos', href: '/admin/orders', icon: Package },
-        { name: 'Rotas', href: '/admin/platform-routes', icon: Truck },
+        { name: 'Rotas', href: '/admin/platform-routes', icon: Bike },
         { name: 'Config. Rotas', href: '/admin/route-settings', icon: Route },
       ]
     },
@@ -118,9 +118,9 @@ const Layout = ({ children }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '4.5rem' }}>
             {/* Logo */}
             <Link to={isSuperAdmin && location.pathname.startsWith('/platform') ? '/platform' : isAdmin ? '/admin' : '/dashboard'} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', flexShrink: 0 }}>
-              <img src="/logo-muvy.jpg" alt="muv.log" style={{ height: '2.5rem', borderRadius: '0.5rem' }} />
-              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-                {isSuperAdmin && location.pathname.startsWith('/platform') ? 'muv.log Platform' : 'muv.log'}
+              <img src={user?.tenant?.logo_url || '/logo-muvy.jpg'} alt={user?.tenant?.name || 'muv.log'} style={{ height: '2.5rem', borderRadius: '0.5rem', objectFit: 'contain' }} />
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: user?.tenant?.primary_color || '#1e293b' }}>
+                {user?.tenant?.name || (isSuperAdmin && location.pathname.startsWith('/platform') ? 'muv.log Platform' : 'muv.log')}
               </span>
             </Link>
 
@@ -253,55 +253,30 @@ const Layout = ({ children }) => {
                   Lançar Pedido
                 </Link>
               )}
-              {/* Botão para super admin alternar entre Platform e Admin */}
-              {isSuperAdmin && (
-                <Link
-                  to={location.pathname.startsWith('/platform') ? '/admin' : '/platform'}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    background: location.pathname.startsWith('/platform') ? '#2563eb' : '#7c3aed',
-                    color: 'white',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <Shield size={16} />
-                  {location.pathname.startsWith('/platform') ? 'Admin' : 'Plataforma'}
-                </Link>
-              )}
             </nav>
 
             {/* User Menu */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, position: 'relative', zIndex: 100001 }}>
-              {/* SquareSelector e Refresh - disponíveis para todos os admins no painel admin */}
+              {/* Refresh - disponível para todos os admins no painel admin */}
               {isAdmin && (!isSuperAdmin || location.pathname.startsWith('/admin')) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <SquareSelector />
-                  <button
-                    onClick={() => window.location.reload()}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.5rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e2e8f0',
-                      background: 'white',
-                      cursor: 'pointer',
-                      color: '#64748b',
-                      transition: 'all 0.15s'
-                    }}
-                    title="Atualizar dados"
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => window.location.reload()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.5rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #e2e8f0',
+                    background: 'white',
+                    cursor: 'pointer',
+                    color: '#64748b',
+                    transition: 'all 0.15s'
+                  }}
+                  title="Atualizar dados"
+                >
+                  <RefreshCw size={16} />
+                </button>
               )}
               <NotificationBell />
               <DropdownMenu>
@@ -372,6 +347,29 @@ const Layout = ({ children }) => {
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div style={{ padding: '0.5rem 1rem 1rem', borderTop: '1px solid #f1f5f9' }}>
+            {/* Botão para super admin alternar entre Platform e Admin (mobile) */}
+            {isSuperAdmin && (
+              <Link
+                to={location.pathname.startsWith('/platform') ? '/admin' : '/platform'}
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.9375rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  marginBottom: '0.5rem',
+                  background: location.pathname.startsWith('/platform') ? '#2563eb' : '#7c3aed',
+                  color: 'white'
+                }}
+              >
+                <Shield size={18} />
+                {location.pathname.startsWith('/platform') ? 'Painel Admin' : 'Painel Plataforma'}
+              </Link>
+            )}
             {navigation.map((item) => {
               const Icon = item.icon;
               
@@ -458,19 +456,6 @@ const Layout = ({ children }) => {
         @media (max-width: 768px) {
           .mobile-menu-btn { display: block !important; }
           nav { display: none !important; }
-        }
-        nav::-webkit-scrollbar {
-          height: 8px;
-        }
-        nav::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        nav::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 2px;
-        }
-        nav::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
         }
       `}</style>
     </div>

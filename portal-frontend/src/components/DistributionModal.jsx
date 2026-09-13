@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X, Users, Send, Truck, CheckCircle, AlertCircle, Loader2
+  X, Users, Send, Bike, CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
 import { orderService } from '@/lib/api';
 import api from '@/lib/api';
@@ -190,7 +190,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
               fontSize: '0.75rem', fontWeight: 600, color: '#475569',
               marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.375rem'
             }}>
-              <Truck size={14} style={{ color: '#16a34a' }} />
+              <Bike size={14} style={{ color: '#16a34a' }} />
               Plataforma MUV
             </p>
             <button

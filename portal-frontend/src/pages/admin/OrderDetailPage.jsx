@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Package, Clock, Truck, CheckCircle, XCircle,
+  ArrowLeft, Package, Clock, Bike, CheckCircle, XCircle,
   MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle, Map
 } from 'lucide-react';
 import api, { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
@@ -570,12 +570,27 @@ const OrderDetailPage = () => {
       {order.driver && (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Truck size={16} /> Entregador
+            <Bike size={16} /> Entregador
           </h3>
           <p style={{ fontWeight: 500, color: '#1e293b' }}>
             {order.driver.user?.first_name} {order.driver.user?.last_name}
           </p>
           <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{order.driver.vehicle_type}</p>
+          {order.driver.user?.phone && (
+            <a
+              href={`https://wa.me/55${order.driver.user.phone.replace(/\D/g, '')}?text=Olá ${order.driver.user?.first_name}, sobre o pedido #${order.order_number}...`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                marginTop: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
+                background: '#25d366', color: 'white', fontSize: '0.75rem', fontWeight: 600,
+                textDecoration: 'none', cursor: 'pointer'
+              }}
+            >
+              💬 WhatsApp
+            </a>
+          )}
         </div>
       )}
 

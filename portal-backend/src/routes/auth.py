@@ -5,7 +5,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask import request, jsonify
 from src.models.portal_models import db, User, Driver, Customer, Restaurant, Tenant, UserType, UserStatus, VehicleType
 from flask import Blueprint
-from datetime import datetime
+from datetime import datetime, timezone
+from src.utils.rate_limit import login_limit as login_rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,8 @@ def _generate_confirmation_token(user_id):
     import hashlib
     import hmac as hmac_mod
     import os
-    secret = os.environ.get('JWT_SECRET_KEY', 'muvlog-secret-key')
+    from flask import current_app
+    secret = os.environ.get('JWT_SECRET_KEY') or current_app.config.get('SECRET_KEY', 'fallback-dev-only')
     sig = hmac_mod.new(
         secret.encode(),
         str(user_id).encode(),
@@ -99,7 +101,7 @@ def public_squares():
         from src.models.portal_models import Square
         squares = Square.query.filter_by(is_active=True).order_by(Square.name).all()
         return jsonify({
-            'squares': [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state} for s in squares]
+            'squares': [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id} for s in squares]
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -142,6 +144,14 @@ def register():
             tenant = Tenant.query.filter_by(slug=tenant_slug, is_active=True).first()
             if tenant:
                 tenant_id = tenant.id
+
+        # Herdar tenant_id da praça selecionada (se não veio via slug)
+        square_id = data.get('square_id')
+        if not tenant_id and square_id:
+            from src.models.portal_models import Square
+            square = Square.query.get(int(square_id))
+            if square and square.tenant_id:
+                tenant_id = square.tenant_id
 
         # Verificar se email já existe no tenant
         if tenant_id:
@@ -189,6 +199,7 @@ def register():
 
         driver = Driver(
             user_id=user.id,
+            tenant_id=tenant_id,
             driver_license=data.get('driver_license'),
             vehicle_type=vehicle_type,
             vehicle_plate=data.get('vehicle_plate'),
@@ -196,7 +207,7 @@ def register():
             vehicle_year=vehicle_year,
             pix_key=data.get('pix_key'),
             bank_account=data.get('bank_account'),
-            square_id=data.get('square_id') or None
+            square_id=square_id or None
         )
 
         if data.get('license_expiry_date'):
@@ -208,6 +219,31 @@ def register():
 
         db.session.add(driver)
         db.session.commit()
+
+        # Notificar admins sobre novo entregador pendente
+        try:
+            from src.services.push_notification import send_admin_alert
+            admin_users = User.query.filter_by(
+                user_type=UserType.ADMIN,
+                tenant_id=user.tenant_id
+            ).all()
+            for admin in admin_users:
+                send_admin_alert(
+                    admin.id,
+                    title='Novo entregador cadastrado',
+                    message=f'{user.first_name} {user.last_name} aguardando aprovação'
+                )
+                notification = Notification(
+                    user_id=admin.id,
+                    title='Novo entregador cadastrado',
+                    message=f'{user.first_name} {user.last_name} ({user.email}) aguardando aprovação',
+                    type=NotificationType.SYSTEM,
+                    related_id=user.id
+                )
+                db.session.add(notification)
+            db.session.commit()
+        except Exception:
+            pass
 
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
@@ -316,6 +352,32 @@ def register_client():
 
         db.session.commit()
 
+        # Notificar admins do tenant sobre novo cadastro pendente
+        try:
+            from src.services.push_notification import send_admin_alert
+            admin_users = User.query.filter_by(
+                user_type=UserType.ADMIN,
+                tenant_id=user.tenant_id
+            ).all()
+            for admin in admin_users:
+                send_admin_alert(
+                    admin.id,
+                    title='Novo cadastro pendente',
+                    message=f'{user.first_name} {user.last_name} aguardando aprovação'
+                )
+                # Também criar notificação no app
+                notification = Notification(
+                    user_id=admin.id,
+                    title='Novo cadastro pendente',
+                    message=f'{user.first_name} {user.last_name} ({user.email}) aguardando aprovação',
+                    type=NotificationType.SYSTEM,
+                    related_id=user.id
+                )
+                db.session.add(notification)
+            db.session.commit()
+        except Exception:
+            pass  # Notificação é secundária — não bloqueia cadastro
+
         return jsonify({
             'message': 'Conta criada com sucesso. Aguarde aprovação do administrador.',
             'user_id': user.id
@@ -352,7 +414,8 @@ def confirm_email():
             return jsonify({'error': 'Token inválido'}), 400
 
         # Verificar assinatura HMAC
-        secret = os.environ.get('JWT_SECRET_KEY', 'muvlog-secret-key')
+        from flask import current_app
+        secret = os.environ.get('JWT_SECRET_KEY') or current_app.config.get('SECRET_KEY', 'fallback-dev-only')
         expected_sig = hmac_mod.new(
             secret.encode(),
             str(user_id).encode(),
@@ -370,7 +433,7 @@ def confirm_email():
             return jsonify({'error': 'Conta já foi confirmada ou está ativa'}), 400
 
         user.status = UserStatus.ACTIVE
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
         try:
@@ -391,6 +454,7 @@ def confirm_email():
 
 # Endpoint para login
 @auth_bp.route('/login', methods=['POST'])
+@login_rate_limit
 def login():
     try:
         from src.utils.validation import validate_request, LOGIN_SCHEMA, ValidationError
@@ -418,8 +482,14 @@ def login():
                 # Tabela tenants pode não existir ainda
                 pass
 
-        # Buscar usuário (backward compatibility)
-        user = User.query.filter_by(email=email).first()
+        # Buscar usuário — se tenant_slug fornecido, filtra por tenant
+        if tenant:
+            user = User.query.filter_by(email=email, tenant_id=tenant.id).first()
+            if not user:
+                # Fallback: buscar sem tenant para backward compatibility
+                user = User.query.filter_by(email=email).first()
+        else:
+            user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password_hash, password):
             # Verifica se o usuario esta ativo
@@ -428,9 +498,31 @@ def login():
             if user.status == UserStatus.SUSPENDED:
                 return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
 
+            # Verificar se o tenant do usuário está ativo
+            if user.tenant_id:
+                try:
+                    user_tenant = Tenant.query.get(user.tenant_id)
+                    if user_tenant and not user_tenant.is_active:
+                        return jsonify({'error': 'Esta organização está desativada. Entre em contato com o suporte.'}), 403
+                except Exception:
+                    pass
+
             # Verificar se o usuário pertence ao tenant correto
             if tenant and user.tenant_id and user.tenant_id != tenant.id:
                 return jsonify({'error': 'Credenciais inválidas'}), 401
+
+            # Verificar 2FA se ativado
+            if user.totp_enabled:
+                totp_code = data.get('totp_code')
+                if not totp_code:
+                    return jsonify({
+                        'requires_2fa': True,
+                        'message': 'Digite o código do autenticador'
+                    }), 200
+                import pyotp
+                totp = pyotp.TOTP(user.totp_secret)
+                if not totp.verify(totp_code):
+                    return jsonify({'error': 'Código 2FA inválido'}), 401
 
             access_token = create_access_token(identity=str(user.id))
             user_data = _build_user_response(user)
@@ -541,3 +633,131 @@ def change_password():
 def protected():
     current_user_id = get_jwt_identity()
     return jsonify(logged_in_as=int(current_user_id)), 200
+
+
+# ============================================================
+# 2FA (Autenticação em 2 Fatores) — TOTP
+# ============================================================
+
+@auth_bp.route('/2fa/enable', methods=['POST'])
+@jwt_required()
+def enable_2fa():
+    """Gera um secret TOTP e retorna como QR code (base64) para o admin escanear."""
+    try:
+        import pyotp
+        import qrcode
+        import io
+        import base64
+
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user or user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Apenas admins podem ativar 2FA'}), 403
+
+        if user.totp_enabled:
+            return jsonify({'error': '2FA já está ativado'}), 400
+
+        # Gerar secret
+        secret = pyotp.random_base32()
+        user.totp_secret = secret
+        db.session.commit()
+
+        # Gerar QR code
+        totp = pyotp.TOTP(secret)
+        uri = totp.provisioning_uri(
+            name=user.email,
+            issuer_name='muv.log'
+        )
+
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(uri)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        # Converter para base64
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        return jsonify({
+            'secret': secret,
+            'qr_code': f'data:image/png;base64,{qr_base64}',
+            'message': 'Escaneie o QR code com Google Authenticator ou Authy'
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/2fa/verify', methods=['POST'])
+@jwt_required()
+def verify_2fa():
+    """Verifica o código TOTP e ativa o2FA."""
+    try:
+        import pyotp
+
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user or not user.totp_secret:
+            return jsonify({'error': '2FA não foi iniciado. Chame /2fa/enable primeiro'}), 400
+
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if totp.verify(code):
+            user.totp_enabled = True
+            db.session.commit()
+            return jsonify({'message': '2FA ativado com sucesso!'}), 200
+        else:
+            return jsonify({'error': 'Código inválido'}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/2fa/disable', methods=['POST'])
+@jwt_required()
+def disable_2fa():
+    """Desativa o2FA (requer código atual)."""
+    try:
+        import pyotp
+
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user or not user.totp_enabled:
+            return jsonify({'error': '2FA não está ativado'}), 400
+
+        data = request.get_json() or {}
+        code = data.get('code', '')
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if totp.verify(code):
+            user.totp_enabled = False
+            user.totp_secret = None
+            db.session.commit()
+            return jsonify({'message': '2FA desativado'}), 200
+        else:
+            return jsonify({'error': 'Código inválido'}), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/2fa/status', methods=['GET'])
+@jwt_required()
+def get_2fa_status():
+    """Retorna se o2FA está ativado para o usuário atual."""
+    try:
+        user_id = int(get_jwt_identity())
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        return jsonify({
+            'enabled': bool(user.totp_enabled),
+            'has_secret': bool(user.totp_secret)
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

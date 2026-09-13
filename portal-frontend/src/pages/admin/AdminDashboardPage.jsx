@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Users, Truck, Package, DollarSign, TrendingUp,
+  Users, Bike, Package, DollarSign, TrendingUp,
   AlertCircle, Clock, CheckCircle, MapPin,
   Search, Filter, ChevronDown, ChevronRight, Store, X, Navigation, Plus, Route
 } from 'lucide-react';
 import { adminService, orderService, utils } from '@/lib/api';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Proteção contra XSS em popups do Leaflet
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
 import { useSquare } from '@/contexts/SquareContext';
 import { showToast } from '@/components/Toast';
 import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
@@ -31,6 +37,7 @@ const AdminDashboardPage = () => {
   const [squares, setSquares] = useState([]);
   const [tenants, setTenants] = useState([]);
   const [timeInterval, setTimeInterval] = useState(60); // minutos
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768); // Fechado em mobile
   const [showSettings, setShowSettings] = useState(false);
   const [selectedOrderMenu, setSelectedOrderMenu] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -46,6 +53,8 @@ const AdminDashboardPage = () => {
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
   const cityCenterRef = useRef(null); // Coordenadas da cidade da praça selecionada
+  const hasUserInteractedRef = useRef(false);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     loadDashboard();
@@ -56,6 +65,10 @@ const AdminDashboardPage = () => {
     loadAllDrivers();
     loadTenants();
     loadPlatformRoutes();
+    return () => {
+      // Cancela requests pendentes ao desmontar
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
   }, []);
 
   // Atualiza establishments quando tracking muda
@@ -66,8 +79,10 @@ const AdminDashboardPage = () => {
   }, [tracking]);
 
   // Recarrega tracking, dashboard e pedidos quando muda a praça
-  // O mapa e recriado automaticamente pelo key prop no container
+  // Cancela requests anteriores para evitar thundering herd
   useEffect(() => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
     loadTracking();
     loadDashboard();
     loadOrders();
@@ -323,6 +338,9 @@ const AdminDashboardPage = () => {
         }).addTo(map);
         
         mapInstanceRef.current = map;
+        // Detectar interação do usuário para parar auto-centralizar
+        map.on('zoomstart', () => { hasUserInteractedRef.current = true; });
+        map.on('dragstart', () => { hasUserInteractedRef.current = true; });
         setMapReady(true);
       } catch (e) {
         console.error('Erro ao inicializar mapa:', e);
@@ -372,7 +390,7 @@ const AdminDashboardPage = () => {
 
           const marker = L.marker([driver.latitude, driver.longitude], { icon })
             .addTo(map)
-            .bindPopup(`<b>${driver.name}</b><br>${driver.vehicle_type}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
+            .bindPopup(`<b>${escapeHtml(driver.name)}</b><br>${escapeHtml(driver.vehicle_type)}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
           markersRef.current.push(marker);
           allPoints.push([driver.latitude, driver.longitude]);
         }
@@ -401,9 +419,9 @@ const AdminDashboardPage = () => {
               const color = statusCfg?.color || '#64748b';
               const label = statusCfg?.label || o.status;
               ordersHtml += `<div style="padding:4px 6px;margin:2px 0;background:#f8fafc;border-radius:4px;font-size:11px;border-left:3px solid ${color}">`;
-              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${o.order_number}</b><span style="color:${color}">${label}</span></div>`;
-              ordersHtml += `<div style="color:#64748b;">${o.customer_name || 'Cliente'}</div>`;
-              if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${o.driver_name}</div>`;
+              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${escapeHtml(o.order_number)}</b><span style="color:${color}">${escapeHtml(label)}</span></div>`;
+              ordersHtml += `<div style="color:#64748b;">${escapeHtml(o.customer_name) || 'Cliente'}</div>`;
+              if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${escapeHtml(o.driver_name)}</div>`;
               ordersHtml += `<div style="color:#64748b;">R$ ${(o.total_amount || 0).toFixed(2)}</div>`;
               ordersHtml += '</div>';
             });
@@ -412,8 +430,8 @@ const AdminDashboardPage = () => {
 
           const popupContent = `
             <div style="min-width:200px;">
-              <b style="font-size:13px;">${est.name}</b>
-              <div style="font-size:11px;color:#64748b;margin-top:2px;">${est.address || ''}</div>
+              <b style="font-size:13px;">${escapeHtml(est.name)}</b>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(est.address)}</div>
               <div style="font-size:11px;color:#475569;margin-top:4px;font-weight:600;">Pedidos ativos: ${est.active_orders}</div>
               ${ordersHtml}
             </div>
@@ -444,7 +462,7 @@ const AdminDashboardPage = () => {
 
           const marker = L.marker([del.latitude, del.longitude], { icon })
             .addTo(map)
-            .bindPopup(`<b>#${del.order_number}</b><br>${del.customer_name}<br>${del.street}`);
+            .bindPopup(`<b>#${escapeHtml(del.order_number)}</b><br>${escapeHtml(del.customer_name)}<br>${escapeHtml(del.street)}`);
           markersRef.current.push(marker);
           allPoints.push([del.latitude, del.longitude]);
         }
@@ -453,19 +471,23 @@ const AdminDashboardPage = () => {
 
     if (allPoints.length > 0) {
       try {
-        const group = L.featureGroup(markersRef.current);
-        map.fitBounds(group.getBounds().pad(0.1));
+        // Só centraliza automaticamente se o usuário NÃO interagiu com o mapa
+        if (!hasUserInteractedRef.current) {
+          const group = L.featureGroup(markersRef.current);
+          map.fitBounds(group.getBounds().pad(0.1));
+        }
       } catch (e) {
         console.warn('Erro ao ajustar bounds do mapa:', e);
-        // Fallback: centro da cidade da praça ou coordenadas padrão
-        if (cityCenterRef.current) {
-          map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
-        } else {
-          map.setView([-29.72, -50.00], 12);
+        if (!hasUserInteractedRef.current) {
+          if (cityCenterRef.current) {
+            map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
+          } else {
+            map.setView([-29.72, -50.00], 12);
+          }
         }
       }
-    } else {
-      // Sem pontos: centro da cidade da praça ou coordenadas padrão
+    } else if (!hasUserInteractedRef.current) {
+      // Sem pontos e sem interação: centro da cidade da praça ou coordenadas padrão
       if (cityCenterRef.current) {
         map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
       } else {
@@ -524,9 +546,26 @@ const AdminDashboardPage = () => {
   }
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9', position: 'relative' }}>
+      {/* Botão toggle sidebar (mobile) */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        style={{
+          position: 'absolute', top: '0.5rem', left: sidebarOpen ? '280px' : '0.5rem', zIndex: 1001,
+          background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.375rem',
+          padding: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)', transition: 'left 0.2s'
+        }}
+      >
+        {sidebarOpen ? <X size={16} /> : <Filter size={16} />}
+      </button>
+
       {/* Sidebar Esquerda */}
-      <div className="admin-sidebar" style={{ width: '320px', background: 'white', borderRight: '1px solid #e2e8f0', overflow: 'auto', flexShrink: 0 }}>
+      <div className="admin-sidebar" style={{
+        width: sidebarOpen ? '320px' : '0px', background: 'white', borderRight: '1px solid #e2e8f0',
+        overflow: sidebarOpen ? 'auto' : 'hidden', flexShrink: 0, transition: 'width 0.2s',
+        minWidth: sidebarOpen ? '320px' : '0px'
+      }}>
         {/* Filtros */}
         <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -1126,7 +1165,7 @@ const AdminDashboardPage = () => {
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Truck size={14} style={{ color: route.status === 'PENDING' ? '#f59e0b' : '#2563eb' }} />
+                    <Bike size={14} style={{ color: route.status === 'PENDING' ? '#f59e0b' : '#2563eb' }} />
                     <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>Rota #{route.id}</span>
                   </div>
                   <span style={{
@@ -1188,6 +1227,7 @@ const AdminDashboardPage = () => {
           <button
             onClick={() => {
               if (tracking && mapInstanceRef.current) {
+                hasUserInteractedRef.current = false; // Permite centralizar novamente
                 const allPoints = [];
                 if (tracking.drivers) {
                   tracking.drivers.forEach(d => {
@@ -1418,12 +1458,10 @@ const AdminDashboardPage = () => {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 900px) {
-          .dashboard-grid { grid-template-columns: 1fr !important; }
-          .admin-sidebar { width: 260px !important; }
-        }
         @media (max-width: 768px) {
-          .admin-sidebar { width: 100% !important; max-height: 300px; }
+          .admin-sidebar { display: none !important; }
+          .admin-sidebar.open { display: block !important; position: absolute; z-index: 1000; height: 100%; width: 85vw !important; max-width: 320px; }
+          .dashboard-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

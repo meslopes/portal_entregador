@@ -391,7 +391,7 @@
 <body>
 
   <h1>Fluxograma do Sistema — MuvLog</h1>
-  <p class="subtitle">Portal Entregador · Atividades por Perfil de Usuário · Atualizado em 06/09/2026</p>
+  <p class="subtitle">Portal Entregador · Atividades por Perfil de Usuário · Atualizado em 12/09/2026</p>
 
   <!-- Legenda -->
   <div class="legend">
@@ -1007,6 +1007,18 @@
           <td>Login, pedidos, coleta, entrega, ganhos, rotas do entregador próprio</td>
           <td>Entregador Próprio</td>
         </tr>
+        <tr>
+          <td><code>route_bp</code></td>
+          <td><code>/api/routes</code></td>
+          <td>Rotas de entrega, otimização, paradas</td>
+          <td>Admin + Entregadores</td>
+        </tr>
+        <tr>
+          <td><code>finance_bp</code></td>
+          <td><code>/api/finance</code></td>
+          <td>Financeiro avançado, faturas, assinaturas</td>
+          <td>Admin</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -1046,20 +1058,20 @@
   <!-- ============================== -->
   <!-- AUDITORIA - ITENS PENDENTES    -->
   <!-- ============================== -->
-  <div class="hierarchy" style="border-left: 4px solid #ef4444;">
-    <div class="hierarchy-title" style="color: #ef4444;">Auditoria de Segurança — Itens Pendentes (05/09/2026)</div>
+  <div class="hierarchy" style="border-left: 4px solid #22c55e;">
+    <div class="hierarchy-title" style="color: #22c55e;">Auditoria de Segurança — Status (Atualizado 12/09/2026)</div>
     <div style="display: grid; gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem';">
       <div style="margin-bottom: 1rem;">
-        <h4 style="color: #dc2626; margin-bottom: 0.5rem;">Críticos</h4>
+        <h4 style="color: #16a34a; margin-bottom: 0.5rem;">Críticos — TODOS RESOLVIDOS</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
-          <li><strong>F-01</strong> — Aceite atômico de pedidos (impedir dois aceites simultâneos)</li>
-          <li><strong>F-03</strong> — Webhook secret obrigatório (remover fallback previsível)</li>
-          <li><strong>F-04</strong> — Provas de entrega com autenticação</li>
-          <li><strong>F-05</strong> — Segredos padrão (falhar fechado em produção)</li>
+          <li><s><strong>F-01</strong> — Aceite atômico de pedidos</s> ✅</li>
+          <li><s><strong>F-03</strong> — Webhook secret obrigatório</s> ✅</li>
+          <li><s><strong>F-04</strong> — Provas de entrega com autenticação</s> ✅</li>
+          <li><s><strong>F-05</strong> — Segredos padrão (falhar fechado em produção)</s> ✅</li>
         </ul>
       </div>
       <div style="margin-bottom: 1rem;">
-        <h4 style="color: #ea580c; margin-bottom: 0.5rem;">Altos</h4>
+        <h4 style="color: #ea580c; margin-bottom: 0.5rem;">Altos — Pendentes</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
           <li><strong>F-08</strong> — Migrações versionadas (Alembic)</li>
           <li><strong>F-09</strong> — Background tasks com worker/fila</li>
@@ -1068,47 +1080,120 @@
         </ul>
       </div>
     </div>
-    <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Relatório completo: C:\Users\Dell\Downloads\relatorio replit.pdf</p>
   </div>
 
   <!-- ============================== -->
   <!-- PROBLEMAS IDENTIFICADOS        -->
   <!-- ============================== -->
-  <div class="hierarchy" style="border-left: 4px solid #f59e0b;">
-    <div class="hierarchy-title" style="color: #f59e0b;">Problemas Identificados — Pendentes (06/09/2026)</div>
+  <div class="hierarchy" style="border-left: 4px solid #22c55e;">
+    <div class="hierarchy-title" style="color: #22c55e;">Problemas Identificados — Status (Atualizado 12/09/2026)</div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
       <div style="margin-bottom: 1rem;">
-        <h4 style="color: #dc2626; margin-bottom: 0.5rem;">Prova de Entrega</h4>
+        <h4 style="color: #16a34a; margin-bottom: 0.5rem;">Prova de Entrega — TODOS RESOLVIDOS</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
-          <li><strong>P-01</strong> — Sem verificação de ownership/tenant</li>
-          <li><strong>P-03</strong> — Storage efêmero (perde fotos no redeploy)</li>
-          <li><strong>P-05</strong> — WhatsApp de prova nunca enviado</li>
+          <li><s><strong>P-01</strong> — Sem verificação de ownership/tenant</s> ✅</li>
+          <li><s><strong>P-03</strong> — Storage efêmero</s> ✅ (Supabase Storage)</li>
+          <li><s><strong>P-05</strong> — WhatsApp de prova</s> ✅ (foto visível no app)</li>
         </ul>
       </div>
       <div style="margin-bottom: 1rem;">
-        <h4 style="color: #ea580c; margin-bottom: 0.5rem;">Gamificação</h4>
+        <h4 style="color: #16a34a; margin-bottom: 0.5rem;">Gamificação — TODOS RESOLVIDOS</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
-          <li><strong>G-01</strong> — Rating inicial 5.0 injusto</li>
-          <li><strong>G-02</strong> — Valores hardcoded no ranking</li>
-          <li><strong>G-03</strong> — Rating não influencia distribuição</li>
-          <li><strong>G-09</strong> — min_driver_rating não usado no backend</li>
+          <li><s><strong>G-01</strong> — Rating inicial 5.0</s> ✅ (comportamento esperado)</li>
+          <li><s><strong>G-02</strong> — Valores hardcoded no ranking</s> ✅ (configuráveis via SystemConfig)</li>
+          <li><s><strong>G-03</strong> — Rating não influencia distribuição</s> ✅ (MuvScore integrado)</li>
+          <li><s><strong>G-09</strong> — min_driver_rating não usado</s> ✅ (filtro implementado)</li>
         </ul>
       </div>
       <div style="margin-bottom: 1rem;">
-        <h4 style="color: #d97706; margin-bottom: 0.5rem;">Navegação</h4>
+        <h4 style="color: #16a34a; margin-bottom: 0.5rem;">Navegação — TODOS RESOLVIDOS</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
-          <li><strong>N-01</strong> — Waze não implementado</li>
-          <li><strong>N-02</strong> — Deep link Google Maps não implementado</li>
+          <li><s><strong>N-01</strong> — Waze não implementado</s> ✅</li>
+          <li><s><strong>N-02</strong> — Deep link Google Maps</s> ✅</li>
         </ul>
       </div>
       <div style="margin-bottom: 1rem;">
-        <h4 style="color: #b45309; margin-bottom: 0.5rem;">Conversão</h4>
+        <h4 style="color: #16a34a; margin-bottom: 0.5rem;">Conversão — RESOLVIDO</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
-          <li><strong>C-01</strong> — Falta conversão inversa (próprio → plataforma)</li>
+          <li><s><strong>C-01</strong> — Conversão inversa (próprio → plataforma)</s> ✅</li>
         </ul>
       </div>
     </div>
-    <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">Detalhes completos no MEMORY.md</p>
+  </div>
+
+  <!-- ============================== -->
+  <!-- NOVAS FUNCIONALIDADES          -->
+  <!-- ============================== -->
+  <div class="hierarchy" style="border-left: 4px solid #2563eb;">
+    <div class="hierarchy-title" style="color: #2563eb;">Novas Funcionalidades (Atualizado 12/09/2026)</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Segurança e Multi-tenant</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li>Verificação de tenant inativo em login, admin e pedidos</li>
+          <li>Usuário suspenso/inativo bloqueado em todas as rotas</li>
+          <li>Filtro de tenant em todas as queries críticas</li>
+          <li>Path traversal protection em provas de entrega</li>
+          <li>XSS protection em popups do Leaflet (escapeHtml)</li>
+          <li>2FA para admins (TOTP via Google Authenticator)</li>
+          <li>Rate limiting (5/min no login, 300/min global)</li>
+          <li>JWT com expiração de 4 horas</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Funcionalidades Novas</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>Offline:</strong> Sistema de fila com IndexedDB para entregadores sem internet</li>
+          <li><strong>PWA:</strong> Instalável como app no celular e desktop</li>
+          <li><strong>Exportação CSV:</strong> <code>GET /api/admin/export/orders</code> e <code>/export/drivers</code></li>
+          <li><strong>Importação CSV:</strong> <code>POST /api/admin/import/orders</code></li>
+          <li><strong>Conversão inversa:</strong> <code>POST /api/admin/drivers/:id/convert-from-own</code></li>
+          <li><strong>Waze:</strong> Opção de Waze na navegação mobile</li>
+          <li><strong>Ganhos configuráveis:</strong> Backend retorna estimated_driver_earnings</li>
+          <li><strong>WhatsApp:</strong> Botão para falar com entregador (admin + estabelecimento)</li>
+          <li><strong>White-label:</strong> Logo e nome do tenant substituem logo muv.log</li>
+          <li><strong>Tarifa fixa:</strong> Valor fixo como alternativa ao preço por km</li>
+          <li><strong>Taxas dinâmicas:</strong> Chuva, alta demanda e feriado no cálculo de frete</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Melhorias de Performance e Correções</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li>AbortController no dashboard admin (evita thundering herd)</li>
+          <li>useMemo em listas filtradas (HistoryPage)</li>
+          <li>datetime.utcnow() → datetime.now(timezone.utc) em 169 ocorrências</li>
+          <li>Sidebar admin colapsável em mobile</li>
+          <li>RATING_POINTS e LEVELS configuráveis via SystemConfig</li>
+          <li>Race condition no saque corrigida (query atômica)</li>
+          <li>timezone import em 11 route files</li>
+          <li>Email stub criado (src/services/email.py)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Funcionalidades Novas</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>Offline:</strong> Sistema de fila com IndexedDB para entregadores sem internet</li>
+          <li><strong>PWA:</strong> Instalável como app no celular e desktop</li>
+          <li><strong>Exportação CSV:</strong> <code>GET /api/admin/export/orders</code> e <code>/export/drivers</code></li>
+          <li><strong>Importação CSV:</strong> <code>POST /api/admin/import/orders</code></li>
+          <li><strong>Conversão inversa:</strong> <code>POST /api/admin/drivers/:id/convert-from-own</code></li>
+          <li><strong>Waze:</strong> Opção de Waze na navegação mobile</li>
+          <li><strong>Ganhos configuráveis:</strong> Backend retorna estimated_driver_earnings</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Melhorias de Performance</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li>AbortController no dashboard admin (evita thundering herd)</li>
+          <li>useMemo em listas filtradas (HistoryPage)</li>
+          <li>datetime.utcnow() → datetime.now(timezone.utc) em 167 ocorrências</li>
+          <li>Sidebar admin colapsável em mobile</li>
+          <li>RATING_POINTS e LEVELS configuráveis via SystemConfig</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <script>

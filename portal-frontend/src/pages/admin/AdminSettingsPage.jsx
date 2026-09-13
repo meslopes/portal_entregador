@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings, Save, AlertCircle, CheckCircle, CreditCard,
-  Building2, Truck, Store, DollarSign, Clock, Shield,
+  Building2, Bike, Store, DollarSign, Clock, Shield,
   Bell, Globe, Users, MapPin, Package, Zap, ChevronRight, Mail, Palette
 } from 'lucide-react';
 
@@ -60,7 +60,7 @@ const AdminSettingsPage = () => {
     { key: 'payment', label: 'Pagamento', icon: CreditCard, color: '#16a34a' },
     { key: 'email', label: 'E-mail', icon: Mail, color: '#ea580c' },
     { key: 'pricing', label: 'Preços', icon: DollarSign, color: '#d97706' },
-    { key: 'delivery', label: 'Entregas', icon: Truck, color: '#8b5cf6' },
+    { key: 'delivery', label: 'Entregas', icon: Bike, color: '#8b5cf6' },
     { key: 'drivers', label: 'Entregadores', icon: Users, color: '#0d9488' },
     { key: 'establishments', label: 'Estabelecimentos', icon: Store, color: '#06b6d4' },
     { key: 'notifications', label: 'Notificações', icon: Bell, color: '#f59e0b' },
@@ -242,18 +242,31 @@ const PricingSettings = ({ config, onChange }) => (
       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual retido sobre o frete de cada entrega</p>
     </FormField>
     <FormField label="Entregador recebe (%)">
-      <input type="number" min="0" max="100" value={config.driver_percentage || '70'} onChange={e => onChange('driver_percentage', e.target.value)} style={inputStyle} />
-      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual do frete que vai para o entregador</p>
+      <input type="number" min="0" max="100" value={config.driver_percentage || '65'} onChange={e => onChange('driver_percentage', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual do frete que vai para o entregador (padrão: 65%)</p>
     </FormField>
+    <FormField label="Gamificação (%)">
+      <input type="number" min="0" max="30" value={config.gamification_percentage || '5'} onChange={e => onChange('gamification_percentage', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual destinado ao pool de gamificação/ranking (padrão: 5%)</p>
+    </FormField>
+    <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe', marginTop: '0.5rem' }}>
+      <p style={{ fontSize: '0.75rem', color: '#1e40af' }}>
+        <strong>Total:</strong> Admin ({config.commission_rate || '30'}%) + Entregador ({config.driver_percentage || '65'}%) + Gamificação ({config.gamification_percentage || '5'}%) = 100%
+      </p>
+    </div>
   </SettingsCard>
 );
 
 // Entregas
 const DeliverySettings = ({ config, onChange }) => (
-  <SettingsCard title="Configurações de Entregas" icon={<Truck size={18} />}>
+  <SettingsCard title="Configurações de Entregas" icon={<Bike size={18} />}>
     <FormField label="Raio Máximo de Busca (km)">
       <input type="number" value={config.delivery_radius || '200'} onChange={e => onChange('delivery_radius', e.target.value)} style={inputStyle} />
       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Distância máxima para buscar entregadores disponíveis</p>
+    </FormField>
+    <FormField label="Raio GPS para Coleta/Entrega (metros)">
+      <input type="number" min="50" max="5000" step="50" value={config.gps_radius_meters || '500'} onChange={e => onChange('gps_radius_meters', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Distância máxima que o entregador pode estar do ponto de coleta ou entrega para confirmar o status. Padrão: 500m</p>
     </FormField>
     <FormField label="Timeout para Notificar Admin (segundos)">
       <input type="number" value={config.order_timeout_seconds || '120'} onChange={e => onChange('order_timeout_seconds', e.target.value)} style={inputStyle} />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, Clock, DollarSign, Star,
-  MapPin, Truck, CheckCircle, AlertCircle, Power,
+  MapPin, Bike, CheckCircle, AlertCircle, Power,
   Navigation, RefreshCw, Route, Bell
 } from 'lucide-react';
 import api from '@/lib/api';

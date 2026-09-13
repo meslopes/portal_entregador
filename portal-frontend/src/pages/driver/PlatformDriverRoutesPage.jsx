@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Route, Package, MapPin, Clock, CheckCircle, Truck,
+  Route, Package, MapPin, Clock, CheckCircle, Bike,
   AlertCircle, RefreshCw, Bell, ArrowLeft, Navigation, X
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -255,7 +255,7 @@ const PlatformDriverRoutesPage = () => {
         {activeRoutes.length > 0 && (
           <div>
             <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Truck size={16} style={{ color: '#2563eb' }} /> Em Andamento
+              <Bike size={16} style={{ color: '#2563eb' }} /> Em Andamento
             </h2>
             {activeRoutes.map(route => (
               <div key={route.id} style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', marginBottom: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: '4px solid #2563eb' }}>

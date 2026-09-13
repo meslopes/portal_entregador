@@ -1,12 +1,12 @@
 import React from 'react';
-import { Clock, CheckCircle, Package, Truck, MapPin } from 'lucide-react';
+import { Clock, CheckCircle, Package, Bike, MapPin } from 'lucide-react';
 
 const TIMELINE_STEPS = [
   { key: 'created', label: 'Criado', icon: Clock, status: 'SCHEDULED' },
   { key: 'accepted', label: 'Aceito', icon: CheckCircle, status: 'ACCEPTED' },
   { key: 'preparing', label: 'Preparando', icon: Package, status: 'PREPARING' },
   { key: 'ready', label: 'Pronto', icon: CheckCircle, status: 'READY' },
-  { key: 'picked_up', label: 'A Caminho', icon: Truck, status: 'PICKED_UP' },
+  { key: 'picked_up', label: 'A Caminho', icon: Bike, status: 'PICKED_UP' },
   { key: 'delivered', label: 'Entregue', icon: MapPin, status: 'DELIVERED' },
 ];
 

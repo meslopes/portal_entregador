@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api, { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import { MapPin, ChevronDown } from 'lucide-react';
 
 const DatabaseMapPage = () => {
   const [data, setData] = useState(null);
@@ -11,6 +12,21 @@ const DatabaseMapPage = () => {
   const [saving, setSaving] = useState(false);
   const msgTimeoutRef = useRef(null);
   const [actionMsg, setActionMsg] = useState('');
+  const [selectedSquareId, setSelectedSquareId] = useState('all');
+  const [showSquareDropdown, setShowSquareDropdown] = useState(false);
+
+  // Filtrar dados por praça selecionada
+  const filteredData = useMemo(() => {
+    if (!data || selectedSquareId === 'all') return data;
+    const sid = parseInt(selectedSquareId);
+    return {
+      ...data,
+      users: (data.users || []).filter(u => u.square_id === sid),
+      restaurants: (data.restaurants || []).filter(r => r.square_id === sid),
+      platform_drivers: (data.platform_drivers || []).filter(d => d.square_id === sid),
+      own_drivers: (data.own_drivers || []).filter(d => d.square_id === sid),
+    };
+  }, [data, selectedSquareId]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -428,12 +444,78 @@ const DatabaseMapPage = () => {
 
   // Get available squares for dropdown
   const squares = data.squares || [];
+  const d = filteredData || data;
+
+  // Opções do filtro de praça
+  const selectedSquareName = selectedSquareId === 'all'
+    ? 'Todas as Praças'
+    : squares.find(s => s.id === parseInt(selectedSquareId))?.name || 'Selecionar praça';
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto', background: '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b' }}>Mapa do Banco de Dados</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Seletor de praça */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowSquareDropdown(!showSquareDropdown)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                border: '1px solid #e2e8f0', background: 'white',
+                cursor: 'pointer', fontSize: '0.8125rem', color: '#374151',
+                minWidth: '160px'
+              }}
+            >
+              <MapPin size={14} style={{ color: '#2563eb' }} />
+              <span style={{ flex: 1, textAlign: 'left' }}>{selectedSquareName}</span>
+              <ChevronDown size={14} style={{ color: '#64748b', transform: showSquareDropdown ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+            </button>
+            {showSquareDropdown && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setShowSquareDropdown(false)} />
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, marginTop: '0.25rem',
+                  background: 'white', borderRadius: '0.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                  border: '1px solid #e2e8f0', zIndex: 9999, minWidth: '200px', maxHeight: '300px', overflow: 'auto'
+                }}>
+                  <button
+                    onClick={() => { setSelectedSquareId('all'); setShowSquareDropdown(false); }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                      padding: '0.625rem 0.75rem', border: 'none', cursor: 'pointer',
+                      fontSize: '0.8125rem', fontWeight: selectedSquareId === 'all' ? 600 : 400,
+                      background: selectedSquareId === 'all' ? '#eff6ff' : 'transparent',
+                      color: selectedSquareId === 'all' ? '#2563eb' : '#374151'
+                    }}
+                  >
+                    <MapPin size={14} style={{ color: selectedSquareId === 'all' ? '#2563eb' : '#64748b' }} />
+                    Todas as Praças
+                  </button>
+                  {squares.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setSelectedSquareId(String(s.id)); setShowSquareDropdown(false); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        padding: '0.625rem 0.75rem', border: 'none', cursor: 'pointer',
+                        fontSize: '0.8125rem', fontWeight: selectedSquareId === String(s.id) ? 600 : 400,
+                        background: selectedSquareId === String(s.id) ? '#eff6ff' : 'transparent',
+                        color: selectedSquareId === String(s.id) ? '#2563eb' : '#374151'
+                      }}
+                    >
+                      <MapPin size={14} style={{ color: selectedSquareId === String(s.id) ? '#2563eb' : '#64748b' }} />
+                      <div style={{ textAlign: 'left' }}>
+                        <p>{s.name}</p>
+                        {s.city && <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{s.city}/{s.state}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           <button onClick={async () => {
             if (!window.confirm('ATENÇÃO: Isso vai excluir TODOS os dados de teste (pedidos iFood, clientes iFood, restaurantes de teste, entregadores de teste, faturas). Restaurantes reais (FORA DE HORA, BASTA DRINKS) serão mantidos.\n\nContinuar?')) return;
             try {
@@ -515,8 +597,8 @@ const DatabaseMapPage = () => {
       )}
 
       {/* Usuarios */}
-      {section(`Usuários (${data.users?.length || 0})`,
-        data.users?.length ? data.users.map(u => {
+      {section(`Usuários (${d.users?.length || 0})`,
+        d.users?.length ? d.users.map(u => {
           const typeColors = { ADMIN: ['#7c3aed', '#f3e8ff'], CLIENT: ['#0d9488', '#f0fdfa'], DRIVER: ['#2563eb', '#dbeafe'] };
           const [c, bg] = typeColors[u.user_type] || ['#64748b', '#f1f5f9'];
           const isSuperAdmin = u.user_type === 'ADMIN' && u.is_super_admin;
@@ -543,8 +625,8 @@ const DatabaseMapPage = () => {
       )}
 
       {/* Restaurantes */}
-      {section(`Restaurantes (${data.restaurants?.length || 0})`,
-        data.restaurants?.length ? data.restaurants.map(r => card(
+      {section(`Restaurantes (${d.restaurants?.length || 0})`,
+        d.restaurants?.length ? d.restaurants.map(r => card(
           <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <strong>ID:{r.id}</strong> {r.name}
@@ -562,8 +644,8 @@ const DatabaseMapPage = () => {
       )}
 
       {/* Entregadores da Plataforma */}
-      {section(`Entregadores da Plataforma (${data.platform_drivers?.length || 0})`,
-        data.platform_drivers?.length ? data.platform_drivers.map(d => card(
+      {section(`Entregadores da Plataforma (${d.platform_drivers?.length || 0})`,
+        d.platform_drivers?.length ? d.platform_drivers.map(d => card(
           <div key={d.id}>
             <strong>ID:{d.id}</strong> {d.name} {badge('PLATAFORMA', '#2563eb', '#dbeafe')}
             {d.vehicle_type} {d.vehicle_plate ? `• ${d.vehicle_plate}` : ''}
@@ -579,8 +661,8 @@ const DatabaseMapPage = () => {
       )}
 
       {/* Entregadores Próprios */}
-      {section(`Entregadores Próprios (${data.own_drivers?.length || 0})`,
-        data.own_drivers?.length ? data.own_drivers.map(d => card(
+      {section(`Entregadores Próprios (${d.own_drivers?.length || 0})`,
+        d.own_drivers?.length ? d.own_drivers.map(d => card(
           <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeftColor: '#f59e0b' }}>
             <div>
               <strong>ID:{d.id}</strong> {d.name} {badge('PRÓPRIO', '#92400e', '#fef3c7')}
@@ -614,7 +696,7 @@ const DatabaseMapPage = () => {
       )}
 
       {/* Últimos Pedidos */}
-      {section(`Últimos 15 Pedidos`,
+      {section(`Últimos Pedidos`,
         data.recent_orders?.length ? data.recent_orders.map(o => {
           const driverBadge = o.driver_type === 'OWN' ? badge('PRÓPRIO', '#92400e', '#fef3c7')
             : o.driver_type === 'PLATFORM' ? badge('PLATAFORMA', '#2563eb', '#dbeafe')

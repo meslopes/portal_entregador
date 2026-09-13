@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Package, MapPin, Clock, DollarSign, ShoppingBag,
   Plus, AlertCircle, ChevronRight, Store, User, Phone,
-  TrendingUp, Truck, CheckCircle, XCircle, Eye, Star, Navigation
+  TrendingUp, Bike, CheckCircle, XCircle, Eye, Star, Navigation
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
@@ -16,7 +16,7 @@ const STATUS_CONFIG = {
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
   READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Truck },
+  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Bike },
   DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue', icon: CheckCircle },
   CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelado', icon: XCircle },
 };
@@ -42,6 +42,7 @@ const ClientDashboardPage = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  const hasUserInteractedRef = useRef(false); // Se o usuário interagiu com o mapa
 
   useEffect(() => {
     loadData();
@@ -96,11 +97,15 @@ const ClientDashboardPage = () => {
     script.onload = () => {
       if (mapRef.current && !mapInstanceRef.current) {
         const L = window.L;
-        mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
+        const map = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
           .setView([-29.95, -50.45], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap'
-        }).addTo(mapInstanceRef.current);
+        }).addTo(map);
+        // Detectar interação do usuário para parar auto-centralizar
+        map.on('zoomstart', () => { hasUserInteractedRef.current = true; });
+        map.on('dragstart', () => { hasUserInteractedRef.current = true; });
+        mapInstanceRef.current = map;
       }
     };
     document.head.appendChild(script);
@@ -187,7 +192,7 @@ const ClientDashboardPage = () => {
       bounds.push([driver.latitude, driver.longitude]);
     });
 
-    if (bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+    if (bounds.length > 0 && !hasUserInteractedRef.current) map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
   }, [trackingDrivers, restaurantData, deliveryAddresses]);
 
   const openOrderDetails = async (orderId) => {
@@ -243,7 +248,34 @@ const ClientDashboardPage = () => {
           </div>
           <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{trackingDrivers.length} entregador(es) ativo(s)</span>
         </div>
-        <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
+        <div style={{ position: 'relative' }}>
+          <div ref={mapRef} style={{ height: '300px', background: '#e5e7eb' }} />
+          {/* Botão Centralizar */}
+          <button
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                hasUserInteractedRef.current = false;
+                const bounds = [];
+                if (restaurantData?.latitude && restaurantData?.longitude) bounds.push([restaurantData.latitude, restaurantData.longitude]);
+                trackingDrivers.forEach(d => { if (d.latitude && d.longitude) bounds.push([d.latitude, d.longitude]); });
+                deliveryAddresses.forEach(a => { if (a.latitude && a.longitude) bounds.push([a.latitude, a.longitude]); });
+                if (bounds.length > 0) {
+                  mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+                }
+              }
+            }}
+            style={{
+              position: 'absolute', top: '0.5rem', right: '0.5rem',
+              padding: '0.375rem 0.75rem', border: '1px solid #e2e8f0',
+              borderRadius: '0.375rem', background: 'white', cursor: 'pointer',
+              fontSize: '0.75rem', color: '#64748b',
+              display: 'flex', alignItems: 'center', gap: '0.25rem',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)', zIndex: 1000
+            }}
+          >
+            <Navigation size={12} /> Centralizar
+          </button>
+        </div>
         {trackingDrivers.length === 0 && (
           <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.8125rem' }}>
             Nenhuma entrega em andamento no momento
@@ -349,7 +381,7 @@ const ClientDashboardPage = () => {
                     {/* Entregador (se atribuído) */}
                     {order.driver && (
                       <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f8fafc', borderRadius: '0.375rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }}>
-                        <Truck size={14} style={{ color: '#0d9488' }} />
+                        <Bike size={14} style={{ color: '#0d9488' }} />
                         <span style={{ color: '#475569' }}>
                           Entregador: <strong>{order.driver.name}</strong>
                         </span>
@@ -585,7 +617,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregador</p>
               <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={16} style={{ color: '#2563eb' }} />
+                  <Bike size={16} style={{ color: '#2563eb' }} />
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.driver.name}</p>
@@ -601,7 +633,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
               <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Entregador Próprio</p>
               <div style={{ background: '#f0fdf4', borderRadius: '0.5rem', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid #bbf7d0' }}>
                 <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Truck size={16} style={{ color: '#16a34a' }} />
+                  <Bike size={16} style={{ color: '#16a34a' }} />
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>Entregador próprio atribuído</p>
@@ -657,7 +689,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                   opacity: callingPlatform ? 0.7 : 1
                 }}
               >
-                <Truck size={16} />
+                <Bike size={16} />
                 {callingPlatform ? 'Chamando...' : 'Chamar Entregador da Plataforma'}
               </button>
             </div>
@@ -835,7 +867,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
           {order.driver && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
               <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Truck size={20} style={{ color: '#2563eb' }} />
+                <Bike size={20} style={{ color: '#2563eb' }} />
               </div>
               <div>
                 <p style={{ fontWeight: 600, color: '#1e293b' }}>{order.driver.name}</p>

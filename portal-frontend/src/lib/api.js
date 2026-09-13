@@ -33,8 +33,30 @@ api.interceptors.request.use(
 let isRedirecting = false;
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config;
+
+    // Retry automático para erros de rede ou cold start do Render (GETs apenas)
+    const isGetRequest = config?.method === 'get';
+    const isNetworkError = !error.response;
+    const isColdStart = [502, 503, 504].includes(error.response?.status);
+    const notRetriedYet = !config?._retryCount;
+
+    if (isGetRequest && (isNetworkError || isColdStart) && notRetriedYet) {
+      config._retryCount = 1;
+      // Aguardar 3s para o Render acordar, depois tentar de novo
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return api.request(config);
+    }
+
     if (error.response?.status === 401 && !isRedirecting) {
+      // NÃO redirecionar se o 401 veio do próprio endpoint de login
+      const isLoginRequest = error.config?.url?.includes('/api/auth/login');
+      if (isLoginRequest) {
+        // Deixa o erro propagar para o componente tratar
+        return Promise.reject(error);
+      }
+
       isRedirecting = true;
       // Verificar se é rota de own-driver
       const isOwnDriverRequest = error.config?.url?.includes('/api/own-driver/');
@@ -48,6 +70,8 @@ api.interceptors.response.use(
         localStorage.removeItem('user');
         window.location.href = '/login';
       }
+      // Reseta flag após 2s para permitir novo redirect se necessário
+      setTimeout(() => { isRedirecting = false; }, 2000);
     }
     return Promise.reject(error);
   }
@@ -637,6 +661,7 @@ export const utils = {
   },
 
   formatDate: (date) => {
+    if (!date) return '';
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -657,6 +682,7 @@ export const utils = {
   },
 
   formatTime: (date) => {
+    if (!date) return '';
     return new Intl.DateTimeFormat('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',

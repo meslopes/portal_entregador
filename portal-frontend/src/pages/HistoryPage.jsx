@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Clock, MapPin, CheckCircle, XCircle, AlertCircle,
   Package, Store, Calendar, DollarSign, ChevronLeft, ChevronRight, Search
@@ -32,7 +32,7 @@ const HistoryPage = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = useMemo(() => orders.filter(order => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
@@ -40,7 +40,7 @@ const HistoryPage = () => {
       order.restaurant?.name?.toLowerCase().includes(search) ||
       order.delivery_address?.street?.toLowerCase().includes(search)
     );
-  });
+  }), [orders, searchTerm]);
 
   if (loading && orders.length === 0) {
     return (

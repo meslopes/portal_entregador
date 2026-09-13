@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   CreditCard, Users, DollarSign, AlertCircle, CheckCircle,
-  Star, Truck, Phone, Mail, Send, Filter
+  Star, Bike, Phone, Mail, Send, Filter
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
 import { showToast } from '@/components/Toast';

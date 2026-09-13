@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Lock, AlertCircle, Truck, Eye, EyeOff } from 'lucide-react';
+import { Phone, Lock, AlertCircle, Bike, Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/api';
 
 const OwnDriverLoginPage = () => {
@@ -48,7 +48,7 @@ const OwnDriverLoginPage = () => {
             background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 1rem'
           }}>
-            <Truck size={32} style={{ color: '#0d9488' }} />
+            <Bike size={32} style={{ color: '#0d9488' }} />
           </div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
             muv.log

@@ -82,8 +82,8 @@ const ClientLayout = ({ children }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '4rem' }}>
             {/* Logo */}
             <Link to="/client" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
-              <img src="/logo-muvy.jpg" alt="muv.log" style={{ height: '2rem', borderRadius: '0.375rem' }} />
-              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>muv.log</span>
+              <img src={user?.tenant?.logo_url || '/logo-muvy.jpg'} alt={user?.tenant?.name || 'muv.log'} style={{ height: '2rem', borderRadius: '0.375rem', objectFit: 'contain' }} />
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: user?.tenant?.primary_color || '#1e293b' }}>{user?.tenant?.name || 'muv.log'}</span>
               <span style={{
                 padding: '0.25rem 0.5rem',
                 borderRadius: '9999px',

@@ -139,6 +139,11 @@ const OrdersPage = () => {
   };
 
   const calculateEarnings = (order) => {
+    // Usa valor do backend se disponível (configurável por praça/tabela de preço)
+    if (order.estimated_driver_earnings != null) {
+      return order.estimated_driver_earnings;
+    }
+    // Fallback local caso backend não tenha retornado
     const baseEarning = (order.delivery_fee || 0) * 0.7;
     const distanceBonus = (order.delivery_distance_km || 0) * 0.5;
     return baseEarning + distanceBonus;

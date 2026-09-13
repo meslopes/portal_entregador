@@ -1,24 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Package, DollarSign, MapPin, Truck,
-  CheckCircle, RefreshCw, Route, Bell, Navigation
+  Package, DollarSign, MapPin, Bike,
+  CheckCircle, RefreshCw, Route, Bell, Navigation, Trophy, Star
 } from 'lucide-react';
 import api from '@/lib/api';
 import { utils } from '@/lib/api';
+
+const LEVEL_CONFIG = {
+  diamante: { color: '#B9F2FF', bg: '#e0f7ff', label: 'Diamante', icon: '💎' },
+  ouro: { color: '#FFD700', bg: '#fef9c3', label: 'Ouro', icon: '🥇' },
+  prata: { color: '#C0C0C0', bg: '#f1f5f9', label: 'Prata', icon: '🥈' },
+  bronze: { color: '#CD7F32', bg: '#fef3c7', label: 'Bronze', icon: '🥉' },
+};
 
 const STATUS_CONFIG = {
   OFFERED: { color: '#f59e0b', bg: '#fef3c7', text: 'Oferecido', icon: Bell },
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
   READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Truck },
+  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'A Caminho', icon: Bike },
 };
 
 const PlatformDriverDashboardPage = () => {
   const navigate = useNavigate();
   const [routes, setRoutes] = useState([]);
   const [stats, setStats] = useState(null);
+  const [muvScore, setMuvScore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -30,13 +38,15 @@ const PlatformDriverDashboardPage = () => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [routesRes, statsRes] = await Promise.all([
+      const [routesRes, statsRes, scoreRes] = await Promise.all([
         api.get('/api/platform-routes/driver/active', { headers }),
-        api.get('/api/driver/stats', { headers })
+        api.get('/api/driver/stats', { headers }),
+        api.get('/api/muvscore/score', { headers }).catch(() => ({ data: null }))
       ]);
 
       setRoutes(routesRes.data.routes || []);
       setStats(statsRes.data.stats);
+      setMuvScore(scoreRes.data?.score || null);
     } catch (err) {
       if (err.response?.status === 401) {
         navigate('/login');
@@ -128,6 +138,60 @@ const PlatformDriverDashboardPage = () => {
       </header>
 
       <div style={{ padding: '1rem' }}>
+        {/* MuvScore Card */}
+        {muvScore && (
+          <div style={{
+            background: `linear-gradient(135deg, ${LEVEL_CONFIG[muvScore.level]?.color || '#CD7F32'}22, white)`,
+            borderRadius: '0.75rem', padding: '1rem', marginBottom: '1rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            border: `2px solid ${LEVEL_CONFIG[muvScore.level]?.color || '#CD7F32'}44`
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <Trophy size={18} style={{ color: LEVEL_CONFIG[muvScore.level]?.color || '#CD7F32' }} />
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>MUVSCORE</span>
+                </div>
+                <p style={{ fontSize: '2rem', fontWeight: 700, color: '#1e293b' }}>{muvScore.total_points || 0}</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>pontos esta semana</p>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '2.5rem', marginBottom: '0.25rem'
+                }}>
+                  {LEVEL_CONFIG[muvScore.level]?.icon || '🥉'}
+                </div>
+                <span style={{
+                  padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600,
+                  background: LEVEL_CONFIG[muvScore.level]?.bg || '#fef3c7',
+                  color: LEVEL_CONFIG[muvScore.level]?.color || '#CD7F32'
+                }}>
+                  {LEVEL_CONFIG[muvScore.level]?.label || 'Bronze'}
+                </span>
+              </div>
+            </div>
+            {/* Barra de progresso */}
+            <div style={{ marginTop: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                <span>{muvScore.total_points} pts</span>
+                <span>
+                  {muvScore.level === 'diamante' ? 'Nível máximo!' :
+                   muvScore.level === 'ouro' ? `${1000 - muvScore.total_points} pts para Diamante` :
+                   muvScore.level === 'prata' ? `${500 - muvScore.total_points} pts para Ouro` :
+                   `${100 - muvScore.total_points} pts para Prata`}
+                </span>
+              </div>
+              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: '3px',
+                  width: `${Math.min(100, (muvScore.total_points / (muvScore.level === 'diamante' ? 1500 : muvScore.level === 'ouro' ? 1000 : muvScore.level === 'prata' ? 500 : 100)) * 100)}%`,
+                  background: `linear-gradient(90deg, ${LEVEL_CONFIG[muvScore.level]?.color || '#CD7F32'}, ${LEVEL_CONFIG[muvScore.level]?.color || '#CD7F32'}88)`
+                }} />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>

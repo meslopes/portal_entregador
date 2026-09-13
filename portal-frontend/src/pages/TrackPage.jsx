@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Package, CheckCircle, Clock, Truck, MapPin, Store, User } from 'lucide-react';
+import { Package, CheckCircle, Clock, Bike, MapPin, Store, User } from 'lucide-react';
 import api from '@/lib/api';
 
 const statusConfig = {
@@ -9,7 +9,7 @@ const statusConfig = {
   ACCEPTED: { color: '#2563eb', icon: CheckCircle, label: 'Aceito por entregador' },
   PREPARING: { color: '#8b5cf6', icon: Package, label: 'Em preparo' },
   READY: { color: '#06b6d4', icon: CheckCircle, label: 'Pronto para coleta' },
-  PICKED_UP: { color: '#f59e0b', icon: Truck, label: 'Coletado' },
+  PICKED_UP: { color: '#f59e0b', icon: Bike, label: 'Coletado' },
   DELIVERED: { color: '#22c55e', icon: CheckCircle, label: 'Entregue' },
   CANCELLED: { color: '#ef4444', icon: Package, label: 'Cancelado' },
 };
@@ -133,7 +133,7 @@ const TrackPage = () => {
             {tracking.driver_location && (
               <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '0.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <Truck size={16} style={{ color: '#2563eb' }} />
+                  <Bike size={16} style={{ color: '#2563eb' }} />
                   <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1e293b' }}>Entregador a caminho</p>
                 </div>
                 <p style={{ fontSize: '0.75rem', color: '#64748b' }}>

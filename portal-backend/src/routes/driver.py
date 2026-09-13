@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from src.models.portal_models import Driver, User, UserType, Order, OrderStatus, Payment, PaymentStatus, PaymentType, PaymentMethod, db
 from src.utils.geo import haversine_distance
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 
 driver_bp = Blueprint('driver', __name__)
@@ -17,22 +17,28 @@ def toggle_online_status():
         
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         data = request.get_json() or {}
         is_online = data.get('is_online', not driver.is_online)
         
         driver.is_online = is_online
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
         
         # Se está ficando online, atualiza a localização
         if is_online and 'latitude' in data and 'longitude' in data:
             driver.current_latitude = data['latitude']
             driver.current_longitude = data['longitude']
-            driver.last_location_update = datetime.utcnow()
+            driver.last_location_update = datetime.now(timezone.utc)
         
         db.session.commit()
         
@@ -57,13 +63,19 @@ def update_location():
         
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
+        # Verificar status do usuário e do tenant
+        from src.utils.tenant import check_user_and_tenant_status
+        block = check_user_and_tenant_status(user)
+        if block:
+            return block
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         data = request.get_json()
-        
+
         if 'latitude' not in data or 'longitude' not in data:
             return jsonify({'error': 'Latitude e longitude são obrigatórias'}), 400
         
@@ -82,8 +94,8 @@ def update_location():
         
         driver.current_latitude = lat
         driver.current_longitude = lng
-        driver.last_location_update = datetime.utcnow()
-        driver.updated_at = datetime.utcnow()
+        driver.last_location_update = datetime.now(timezone.utc)
+        driver.updated_at = datetime.now(timezone.utc)
         
         db.session.commit()
         
@@ -125,7 +137,7 @@ def get_driver_stats():
         ).scalar() or 0
         
         # Ganhos do dia atual
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         today_earnings = db.session.query(func.sum(Payment.amount)).filter(
             Payment.driver_id == driver.id,
             func.date(Payment.created_at) == today
@@ -280,11 +292,15 @@ def get_nearby_drivers():
         
         # Fórmula de Haversine para calcular distância
         # Simplificada para demonstração - em produção usar PostGIS ou similar
-        drivers = Driver.query.filter(
+        query = Driver.query.filter(
             Driver.is_online == True,
             Driver.current_latitude.isnot(None),
             Driver.current_longitude.isnot(None)
-        ).all()
+        )
+        # Filtrar por tenant do usuário logado (super admin vê todos)
+        if not user.is_super_admin and user.tenant_id:
+            query = query.filter(Driver.tenant_id == user.tenant_id)
+        drivers = query.all()
         
         nearby_drivers = []
         for driver in drivers:
@@ -328,7 +344,7 @@ def get_ranking():
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
         # Ranking por entregas (ultimos 30 dias)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
 
         ranking_query = db.session.query(
             Driver.id,
@@ -450,7 +466,7 @@ def get_driver_achievements(driver_id):
         achievements.append({'id': 'good_rating', 'title': 'Bom', 'description': 'Avaliação média 4.0+', 'icon': '✨', 'unlocked': True})
 
     # Conquista de sequencia (simulada - ultimas 7 dias)
-    week_ago = datetime.utcnow() - timedelta(days=7)
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     week_deliveries = Order.query.filter(
         Order.driver_id == driver_id,
         Order.status == OrderStatus.DELIVERED,
@@ -529,10 +545,16 @@ def request_withdrawal():
         
         if amount <= 0:
             return jsonify({'error': 'Valor inválido'}), 400
-        
-        if amount > float(driver.balance or 0):
+
+        # Saque atômico: debita somente se saldo suficiente (previne race condition)
+        from decimal import Decimal
+        result = db.session.execute(
+            db.text("UPDATE drivers SET balance = balance - :amount, locked_balance = locked_balance + :amount, updated_at = NOW() WHERE id = :id AND balance >= :amount"),
+            {'amount': amount, 'id': driver.id}
+        )
+        if result.rowcount == 0:
             return jsonify({'error': 'Saldo insuficiente'}), 400
-        
+
         # Criar solicitação de saque
         from src.models.portal_models import PaymentType
         withdrawal = Payment(
@@ -543,15 +565,10 @@ def request_withdrawal():
             status=PaymentStatus.PENDING
         )
         db.session.add(withdrawal)
-        
-        # Bloquear valor
-        from decimal import Decimal
-        driver.balance = Decimal(str(float(driver.balance or 0))) - Decimal(str(amount))
-        driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) + Decimal(str(amount))
-        driver.updated_at = datetime.utcnow()
-        
+
         db.session.commit()
-        
+        db.session.refresh(driver)
+
         return jsonify({
             'message': 'Solicitação de saque enviada',
             'amount': amount,
@@ -584,7 +601,7 @@ def update_pix_key():
             return jsonify({'error': 'Chave PIX é obrigatória'}), 400
         
         driver.pix_key = pix_key
-        driver.updated_at = datetime.utcnow()
+        driver.updated_at = datetime.now(timezone.utc)
         db.session.commit()
         
         return jsonify({
@@ -593,5 +610,25 @@ def update_pix_key():
         }), 200
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@driver_bp.route('/push-token', methods=['POST'])
+@jwt_required()
+def register_push_token():
+    """Registra um token FCM para receber push notifications"""
+    try:
+        user_id = int(get_jwt_identity())
+        data = request.get_json() or {}
+        token = data.get('token')
+
+        if not token:
+            return jsonify({'error': 'Token é obrigatório'}), 400
+
+        from src.services.push_notification import register_token
+        register_token(user_id, token)
+
+        return jsonify({'message': 'Token registrado com sucesso'}), 200
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 

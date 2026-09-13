@@ -34,7 +34,7 @@ const AdminSquaresPage = () => {
 
   const openCreateForm = () => {
     setEditing(null);
-    setFormData({ name: '', city: '', state: '', price_per_km: '2.95', min_distance_km: '4.0', max_delivery_fee: '50.00', driver_percentage: '70.0' });
+    setFormData({ name: '', city: '', state: '', price_per_km: '2.95', min_distance_km: '4.0', max_delivery_fee: '50.00', driver_percentage: '65.0', gamification_percentage: '5.0' });
     setFormError('');
     setShowForm(true);
   };
@@ -46,7 +46,8 @@ const AdminSquaresPage = () => {
       price_per_km: sq.price_per_km || '2.95',
       min_distance_km: sq.min_distance_km || '4.0',
       max_delivery_fee: sq.max_delivery_fee || '50.00',
-      driver_percentage: sq.driver_percentage || '70.0'
+      driver_percentage: sq.driver_percentage || '65.0',
+      gamification_percentage: sq.gamification_percentage || '5.0'
     });
     setFormError('');
     setShowForm(true);
@@ -179,7 +180,9 @@ const AdminSquaresPage = () => {
                     <span style={{ color: '#64748b' }}>Frete Máximo:</span>
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.max_delivery_fee || '50,00'}</span>
                     <span style={{ color: '#64748b' }}>Entregador recebe:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.driver_percentage || '70'}%</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.driver_percentage || '65'}%</span>
+                    <span style={{ color: '#64748b' }}>Gamificação:</span>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.gamification_percentage || '5'}%</span>
                   </div>
                 </div>
               </div>
@@ -243,15 +246,18 @@ const AdminSquaresPage = () => {
                     <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Mínimo cobrado: R$ {((parseFloat(formData.price_per_km) || 2.95) * (parseFloat(formData.min_distance_km) || 4)).toFixed(2)}</p>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa Máxima (R$)</label>
                     <input type="number" step="0.01" value={formData.max_delivery_fee || '50.00'} onChange={e => setFormData(p => ({ ...p, max_delivery_fee: e.target.value }))} style={inputStyle} placeholder="50.00" />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Entregador recebe (%)</label>
-                    <input type="number" step="1" min="0" max="100" value={formData.driver_percentage || '70'} onChange={e => setFormData(p => ({ ...p, driver_percentage: e.target.value }))} style={inputStyle} placeholder="70" />
-                    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual do frete que vai pro entregador</p>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Entregador (%)</label>
+                    <input type="number" step="1" min="0" max="100" value={formData.driver_percentage || '65'} onChange={e => setFormData(p => ({ ...p, driver_percentage: e.target.value }))} style={inputStyle} placeholder="65" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Gamificação (%)</label>
+                    <input type="number" step="1" min="0" max="30" value={formData.gamification_percentage || '5'} onChange={e => setFormData(p => ({ ...p, gamification_percentage: e.target.value }))} style={inputStyle} placeholder="5" />
                   </div>
                 </div>
               </div>

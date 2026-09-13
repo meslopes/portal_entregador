@@ -6,6 +6,8 @@ import {
   Camera, Image, X
 } from 'lucide-react';
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
+import { offlineDB, isOnline } from '@/lib/offline';
+import { showToast } from '@/components/Toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -30,6 +32,12 @@ const STATUS_ACTIONS = {
   PREPARING: { label: 'Pedido Pronto para Retirada', next: 'READY', color: '#8b5cf6', waitMsg: 'Aguardando restaurante preparar...' },
   READY: { label: 'Coletar Pedido', next: 'PICKED_UP', color: '#2563eb' },
   PICKED_UP: { label: 'Entregar Pedido', next: 'DELIVERED', color: '#22c55e' },
+};
+
+// Proteção contra XSS em popups do Leaflet
+const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 };
 
 const ActiveDeliveryPage = () => {
@@ -59,18 +67,29 @@ const ActiveDeliveryPage = () => {
   const mapInstanceRef = useRef(null);
   const isMounted = useRef(true);
 
-  // Funcao para abrir navegacao externa (Google Maps/Waze)
+  // Funcao para abrir navegacao externa (Google Maps ou Waze)
   const openNavigation = (lat, lng, label) => {
     if (!lat || !lng) {
-      // Se nao tem coordenadas, abre busca por endereco
       const address = mapTarget === 'restaurant' ? order?.restaurant?.address : order?.delivery_address?.street;
       if (address) {
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
       }
       return;
     }
-    // Abre Google Maps com as coordenadas
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    // Detectar se é mobile para oferecer Waze
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      // Em mobile: pergunta qual app usar
+      const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+      if (useWaze) {
+        window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+      } else {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      }
+    } else {
+      // Em desktop: abre Google Maps direto
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+    }
   };
 
   // Funcao para calcular distancia (Haversine)
@@ -209,14 +228,26 @@ const ActiveDeliveryPage = () => {
         payload.proof_of_delivery = proofPhoto;
       }
 
-      const response = await orderService.updateOrderStatus(order.id, status, payload);
+      if (!isOnline()) {
+        // Sem internet: salva na fila offline
+        const actionType = status === 'PICKED_UP' ? 'CONFIRM_COLLECT' : 'CONFIRM_DELIVERY';
+        await offlineDB.addToQueue({
+          type: actionType,
+          orderId: order.id,
+          ...payload
+        });
+        setOrder(prev => prev ? { ...prev, status } : prev);
+        setShowCodeModal(false);
+        setCodeInput('');
+        showToast('Ação salva offline. Será sincronizada quando a internet voltar.', 'info');
+      } else {
+        // Com internet: envia direto
+        await orderService.updateOrderStatus(order.id, status, payload);
+        setOrder(prev => prev ? { ...prev, status } : prev);
+        setShowCodeModal(false);
+        setCodeInput('');
+      }
 
-      // Atualiza o status localmente
-      setOrder(prev => prev ? { ...prev, status } : prev);
-      setShowCodeModal(false);
-      setCodeInput('');
-
-      // Se entregue, mostra modal de avaliação
       if (status === 'DELIVERED') {
         setShowRating(true);
       }
@@ -296,7 +327,7 @@ const ActiveDeliveryPage = () => {
       });
       L.marker([order.restaurant.latitude, order.restaurant.longitude], { icon: restaurantIcon })
         .addTo(map)
-        .bindPopup(`<b>${order.restaurant.name}</b><br>${order.restaurant.address}`);
+        .bindPopup(`<b>${escapeHtml(order.restaurant.name)}</b><br>${escapeHtml(order.restaurant.address)}`);
     }
 
     // Marcador do cliente
@@ -309,7 +340,7 @@ const ActiveDeliveryPage = () => {
       });
       L.marker([order.delivery_address.latitude, order.delivery_address.longitude], { icon: customerIcon })
         .addTo(map)
-        .bindPopup(`<b>${order.customer?.name}</b><br>${order.delivery_address.street}`);
+        .bindPopup(`<b>${escapeHtml(order.customer?.name)}</b><br>${escapeHtml(order.delivery_address.street)}`);
     }
 
     // Ajusta zoom para mostrar ambos

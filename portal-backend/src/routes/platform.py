@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy import func
 from src.models.portal_models import (
     User, UserType, UserStatus, db
 )
@@ -34,7 +35,7 @@ def get_platform_dashboard():
     """Retorna métricas gerais da plataforma"""
     try:
         from src.models.portal_models import Driver, Restaurant, Order, Tenant
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         
         # Contar tenants ativos
         tenants = Tenant.query.filter_by(is_active=True).count()
@@ -49,19 +50,20 @@ def get_platform_dashboard():
         orders = Order.query.count()
         
         # Pedidos dos últimos 7 dias
-        week_ago = datetime.utcnow() - timedelta(days=7)
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
         week_orders = Order.query.filter(Order.created_at >= week_ago).count()
         
         # Receita total (soma de delivery_fee de pedidos entregues)
-        delivered_orders = Order.query.filter_by(status='DELIVERED').all()
-        total_revenue = sum(float(o.delivery_fee or 0) for o in delivered_orders)
+        from src.models.portal_models import OrderStatus
+        delivered_orders = Order.query.filter(Order.status == OrderStatus.DELIVERED).all()
+        total_revenue = db.session.query(func.sum(Order.delivery_fee)).filter(Order.status == OrderStatus.DELIVERED).scalar() or 0
         
-        # Top tenants por pedidos
+        # Top tenants por pedidos (usando contagem no banco, não em Python)
         top_tenants = []
         all_tenants = Tenant.query.filter_by(is_active=True).all()
-        for tenant in all_tenants[:5]:
-            tenant_orders = Order.query.filter_by(tenant_id=tenant.id).count()
-            tenant_drivers = Driver.query.filter_by(tenant_id=tenant.id).count()
+        for tenant in all_tenants:
+            tenant_orders = db.session.query(func.count(Order.id)).filter(Order.tenant_id == tenant.id).scalar() or 0
+            tenant_drivers = db.session.query(func.count(Driver.id)).filter(Driver.tenant_id == tenant.id).scalar() or 0
             top_tenants.append({
                 'id': tenant.id,
                 'name': tenant.name,
@@ -78,7 +80,7 @@ def get_platform_dashboard():
                 'total_revenue': round(total_revenue, 2),
                 'week_orders': week_orders
             },
-            'top_tenants': sorted(top_tenants, key=lambda x: x['orders'], reverse=True)
+            'top_tenants': sorted(top_tenants, key=lambda x: x['orders'], reverse=True)[:5]
         }), 200
         
     except Exception as e:
@@ -98,17 +100,17 @@ def get_admins():
         # Pre-load tenants
         tenants_map = {t.id: t.name for t in Tenant.query.all()}
 
-        # Buscar admins com tenant_id (clientes da plataforma)
+        # Buscar admins (excluindo super admins)
         admins = User.query.filter(
             User.user_type == UserType.ADMIN,
-            User.tenant_id.isnot(None)
+            User.is_super_admin == False
         ).all()
         
         result = []
         for admin in admins:
             establishments = Restaurant.query.filter_by(tenant_id=admin.tenant_id).count()
             drivers = Driver.query.filter_by(tenant_id=admin.tenant_id).count()
-            first_day = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            first_day = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             orders_month = Order.query.filter(
                 Order.tenant_id == admin.tenant_id,
                 Order.created_at >= first_day
