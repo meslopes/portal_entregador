@@ -9,7 +9,7 @@
 # Variáveis que você PRECISA ajustar antes de rodar:
 
 # ===== CONFIGURAÇÕES — AJUSTAR =====
-$PROJECT_ID = "SEU_PROJECT_ID"          # ID do projeto no Google Cloud (ex: muvlog-12345)
+$PROJECT_ID = "project-0799c4fd-82a2-49a0-b7d"
 $SERVICE_NAME = "muvlog-api"             # Nome do serviço no Cloud Run
 $REGION = "southamerica-east1"           # São Paulo (mais perto do Supabase)
 $IMAGE = "gcr.io/$PROJECT_ID/$SERVICE_NAME"
