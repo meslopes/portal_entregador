@@ -67,8 +67,8 @@ def create_admin():
         password = data.get('password')
         if not email or not password:
             return jsonify({'error': 'Email e senha são obrigatórios'}), 400
-        if User.query.filter_by(email=email).first():
-            return jsonify({'message': 'Usuário já existe'}), 400
+        if User.query.filter_by(email=email, user_type=UserType.ADMIN).first():
+            return jsonify({'message': 'Email já cadastrado como admin'}), 400
 
         # Gera CPF e telefone únicos para o admin
         import uuid
@@ -153,13 +153,13 @@ def register():
             if square and square.tenant_id:
                 tenant_id = square.tenant_id
 
-        # Verificar se email já existe no tenant
+        # Verificar se email já existe como DRIVER (permite mesmo email em tipo diferente)
         if tenant_id:
-            if User.query.filter_by(email=email, tenant_id=tenant_id).first():
-                return jsonify({'error': 'Email já cadastrado nesta organização'}), 400
+            if User.query.filter_by(email=email, user_type=UserType.DRIVER, tenant_id=tenant_id).first():
+                return jsonify({'error': 'Email já cadastrado como entregador nesta organização'}), 400
         else:
-            if User.query.filter_by(email=email).first():
-                return jsonify({'error': 'Email já cadastrado'}), 400
+            if User.query.filter_by(email=email, user_type=UserType.DRIVER).first():
+                return jsonify({'error': 'Email já cadastrado como entregador'}), 400
 
         user = User(
             email=email,
@@ -289,9 +289,9 @@ def register_client():
         if len(password) < 6:
             return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
 
-        # Verificar se email já existe
-        if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email já cadastrado'}), 400
+        # Verificar se email já existe como CLIENT (permite mesmo email em tipo diferente)
+        if User.query.filter_by(email=email, user_type=UserType.CLIENT).first():
+            return jsonify({'error': 'Email já cadastrado como estabelecimento'}), 400
 
         # Criar usuário
         user = User(
