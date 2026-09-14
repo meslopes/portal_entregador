@@ -6,9 +6,9 @@ from src.models.portal_models import OrderStatus
 
 # Transições válidas: (status_atual, status_destino) -> lista de papéis permitidos
 VALID_TRANSITIONS = {
-    # Só admin pode mover de SCHEDULED para PENDING
-    (OrderStatus.SCHEDULED, OrderStatus.PENDING): ['admin'],
-    (OrderStatus.SCHEDULED, OrderStatus.CANCELLED): ['admin'],
+    # Admin e estabelecimento podem mover de SCHEDULED para PENDING
+    (OrderStatus.SCHEDULED, OrderStatus.PENDING): ['admin', 'client'],
+    (OrderStatus.SCHEDULED, OrderStatus.CANCELLED): ['admin', 'client'],
     
     # Entregador aceita pedido (plataforma ou próprio)
     (OrderStatus.PENDING, OrderStatus.ACCEPTED): ['driver', 'own_driver', 'admin'],
