@@ -1,0 +1,19 @@
+# Arquivos que NÃO vão para o container Docker
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+.env
+.venv
+*.db
+*.sqlite3
+node_modules
+uploads/*
+!uploads/.gitkeep
+*.log
+.vscode
+.idea
+*.md
+docs/
+tests/
