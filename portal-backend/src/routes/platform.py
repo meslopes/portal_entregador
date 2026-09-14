@@ -95,7 +95,7 @@ def get_admins():
     """Lista todos os admins da plataforma"""
     try:
         from src.models.portal_models import Tenant, Restaurant, Driver, Order
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         # Pre-load tenants
         tenants_map = {t.id: t.name for t in Tenant.query.all()}
