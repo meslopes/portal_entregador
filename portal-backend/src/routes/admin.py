@@ -774,11 +774,11 @@ def update_user(user_id):
 
             # Verifica se email ja existe
 
-            existing = User.query.filter(User.email == data['email'], User.id != user_id, User.user_type == user.user_type).first()
+            existing = User.query.filter(User.email == data['email'], User.id != user_id).first()
 
             if existing:
 
-                return jsonify({'error': 'Email já cadastrado para este tipo de usuário'}), 400
+                return jsonify({'error': 'Email já cadastrado'}), 400
 
             user.email = data['email']
 
@@ -1217,9 +1217,9 @@ def create_admin_user():
 
 
 
-        if User.query.filter_by(email=email, user_type=UserType.ADMIN).first():
+        if User.query.filter_by(email=email).first():
 
-            return jsonify({'error': 'Email já cadastrado como admin'}), 400
+            return jsonify({'error': 'Email já cadastrado'}), 400
 
 
 
@@ -1985,9 +1985,9 @@ def create_driver():
 
 
 
-        if User.query.filter_by(email=email, user_type=UserType.DRIVER).first():
+        if User.query.filter_by(email=email).first():
 
-            return jsonify({'error': 'Email já cadastrado como entregador'}), 400
+            return jsonify({'error': 'Email já cadastrado'}), 400
 
 
 
@@ -2145,13 +2145,13 @@ def update_driver(driver_id):
 
         if 'email' in data:
 
-            # Verificar se o novo email já existe no mesmo tipo
+            # Verificar se o novo email já existe
 
-            existing = User.query.filter(User.email == data['email'], User.id != user.id, User.user_type == user.user_type).first()
+            existing = User.query.filter(User.email == data['email'], User.id != user.id).first()
 
             if existing:
 
-                return jsonify({'error': 'Email já cadastrado para este tipo de usuário'}), 400
+                return jsonify({'error': 'Email já cadastrado'}), 400
 
             user.email = data['email']
 
@@ -3942,9 +3942,9 @@ def create_establishment():
 
         if email:
 
-            if User.query.filter_by(email=email, user_type=UserType.CLIENT).first():
+            if User.query.filter_by(email=email).first():
 
-                return jsonify({'error': 'Email já cadastrado como estabelecimento'}), 400
+                return jsonify({'error': 'Email já cadastrado'}), 400
 
 
 

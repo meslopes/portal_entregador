@@ -160,9 +160,9 @@ def create_admin():
         if len(password) < 6:
             return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
         
-        # Verificar se email já existe como ADMIN (permite mesmo email em tipo diferente)
-        if User.query.filter_by(email=email, user_type=UserType.ADMIN).first():
-            return jsonify({'error': 'Email já cadastrado como admin'}), 400
+        # Verificar se email já existe
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Email já cadastrado'}), 400
         
         from src.models.portal_models import Tenant
         import uuid
@@ -532,10 +532,10 @@ def update_platform_user(user_id):
         if 'last_name' in data:
             user.last_name = data['last_name']
         if 'email' in data:
-            # Verificar se email já existe no mesmo tipo de usuário
-            existing = User.query.filter(User.email == data['email'], User.id != user_id, User.user_type == user.user_type).first()
+            # Verificar se email já existe
+            existing = User.query.filter(User.email == data['email'], User.id != user_id).first()
             if existing:
-                return jsonify({'error': 'Email já cadastrado para este tipo de usuário'}), 400
+                return jsonify({'error': 'Email já cadastrado'}), 400
             user.email = data['email']
         if 'phone' in data:
             user.phone = data['phone']

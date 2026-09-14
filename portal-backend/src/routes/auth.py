@@ -67,8 +67,8 @@ def create_admin():
         password = data.get('password')
         if not email or not password:
             return jsonify({'error': 'Email e senha são obrigatórios'}), 400
-        if User.query.filter_by(email=email, user_type=UserType.ADMIN).first():
-            return jsonify({'message': 'Email já cadastrado como admin'}), 400
+        if User.query.filter_by(email=email).first():
+            return jsonify({'message': 'Usuário já existe'}), 400
 
         # Gera CPF e telefone únicos para o admin
         import uuid
@@ -153,13 +153,13 @@ def register():
             if square and square.tenant_id:
                 tenant_id = square.tenant_id
 
-        # Verificar se email já existe como DRIVER (permite mesmo email em tipo diferente)
+        # Verificar se email já existe
         if tenant_id:
-            if User.query.filter_by(email=email, user_type=UserType.DRIVER, tenant_id=tenant_id).first():
-                return jsonify({'error': 'Email já cadastrado como entregador nesta organização'}), 400
+            if User.query.filter_by(email=email, tenant_id=tenant_id).first():
+                return jsonify({'error': 'Email já cadastrado nesta organização'}), 400
         else:
-            if User.query.filter_by(email=email, user_type=UserType.DRIVER).first():
-                return jsonify({'error': 'Email já cadastrado como entregador'}), 400
+            if User.query.filter_by(email=email).first():
+                return jsonify({'error': 'Email já cadastrado'}), 400
 
         user = User(
             email=email,
@@ -289,9 +289,9 @@ def register_client():
         if len(password) < 6:
             return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
 
-        # Verificar se email já existe como CLIENT (permite mesmo email em tipo diferente)
-        if User.query.filter_by(email=email, user_type=UserType.CLIENT).first():
-            return jsonify({'error': 'Email já cadastrado como estabelecimento'}), 400
+        # Verificar se email já existe
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Email já cadastrado'}), 400
 
         # Criar usuário
         user = User(
@@ -483,33 +483,13 @@ def login():
                 pass
 
         # Buscar usuário — se tenant_slug fornecido, filtra por tenant
-        # Se user_type fornecido, filtra por tipo (permite mesmo email em tipos diferentes)
-        user_type_filter = data.get('user_type')
-
         if tenant:
-            query = User.query.filter_by(email=email, tenant_id=tenant.id)
-            if user_type_filter:
-                query = query.filter_by(user_type=UserType(user_type_filter))
-            user = query.first()
+            user = User.query.filter_by(email=email, tenant_id=tenant.id).first()
             if not user:
                 # Fallback: buscar sem tenant para backward compatibility
                 user = User.query.filter_by(email=email).first()
-        elif user_type_filter:
-            user = User.query.filter_by(email=email, user_type=UserType(user_type_filter)).first()
         else:
-            # Buscar todos com este email — se houver mais de um, retornar opções
-            users = User.query.filter_by(email=email).all()
-            if len(users) > 1:
-                options = []
-                for u in users:
-                    label = {'ADMIN': 'Administrador', 'DRIVER': 'Entregador', 'CLIENT': 'Estabelecimento'}.get(u.user_type.value, u.user_type.value)
-                    options.append({'user_type': u.user_type.value, 'label': label, 'status': u.status.value if u.status else 'UNKNOWN'})
-                return jsonify({
-                    'multiple_accounts': True,
-                    'message': 'Este email possui múltiplas contas. Escolha o tipo de acesso:',
-                    'options': options
-                }), 409
-            user = users[0] if users else None
+            user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password_hash, password):
             # Verifica se o usuario esta ativo
