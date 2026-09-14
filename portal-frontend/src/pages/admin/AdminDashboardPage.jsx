@@ -321,6 +321,9 @@ const AdminDashboardPage = () => {
         markersRef.current = [];
       }
       
+      // Resetar flag de interação ao recriar o mapa (permite fitBounds automático)
+      hasUserInteractedRef.current = false;
+
       try {
         const L = window.L;
         // Centro inicial: cidade da praça selecionada ou fallback
