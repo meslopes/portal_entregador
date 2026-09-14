@@ -51,3 +51,4 @@ tmp_*.py
 1784208000000
 *.docx
 package-lock.json
+.vercel
