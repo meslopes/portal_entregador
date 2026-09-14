@@ -483,13 +483,33 @@ def login():
                 pass
 
         # Buscar usuário — se tenant_slug fornecido, filtra por tenant
+        # Se user_type fornecido, filtra por tipo (permite mesmo email em tipos diferentes)
+        user_type_filter = data.get('user_type')
+
         if tenant:
-            user = User.query.filter_by(email=email, tenant_id=tenant.id).first()
+            query = User.query.filter_by(email=email, tenant_id=tenant.id)
+            if user_type_filter:
+                query = query.filter_by(user_type=UserType(user_type_filter))
+            user = query.first()
             if not user:
                 # Fallback: buscar sem tenant para backward compatibility
                 user = User.query.filter_by(email=email).first()
+        elif user_type_filter:
+            user = User.query.filter_by(email=email, user_type=UserType(user_type_filter)).first()
         else:
-            user = User.query.filter_by(email=email).first()
+            # Buscar todos com este email — se houver mais de um, retornar opções
+            users = User.query.filter_by(email=email).all()
+            if len(users) > 1:
+                options = []
+                for u in users:
+                    label = {'ADMIN': 'Administrador', 'DRIVER': 'Entregador', 'CLIENT': 'Estabelecimento'}.get(u.user_type.value, u.user_type.value)
+                    options.append({'user_type': u.user_type.value, 'label': label, 'status': u.status.value if u.status else 'UNKNOWN'})
+                return jsonify({
+                    'multiple_accounts': True,
+                    'message': 'Este email possui múltiplas contas. Escolha o tipo de acesso:',
+                    'options': options
+                }), 409
+            user = users[0] if users else None
 
         if user and check_password_hash(user.password_hash, password):
             # Verifica se o usuario esta ativo

@@ -116,11 +116,17 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Função de login
-  const login = async (email, password) => {
+  const login = async (email, password, userType = null) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
     
     try {
-      const response = await authService.login(email, password);
+      const response = await authService.login(email, password, null, userType);
+
+      // Se retornou múltiplas contas, propagar para o componente tratar
+      if (response.multiple_accounts) {
+        dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+        throw { response: { status: 409, data: response } };
+      }
       
       // Salva no localStorage
       localStorage.setItem('token', response.access_token);

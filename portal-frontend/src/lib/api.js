@@ -80,10 +80,11 @@ api.interceptors.response.use(
 
 // Serviços de autenticação
 export const authService = {
-  login: async (email, password, tenantSlug = null) => {
+  login: async (email, password, tenantSlug = null, userType = null) => {
     // Corrigido para usar o endpoint correto do backend
     const payload = { email, password };
     if (tenantSlug) payload.tenant_slug = tenantSlug;
+    if (userType) payload.user_type = userType;
     const response = await api.post('/api/auth/login', payload);
     return response.data;
   },
