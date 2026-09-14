@@ -7,6 +7,7 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [accountOptions, setAccountOptions] = useState(null);
 
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -16,32 +17,52 @@ const LoginPage = () => {
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     clearError();
+    setAccountOptions(null);
+  };
+
+  const handleAccountSelect = async (userType) => {
+    setIsLoading(true);
+    setAccountOptions(null);
+    try {
+      const response = await login(formData.email, formData.password, userType);
+      const user = response?.user || JSON.parse(localStorage.getItem('user'));
+      navigateToDashboard(user);
+    } catch (err) {
+      // erro tratado no contexto
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const navigateToDashboard = (user) => {
+    const userType = user?.user_type;
+    const isSuperAdmin = user?.is_super_admin;
+    let target;
+    if (userType === 'ADMIN' && isSuperAdmin) {
+      target = '/platform';
+    } else if (userType === 'ADMIN') {
+      target = '/admin';
+    } else if (userType === 'CLIENT') {
+      target = '/client';
+    } else {
+      target = '/dashboard';
+    }
+    navigate(target, { replace: true });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setAccountOptions(null);
     try {
       const response = await login(formData.email, formData.password);
-      const userType = response?.user?.user_type;
-      const isSuperAdmin = response?.user?.is_super_admin;
-      // Super admin: campo is_super_admin do backend
-
-      let target;
-      if (userType === 'ADMIN' && isSuperAdmin) {
-        target = '/platform';
-      } else if (userType === 'ADMIN') {
-        target = '/admin';
-      } else if (userType === 'CLIENT') {
-        target = '/client';
-      } else if (userType === 'DRIVER') {
-        target = '/dashboard';
-      } else {
-        target = '/dashboard';
-      }
-      navigate(target, { replace: true });
+      const user = response?.user || JSON.parse(localStorage.getItem('user'));
+      navigateToDashboard(user);
     } catch (err) {
-      // erro tratado no contexto
+      // Se 409 - múltiplas contas, mostrar seletor
+      if (err?.response?.status === 409 && err?.response?.data?.options) {
+        setAccountOptions(err.response.data.options);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -98,6 +119,50 @@ const LoginPage = () => {
           </div>
 
           <div className="auth-form-card">
+            {/* Seletor de conta quando há múltiplos usuários com mesmo email */}
+            {accountOptions ? (
+              <div>
+                <p style={{ fontSize: '0.875rem', color: '#475569', marginBottom: '1rem', textAlign: 'center' }}>
+                  Este email possui múltiplas contas. Escolha como deseja entrar:
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {accountOptions.map((opt) => {
+                    const icons = { ADMIN: Shield, DRIVER: Bike, CLIENT: MapPin };
+                    const colors = { ADMIN: '#7c3aed', DRIVER: '#2563eb', CLIENT: '#0d9488' };
+                    const Icon = icons[opt.user_type] || Shield;
+                    const color = colors[opt.user_type] || '#64748b';
+                    return (
+                      <button
+                        key={opt.user_type}
+                        onClick={() => handleAccountSelect(opt.user_type)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem',
+                          padding: '1rem', borderRadius: '0.75rem',
+                          border: `2px solid ${color}20`, background: `${color}08`,
+                          cursor: 'pointer', fontSize: '0.9375rem', fontWeight: 600,
+                          color: color, transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = `${color}15`}
+                        onMouseLeave={(e) => e.currentTarget.style.background = `${color}08`}
+                      >
+                        <Icon size={22} />
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setAccountOptions(null)}
+                  style={{
+                    display: 'block', margin: '1rem auto 0', background: 'none',
+                    border: 'none', color: '#64748b', fontSize: '0.8125rem',
+                    cursor: 'pointer', textDecoration: 'underline'
+                  }}
+                >
+                  Voltar ao login
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit}>
               {error && (
                 <div className="auth-error">
@@ -174,6 +239,7 @@ const LoginPage = () => {
                 )}
               </button>
             </form>
+            )}
           </div>
 
           <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>

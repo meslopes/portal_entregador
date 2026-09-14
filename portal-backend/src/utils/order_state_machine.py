@@ -27,8 +27,9 @@ VALID_TRANSITIONS = {
     (OrderStatus.PREPARING, OrderStatus.READY): ['admin', 'client'],
     (OrderStatus.PREPARING, OrderStatus.CANCELLED): ['admin'],
     
-    # Entregador coleta o pedido
+    # Entregador coleta o pedido (de READY ou PREPARING)
     (OrderStatus.READY, OrderStatus.PICKED_UP): ['driver', 'own_driver', 'admin'],
+    (OrderStatus.PREPARING, OrderStatus.PICKED_UP): ['driver', 'own_driver', 'admin'],
     (OrderStatus.READY, OrderStatus.CANCELLED): ['admin'],
     
     # Entregador entrega o pedido

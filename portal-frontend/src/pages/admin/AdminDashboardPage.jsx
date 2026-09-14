@@ -592,7 +592,7 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Abas Status */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center', overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none' }}>
           <button
             onClick={() => setActiveTab('status')}
             style={{

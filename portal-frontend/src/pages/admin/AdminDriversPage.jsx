@@ -33,6 +33,7 @@ const AdminDriversPage = () => {
   const [showDetails, setShowDetails] = useState(null);
   const [editing, setEditing] = useState(null);
   const [editData, setEditData] = useState({});
+  const [pendingDrivers, setPendingDrivers] = useState([]);
   const [formData, setFormData] = useState({
     email: '', password: '123456', first_name: '', last_name: '',
     phone: '', cpf: '', vehicle_type: 'MOTORCYCLE', vehicle_plate: '',
@@ -42,7 +43,7 @@ const AdminDriversPage = () => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadDrivers(); loadSquares(); loadEstablishments(); if (isSuperAdmin) loadTenants(); }, [page, statusFilter, squareId]);
+  useEffect(() => { loadDrivers(); loadSquares(); loadEstablishments(); loadPendingDrivers(); if (isSuperAdmin) loadTenants(); }, [page, statusFilter, squareId]);
 
   const loadDrivers = async () => {
     try {
@@ -56,6 +57,38 @@ const AdminDriversPage = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingDrivers = async () => {
+    try {
+      const response = await api.get('/api/admin/pending-users');
+      const users = (response.data.users || []).filter(u => u.user_type === 'DRIVER');
+      setPendingDrivers(users);
+    } catch (err) {
+      // Silently fail
+    }
+  };
+
+  const handleApproveDriver = async (userId) => {
+    try {
+      await api.post(`/api/admin/users/${userId}/approve`);
+      showToast('Entregador aprovado!', 'success');
+      loadPendingDrivers();
+      loadDrivers();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao aprovar', 'error');
+    }
+  };
+
+  const handleRejectDriver = async (userId) => {
+    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    try {
+      await api.post(`/api/admin/users/${userId}/reject`);
+      showToast('Cadastro rejeitado', 'info');
+      loadPendingDrivers();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao rejeitar', 'error');
     }
   };
 
@@ -242,6 +275,43 @@ const AdminDriversPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Entregadores pendentes de aprovação */}
+      {pendingDrivers.length > 0 && (
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <AlertCircle size={16} style={{ color: '#d97706' }} />
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#92400e' }}>
+              {pendingDrivers.length} entregador(es) aguardando aprovação
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {pendingDrivers.map(driver => (
+              <div key={driver.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0.75rem', background: 'white', borderRadius: '0.5rem',
+                border: '1px solid #fde68a', flexWrap: 'wrap', gap: '0.5rem'
+              }}>
+                <div>
+                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>{driver.first_name} {driver.last_name}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{driver.email}</span>
+                  {driver.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{driver.phone}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => handleApproveDriver(driver.id)} style={{
+                    padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none',
+                    background: '#16a34a', color: 'white', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
+                  }}>Aprovar</button>
+                  <button onClick={() => handleRejectDriver(driver.id)} style={{
+                    padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #ef4444',
+                    background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
+                  }}>Rejeitar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
