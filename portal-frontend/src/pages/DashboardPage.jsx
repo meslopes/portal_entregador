@@ -53,7 +53,7 @@ const DashboardPage = () => {
   useEffect(() => {
     const checkRoutes = async () => {
       try {
-        const res = await import('@/lib/api').then(m => m.default.get('/api/routes/active'));
+        const res = await import('@/lib/api').then(m => m.default.get('/api/routes/platform/active'));
         const routes = res.data.routes || [];
         const pending = routes.filter(r => r.status === 'PENDING').length;
         if (pending > prevPendingRoutes.current && prevPendingRoutes.current >= 0) {
