@@ -15,13 +15,22 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
 let supabase = null;
-let gpsChannel = null;
-let isSubscribed = false;
+let subscribedChannels = {}; // Cache de canais inscritos por nome
+
+// Log de debug (remover em produção final)
+const DEBUG = true;
+function log(...args) {
+  if (DEBUG) console.log('[Realtime GPS]', ...args);
+}
 
 // Inicializar cliente Supabase (lazy)
 function getClient() {
   if (!supabase && SUPABASE_URL && SUPABASE_KEY) {
+    log('Inicializando cliente Supabase:', SUPABASE_URL);
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  if (!supabase) {
+    log('ERRO: Supabase não configurado. URL:', !!SUPABASE_URL, 'KEY:', !!SUPABASE_KEY);
   }
   return supabase;
 }
@@ -35,6 +44,33 @@ function getChannelName(tenantId) {
 }
 
 /**
+ * Obtém ou cria um canal inscrito.
+ * Canais precisam estar inscritos para enviar via WebSocket.
+ */
+function getOrCreateChannel(channelName) {
+  const client = getClient();
+  if (!client) return null;
+
+  // Reutilizar canal já inscrito
+  if (subscribedChannels[channelName]) {
+    return subscribedChannels[channelName];
+  }
+
+  log('Criando e inscrevendo canal:', channelName);
+  const channel = client.channel(channelName, {
+    config: { broadcast: { self: false, ack: false } }
+  });
+
+  // Inscrever o canal (necessário para enviar via WebSocket)
+  channel.subscribe((status) => {
+    log('Canal', channelName, 'status:', status);
+  });
+
+  subscribedChannels[channelName] = channel;
+  return channel;
+}
+
+/**
  * Envia posição do entregador via Broadcast (WebSocket).
  * Chamado pelo entregador a cada 1-2 segundos.
  * 
@@ -45,30 +81,27 @@ function getChannelName(tenantId) {
  * @param {string} driverType - 'platform' ou 'own'
  */
 export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
-  const client = getClient();
-  if (!client) return;
-
   const channelName = getChannelName(tenantId);
-  
-  // Reutilizar canal se já existe
-  if (!gpsChannel || gpsChannel.topic !== `realtime:${channelName}`) {
-    gpsChannel = client.channel(channelName, {
-      config: { broadcast: { self: false } } // Não enviar de volta para si mesmo
-    });
-  }
+  const channel = getOrCreateChannel(channelName);
+  if (!channel) return;
 
-  // Enviar via WebSocket (baixa latência)
-  gpsChannel.send({
+  const payload = {
+    driver_id: driverId,
+    driver_type: driverType,
+    lat: parseFloat(lat),
+    lng: parseFloat(lng),
+    timestamp: Date.now()
+  };
+
+  channel.send({
     type: 'broadcast',
     event: 'gps',
-    payload: {
-      driver_id: driverId,
-      driver_type: driverType,
-      lat: parseFloat(lat),
-      lng: parseFloat(lng),
-      timestamp: Date.now()
-    }
-  }).catch(() => {});
+    payload
+  }).then(() => {
+    if (DEBUG) log('GPS enviado:', driverId, lat.toFixed(5), lng.toFixed(5));
+  }).catch((err) => {
+    log('ERRO ao enviar GPS:', err);
+  });
 }
 
 /**
@@ -81,29 +114,34 @@ export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
  */
 export function subscribeGPS(tenantId, onGPSUpdate) {
   const client = getClient();
-  if (!client) return () => {};
+  if (!client) {
+    log('ERRO: subscribeGPS sem cliente Supabase');
+    return () => {};
+  }
 
   const channelName = getChannelName(tenantId);
+  log('Inscrevendo para receber GPS no canal:', channelName);
+
   const channel = client.channel(channelName, {
     config: { broadcast: { self: false } }
   });
 
   channel
     .on('broadcast', { event: 'gps' }, (payload) => {
+      if (DEBUG) log('GPS recebido:', payload?.payload?.driver_id);
       if (payload?.payload && onGPSUpdate) {
         onGPSUpdate(payload.payload);
       }
     })
     .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        isSubscribed = true;
-      }
+      log('Inscrição GPS status:', status);
     });
 
   // Retornar função de cleanup
   return () => {
-    isSubscribed = false;
+    log('Desinscrevendo GPS canal:', channelName);
     client.removeChannel(channel);
+    delete subscribedChannels[channelName];
   };
 }
 
@@ -111,7 +149,9 @@ export function subscribeGPS(tenantId, onGPSUpdate) {
  * Verifica se o Supabase Realtime está configurado.
  */
 export function isRealtimeAvailable() {
-  return !!(SUPABASE_URL && SUPABASE_KEY);
+  const available = !!(SUPABASE_URL && SUPABASE_KEY);
+  if (!available) log('Realtime NÃO disponível — SUPABASE_URL:', !!SUPABASE_URL, 'SUPABASE_KEY:', !!SUPABASE_KEY);
+  return available;
 }
 
 export default {
