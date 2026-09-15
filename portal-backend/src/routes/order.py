@@ -2629,43 +2629,53 @@ def get_my_tracking():
                 print(f"Erro ao processar driver do pedido {order.id}: {e}")
                 continue
 
-        # Entregadores próprios com pedidos ativos
-        own_active_orders = Order.query.filter(
-            Order.restaurant_id == restaurant.id,
-            Order.status.in_([
-                OrderStatus.ACCEPTED,
-                OrderStatus.PREPARING,
-                OrderStatus.READY,
-                OrderStatus.PICKED_UP
-            ]),
-            Order.assigned_to_own_driver == True,
-            Order.establishment_driver_id.isnot(None)
+        # Entregadores próprios online (com ou sem pedidos ativos)
+        # Mostra TODOS os own drivers online do restaurante, com cor diferente para quem tem pedido
+        own_active_order_driver_ids = set()
+        for order in own_active_orders:
+            if order.establishment_driver_id:
+                own_active_order_driver_ids.add(order.establishment_driver_id)
+
+        # Buscar TODOS os own drivers online e ativos do restaurante
+        from src.models.portal_models import EstablishmentDriver
+        all_own_drivers = EstablishmentDriver.query.filter(
+            EstablishmentDriver.restaurant_id == restaurant.id,
+            EstablishmentDriver.is_online == True,
+            EstablishmentDriver.is_active == True,
+            EstablishmentDriver.current_latitude.isnot(None),
+            EstablishmentDriver.current_longitude.isnot(None)
         ).all()
 
-        seen_own_drivers = set()
-        for order in own_active_orders:
+        for est_driver in all_own_drivers:
             try:
-                est_driver = order.establishment_driver
-                if not est_driver or est_driver.id in seen_own_drivers:
+                if est_driver.id in seen_own_drivers:
                     continue
                 seen_own_drivers.add(est_driver.id)
 
-                if est_driver.current_latitude and est_driver.current_longitude:
-                    drivers_data.append({
-                        'driver_id': f"own_{est_driver.id}",
-                        'name': est_driver.name,
-                        'phone': est_driver.phone,
-                        'vehicle_type': est_driver.vehicle_type,
-                        'latitude': float(est_driver.current_latitude),
-                        'longitude': float(est_driver.current_longitude),
-                        'order_id': order.id,
-                        'order_number': order.order_number,
-                        'order_status': order.status.value,
-                        'last_update': est_driver.updated_at.isoformat() if est_driver.updated_at else None,
-                        'is_own': True
-                    })
+                has_active_order = est_driver.id in own_active_order_driver_ids
+                order_info = None
+                if has_active_order:
+                    # Encontrar o pedido ativo deste entregador
+                    for o in own_active_orders:
+                        if o.establishment_driver_id == est_driver.id:
+                            order_info = o
+                            break
+
+                drivers_data.append({
+                    'driver_id': f"own_{est_driver.id}",
+                    'name': est_driver.name,
+                    'phone': est_driver.phone,
+                    'vehicle_type': est_driver.vehicle_type,
+                    'latitude': float(est_driver.current_latitude),
+                    'longitude': float(est_driver.current_longitude),
+                    'order_id': order_info.id if order_info else None,
+                    'order_number': order_info.order_number if order_info else None,
+                    'order_status': order_info.status.value if order_info else 'AVAILABLE',
+                    'last_update': est_driver.updated_at.isoformat() if est_driver.updated_at else None,
+                    'is_own': True
+                })
             except Exception as e:
-                print(f"Erro ao processar own driver do pedido {order.id}: {e}")
+                print(f"Erro ao processar own driver {est_driver.id}: {e}")
                 continue
 
         # Dados do estabelecimento para o mapa

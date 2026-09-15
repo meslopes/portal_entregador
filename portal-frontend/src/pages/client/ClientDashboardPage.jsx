@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
 import OrderTimeline from '@/components/OrderTimeline';
+import { subscribeGPS, isRealtimeAvailable } from '@/lib/realtime';
 import DeliveryCodes from '@/components/DeliveryCodes';
 import { showToast } from '@/components/Toast';
 
@@ -82,6 +83,23 @@ const ClientDashboardPage = () => {
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Supabase Realtime: atualizar posição dos entregadores em tempo real
+  useEffect(() => {
+    if (!isRealtimeAvailable() || !user?.tenant_id) return;
+    const cleanup = subscribeGPS(user.tenant_id, (gpsData) => {
+      setTrackingDrivers(prev => prev.map(d => {
+        // Atualizar posição do driver que enviou GPS
+        if (d.driver_id === gpsData.driver_id ||
+            d.driver_id === `own_${gpsData.driver_id}` ||
+            `own_${d.driver_id?.replace('own_', '')}` === `own_${gpsData.driver_id}`) {
+          return { ...d, latitude: gpsData.lat, longitude: gpsData.lng };
+        }
+        return d;
+      }));
+    });
+    return cleanup;
+  }, [user?.tenant_id]);
 
   // Inicializa o mapa
   useEffect(() => {
@@ -169,24 +187,45 @@ const ClientDashboardPage = () => {
       bounds.push([addr.latitude, addr.longitude]);
     });
 
-    // Marcadores dos entregadores
+    // Marcadores dos entregadores (plataforma + próprios)
     trackingDrivers.forEach(driver => {
       if (!driver.latitude || !driver.longitude) return;
+
+      // Cores: próprio livre = roxo, próprio com pedido = azul, plataforma = cor do status
       const statusColors = {
         ACCEPTED: '#f59e0b', PREPARING: '#8b5cf6', READY: '#06b6d4', PICKED_UP: '#2563eb'
       };
-      const color = statusColors[driver.order_status] || '#22c55e';
+      let color, iconEmoji, label;
+      if (driver.is_own) {
+        if (driver.order_status === 'AVAILABLE' || !driver.order_id) {
+          color = '#8b5cf6'; // Roxo = próprio livre (sem pedido)
+          iconEmoji = '🏍️';
+          label = 'Livre';
+        } else {
+          color = '#2563eb'; // Azul = próprio com pedido
+          iconEmoji = '🏍️';
+          label = statusColors[driver.order_status] ? 'Em entrega' : driver.order_status;
+        }
+      } else {
+        color = statusColors[driver.order_status] || '#22c55e';
+        iconEmoji = '🚚';
+        label = driver.order_status;
+      }
 
       const icon = L.divIcon({
         className: 'custom-marker',
-        html: `<div style="width:36px;height:36px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">🚚</div>`,
+        html: `<div style="width:36px;height:36px;border-radius:50%;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">${iconEmoji}</div>`,
         iconSize: [36, 36],
         iconAnchor: [18, 18]
       });
 
+      const popupHtml = driver.order_id
+        ? `<div style="min-width:160px"><strong>${driver.name}</strong> ${driver.is_own ? '<span style="color:#8b5cf6">(Próprio)</span>' : ''}<br><small>${driver.vehicle_type}</small><br><small>Pedido: #${driver.order_number}</small><br><span style="color:${color};font-weight:600">${label}</span></div>`
+        : `<div style="min-width:160px"><strong>${driver.name}</strong> <span style="color:#8b5cf6">(Próprio)</span><br><small>${driver.vehicle_type}</small><br><span style="color:#8b5cf6;font-weight:600">Disponível</span></div>`;
+
       const marker = L.marker([driver.latitude, driver.longitude], { icon })
         .addTo(map)
-        .bindPopup(`<div style="min-width:160px"><strong>${driver.name}</strong><br><small>${driver.vehicle_type}</small><br><small>Pedido: #${driver.order_number}</small><br><span style="color:${color};font-weight:600">${driver.order_status}</span></div>`);
+        .bindPopup(popupHtml);
 
       markersRef.current.push(marker);
       bounds.push([driver.latitude, driver.longitude]);
