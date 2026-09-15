@@ -114,6 +114,11 @@ def get_user_role(user):
         return 'client'
     
     if user.user_type == UserType.DRIVER:
+        # Verificar se é entregador próprio (EstablishmentDriver)
+        from src.models.portal_models import EstablishmentDriver
+        own_driver = EstablishmentDriver.query.filter_by(user_id=user.id).first()
+        if own_driver:
+            return 'own_driver'
         return 'driver'
     
     return None

@@ -56,7 +56,7 @@ const DashboardPage = () => {
         const res = await import('@/lib/api').then(m => m.default.get('/api/routes/platform/active'));
         const routes = res.data.routes || [];
         const pending = routes.filter(r => r.status === 'PENDING').length;
-        if (pending > prevPendingRoutes.current && prevPendingRoutes.current >= 0) {
+        if (pending > prevPendingRoutes.current && prevPendingRoutes.current > 0) {
           playRouteNotification();
         }
         prevPendingRoutes.current = pending;
@@ -163,6 +163,11 @@ const DashboardPage = () => {
       if (window.L) {
         initMap();
       } else {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
         script.onload = initMap;
