@@ -90,19 +90,33 @@ const AdminDashboardPage = () => {
     loadAllDrivers();
   }, [selectedSquare]);
 
-  // Auto-refresh tracking a cada 2 segundos (posição do entregador em tempo real)
-  // Pedidos a cada 15 segundos (menos voláteis)
+  // Supabase Realtime: receber GPS do entregador em tempo real (WebSocket)
   useEffect(() => {
-    const trackingInterval = setInterval(() => {
+    let cleanup = null;
+    const tenantId = user?.tenant_id;
+    import('@/lib/realtime').then((rt) => {
+      if (!rt.isRealtimeAvailable()) return;
+      cleanup = rt.subscribeGPS(tenantId, (gpsData) => {
+        // Atualizar posição do marcador no mapa imediatamente
+        const L = window.L;
+        const map = mapInstanceRef.current;
+        if (!L || !map) return;
+        const existing = markersRef.current.find(m => m._gpsDriverId === gpsData.driver_id);
+        if (existing) {
+          existing.setLatLng([gpsData.lat, gpsData.lng]);
+        }
+      });
+    }).catch(() => {});
+    return () => { if (cleanup) cleanup(); };
+  }, [user?.tenant_id]);
+
+  // Auto-refresh tracking e pedidos (backup do Realtime + dados novos)
+  useEffect(() => {
+    const interval = setInterval(() => {
       loadTracking();
-    }, 2000);
-    const ordersInterval = setInterval(() => {
       loadOrders();
     }, 15000);
-    return () => {
-      clearInterval(trackingInterval);
-      clearInterval(ordersInterval);
-    };
+    return () => clearInterval(interval);
   }, [selectedSquare]);
 
   // Geocodificar cidade da praça quando muda
