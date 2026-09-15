@@ -54,11 +54,9 @@ function getReadyChannel(channelName) {
     return null;
   }
 
-  // Criar novo canal
+  // Criar canal público (sem auth necessária)
   log('Criando canal:', channelName);
-  const channel = client.channel(channelName, {
-    config: { broadcast: { self: false, ack: false } }
-  });
+  const channel = client.channel(channelName);
 
   channel.subscribe((status) => {
     log('Canal', channelName, 'status:', status);
@@ -115,9 +113,7 @@ export function subscribeGPS(tenantId, onGPSUpdate) {
   const channelName = getChannelName(tenantId);
   log('Inscrevendo para receber GPS:', channelName);
 
-  const channel = client.channel(channelName, {
-    config: { broadcast: { self: false } }
-  });
+  const channel = client.channel(channelName);
 
   channel
     .on('broadcast', { event: 'gps' }, (payload) => {
