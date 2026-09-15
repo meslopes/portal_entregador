@@ -414,6 +414,7 @@ const AdminDashboardPage = () => {
           const marker = L.marker([driver.latitude, driver.longitude], { icon })
             .addTo(map)
             .bindPopup(`<b>${escapeHtml(driver.name)}</b><br>${escapeHtml(driver.vehicle_type)}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
+          marker._gpsDriverId = driver.driver_id;
           markersRef.current.push(marker);
           allPoints.push([driver.latitude, driver.longitude]);
         }

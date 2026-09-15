@@ -15,7 +15,7 @@ let sendChannel = null;      // Canal do remetente (entregador)
 let sendChannelReady = false;
 let receiveChannel = null;   // Canal do receptor (admin/estabelecimento)
 
-const DEBUG = true;
+const DEBUG = import.meta.env.DEV; // Só log em desenvolvimento
 function log(...args) {
   if (DEBUG) console.log('[Realtime GPS]', ...args);
 }

@@ -2630,8 +2630,21 @@ def get_my_tracking():
                 continue
 
         # Entregadores próprios online (com ou sem pedidos ativos)
-        # Mostra TODOS os own drivers online do restaurante, com cor diferente para quem tem pedido
+        # Primeiro: buscar pedidos ativos com own drivers
+        own_active_orders = Order.query.filter(
+            Order.restaurant_id == restaurant.id,
+            Order.status.in_([
+                OrderStatus.ACCEPTED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY,
+                OrderStatus.PICKED_UP
+            ]),
+            Order.assigned_to_own_driver == True,
+            Order.establishment_driver_id.isnot(None)
+        ).all()
+
         own_active_order_driver_ids = set()
+        seen_own_drivers = set()
         for order in own_active_orders:
             if order.establishment_driver_id:
                 own_active_order_driver_ids.add(order.establishment_driver_id)
