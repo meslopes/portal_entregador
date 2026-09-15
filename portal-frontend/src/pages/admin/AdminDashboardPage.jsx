@@ -55,7 +55,6 @@ const AdminDashboardPage = () => {
   const cityCenterRef = useRef(null); // Coordenadas da cidade da praça selecionada
   const hasUserInteractedRef = useRef(false);
   const abortControllerRef = useRef(null);
-  const realtimeGPSRef = useRef({}); // Posições GPS em tempo real: { driver_id: { lat, lng, timestamp } }
 
   useEffect(() => {
     loadDashboard();
@@ -71,56 +70,6 @@ const AdminDashboardPage = () => {
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, []);
-
-  // Inscrever-se no canal de GPS em tempo real (Supabase Broadcast)
-  useEffect(() => {
-    let cleanup = null;
-    const tenantId = user?.tenant_id;
-    
-    import('@/lib/realtime').then((rt) => {
-      if (!rt.isRealtimeAvailable()) return;
-      
-      cleanup = rt.subscribeGPS(tenantId, (gpsData) => {
-        // Atualizar posição em tempo real no ref
-        realtimeGPSRef.current[gpsData.driver_id] = {
-          lat: gpsData.lat,
-          lng: gpsData.lng,
-          driver_type: gpsData.driver_type,
-          timestamp: gpsData.timestamp
-        };
-        
-        // Atualizar marcador do entregador no mapa imediatamente
-        const L = window.L;
-        const map = mapInstanceRef.current;
-        if (!L || !map) return;
-
-        const existing = markersRef.current.find(m => m._gpsDriverId === gpsData.driver_id);
-        
-        if (existing) {
-          // Atualizar posição do marcador existente
-          existing.setLatLng([gpsData.lat, gpsData.lng]);
-        } else {
-          // Criar marcador para entregador novo (apareceu via tempo real)
-          const color = gpsData.driver_type === 'own' ? '#8b5cf6' : '#22c55e';
-          const icon = L.divIcon({
-            html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/></svg>
-            </div>`,
-            className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-          const marker = L.marker([gpsData.lat, gpsData.lng], { icon })
-            .addTo(map)
-            .bindPopup(`<b>Entregador #${gpsData.driver_id}</b><br>Atualização em tempo real`);
-          marker._gpsDriverId = gpsData.driver_id;
-          markersRef.current.push(marker);
-        }
-      });
-    }).catch(() => {});
-
-    return () => { if (cleanup) cleanup(); };
-  }, [user?.tenant_id]);
 
   // Atualiza establishments quando tracking muda
   useEffect(() => {
@@ -141,13 +90,19 @@ const AdminDashboardPage = () => {
     loadAllDrivers();
   }, [selectedSquare]);
 
-  // Auto-refresh tracking e pedidos
+  // Auto-refresh tracking a cada 2 segundos (posição do entregador em tempo real)
+  // Pedidos a cada 15 segundos (menos voláteis)
   useEffect(() => {
-    const interval = setInterval(() => {
+    const trackingInterval = setInterval(() => {
       loadTracking();
+    }, 2000);
+    const ordersInterval = setInterval(() => {
       loadOrders();
     }, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(trackingInterval);
+      clearInterval(ordersInterval);
+    };
   }, [selectedSquare]);
 
   // Geocodificar cidade da praça quando muda

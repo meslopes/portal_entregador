@@ -15,7 +15,6 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 import { driverService } from '@/lib/api';
-import { sendGPS, isRealtimeAvailable } from '@/lib/realtime';
 
 import OrderOfferPopup from '@/components/OrderOfferPopup';
 
@@ -28,16 +27,11 @@ const Layout = ({ children }) => {
   const [openDropdown, setOpenDropdown] = useState(null);
 
   // GPS persistente para entregadores da plataforma — funciona em TODAS as páginas
-  // Supabase Broadcast para tempo real (2s) + HTTP POST para persistência (30s)
+  // HTTP POST a cada 2 segundos (banco de dados + polling do admin)
   const gpsIntervalRef = useRef(null);
-  const gpsBroadcastRef = useRef(null);
   useEffect(() => {
     const isDriver = user?.user_type === 'DRIVER';
     if (!isDriver || !user?.driver?.is_online) {
-      if (gpsBroadcastRef.current) {
-        clearInterval(gpsBroadcastRef.current);
-        gpsBroadcastRef.current = null;
-      }
       if (gpsIntervalRef.current) {
         clearInterval(gpsIntervalRef.current);
         gpsIntervalRef.current = null;
@@ -45,52 +39,27 @@ const Layout = ({ children }) => {
       return;
     }
 
-    const driverId = user?.driver?.id;
-    const tenantId = user?.tenant_id;
-
-    // Broadcast via Supabase Realtime WebSocket (tempo real, ~100ms latência)
-    const sendGPSBroadcast = () => {
-      if (!navigator.geolocation) return;
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (isRealtimeAvailable() && driverId) {
-            sendGPS(driverId, pos.coords.latitude, pos.coords.longitude, tenantId, 'platform');
-          }
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 2000 }
-      );
-    };
-
-    // HTTP POST para persistência no banco (a cada 30s)
-    const sendGPSHttp = () => {
+    const sendGPS = () => {
       if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           driverService.updateLocation(pos.coords.latitude, pos.coords.longitude).catch(() => {});
         },
         () => {},
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 2000 }
       );
     };
 
-    // Iniciar
-    sendGPSBroadcast();
-    sendGPSHttp();
-    gpsBroadcastRef.current = setInterval(sendGPSBroadcast, 2000);
-    gpsIntervalRef.current = setInterval(sendGPSHttp, 30000);
+    sendGPS();
+    gpsIntervalRef.current = setInterval(sendGPS, 2000);
 
     return () => {
-      if (gpsBroadcastRef.current) {
-        clearInterval(gpsBroadcastRef.current);
-        gpsBroadcastRef.current = null;
-      }
       if (gpsIntervalRef.current) {
         clearInterval(gpsIntervalRef.current);
         gpsIntervalRef.current = null;
       }
     };
-  }, [user?.user_type, user?.driver?.is_online, user?.driver?.id, user?.tenant_id]);
+  }, [user?.user_type, user?.driver?.is_online]);
 
   const handleLogout = () => {
     logout();
