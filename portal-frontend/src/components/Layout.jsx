@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -24,6 +24,44 @@ const Layout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [openDropdown, setOpenDropdown] = useState(null);
+
+  // GPS persistente para entregadores da plataforma — funciona em TODAS as páginas
+  const gpsIntervalRef = useRef(null);
+  useEffect(() => {
+    const isDriver = user?.user_type === 'DRIVER';
+    if (!isDriver || !user?.driver?.is_online) {
+      // Se não for entregador ou não estiver online, limpar intervalo
+      if (gpsIntervalRef.current) {
+        clearInterval(gpsIntervalRef.current);
+        gpsIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const sendGPS = () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          import('@/lib/api').then(({ driverService }) => {
+            driverService.updateLocation(pos.coords.latitude, pos.coords.longitude).catch(() => {});
+          }).catch(() => {});
+        },
+        () => {}, // Silenciar erros de GPS
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
+      );
+    };
+
+    // Enviar imediatamente e depois a cada 30 segundos
+    sendGPS();
+    gpsIntervalRef.current = setInterval(sendGPS, 30000);
+
+    return () => {
+      if (gpsIntervalRef.current) {
+        clearInterval(gpsIntervalRef.current);
+        gpsIntervalRef.current = null;
+      }
+    };
+  }, [user?.user_type, user?.driver?.is_online]);
 
   const handleLogout = () => {
     logout();
