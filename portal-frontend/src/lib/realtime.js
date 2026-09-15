@@ -1,11 +1,8 @@
 /**
  * Módulo de GPS em tempo real via Supabase Realtime (Broadcast).
  * 
- * Substitui o HTTP polling por WebSocket de baixa latência.
- * Entregadores enviam posição via channel.send(), admin/estabelecimento
- * recebem instantaneamente via channel.on('broadcast').
- * 
- * Mantém HTTP POST como fallback para persistência no banco.
+ * Envio via httpSend (REST API) — mais confiável.
+ * Recepção via WebSocket subscription — baixa latência.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -14,8 +11,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
 let supabase = null;
-let channels = {}; // Canais por nome
-let channelReady = {}; // Quais canais estão prontos (SUBSCRIBED)
+let channels = {};
 
 const DEBUG = true;
 function log(...args) {
@@ -24,11 +20,8 @@ function log(...args) {
 
 function getClient() {
   if (!supabase && SUPABASE_URL && SUPABASE_KEY) {
-    log('Inicializando cliente Supabase:', SUPABASE_URL);
+    log('Inicializando Supabase:', SUPABASE_URL);
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
-  if (!supabase) {
-    log('ERRO: Supabase não configurado');
   }
   return supabase;
 }
@@ -37,48 +30,29 @@ function getChannelName(tenantId) {
   return `gps:tenant_${tenantId || 'global'}`;
 }
 
-/**
- * Obtém ou cria um canal inscrito. Retorna o canal APENAS quando pronto.
- */
-function getReadyChannel(channelName) {
+function getChannel(channelName) {
   const client = getClient();
   if (!client) return null;
 
-  // Canal já existe e está pronto
-  if (channels[channelName] && channelReady[channelName]) {
-    return channels[channelName];
-  }
+  if (channels[channelName]) return channels[channelName];
 
-  // Canal existe mas ainda não está pronto
-  if (channels[channelName]) {
-    return null;
-  }
-
-  // Criar canal público (sem auth necessária)
   log('Criando canal:', channelName);
   const channel = client.channel(channelName);
-
-  channel.subscribe((status) => {
-    log('Canal', channelName, 'status:', status);
-    if (status === 'SUBSCRIBED') {
-      channelReady[channelName] = true;
-      log('Canal', channelName, 'PRONTO para enviar');
-    }
-  });
-
   channels[channelName] = channel;
-  return null; // Ainda não está pronto neste tick
+  return channel;
 }
 
 /**
- * Envia posição do entregador via Broadcast (WebSocket).
- * Só envia quando o canal estiver SUBSCRIBED.
+ * Envia posição do entregador via Broadcast (REST API).
+ * httpSend não precisa de inscrição — envia direto para o servidor.
  */
 export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
+  const client = getClient();
+  if (!client) return;
+
   const channelName = getChannelName(tenantId);
-  const channel = getReadyChannel(channelName);
-  
-  if (!channel) return; // Canal ainda não está pronto, tenta no próximo intervalo
+  const channel = getChannel(channelName);
+  if (!channel) return;
 
   const payload = {
     driver_id: driverId,
@@ -88,11 +62,8 @@ export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
     timestamp: Date.now()
   };
 
-  channel.send({
-    type: 'broadcast',
-    event: 'gps',
-    payload
-  }).then(() => {
+  // httpSend via REST API — confiável, não precisa de inscrição
+  channel.httpSend('gps', payload).then(() => {
     if (DEBUG) log('GPS enviado:', driverId, lat.toFixed(5), lng.toFixed(5));
   }).catch((err) => {
     log('ERRO ao enviar GPS:', err);
@@ -100,7 +71,7 @@ export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
 }
 
 /**
- * Inscreve-se para receber atualizações de GPS.
+ * Inscreve-se para receber atualizações de GPS via WebSocket.
  * Chamado pelo admin e estabelecimento.
  */
 export function subscribeGPS(tenantId, onGPSUpdate) {
@@ -130,21 +101,11 @@ export function subscribeGPS(tenantId, onGPSUpdate) {
     log('Desinscrevendo GPS:', channelName);
     client.removeChannel(channel);
     delete channels[channelName];
-    delete channelReady[channelName];
   };
 }
 
-/**
- * Verifica se o Supabase Realtime está configurado.
- */
 export function isRealtimeAvailable() {
-  const available = !!(SUPABASE_URL && SUPABASE_KEY);
-  if (!available) log('Realtime NÃO disponível');
-  return available;
+  return !!(SUPABASE_URL && SUPABASE_KEY);
 }
 
-export default {
-  sendGPS,
-  subscribeGPS,
-  isRealtimeAvailable
-};
+export default { sendGPS, subscribeGPS, isRealtimeAvailable };
