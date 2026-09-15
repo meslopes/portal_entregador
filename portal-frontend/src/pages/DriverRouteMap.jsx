@@ -31,6 +31,8 @@ const DriverRouteMap = () => {
   const markersRef = useRef([]);
   const cityCenterRef = useRef(null); // Coordenadas da cidade do entregador
   const geocodeCityCache = useRef({}); // Cache de geocodificação
+  const driverMarkerRef = useRef(null); // Marcador "Você está aqui"
+  const gpsWatchRef = useRef(null); // ID do watchPosition
 
   // Geocodifica cidade usando Nominatim (OpenStreetMap, gratuito)
   const geocodeCity = async (city, state) => {
@@ -172,6 +174,55 @@ const DriverRouteMap = () => {
       map.fitBounds(group.getBounds().pad(0.15));
     }
   }, [activeOrders]);
+
+  // Rastreamento GPS do entregador em tempo real
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    const updateDriverMarker = (lat, lng) => {
+      const L = window.L;
+      const map = mapInstanceRef.current;
+      if (!L || !map) return;
+
+      // Atualizar ou criar marcador "Você está aqui"
+      if (driverMarkerRef.current) {
+        driverMarkerRef.current.setLatLng([lat, lng]);
+      } else {
+        const driverIcon = L.divIcon({
+          html: `<div style="background:#3b82f6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 12px rgba(59,130,246,0.6);position:relative"><div style="position:absolute;top:-6px;left:-6px;width:32px;height:32px;border-radius:50%;background:rgba(59,130,246,0.15);animation:pulse-blue 2s infinite"></div></div>`,
+          className: '',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+        driverMarkerRef.current = L.marker([lat, lng], { icon: driverIcon, zIndexOffset: 1000 })
+          .addTo(map)
+          .bindPopup('<b>Você está aqui</b>');
+      }
+
+      // Enviar GPS para o backend (a cada atualização)
+      try {
+        const token = localStorage.getItem('own_driver_token') || localStorage.getItem('token');
+        if (token) {
+          import('@/lib/api').then(({ driverService }) => {
+            driverService.updateLocation(lat, lng).catch(() => {});
+          });
+        }
+      } catch (e) {}
+    };
+
+    // Iniciar rastreamento contínuo
+    gpsWatchRef.current = navigator.geolocation.watchPosition(
+      (pos) => updateDriverMarker(pos.coords.latitude, pos.coords.longitude),
+      (err) => console.warn('GPS erro:', err.message),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+    );
+
+    return () => {
+      if (gpsWatchRef.current !== null) {
+        navigator.geolocation.clearWatch(gpsWatchRef.current);
+      }
+    };
+  }, []);
 
   const loadActiveOrders = async () => {
     try {
@@ -381,6 +432,7 @@ const DriverRouteMap = () => {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-blue { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.3); opacity: 0.2; } }
         .route-grid { grid-template-columns: 1fr 300px; }
         @media (max-width: 768px) { .route-grid { grid-template-columns: 1fr !important; } }
       `}</style>

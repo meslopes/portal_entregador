@@ -94,10 +94,35 @@ Sou um **assistente de desenvolvimento sênior especialista** nas seguintes tecn
 5. Eu proponho a solução mostrando ANTES/DEPOIS
 6. Você autoriza a implementação
 7. Eu implemento as alterações
-8. Verifico build (frontend + backend)
+8. Executo o Checklist de Verificação (obrigatório antes de todo commit)
 9. Sugiro commit e espero autorização
 10. Após commit: atualizo fluxograma + memória do projeto
 ```
+
+### Checklist de Verificação (Obrigatório antes de todo commit)
+
+Antes de cada commit, devo executar TODOS os passos abaixo e reportar o resultado:
+
+```
+## Checklist de Verificação
+
+| # | Verificação | Comando | Resultado |
+|---|---|---|---|
+| 1 | Backend compila | python -c "from src.main import app; print('OK')" | ✅/❌ |
+| 2 | Frontend build | npm run build | ✅/❌ |
+| 3 | Conflitos entre commits | git status + git diff | ✅/❌ |
+| 4 | Quebra de funcionalidade | Verificar se alterações afetam código existente | ✅/❌ |
+
+**Todos os 4 itens devem estar ✅ antes de commitar.**
+Se qualquer item falhar, corrijo antes de seguir.
+```
+
+**Regras do Checklist:**
+- **NUNCA** commitar se o backend não compilar
+- **NUNCA** commitar se o frontend não fizer build
+- **NUNCA** commitar se houver conflitos não resolvidos
+- **SEMPRE** verificar se a mudança não quebra funcionalidade existente
+- O resultado do checklist deve ser mostrado junto com a sugestão de commit
 
 ### Auditoria de Segurança — Itens Pendentes (05/09/2026)
 
@@ -184,6 +209,30 @@ git push origin feature/nome-da-funcionalidade
 gh pr create --title "feat: nome" --body "descrição" --base main
 ```
 
+### Entendendo Push e Pull Request (PR)
+
+**Push** = Enviar seus commits do computador para o GitHub.
+- Sem push, seus commits só existem no seu computador
+- O push **NÃO** altera o código principal (main) — apenas atualiza a branch remota
+- É como "salvar na nuvem" o seu trabalho
+
+**Pull Request (PR)** = Pedir para o GitHub juntar sua branch na branch principal (main).
+- Após o push, você cria um PR pelo GitHub (ou terminal)
+- O PR mostra exatamente o que mudou (arquivos, linhas adicionadas/removidas)
+- Outras pessoas podem revisar, comentar e aprovar
+- Só depois que o PR é **aprovado e merged** é que o código vai para a branch main
+- É como "abrir um chamado para revisão antes de aplicar as mudanças"
+
+**Fluxo completo:**
+```
+Seu computador → git push → GitHub (sua branch) → PR → Revisão → Merge → main → Deploy automático
+```
+
+**Por que importa:**
+- O deploy automático (Vercel/Render) só dispara quando algo chega na branch **main**
+- Enquanto o código está na sua branch (via push), nada muda em produção
+- O PR é a última barreira de segurança antes do código ir para o ar
+
 ### Estrutura do Projeto
 ```
 portal-backend/
@@ -233,6 +282,7 @@ cd portal-frontend && npm run build
 # Verificar backend
 cd portal-backend && python -c "from src.main import app; print('OK')"
 ```
+
 ## Lembre-se de registrar na memoria do projeto toda modificação ou ajuste que fizer, mesmo que não seja ainda a hora de fazer um commit, pra ter certeza que a sua memoria vai estar sempre atualizada.
 
 ### FIM DAS REGRAS
