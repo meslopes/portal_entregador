@@ -26,11 +26,12 @@ const Layout = ({ children }) => {
   const [openDropdown, setOpenDropdown] = useState(null);
 
   // GPS persistente para entregadores da plataforma — funciona em TODAS as páginas
+  // Supabase Broadcast para tempo real (1-2s) + HTTP POST para persistência (30s)
   const gpsIntervalRef = useRef(null);
+  const gpsBroadcastRef = useRef(null);
   useEffect(() => {
     const isDriver = user?.user_type === 'DRIVER';
     if (!isDriver || !user?.driver?.is_online) {
-      // Se não for entregador ou não estiver online, limpar intervalo
       if (gpsIntervalRef.current) {
         clearInterval(gpsIntervalRef.current);
         gpsIntervalRef.current = null;
@@ -38,30 +39,70 @@ const Layout = ({ children }) => {
       return;
     }
 
-    const sendGPS = () => {
+    const driverId = user?.driver?.id;
+    const tenantId = user?.tenant_id;
+
+    // Importar módulos dinamicamente
+    let realtimeModule = null;
+    let apiModule = null;
+
+    const initModules = async () => {
+      try {
+        realtimeModule = await import('@/lib/realtime');
+        apiModule = await import('@/lib/api');
+      } catch (e) { /* Ignorar erro */ }
+    };
+
+    const sendGPSBoth = () => {
       if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          import('@/lib/api').then(({ driverService }) => {
-            driverService.updateLocation(pos.coords.latitude, pos.coords.longitude).catch(() => {});
-          }).catch(() => {});
+          const { latitude: lat, longitude: lng } = pos.coords;
+          // Broadcast via WebSocket (tempo real, ~100ms de latência)
+          if (realtimeModule?.isRealtimeAvailable() && driverId) {
+            realtimeModule.sendGPS(driverId, lat, lng, tenantId, 'platform');
+          }
         },
-        () => {}, // Silenciar erros de GPS
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 2000 }
+      );
+    };
+
+    // HTTP POST para persistência no banco (a cada 30s)
+    const sendGPSHttp = () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (apiModule?.driverService) {
+            apiModule.driverService.updateLocation(pos.coords.latitude, pos.coords.longitude).catch(() => {});
+          }
+        },
+        () => {},
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
       );
     };
 
-    // Enviar imediatamente e depois a cada 30 segundos
-    sendGPS();
-    gpsIntervalRef.current = setInterval(sendGPS, 30000);
+    // Inicializar e começar
+    initModules().then(() => {
+      sendGPSBoth();
+      sendGPSHttp();
+      // Broadcast a cada 2 segundos (tempo real)
+      gpsBroadcastRef.current = setInterval(sendGPSBoth, 2000);
+      // HTTP POST a cada 30 segundos (persistência)
+      gpsIntervalRef.current = setInterval(sendGPSHttp, 30000);
+    });
 
     return () => {
+      if (gpsBroadcastRef.current) {
+        clearInterval(gpsBroadcastRef.current);
+        gpsBroadcastRef.current = null;
+      }
       if (gpsIntervalRef.current) {
         clearInterval(gpsIntervalRef.current);
         gpsIntervalRef.current = null;
       }
     };
-  }, [user?.user_type, user?.driver?.is_online]);
+  }, [user?.user_type, user?.driver?.is_online, user?.driver?.id, user?.tenant_id]);
 
   const handleLogout = () => {
     logout();
