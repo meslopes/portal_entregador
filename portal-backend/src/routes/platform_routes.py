@@ -403,6 +403,14 @@ def complete_stop(route_id):
         stop.status = 'COMPLETED'
         stop.completed_at = datetime.now(timezone.utc)
 
+        # Atualizar o pedido associado para DELIVERED
+        if stop.order_id:
+            order = Order.query.get(stop.order_id)
+            if order and order.status != OrderStatus.DELIVERED:
+                order.status = OrderStatus.DELIVERED
+                order.delivery_time = datetime.now(timezone.utc)
+                order.updated_at = datetime.now(timezone.utc)
+
         # Verificar se todas as paradas foram concluídas
         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
         

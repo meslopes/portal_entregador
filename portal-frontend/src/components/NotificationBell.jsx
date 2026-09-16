@@ -1,18 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Package, DollarSign, AlertCircle, X } from 'lucide-react';
+import { Bell, Check, Package, DollarSign, AlertCircle, X, UserPlus } from 'lucide-react';
 import api from '@/lib/api';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Verificar se é admin
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user?.user_type === 'ADMIN';
+
   useEffect(() => {
     loadNotifications();
+    if (isAdmin) loadPendingUsers();
     // Poll a cada 30 segundos
-    const interval = setInterval(loadNotifications, 30000);
+    const interval = setInterval(() => {
+      loadNotifications();
+      if (isAdmin) loadPendingUsers();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -41,6 +50,21 @@ const NotificationBell = () => {
       setUnreadCount(newUnread);
     } catch (err) {
       // Silently fail - not critical
+    }
+  };
+
+  const loadPendingUsers = async () => {
+    try {
+      const response = await api.get('/api/admin/pending-users');
+      const users = response.data.users || [];
+      const prevCount = pendingCount;
+      setPendingCount(users.length);
+      // Toca som se há novos pendentes
+      if (users.length > prevCount && prevCount > 0) {
+        playNotificationSound();
+      }
+    } catch (err) {
+      // Silently fail
     }
   };
 
@@ -137,12 +161,14 @@ const NotificationBell = () => {
     }
   };
 
+  const totalBadge = unreadCount + pendingCount;
+
   return (
     <div ref={dropdownRef} style={{ position: 'relative', zIndex: 100003 }}>
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={`Notificações${unreadCount > 0 ? ` (${unreadCount} não lidas)` : ''}`}
+        aria-label={`Notificações${totalBadge > 0 ? ` (${totalBadge} não lidas)` : ''}`}
         aria-expanded={isOpen}
         style={{
           position: 'relative', background: 'none', border: 'none',
@@ -153,16 +179,16 @@ const NotificationBell = () => {
         onMouseLeave={e => e.currentTarget.style.background = 'none'}
       >
         <Bell size={20} />
-        {unreadCount > 0 && (
+        {totalBadge > 0 && (
           <span style={{
             position: 'absolute', top: '2px', right: '2px',
-            background: '#ef4444', color: 'white',
+            background: pendingCount > 0 ? '#f59e0b' : '#ef4444', color: 'white',
             fontSize: '0.625rem', fontWeight: 700,
             width: '1.125rem', height: '1.125rem',
             borderRadius: '50%', display: 'flex',
             alignItems: 'center', justifyContent: 'center'
           }}>
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {totalBadge > 9 ? '9+' : totalBadge}
           </span>
         )}
       </button>
@@ -201,6 +227,37 @@ const NotificationBell = () => {
               </button>
             )}
           </div>
+
+          {/* Pendentes de aprovação (admins only) */}
+          {isAdmin && pendingCount > 0 && (
+            <div
+              onClick={() => { window.location.href = '/admin'; setIsOpen(false); }}
+              style={{
+                padding: '0.75rem 1rem',
+                background: '#fffbeb',
+                borderBottom: '1px solid #fde68a',
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                cursor: 'pointer', transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#fef3c7'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fffbeb'}
+            >
+              <div style={{
+                width: '2rem', height: '2rem', borderRadius: '50%',
+                background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <UserPlus size={14} style={{ color: 'white' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#92400e' }}>
+                  {pendingCount} cadastro(s) pendente(s)
+                </p>
+                <p style={{ fontSize: '0.6875rem', color: '#b45309' }}>
+                  Toque para aprovar ou rejeitar
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Lista */}
           <div style={{ maxHeight: '350px', overflowY: 'auto' }}>

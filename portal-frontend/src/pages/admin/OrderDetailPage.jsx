@@ -411,7 +411,17 @@ const OrderDetailPage = () => {
             </button>
           )}
           {order.status === 'ACCEPTED' && (
-            <button onClick={() => handleChangeStatus('PICKED_UP')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#f59e0b', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+            <button onClick={() => handleChangeStatus('PREPARING')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#f59e0b', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+              👨‍🍳 Marcar Preparando
+            </button>
+          )}
+          {order.status === 'PREPARING' && (
+            <button onClick={() => handleChangeStatus('READY')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+              📦 Marcar Pronto
+            </button>
+          )}
+          {order.status === 'READY' && (
+            <button onClick={() => handleChangeStatus('PICKED_UP')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
               🏍️ Marcar Coletado
             </button>
           )}

@@ -90,7 +90,27 @@ const AdminDashboardPage = () => {
     loadAllDrivers();
   }, [selectedSquare]);
 
-  // Auto-refresh tracking e pedidos
+  // Supabase Realtime: receber GPS do entregador em tempo real (WebSocket)
+  useEffect(() => {
+    let cleanup = null;
+    const tenantId = user?.tenant_id;
+    import('@/lib/realtime').then((rt) => {
+      if (!rt.isRealtimeAvailable()) return;
+      cleanup = rt.subscribeGPS(tenantId, (gpsData) => {
+        // Atualizar posição do marcador no mapa imediatamente
+        const L = window.L;
+        const map = mapInstanceRef.current;
+        if (!L || !map) return;
+        const existing = markersRef.current.find(m => m._gpsDriverId === gpsData.driver_id);
+        if (existing) {
+          existing.setLatLng([gpsData.lat, gpsData.lng]);
+        }
+      });
+    }).catch(() => {});
+    return () => { if (cleanup) cleanup(); };
+  }, [user?.tenant_id]);
+
+  // Auto-refresh tracking e pedidos (backup do Realtime + dados novos)
   useEffect(() => {
     const interval = setInterval(() => {
       loadTracking();
@@ -321,6 +341,9 @@ const AdminDashboardPage = () => {
         markersRef.current = [];
       }
       
+      // Resetar flag de interação ao recriar o mapa (permite fitBounds automático)
+      hasUserInteractedRef.current = false;
+
       try {
         const L = window.L;
         // Centro inicial: cidade da praça selecionada ou fallback
@@ -391,6 +414,7 @@ const AdminDashboardPage = () => {
           const marker = L.marker([driver.latitude, driver.longitude], { icon })
             .addTo(map)
             .bindPopup(`<b>${escapeHtml(driver.name)}</b><br>${escapeHtml(driver.vehicle_type)}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
+          marker._gpsDriverId = driver.driver_id;
           markersRef.current.push(marker);
           allPoints.push([driver.latitude, driver.longitude]);
         }
@@ -592,7 +616,7 @@ const AdminDashboardPage = () => {
         </div>
 
         {/* Abas Status */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center', overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none' }}>
           <button
             onClick={() => setActiveTab('status')}
             style={{

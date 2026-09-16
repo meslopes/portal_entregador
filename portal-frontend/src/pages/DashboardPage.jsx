@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bike, MapPin, DollarSign, Clock, Star, Package,
-  TrendingUp, AlertCircle, Navigation, Zap, ArrowRight
+  TrendingUp, AlertCircle, Navigation, Zap, ArrowRight, Bell, Route
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { driverService, orderService, utils } from '@/lib/api';
@@ -26,6 +26,78 @@ const DashboardPage = () => {
   const [location, setLocation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pendingRoutes, setPendingRoutes] = useState(0);
+  const prevPendingRoutes = useRef(0);
+  const audioContextRef = useRef(null);
+  const audioEnabledRef = useRef(false);
+
+  // Habilitar áudio após primeira interação do usuário
+  useEffect(() => {
+    const enableAudio = () => {
+      try {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        audioEnabledRef.current = true;
+      } catch (e) {}
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
+    document.addEventListener('click', enableAudio, { once: true });
+    document.addEventListener('touchstart', enableAudio, { once: true });
+    return () => {
+      document.removeEventListener('click', enableAudio);
+      document.removeEventListener('touchstart', enableAudio);
+    };
+  }, []);
+
+  // Polling de rotas pendentes a cada 20 segundos
+  useEffect(() => {
+    const checkRoutes = async () => {
+      try {
+        const res = await import('@/lib/api').then(m => m.default.get('/api/routes/platform/active'));
+        const routes = res.data.routes || [];
+        const pending = routes.filter(r => r.status === 'PENDING').length;
+        if (pending > prevPendingRoutes.current && prevPendingRoutes.current > 0) {
+          playRouteNotification();
+        }
+        prevPendingRoutes.current = pending;
+        setPendingRoutes(pending);
+      } catch (e) { /* Silenciar erro de polling */ }
+    };
+    checkRoutes();
+    const interval = setInterval(checkRoutes, 20000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const playRouteNotification = () => {
+    try {
+      if (audioEnabledRef.current && audioContextRef.current) {
+        const ctx = audioContextRef.current;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 800;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.frequency.value = 1000;
+          osc2.type = 'sine';
+          gain2.gain.setValueAtTime(0.5, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc2.start(ctx.currentTime);
+          osc2.stop(ctx.currentTime + 0.3);
+        }, 350);
+      }
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+    } catch (e) {}
+  };
 
   useEffect(() => {
     loadDashboardData();
@@ -91,6 +163,11 @@ const DashboardPage = () => {
       if (window.L) {
         initMap();
       } else {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
         script.onload = initMap;
@@ -333,8 +410,9 @@ const DashboardPage = () => {
           iconBg="#dbeafe"
           iconColor="#1d4ed8"
           title="Rotas da Plataforma"
-          description="Veja suas rotas atribuídas e aceite/rejeite"
+          description={pendingRoutes > 0 ? `${pendingRoutes} rota${pendingRoutes > 1 ? 's' : ''} aguardando aceite!` : 'Veja suas rotas atribuídas e aceite/rejeite'}
           onClick={() => navigate('/platform-driver/routes')}
+          badge={pendingRoutes > 0 ? pendingRoutes : null}
         />
         <ActionCard
           icon={<DollarSign size={24} />}
@@ -470,7 +548,7 @@ const StatCard = ({ icon, iconBg, iconColor, label, value, suffix = '' }) => (
 );
 
 // Componente de Ação Rápida
-const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick }) => (
+const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick, badge }) => (
   <div
     onClick={onClick}
     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); }}}
@@ -484,10 +562,10 @@ const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick }) =>
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       cursor: 'pointer',
       transition: 'all 0.15s',
-      border: '1px solid transparent'
+      border: badge ? '2px solid #f59e0b' : '1px solid transparent'
     }}
-    onMouseEnter={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
-    onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
+    onMouseEnter={e => { if (!badge) { e.currentTarget.style.borderColor = '#e2e8f0'; } e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
+    onMouseLeave={e => { e.currentTarget.style.borderColor = badge ? '#f59e0b' : 'transparent'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
   >
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -495,9 +573,22 @@ const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick }) =>
           padding: '0.75rem',
           borderRadius: '0.5rem',
           background: iconBg,
-          color: iconColor
+          color: iconColor,
+          position: 'relative'
         }}>
           {icon}
+          {badge && (
+            <div style={{
+              position: 'absolute', top: '-0.375rem', right: '-0.375rem',
+              background: '#ef4444', color: 'white', borderRadius: '9999px',
+              width: '1.25rem', height: '1.25rem', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.6875rem', fontWeight: 700,
+              animation: 'pulse 1.5s ease-in-out infinite'
+            }}>
+              {badge}
+            </div>
+          )}
         </div>
         <div>
           <h3 style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>{title}</h3>

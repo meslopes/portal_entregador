@@ -153,7 +153,7 @@ def register():
             if square and square.tenant_id:
                 tenant_id = square.tenant_id
 
-        # Verificar se email já existe no tenant
+        # Verificar se email já existe
         if tenant_id:
             if User.query.filter_by(email=email, tenant_id=tenant_id).first():
                 return jsonify({'error': 'Email já cadastrado nesta organização'}), 400

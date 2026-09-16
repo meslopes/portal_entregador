@@ -15,8 +15,13 @@ self.addEventListener('activate', (event) => {
 
 // Estratégia: Network First (sempre busca dados frescos, cache como fallback)
 self.addEventListener('fetch', (event) => {
-  // Não cachear chamadas de API
+  // Não interceptar chamadas de API do backend
   if (event.request.url.includes('/api/')) {
+    return;
+  }
+
+  // Não interceptar conexões do Supabase (Realtime WebSocket, Storage, etc.)
+  if (event.request.url.includes('supabase.co')) {
     return;
   }
 

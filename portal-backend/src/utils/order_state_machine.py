@@ -6,9 +6,9 @@ from src.models.portal_models import OrderStatus
 
 # Transições válidas: (status_atual, status_destino) -> lista de papéis permitidos
 VALID_TRANSITIONS = {
-    # Só admin pode mover de SCHEDULED para PENDING
-    (OrderStatus.SCHEDULED, OrderStatus.PENDING): ['admin'],
-    (OrderStatus.SCHEDULED, OrderStatus.CANCELLED): ['admin'],
+    # Admin e estabelecimento podem mover de SCHEDULED para PENDING
+    (OrderStatus.SCHEDULED, OrderStatus.PENDING): ['admin', 'client'],
+    (OrderStatus.SCHEDULED, OrderStatus.CANCELLED): ['admin', 'client'],
     
     # Entregador aceita pedido (plataforma ou próprio)
     (OrderStatus.PENDING, OrderStatus.ACCEPTED): ['driver', 'own_driver', 'admin'],
@@ -27,8 +27,9 @@ VALID_TRANSITIONS = {
     (OrderStatus.PREPARING, OrderStatus.READY): ['admin', 'client'],
     (OrderStatus.PREPARING, OrderStatus.CANCELLED): ['admin'],
     
-    # Entregador coleta o pedido
+    # Entregador coleta o pedido (de READY ou PREPARING)
     (OrderStatus.READY, OrderStatus.PICKED_UP): ['driver', 'own_driver', 'admin'],
+    (OrderStatus.PREPARING, OrderStatus.PICKED_UP): ['driver', 'own_driver', 'admin'],
     (OrderStatus.READY, OrderStatus.CANCELLED): ['admin'],
     
     # Entregador entrega o pedido
@@ -113,6 +114,11 @@ def get_user_role(user):
         return 'client'
     
     if user.user_type == UserType.DRIVER:
+        # Verificar se é entregador próprio (EstablishmentDriver)
+        from src.models.portal_models import EstablishmentDriver
+        own_driver = EstablishmentDriver.query.filter_by(user_id=user.id).first()
+        if own_driver:
+            return 'own_driver'
         return 'driver'
     
     return None

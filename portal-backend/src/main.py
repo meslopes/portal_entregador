@@ -67,6 +67,8 @@ if flask_env == 'production':
         "https://muvlog.vercel.app",
         "https://muvlog-frontend.vercel.app",
         "https://portal-entregador-gamma.vercel.app",
+        "https://portal-frontend-sepia.vercel.app",
+        "https://portal-frontend-apk3ka3zx-muvy.vercel.app",
     ]
     CORS(app, resources={r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}})
 else:
