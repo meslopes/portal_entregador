@@ -388,7 +388,7 @@ def approve_user(user_id):
         if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
 
         # Determinar tenant_id: usar do request ou do admin atual
         tenant_id = data.get('tenant_id') or get_current_tenant_id()
