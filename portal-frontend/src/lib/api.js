@@ -74,6 +74,15 @@ api.interceptors.response.use(
       // Reseta flag após 2s para permitir novo redirect se necessário
       setTimeout(() => { isRedirecting = false; }, 2000);
     }
+
+    // Entregador convertido de plataforma para próprio — forçar redirect
+    if (error.response?.status === 409 && error.response?.data?.error === 'convertido_proprio') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      alert('Você foi transferido para entregador próprio. Faça login novamente pelo aplicativo de entregador próprio.');
+      window.location.href = '/own-driver/login';
+      return Promise.reject(error);
+    }
     return Promise.reject(error);
   }
 );

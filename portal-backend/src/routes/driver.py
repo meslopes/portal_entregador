@@ -7,12 +7,33 @@ from sqlalchemy import func
 
 driver_bp = Blueprint('driver', __name__)
 
+
+def _check_driver_conversion(user_id):
+    """Verifica se o entregador foi convertido para próprio.
+    Retorna None se OK, ou uma tupla (jsonify, status_code) se foi convertido.
+    """
+    from src.models.portal_models import Driver, User, UserType
+    user = User.query.get(user_id)
+    if not user or user.user_type != UserType.DRIVER:
+        return None  # Não é entregador, deixa o fluxo normal tratar
+    driver = user.driver
+    if driver and driver.converted_to_own:
+        return jsonify({
+            'error': 'convertido_proprio',
+            'message': 'Você foi transferido para entregador próprio. Faça login novamente pelo aplicativo de entregador próprio.',
+            'redirect': '/own-driver/login'
+        }), 409
+    return None
+
 @driver_bp.route('/status', methods=['POST'])
 @jwt_required()
 def toggle_online_status():
     """Alterna o status online/offline do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -59,6 +80,9 @@ def update_location():
     """Atualiza a localização do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -116,6 +140,9 @@ def get_driver_stats():
     """Obtém estatísticas do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -172,6 +199,9 @@ def get_earnings_history():
     """Obtém o histórico de ganhos do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -219,6 +249,9 @@ def get_delivery_history():
     """Obtém o histórico de entregas do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -338,6 +371,9 @@ def get_ranking():
     """Obtém o ranking dos entregadores"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
 
         if not user or user.user_type != UserType.DRIVER:
@@ -412,6 +448,9 @@ def get_achievements():
     """Obtém as conquistas do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
 
         if not user or user.user_type != UserType.DRIVER:
@@ -491,6 +530,9 @@ def get_wallet():
     """Obtém dados da carteira do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -528,6 +570,9 @@ def request_withdrawal():
     """Solicita saque da carteira"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
@@ -585,6 +630,9 @@ def update_pix_key():
     """Atualiza a chave PIX do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
