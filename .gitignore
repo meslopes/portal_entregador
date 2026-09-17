@@ -46,6 +46,9 @@ test_*.py
 .mimocode/
 .mimoignore
 
+# Uploads
+uploads/
+
 # Temp files
 tmp_*.py
 1784208000000
