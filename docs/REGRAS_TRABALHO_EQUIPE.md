@@ -295,4 +295,11 @@ cd portal-backend && python -c "from src.main import app; print('OK')"
 
 ## Lembre-se de registrar na memoria do projeto toda modificação ou ajuste que fizer, mesmo que não seja ainda a hora de fazer um commit, pra ter certeza que a sua memoria vai estar sempre atualizada.
 
+#### 9. RACIOCÍNIO DO MODELO (REASONING EFFORT)
+- **Padrão:** Medium (raciocínio moderado) — configurado em `~/.config/mimocode/mimocode.jsonc`
+- **Quando usar High:** Alterações em lógica de pagamento, state machine, autenticação, modelos de dados
+- **Quando usar Low/Medium:** Ajustes de UI, textos, correções simples
+- **Economia burra:** Usar low o tempo todo gasta mais créditos no total por causa do retrabalho
+- **Objetivo:** Menos erros = menos retrabalho = menos créditos gastos = mais eficiência
+
 ### FIM DAS REGRAS
