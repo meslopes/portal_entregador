@@ -829,6 +829,12 @@ def create_order_from_whatsapp(phone, parts):
             db.session.add(restaurant)
             db.session.flush()
 
+        # Verificar se estabelecimento está ativo
+        if not restaurant.is_active:
+            from src.services.whatsapp import whatsapp_service
+            whatsapp_service.send_message(phone, "Este estabelecimento está inativo no momento. Não é possível fazer pedidos.")
+            return
+
         # Cria cliente
         customer = Customer(
             name=customer_name,

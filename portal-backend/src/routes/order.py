@@ -1881,6 +1881,8 @@ def create_order():
 
             # Busca ou cria restaurante para este estabelecimento
             restaurant = find_restaurant_by_name(customer_profile.name)
+            if restaurant and not restaurant.is_active:
+                return jsonify({'error': 'Seu estabelecimento está inativo. Entre em contato com o administrador.'}), 403
             if not restaurant:
                 # Geocodifica o endereco do estabelecimento
                 est_address = data.get('establishment_address', 'Endereço não informado')
@@ -1917,6 +1919,10 @@ def create_order():
             
             if not restaurant:
                 return jsonify({'error': 'Estabelecimento não encontrado. Envie restaurant_id ou restaurant_name.'}), 400
+
+            # Verificar se estabelecimento está ativo
+            if not restaurant.is_active:
+                return jsonify({'error': 'Este estabelecimento está inativo e não pode receber pedidos.'}), 403
 
         # Busca ou cria cliente final (filtrando por tenant do restaurante)
         customer = Customer.query.filter_by(phone=data['customer_phone'], tenant_id=restaurant.tenant_id).first()
