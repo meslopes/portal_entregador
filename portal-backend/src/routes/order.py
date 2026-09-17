@@ -549,6 +549,11 @@ def get_available_orders():
     """Obtém pedidos disponíveis para o entregador"""
     try:
         user_id = int(get_jwt_identity())
+        # Verificar se entregador foi convertido para próprio
+        from src.routes.driver import _check_driver_conversion
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
 
         if not user or user.user_type != UserType.DRIVER:
@@ -642,6 +647,11 @@ def accept_order(order_id):
     """Aceita um pedido de forma atômica (impede dois aceites simultâneos)"""
     try:
         user_id = int(get_jwt_identity())
+        # Verificar se entregador foi convertido para próprio
+        from src.routes.driver import _check_driver_conversion
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
 
         if not user or user.user_type != UserType.DRIVER:
@@ -1550,6 +1560,11 @@ def get_current_order():
     """Obtém o pedido atual do entregador"""
     try:
         user_id = int(get_jwt_identity())
+        # Verificar se entregador foi convertido para próprio
+        from src.routes.driver import _check_driver_conversion
+        conv = _check_driver_conversion(user_id)
+        if conv:
+            return conv
         user = User.query.get(user_id)
         
         if not user or user.user_type != UserType.DRIVER:
