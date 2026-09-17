@@ -16,6 +16,7 @@ const RegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [emailStatus, setEmailStatus] = useState('idle'); // idle, checking, available, taken
   const [squares, setSquares] = useState([]);
   const [locationStatus, setLocationStatus] = useState('idle'); // idle, detecting, found, error
   const [nearestSquare, setNearestSquare] = useState(null);
@@ -32,6 +33,22 @@ const RegisterPage = () => {
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  // Verificar se email já está cadastrado
+  const checkEmail = async (email) => {
+    if (!email || !email.includes('@')) {
+      setEmailStatus('idle');
+      return;
+    }
+    setEmailStatus('checking');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/check-email?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      setEmailStatus(data.available ? 'available' : 'taken');
+    } catch {
+      setEmailStatus('idle'); // Falhou, não bloqueia o cadastro
+    }
   };
 
   // Geocodificar cidade usando Nominatim
@@ -177,6 +194,10 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (emailStatus === 'taken') {
+      setLocalError('Este email já está cadastrado. Use outro email.');
+      return;
+    }
     setIsLoading(true);
     try {
       const { confirmPassword, ...registerData } = formData;
@@ -306,7 +327,11 @@ const RegisterPage = () => {
                   <div style={{ marginBottom: '1rem' }}>
                     <label className="auth-form-label">Email *</label>
                     <input type="email" name="email" className="auth-form-input" placeholder="seu@email.com"
-                      value={formData.email} onChange={handleChange} required />
+                      value={formData.email} onChange={handleChange}
+                      onBlur={() => checkEmail(formData.email)} required />
+                    {emailStatus === 'checking' && <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Verificando email...</p>}
+                    {emailStatus === 'taken' && <p style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.25rem' }}>Este email já está cadastrado</p>}
+                    {emailStatus === 'available' && <p style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '0.25rem' }}>Email disponível</p>}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                     <div>

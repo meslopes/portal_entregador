@@ -107,6 +107,17 @@ def public_squares():
         return jsonify({'error': str(e)}), 500
 
 
+@auth_bp.route('/check-email', methods=['GET'])
+def check_email():
+    """Verifica se um email já está cadastrado (para validação em tempo real)"""
+    email = request.args.get('email', '').strip().lower()
+    if not email or '@' not in email:
+        return jsonify({'available': True}), 200
+    
+    exists = User.query.filter(User.email.ilike(email)).first()
+    return jsonify({'available': not bool(exists)}), 200
+
+
 # Endpoint para registro de entregador
 @auth_bp.route('/register', methods=['POST'])
 def register():
