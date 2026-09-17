@@ -2273,17 +2273,42 @@ def convert_driver_to_own(driver_id):
 
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
-        # Criar EstablishmentDriver com dados do Driver
-        own_driver = EstablishmentDriver(
-            restaurant_id=restaurant.id,
-            name=f"{user.first_name} {user.last_name}",
-            phone=user.phone or '',
-            vehicle_type=driver.vehicle_type.value if driver.vehicle_type else 'MOTO',
-            vehicle_plate=driver.vehicle_plate or '',
-            vehicle_model=driver.vehicle_model or '',
-            is_active=True
-        )
-        db.session.add(own_driver)
+        # Verificar se já existe EstablishmentDriver para este usuário/restaurante
+        driver_name = f"{user.first_name} {user.last_name}"
+        
+        # Desativar registros anteriores em OUTROS restaurantes (evitar duplicatas)
+        old_records = EstablishmentDriver.query.filter(
+            EstablishmentDriver.name == driver_name,
+            EstablishmentDriver.restaurant_id != restaurant.id,
+            EstablishmentDriver.is_active == True
+        ).all()
+        for old in old_records:
+            old.is_active = False
+        
+        existing_od = EstablishmentDriver.query.filter_by(
+            restaurant_id=restaurant.id, name=driver_name
+        ).first()
+
+        if existing_od:
+            # Já existe — apenas reativar e atualizar dados
+            own_driver = existing_od
+            own_driver.is_active = True
+            own_driver.phone = user.phone or own_driver.phone or ''
+            own_driver.vehicle_type = driver.vehicle_type.value if driver.vehicle_type else own_driver.vehicle_type or 'MOTO'
+            own_driver.vehicle_plate = driver.vehicle_plate or own_driver.vehicle_plate or ''
+            own_driver.vehicle_model = driver.vehicle_model or own_driver.vehicle_model or ''
+        else:
+            # Criar EstablishmentDriver com dados do Driver
+            own_driver = EstablishmentDriver(
+                restaurant_id=restaurant.id,
+                name=driver_name,
+                phone=user.phone or '',
+                vehicle_type=driver.vehicle_type.value if driver.vehicle_type else 'MOTO',
+                vehicle_plate=driver.vehicle_plate or '',
+                vehicle_model=driver.vehicle_model or '',
+                is_active=True
+            )
+            db.session.add(own_driver)
 
         # Desativar o Driver da plataforma (soft delete)
         driver.is_online = False
@@ -2326,8 +2351,10 @@ def convert_own_to_platform(driver_id):
         if restaurant_id:
             user = db.session.get(User, driver.user_id)
             if user:
+                driver_name = f"{user.first_name} {user.last_name}"
+                # Buscar por nome (phone pode estar vazio)
                 est_driver = EstablishmentDriver.query.filter_by(
-                    restaurant_id=restaurant_id, phone=user.phone
+                    restaurant_id=restaurant_id, name=driver_name
                 ).first()
                 if est_driver:
                     est_driver.is_active = False
