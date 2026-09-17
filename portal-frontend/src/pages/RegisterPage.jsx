@@ -190,7 +190,7 @@ const RegisterPage = () => {
       // Nao fazer login - redirecionar para tela de aguardo
       navigate('/pending-approval');
     } catch (err) {
-      setLocalError('Erro ao conectar com o servidor');
+      setLocalError(err.response?.data?.error || 'Erro ao conectar com o servidor');
     } finally {
       setIsLoading(false);
     }
