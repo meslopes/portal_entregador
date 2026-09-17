@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Bike, User, Car, Shield, MapPin, Loader } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/lib/api';
+import api, { API_BASE_URL } from '@/lib/api';
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
@@ -59,7 +59,7 @@ const RegisterPage = () => {
     // Verificar se veio de um link de convite (?square=X)
     const inviteSquareId = searchParams.get('square');
 
-    fetch(`${API_URL}/api/squares/public`)
+    fetch(`${API_BASE_URL}/api/squares/public`)
       .then(res => res.json())
       .then(data => {
         const loadedSquares = data.squares || [];
