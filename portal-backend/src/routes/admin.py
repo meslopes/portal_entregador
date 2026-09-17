@@ -9303,11 +9303,13 @@ def update_establishment_driver(driver_id):
 
         if 'vehicle_type' in data:
 
-            try:
-                from src.models.portal_models import VehicleType
-                driver.vehicle_type = VehicleType(data['vehicle_type'])
-            except (ValueError, KeyError):
+            # Mapear valores legados e normalizar
+            vt = data['vehicle_type'].upper().strip()
+            vehicle_map = {'MOTO': 'MOTORCYCLE', 'MOTORCYCLE': 'MOTORCYCLE', 'CAR': 'CAR', 'BICYCLE': 'BICYCLE', 'BIKE': 'BICYCLE', 'FOOT': 'FOOT'}
+            vt = vehicle_map.get(vt, vt)
+            if vt not in ('CAR', 'MOTORCYCLE', 'BICYCLE', 'FOOT'):
                 return jsonify({'error': 'Tipo de veículo inválido'}), 400
+            driver.vehicle_type = vt
 
         if 'vehicle_plate' in data:
 
