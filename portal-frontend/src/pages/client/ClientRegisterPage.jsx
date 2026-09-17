@@ -105,6 +105,14 @@ const ClientRegisterPage = () => {
         return;
       }
 
+      // Limpar token antigo e salvar token do novo cadastro
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (data.access_token) {
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+
       navigate('/pending-approval');
     } catch (err) {
       setLocalError('Erro ao conectar com o servidor');

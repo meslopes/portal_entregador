@@ -208,6 +208,13 @@ const RegisterPage = () => {
         setLocalError(data.error || 'Erro ao criar conta');
         return;
       }
+      // Limpar token antigo e salvar token do novo cadastro
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (data.access_token) {
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
       // Nao fazer login - redirecionar para tela de aguardo
       navigate('/pending-approval');
     } catch (err) {

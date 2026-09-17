@@ -409,9 +409,13 @@ def register_client():
         except Exception:
             pass  # Notificação é secundária — não bloqueia cadastro
 
+        access_token = create_access_token(identity=str(user.id))
+        user_data = _build_user_response(user)
+
         return jsonify({
             'message': 'Conta criada com sucesso. Aguarde aprovação do administrador.',
-            'user_id': user.id
+            'access_token': access_token,
+            'user': user_data
         }), 201
 
     except Exception as e:
