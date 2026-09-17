@@ -118,6 +118,26 @@ def check_email():
     return jsonify({'available': not bool(exists)}), 200
 
 
+@auth_bp.route('/register-push-token', methods=['POST'])
+@jwt_required()
+def register_push_token_auth():
+    """Registra token FCM para qualquer usuário autenticado (incluindo pendentes)"""
+    try:
+        user_id = int(get_jwt_identity())
+        data = request.get_json() or {}
+        token = data.get('token')
+
+        if not token:
+            return jsonify({'error': 'Token é obrigatório'}), 400
+
+        from src.services.push_notification import register_token
+        register_token(user_id, token)
+
+        return jsonify({'message': 'Token registrado com sucesso'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # Endpoint para registro de entregador
 @auth_bp.route('/register', methods=['POST'])
 def register():

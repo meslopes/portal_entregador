@@ -1649,3 +1649,18 @@ class PeakHour(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+
+class PushToken(db.Model):
+    """Tokens FCM registrados para push notifications"""
+    __tablename__ = 'push_tokens'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    token = db.Column(db.String(500), nullable=False, unique=True)
+    platform = db.Column(db.String(20), default='web')  # web, android, ios
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    user = db.relationship('User', backref='push_tokens')
+

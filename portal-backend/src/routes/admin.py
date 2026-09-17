@@ -418,33 +418,12 @@ def approve_user(user_id):
 
         db.session.commit()
 
-
-
-        # Notifica o usuario via WhatsApp
-
+        # Notifica o usuario via Push Notification
         try:
-
-            from src.services.whatsapp import whatsapp_service
-
-            if whatsapp_service.is_configured() and user.phone:
-
-                whatsapp_service.send_message(
-
-                    user.phone,
-
-                    f"✅ *Conta Aprovada!*\n\n"
-
-                    f"Olá {user.first_name}, sua conta no muv.log foi aprovada!\n"
-
-                    f"Agora você pode fazer login e acessar o sistema."
-
-                )
-
+            from src.services.push_notification import send_approval_notification
+            send_approval_notification(user.id, user.first_name)
         except Exception:
-
             pass
-
-
 
         return jsonify({'message': 'Usuário aprovado com sucesso'}), 200
 
@@ -479,39 +458,16 @@ def reject_user(user_id):
 
 
         if user.status != UserStatus.INACTIVE:
-
             return jsonify({'error': 'Usuário não está pendente'}), 400
 
-
-
-        # Notifica o usuario via WhatsApp antes de excluir
-
+        # Notifica o usuario via Push Notification antes de excluir
         try:
-
-            from src.services.whatsapp import whatsapp_service
-
-            if whatsapp_service.is_configured() and user.phone:
-
-                whatsapp_service.send_message(
-
-                    user.phone,
-
-                    f"❌ *Cadastro Rejeitado*\n\n"
-
-                    f"Olá {user.first_name}, seu cadastro no muv.log não foi aprovado.\n"
-
-                    f"Entre em contato com o suporte para mais informações."
-
-                )
-
+            from src.services.push_notification import send_rejection_notification
+            send_rejection_notification(user.id, user.first_name)
         except Exception:
-
             pass
 
-
-
         # Exclui o usuario
-
         user_type = user.user_type
 
         if user_type == UserType.DRIVER:

@@ -1,36 +1,44 @@
 """
 Serviço de Push Notifications via Firebase Cloud Messaging (FCM)
 Envia notificações para dispositivos registrados.
+Tokens persistidos no banco de dados.
 """
 import logging
-import json
 import os
 import requests
 
 logger = logging.getLogger(__name__)
 
-FIREBASE_API_URL = 'https://fcm.googleapis.com/v1/projects/muv-log/messages:send'
 
-# Tokens FCM registrados por usuário (em memória - em produção usar banco)
-# Formato: {user_id: [token1, token2, ...]}
-_fcm_tokens = {}
-
-
-def register_token(user_id, token):
-    """Registra um token FCM para um usuário."""
-    if user_id not in _fcm_tokens:
-        _fcm_tokens[user_id] = []
-    if token not in _fcm_tokens[user_id]:
-        _fcm_tokens[user_id].append(token)
+def register_token(user_id, token, platform='web'):
+    """Registra um token FCM para um usuário no banco de dados."""
+    from src.models.portal_models import PushToken, db
+    
+    existing = PushToken.query.filter_by(token=token).first()
+    if existing:
+        existing.user_id = user_id
+        existing.is_active = True
+        existing.platform = platform
+    else:
+        pt = PushToken(user_id=user_id, token=token, platform=platform)
+        db.session.add(pt)
+    
+    try:
+        db.session.commit()
         logger.info(f"[Push] Token FCM registrado para user {user_id}")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"[Push] Erro ao registrar token: {e}")
 
 
 def get_user_tokens(user_id):
-    """Retorna os tokens FCM de um usuário."""
-    return _fcm_tokens.get(user_id, [])
+    """Retorna os tokens FCM ativos de um usuário."""
+    from src.models.portal_models import PushToken
+    tokens = PushToken.query.filter_by(user_id=user_id, is_active=True).all()
+    return [t.token for t in tokens]
 
 
-def send_notification(user_id, title, body, data=None):
+def send_notification(user_id, title, body, data=None, sound='default'):
     """
     Envia uma notificação push para um usuário.
     Retorna True se enviou com sucesso.
@@ -40,14 +48,14 @@ def send_notification(user_id, title, body, data=None):
         logger.warning(f"[Push] Nenhum token FCM para user {user_id}")
         return False
 
-    # Para enviar via FCM HTTP v1, precisamos de um access token OAuth2
-    # Como alternativa, vamos usar o FCM legacy API com a server key
     server_key = os.getenv('FIREBASE_SERVER_KEY')
     if not server_key:
         logger.warning("[Push] FIREBASE_SERVER_KEY não configurada")
         return False
 
     success_count = 0
+    from src.models.portal_models import PushToken, db
+
     for token in tokens:
         try:
             message = {
@@ -56,7 +64,8 @@ def send_notification(user_id, title, body, data=None):
                     'title': title,
                     'body': body,
                     'icon': '/icon-192.png',
-                    'click_action': data.get('url', '/') if data else '/'
+                    'click_action': data.get('url', '/') if data else '/',
+                    'sound': sound
                 },
                 'data': data or {},
                 'priority': 'high',
@@ -78,9 +87,12 @@ def send_notification(user_id, title, body, data=None):
                 if result.get('success', 0) > 0:
                     success_count += 1
                 else:
-                    # Token inválido - remover
-                    logger.warning(f"[Push] Token inválido para user {user_id}, removendo")
-                    _fcm_tokens[user_id].remove(token)
+                    # Token inválido — desativar no banco
+                    logger.warning(f"[Push] Token inválido para user {user_id}, desativando")
+                    pt = PushToken.query.filter_by(token=token).first()
+                    if pt:
+                        pt.is_active = False
+                        db.session.commit()
             else:
                 logger.error(f"[Push] Erro FCM: {response.status_code} - {response.text}")
 
@@ -88,6 +100,34 @@ def send_notification(user_id, title, body, data=None):
             logger.error(f"[Push] Erro ao enviar notificação: {e}")
 
     return success_count > 0
+
+
+def send_approval_notification(user_id, first_name):
+    """Envia notificação de aprovação de cadastro."""
+    return send_notification(
+        user_id,
+        title='Conta Aprovada!',
+        body=f'Olá {first_name}, sua conta foi aprovada! Faça login para acessar o sistema.',
+        data={
+            'type': 'ACCOUNT_APPROVED',
+            'url': '/login'
+        },
+        sound='default'
+    )
+
+
+def send_rejection_notification(user_id, first_name):
+    """Envia notificação de rejeição de cadastro."""
+    return send_notification(
+        user_id,
+        title='Cadastro Não Aprovado',
+        body=f'Olá {first_name}, seu cadastro não foi aprovado. Entre em contato com o suporte.',
+        data={
+            'type': 'ACCOUNT_REJECTED',
+            'url': '/login'
+        },
+        sound='default'
+    )
 
 
 def send_new_order_notification(driver_user_id, order_number, restaurant_name):

@@ -43,3 +43,49 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// Push notifications em background
+self.addEventListener('push', (event) => {
+  let data = { title: 'muv.log', body: '' };
+  try {
+    data = event.data.json();
+  } catch {
+    data.body = event.data?.text() || '';
+  }
+
+  const options = {
+    body: data.notification?.body || data.body || '',
+    icon: data.notification?.icon || '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [200, 100, 200],
+    sound: 'default',
+    data: data.data || {},
+    tag: data.data?.type || 'default',
+    requireInteraction: data.data?.type === 'ACCOUNT_APPROVED' || data.data?.type === 'ACCOUNT_REJECTED'
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.notification?.title || data.title || 'muv.log', options)
+  );
+});
+
+// Clique na notificação
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Se já tem uma janela aberta, foca nela
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin)) {
+          client.focus();
+          client.navigate(url);
+          return;
+        }
+      }
+      // Senão, abre uma nova
+      clients.openWindow(url);
+    })
+  );
+});

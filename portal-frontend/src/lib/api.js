@@ -58,6 +58,12 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      // NÃO redirecionar se estiver na página de aguardando aprovação
+      const isPendingApproval = window.location.pathname === '/pending-approval';
+      if (isPendingApproval) {
+        return Promise.reject(error);
+      }
+
       isRedirecting = true;
       // Verificar se é rota de own-driver
       const isOwnDriverRequest = error.config?.url?.includes('/api/own-driver/');
