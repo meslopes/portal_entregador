@@ -49,10 +49,12 @@ const AdminEstablishmentsPage = () => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [pricingTables, setPricingTables] = useState([]);
+  const [pendingEstablishments, setPendingEstablishments] = useState([]);
 
   useEffect(() => {
     loadEstablishments();
     loadSquares();
+    loadPendingEstablishments();
     if (isSuperAdmin) loadTenants();
   }, [page, search, squareId]);
 
@@ -68,6 +70,38 @@ const AdminEstablishmentsPage = () => {
       const response = await api.get('/api/admin/tenants');
       setTenants(response.data.tenants || []);
     } catch (e) { setTenants([]); }
+  };
+
+  const loadPendingEstablishments = async () => {
+    try {
+      const response = await api.get('/api/admin/pending-users');
+      const users = (response.data.users || []).filter(u => u.user_type === 'CLIENT');
+      setPendingEstablishments(users);
+    } catch (err) {
+      // Silently fail
+    }
+  };
+
+  const handleApprove = async (userId) => {
+    try {
+      await api.post(`/api/admin/users/${userId}/approve`);
+      showToast('Estabelecimento aprovado!', 'success');
+      loadPendingEstablishments();
+      loadEstablishments();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao aprovar', 'error');
+    }
+  };
+
+  const handleReject = async (userId) => {
+    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    try {
+      await api.post(`/api/admin/users/${userId}/reject`);
+      showToast('Cadastro rejeitado', 'info');
+      loadPendingEstablishments();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao rejeitar', 'error');
+    }
   };
 
   const loadPricingTables = async (sqId) => {
@@ -408,6 +442,43 @@ const AdminEstablishmentsPage = () => {
           />
         </div>
       </div>
+
+      {/* Estabelecimentos pendentes de aprovação */}
+      {pendingEstablishments.length > 0 && (
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <AlertCircle size={16} style={{ color: '#d97706' }} />
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#92400e' }}>
+              {pendingEstablishments.length} estabelecimento(s) aguardando aprovação
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {pendingEstablishments.map(est => (
+              <div key={est.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0.75rem', background: 'white', borderRadius: '0.5rem',
+                border: '1px solid #fde68a', flexWrap: 'wrap', gap: '0.5rem'
+              }}>
+                <div>
+                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>{est.first_name} {est.last_name}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{est.email}</span>
+                  {est.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{est.phone}</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => handleApprove(est.id)} style={{
+                    padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none',
+                    background: '#16a34a', color: 'white', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
+                  }}>Aprovar</button>
+                  <button onClick={() => handleReject(est.id)} style={{
+                    padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #ef4444',
+                    background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
+                  }}>Rejeitar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Lista */}
       {loading ? (
