@@ -59,7 +59,7 @@ const RegisterPage = () => {
     // Verificar se veio de um link de convite (?square=X)
     const inviteSquareId = searchParams.get('square');
 
-    fetch(`${API_BASE_URL}/api/squares/public`)
+    fetch(`${API_BASE_URL}/api/auth/squares/public`)
       .then(res => res.json())
       .then(data => {
         const loadedSquares = data.squares || [];
