@@ -211,6 +211,34 @@ const PlatformDashboardPage = () => {
     }
   };
 
+  const handleDeleteTenant = async (tenant) => {
+    const dadosVinculados = [];
+    if (tenant.drivers_count > 0) dadosVinculados.push(`${tenant.drivers_count} entregador(es)`);
+    if (tenant.restaurants_count > 0) dadosVinculados.push(`${tenant.restaurants_count} estabelecimento(s)`);
+    if (tenant.orders_count > 0) dadosVinculados.push(`${tenant.orders_count} pedido(s)`);
+    if (tenant.users?.length > 0) dadosVinculados.push(`${tenant.users.length} usuário(s)`);
+
+    let mensagem = `Tem certeza que deseja excluir o tenant "${tenant.name}"?`;
+    if (dadosVinculados.length > 0) {
+      mensagem += `\n\nATENÇÃO: Este tenant possui ${dadosVinculados.join(', ')} vinculados.`;
+      mensagem += `\nTodos os dados serão excluídos permanentemente.`;
+    }
+
+    if (!window.confirm(mensagem)) return;
+
+    try {
+      const force = dadosVinculados.length > 0 ? '?force=true' : '';
+      await api.delete(`/api/platform/tenants/${tenant.id}${force}`);
+      showToast('Tenant excluído com sucesso!', 'success');
+      setShowTenantModal(false);
+      setSelectedTenant(null);
+      loadTenants();
+      loadDashboard();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao excluir tenant', 'error');
+    }
+  };
+
   const handleEditUser = (user) => {
     setEditingUser(user);
     setUserEditForm({
@@ -833,6 +861,12 @@ const PlatformDashboardPage = () => {
                   style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #2563eb', background: 'white', color: '#2563eb', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                 >
                   Editar
+                </button>
+                <button
+                  onClick={() => handleDeleteTenant(selectedTenant)}
+                  style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #ef4444', background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                >
+                  Excluir
                 </button>
                 <button
                   onClick={() => { setShowTenantModal(false); setSelectedTenant(null); }}
