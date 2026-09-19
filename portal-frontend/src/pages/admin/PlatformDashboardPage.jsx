@@ -1360,7 +1360,7 @@ const PlatformDashboardPage = () => {
                   value={userEditForm.password}
                   onChange={(e) => setUserEditForm(prev => ({ ...prev, password: e.target.value }))}
                   style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
-                  minLength={6}
+                  placeholder="Deixe vazio para manter a senha atual"
                 />
               </div>
 
@@ -1574,18 +1574,7 @@ const AdminsTab = () => {
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                         <button
-                          onClick={() => {
-                            setFormData({
-                              email: admin.email || '',
-                              password: '',
-                              first_name: admin.first_name || '',
-                              last_name: admin.last_name || '',
-                              phone: admin.phone || '',
-                              company_name: admin.company_name || '',
-                              tenant_id: admin.tenant_id || ''
-                            });
-                            setShowCreateModal(true);
-                          }}
+                          onClick={() => handleEditUser(admin)}
                           style={{
                             padding: '0.375rem',
                             borderRadius: '0.375rem',
