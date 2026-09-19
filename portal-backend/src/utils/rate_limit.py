@@ -8,10 +8,10 @@ from flask_limiter.util import get_remote_address
 # Instância global do limiter (configurada em main.py)
 limiter = Limiter(
     get_remote_address,
-    default_limits=["300 per minute", "5 per second"],
+    default_limits=["300 per minute", "20 per second"],
     storage_uri="memory://"
 )
 
 # Limites específicos para login (mais restritivo contra brute force)
-login_limit = limiter.limit("5 per minute")
+login_limit = limiter.limit("60 per minute")
 register_limit = limiter.limit("3 per minute")
