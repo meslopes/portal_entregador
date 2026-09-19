@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import TrashModal from '@/components/TrashModal';
 
 const cardStyle = {
   background: 'white', borderRadius: '0.75rem', padding: '1.5rem',
@@ -1405,6 +1406,7 @@ const AdminsTab = ({ onEditUser }) => {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [tenants, setTenants] = useState([]);
   const [formData, setFormData] = useState({
@@ -1500,17 +1502,30 @@ const AdminsTab = ({ onEditUser }) => {
         <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>
           Admins da Plataforma
         </h2>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
-            border: 'none', background: '#2563eb', color: 'white',
-            fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
-          }}
-        >
-          <Plus size={18} /> Novo Admin
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={() => setShowTrash(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0', background: 'white', color: '#64748b',
+              fontSize: '0.875rem', cursor: 'pointer'
+            }}
+          >
+            <Trash2 size={18} /> Lixeira
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
+              border: 'none', background: '#2563eb', color: 'white',
+              fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
+            }}
+          >
+            <Plus size={18} /> Novo Admin
+          </button>
+        </div>
       </div>
 
       {admins.length === 0 ? (
@@ -1764,6 +1779,13 @@ const AdminsTab = ({ onEditUser }) => {
           </div>
         </>
       )}
+      
+      <TrashModal
+        isOpen={showTrash}
+        onClose={() => setShowTrash(false)}
+        onRestore={loadAdmins}
+        userType="ADMIN"
+      />
     </div>
   );
 };

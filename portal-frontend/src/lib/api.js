@@ -576,6 +576,40 @@ export const adminService = {
     return response.data;
   },
 
+  // Lixeira (Soft Delete)
+  getDeletedUsers: async (days = null, userType = null) => {
+    const params = {};
+    if (days) params.days = days;
+    if (userType) params.user_type = userType;
+    const response = await api.get('/api/admin/deleted-users', { params });
+    return response.data;
+  },
+
+  restoreUser: async (userId) => {
+    const response = await api.post(`/api/admin/users/${userId}/restore`);
+    return response.data;
+  },
+
+  deleteUserPermanent: async (userId) => {
+    const response = await api.delete(`/api/admin/users/${userId}/permanent`);
+    return response.data;
+  },
+
+  cleanupDeletedUsers: async (userIds) => {
+    const response = await api.post('/api/admin/cleanup-deleted', { user_ids: userIds });
+    return response.data;
+  },
+
+  getRetentionConfig: async () => {
+    const response = await api.get('/api/admin/retention-config');
+    return response.data;
+  },
+
+  updateRetentionConfig: async (days) => {
+    const response = await api.put('/api/admin/retention-config', { retention_days: days });
+    return response.data;
+  },
+
   createAdminUser: async (adminData) => {
     const response = await api.post('/api/admin/create-admin', adminData);
     return response.data;

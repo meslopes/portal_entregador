@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import TrashModal from '@/components/TrashModal';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -26,6 +27,7 @@ const AdminUsersPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [showEdit, setShowEdit] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
+  const [showTrash, setShowTrash] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: 'admin123', first_name: '', last_name: '', tenant_id: '' });
   const [editData, setEditData] = useState({});
   const [formError, setFormError] = useState('');
@@ -170,9 +172,14 @@ const AdminUsersPage = () => {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Usuários</h1>
           <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>{total} usuário(s) cadastrado(s)</p>
         </div>
-        <button onClick={openCreateAdmin} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
-          <Plus size={18} /> NOVO ADMIN
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button onClick={() => setShowTrash(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontSize: '0.875rem', cursor: 'pointer' }}>
+            <Trash2 size={18} /> Lixeira
+          </button>
+          <button onClick={openCreateAdmin} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
+            <Plus size={18} /> NOVO ADMIN
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -321,6 +328,12 @@ const AdminUsersPage = () => {
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      
+      <TrashModal
+        isOpen={showTrash}
+        onClose={() => setShowTrash(false)}
+        onRestore={loadUsers}
+      />
     </div>
   );
 };
