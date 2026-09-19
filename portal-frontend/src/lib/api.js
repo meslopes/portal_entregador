@@ -1,5 +1,5 @@
 // Configuração da API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
 
 
 // Instância do axios com configurações padrão
@@ -36,7 +36,7 @@ api.interceptors.response.use(
   async (error) => {
     const config = error.config;
 
-    // Retry automático para erros de rede ou cold start do Render (GETs apenas)
+    // Retry automático para erros de rede ou cold start do Cloud Run (GETs apenas)
     const isGetRequest = config?.method === 'get';
     const isNetworkError = !error.response;
     const isColdStart = [502, 503, 504].includes(error.response?.status);
@@ -44,7 +44,7 @@ api.interceptors.response.use(
 
     if (isGetRequest && (isNetworkError || isColdStart) && retryCount < 2) {
       config._retryCount = retryCount + 1;
-      // Aguardar 3s na 1a tentativa, 5s na 2a para o Render acordar
+      // Aguardar 3s na 1a tentativa, 5s na 2a para o Cloud Run acordar
       const delay = retryCount === 0 ? 3000 : 5000;
       await new Promise(resolve => setTimeout(resolve, delay));
       return api.request(config);

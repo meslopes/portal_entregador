@@ -10,7 +10,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# fcntl é Unix-only (funciona no Render/Linux, não no Windows)
+# fcntl é Unix-only (funciona no Cloud Run/Linux, não no Windows)
 try:
     import fcntl
     HAS_FCNTL = True

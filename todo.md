@@ -50,7 +50,7 @@
 
 ## ✅ Fase 7: Deploy (CONCLUIDA)
 - [x] Frontend no Vercel (portal-entregador-gamma.vercel.app)
-- [x] Backend no Render (muvlog-api.onrender.com)
+- [x] Backend no Google Cloud Run (muvlog-api-890250693883.us-central1.run.app)
 - [x] Banco PostgreSQL (Supabase)
 - [x] CORS configurado
 - [x] Variaveis de ambiente

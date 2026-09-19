@@ -1,4 +1,4 @@
-"""Fix cleanup - batch deletion to avoid Render timeout."""
+"""Fix cleanup - batch deletion to avoid Cloud Run timeout."""
 with open('src/routes/admin.py', 'r', encoding='utf-8') as f:
     content = f.read()
 

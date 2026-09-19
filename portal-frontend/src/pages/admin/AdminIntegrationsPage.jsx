@@ -246,7 +246,7 @@ const AdminIntegrationsPage = () => {
         <ol style={{ fontSize: '0.8125rem', color: '#1e3a5f', lineHeight: 1.8, paddingLeft: '1.25rem' }}>
           <li>Acesse o <a href="https://portal-developers.ifood.com.br" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>Portal de Desenvolvedores do iFood</a></li>
           <li>Crie uma aplicação e obtenha o <strong>Client ID</strong> e <strong>Client Secret</strong></li>
-          <li>Configure o webhook URL: <code style={{ background: '#dbeafe', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>https://muvlog-api.onrender.com/api/webhooks/ifood</code></li>
+          <li>Configure o webhook URL: <code style={{ background: '#dbeafe', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>https://muvlog-api-890250693883.us-central1.run.app/api/webhooks/ifood</code></li>
           <li>Adicione a credencial aqui e clique em "Testar Conexão"</li>
           <li>Após conectado, os pedidos do iFood serão recebidos automaticamente</li>
         </ol>

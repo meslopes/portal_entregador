@@ -305,7 +305,7 @@ if __name__ == '__main__':
         data = json.load(sys.stdin)
     else:
         print('Uso: python generate_pdf.py < database_map.json')
-        print('Ou: curl -H "Authorization: Bearer TOKEN" https://muvlog-api.onrender.com/api/admin/database-map | python generate_pdf.py')
+        print('Ou: curl -H "Authorization: Bearer TOKEN" https://muvlog-api-890250693883.us-central1.run.app/api/admin/database-map | python generate_pdf.py')
         sys.exit(1)
 
     path = build_pdf(data)

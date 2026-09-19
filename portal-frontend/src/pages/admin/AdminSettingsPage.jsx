@@ -384,7 +384,7 @@ const NotificationSettings = ({ config, onChange }) => (
 
 // Integrações
 const IntegrationSettings = ({ config, onChange }) => {
-  const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
   return (
   <SettingsCard title="Integrações com Plataformas" icon={<Globe size={18} />}>
     <div style={{ marginBottom: '1.5rem' }}>

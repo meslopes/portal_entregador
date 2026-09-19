@@ -6,7 +6,7 @@ Cole este documento no início de cada nova sessão do MiMoCode para garantir qu
 ### Instruções para Nova Sessão
 Ao colar este documento, inclua também:
 > Leia a memória do projeto em MEMORY.md para contexto completo.
-> Branch atual: feature/mapa-centralizado-cidade.
+> Branch atual: branch-mauro.
 > Continuar trabalhando nos itens pendentes.
 
 Isso garante que a IA saiba exatamente de onde paramos.
@@ -22,7 +22,7 @@ Isso garante que a IA saiba exatamente de onde paramos.
 - **Frontend:** portal-frontend/ (React + Vite + Leaflet)
 - **Backend:** portal-backend/ (Flask + SQLAlchemy + PostgreSQL)
 - **Deploy Frontend:** Vercel (portal-entregador-gamma.vercel.app)
-- **Deploy Backend:** Render (muvlog-api.onrender.com)
+- **Deploy Backend:** Google Cloud Run (muvlog-api-890250693883.us-central1.run.app)
 - **Equipe:** Mauro (meslopes@gmail.com) + Éverton (programador Jr.)
 - **Nível técnico:** Intermediário
 
@@ -32,7 +32,7 @@ Sou um **assistente de desenvolvimento sênior especialista** nas seguintes tecn
 - **Frontend:** React, JSX, Vite, CSS Inline, Leaflet, Tailwind, TypeScript
 - **Backend:** Python, Flask, SQLAlchemy, PostgreSQL, Flask-JWT-Extended, Flask-CORS
 - **Banco de Dados:** PostgreSQL, Supabase, IndexedDB, Dexie.js, Prisma 7
-- **Deploy:** Render, Vercel, GitHub
+- **Deploy:** Google Cloud Run, Vercel, GitHub
 - **Ferramentas:** VSCode, Node.js, JfPdf
 - **Arquitetura:** PWA, Multi-tenant, SaaS
 
@@ -139,10 +139,10 @@ Se qualquer item falhar, corrijo antes de seguir.
 Relatório completo em: `C:\Users\Dell\Downloads\relatorio replit.pdf`
 
 #### Críticos (implementar primeiro)
-- [ ] **F-01** — Aceite atômico de pedidos (impedir dois aceites simultâneos)
-- [ ] **F-03** — Webhook secret obrigatório (remover fallback previsível)
-- [ ] **F-04** — Provas de entrega com autenticação
-- [ ] **F-05** — Segredos padrão (falhar fechado em produção)
+- [x] **F-01** — Aceite atômico de pedidos (impedir dois aceites simultâneos) — JÁ IMPLEMENTADO (order.py:681-699)
+- [x] **F-03** — Webhook secret obrigatório (remover fallback previsível) — JÁ IMPLEMENTADO (webhooks.py:18-46)
+- [x] **F-04** — Provas de entrega com autenticação — JÁ IMPLEMENTADO (main.py:208-236)
+- [x] **F-05** — Segredos padrão (falhar fechado em produção) — RESOLVIDO (2026-09-17): secrets aleatórios no Cloud Run
 
 #### Altos (implementar depois)
 - [ ] **F-08** — Migrações versionadas (Alembic)
@@ -239,7 +239,7 @@ Seu computador → git push → GitHub (sua branch) → PR → Revisão → Merg
 ```
 
 **Por que importa:**
-- O deploy automático (Vercel/Render) só dispara quando algo chega na branch **main**
+- O deploy automático do frontend (Vercel) só dispara quando algo chega na branch **main**. O backend (Cloud Run) requer deploy manual via `gcloud run deploy`
 - Enquanto o código está na sua branch (via push), nada muda em produção
 - O PR é a última barreira de segurança antes do código ir para o ar
 

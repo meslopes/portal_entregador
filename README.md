@@ -23,7 +23,7 @@ Sistema SaaS multi-tenant de delivery e gestão de entregadores.
 | Banco | PostgreSQL (Supabase) |
 | Storage | Supabase Storage (fotos de prova) |
 | Deploy Frontend | Vercel |
-| Deploy Backend | Render |
+| Deploy Backend | Google Cloud Run |
 
 ## Estrutura
 
@@ -89,7 +89,7 @@ VITE_API_URL=http://localhost:5000
 ## Deploy
 
 - **Frontend**: Vercel (auto-deploy da branch `main`)
-- **Backend**: Render (configurado em `render.yaml`, auto-deploy desativado)
+- **Backend**: Google Cloud Run (deploy manual via `gcloud run deploy`)
 - **Banco**: Supabase (PostgreSQL)
 
 ## Documentação

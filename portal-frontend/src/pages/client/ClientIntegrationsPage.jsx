@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
 
 const INTEGRATIONS = [
   { key: 'ifood', name: 'iFood', color: '#ea1d2c', description: 'Receber pedidos automaticamente do iFood' },

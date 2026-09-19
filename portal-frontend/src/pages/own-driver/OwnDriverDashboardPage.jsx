@@ -467,7 +467,7 @@ const ActiveOrderCard = ({ order, onClick }) => {
       {order.proof_of_delivery_url && (
         <div style={{ marginTop: '0.5rem' }}>
           <img
-            src={order.proof_of_delivery_url.startsWith('http') ? order.proof_of_delivery_url : `${import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com'}${order.proof_of_delivery_url}`}
+            src={order.proof_of_delivery_url.startsWith('http') ? order.proof_of_delivery_url : `${import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app'}${order.proof_of_delivery_url}`}
             alt="Prova de entrega"
             style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '0.375rem', border: '1px solid #e2e8f0' }}
           />

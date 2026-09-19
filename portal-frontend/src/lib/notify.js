@@ -185,7 +185,7 @@ export const startOrderMonitor = (onNewOrders) => {
         } catch (e) { /* ignore parse error */ }
       }
 
-      const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api.onrender.com';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
       const response = await fetch(`${API_URL}/api/orders/available`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });

@@ -8,7 +8,7 @@ muv.log — SaaS delivery management platform for delivery drivers, establishmen
 
 ```
 portal-frontend/   → React 19 SPA (Vercel)
-portal-backend/    → Flask API (Render + PostgreSQL)
+portal-backend/    → Flask API (Cloud Run + PostgreSQL)
 ```
 
 No monorepo tooling. Each app has its own dependencies and runs independently.
@@ -30,7 +30,7 @@ No test script defined. No TypeScript — all `.jsx`. Uses `.npmrc` with `legacy
 ```bash
 python main.py                          # Local dev (uses src/main.py, SQLite by default)
 FLASK_ENV=production python -m src.main_production  # Production entrypoint
-gunicorn src.main_production:app        # Production server (what Render runs)
+gunicorn src.main_production:app        # Production server (what Cloud Run runs)
 ```
 
 No pytest or test runner configured. `test_*.py` files are ad-hoc scripts that hit a running server via `urllib`. A manual test roteiro exists at `ROTEIRO_TESTES.md`.
@@ -49,7 +49,7 @@ Despite `alembic` and `Flask-Migrate` in requirements, schema changes are applie
 
 ### Frontend API URL
 
-`src/lib/api.js` defaults to `https://muvlog-api.onrender.com`. For local backend, set `VITE_API_URL=http://localhost:5000` in a `.env` file in `portal-frontend/`.
+`src/lib/api.js` defaults to `https://muvlog-api-890250693883.us-central1.run.app`. For local backend, set `VITE_API_URL=http://localhost:5000` in a `.env` file in `portal-frontend/`.
 
 ### Path alias
 
@@ -110,8 +110,8 @@ Registered in both entry points with prefixes:
 ### Deploy
 
 - Frontend: Vercel (auto-deploy from main). SPA rewrite configured in `vercel.json`.
-- Backend: Render. Config in `render.yaml`. Health check at `/api/health`.
-- Render free tier has cold start (5-10 min without traffic).
+- Backend: Google Cloud Run. Deploy manual via `gcloud run deploy`. Health check at `/api/health`.
+- Cloud Run cold start: ~10-15s na primeira requisição após inatividade.
 
 ### Known bugs
 
