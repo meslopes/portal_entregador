@@ -710,7 +710,7 @@ const PlatformDashboardPage = () => {
 
       {/* Admins Tab */}
       {activeTab === 'admins' && (
-        <AdminsTab key={refreshKey} />
+        <AdminsTab key={refreshKey} onEditUser={handleEditUser} />
       )}
 
       {/* Pending Users Tab */}
@@ -1401,7 +1401,7 @@ const PlatformDashboardPage = () => {
   );
 };
 
-const AdminsTab = () => {
+const AdminsTab = ({ onEditUser }) => {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1574,7 +1574,7 @@ const AdminsTab = () => {
                     <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                         <button
-                          onClick={() => handleEditUser(admin)}
+                          onClick={() => onEditUser(admin)}
                           style={{
                             padding: '0.375rem',
                             borderRadius: '0.375rem',
