@@ -5,11 +5,23 @@ from src.models.portal_models import (
     User, UserType, UserStatus, db
 )
 from werkzeug.security import generate_password_hash
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
 
 platform_bp = Blueprint('platform', __name__)
+
+
+def soft_delete_user(user_id, admin_id=None):
+    """Marca um usuário como excluído (soft delete) em vez de deletar permanentemente"""
+    user = User.query.get(user_id)
+    if not user:
+        return False
+    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_by = admin_id
+    db.session.commit()
+    return True
 
 
 def platform_admin_required(f):
@@ -273,7 +285,7 @@ def update_admin(admin_id):
 @jwt_required()
 @platform_admin_required
 def delete_admin(admin_id):
-    """Exclui um admin"""
+    """Exclui um admin (soft delete)"""
     try:
         admin = User.query.get(admin_id)
         if not admin or admin.user_type != UserType.ADMIN:
@@ -283,42 +295,14 @@ def delete_admin(admin_id):
         if admin.is_super_admin:
             return jsonify({'error': 'Não é possível excluir super admin'}), 400
         
-        # Verificar se tem dados vinculados
-        from src.models.portal_models import Restaurant, Driver, Order
+        # Soft delete - marcar como excluído, manter dados
+        current_user_id = int(get_jwt_identity())
+        success = soft_delete_user(admin_id, current_user_id)
         
-        establishments = Restaurant.query.filter_by(tenant_id=admin.tenant_id).count()
-        drivers = Driver.query.filter_by(tenant_id=admin.tenant_id).count()
-        orders = Order.query.filter_by(tenant_id=admin.tenant_id).count()
-        
-        force = request.args.get('force', 'false').lower() == 'true'
-        
-        if (establishments > 0 or drivers > 0 or orders > 0) and not force:
-            return jsonify({
-                'error': 'Admin possui dados vinculados',
-                'establishments': establishments,
-                'drivers': drivers,
-                'orders': orders,
-                'suggestion': 'Use ?force=true para excluir mesmo assim'
-            }), 400
-        
-        # Excluir dados vinculados se force=true
-        if force:
-            # Usar SQL direto com parâmetros nomeados para evitar SQL injection
-            db.session.execute(db.text("DELETE FROM orders WHERE tenant_id = :tid"), {"tid": admin.tenant_id})
-            db.session.execute(db.text("DELETE FROM drivers WHERE tenant_id = :tid"), {"tid": admin.tenant_id})
-            db.session.execute(db.text("DELETE FROM restaurants WHERE tenant_id = :tid"), {"tid": admin.tenant_id})
-        
-        # Excluir tenant
-        from src.models.portal_models import Tenant
-        tenant = Tenant.query.get(admin.tenant_id)
-        if tenant:
-            db.session.delete(tenant)
-        
-        # Excluir user
-        db.session.delete(admin)
-        db.session.commit()
-        
-        return jsonify({'message': 'Admin excluído com sucesso'}), 200
+        if success:
+            return jsonify({'message': 'Admin movido para a lixeira'}), 200
+        else:
+            return jsonify({'error': 'Erro ao excluir admin'}), 500
         
     except Exception as e:
         db.session.rollback()
@@ -574,7 +558,7 @@ def update_platform_user(user_id):
 @jwt_required()
 @platform_admin_required
 def delete_platform_user(user_id):
-    """Exclui um usuário"""
+    """Exclui um usuário (soft delete)"""
     try:
         user = User.query.get(user_id)
         if not user:
@@ -584,10 +568,14 @@ def delete_platform_user(user_id):
         if user.user_type.value == 'ADMIN' and user.is_super_admin:
             return jsonify({'error': 'Não é possível excluir o super admin'}), 400
         
-        db.session.delete(user)
-        db.session.commit()
+        # Soft delete
+        current_user_id = int(get_jwt_identity())
+        success = soft_delete_user(user_id, current_user_id)
         
-        return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+        if success:
+            return jsonify({'message': 'Usuário movido para a lixeira'}), 200
+        else:
+            return jsonify({'error': 'Erro ao excluir usuário'}), 500
         
     except Exception as e:
         db.session.rollback()

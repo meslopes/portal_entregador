@@ -143,6 +143,10 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
+    # Soft delete
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_by = db.Column(db.Integer, nullable=True)  # ID do admin que excluiu
+    
     # Relacionamentos
     driver = db.relationship('Driver', backref='user', uselist=False, cascade='all, delete-orphan')
     notifications = db.relationship('Notification', backref='user', cascade='all, delete-orphan')
@@ -168,7 +172,9 @@ class User(db.Model):
             'user_type': self.user_type.value if self.user_type else None,
             'status': self.status.value if self.status else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
+            'deleted_by': self.deleted_by
         }
 
 class Driver(db.Model):

@@ -1058,6 +1058,21 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: soft delete - campos deleted_at e deleted_by
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'deleted_at') THEN ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'deleted_by') THEN ALTER TABLE users ADD COLUMN deleted_by INTEGER; END IF; END $$"
+            ))
+            db.session.execute(db.text(
+                "CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at)"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: tabelas MuvScore (gamificação)
         try:
             db.session.execute(db.text("""

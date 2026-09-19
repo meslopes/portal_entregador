@@ -193,6 +193,33 @@ def get_square_filter():
 from src.utils.restaurant import find_restaurant_by_name
 
 
+def soft_delete_user(user_id, admin_id=None):
+    """Marca um usuário como excluído (soft delete) em vez de deletar permanentemente"""
+    from datetime import datetime, timezone
+    user = User.query.get(user_id)
+    if not user:
+        return False
+    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_by = admin_id
+    db.session.commit()
+    return True
+
+
+def get_deleted_users_query(tenant_id=None, user_type=None, days=None):
+    """Retorna query de usuários excluídos com filtros"""
+    from datetime import datetime, timezone, timedelta
+    query = User.query.filter(User.deleted_at.isnot(None))
+    
+    if tenant_id:
+        query = query.filter(User.tenant_id == tenant_id)
+    if user_type:
+        query = query.filter(User.user_type == UserType(user_type))
+    if days:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=int(days))
+        query = query.filter(User.deleted_at <= cutoff)
+    
+    return query.order_by(User.deleted_at.desc())
+
 
 
 
@@ -537,6 +564,9 @@ def get_all_users():
 
 
         query = User.query
+
+        # Filtrar usuários excluídos (soft delete)
+        query = query.filter(User.deleted_at.is_(None))
 
 
 
@@ -983,161 +1013,33 @@ def admin_reset_password(user_id):
 @admin_required
 
 def delete_user(user_id):
-
-    """Exclui um usuario. Use ?force=true para excluir mesmo com dados vinculados."""
-
+    """Exclui um usuario (soft delete)."""
     try:
-
         user = User.query.get(user_id)
-
         if not user:
-
             return jsonify({'error': 'Usuário não encontrado'}), 404
-
-
 
         # Verificar tenant
-
         tenant_id = get_current_tenant_id()
-
         if tenant_id and user.tenant_id != tenant_id:
-
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
-
-
         # Nao permite excluir a si mesmo
-
         current_user_id = int(get_jwt_identity())
-
         if user_id == current_user_id:
-
             return jsonify({'error': 'Não é possível excluir sua própria conta'}), 400
 
-
-
-        # Nao permite excluir o admin padrao
-
-        if user.user_type == UserType.ADMIN:
-
-            admin_count = User.query.filter_by(user_type=UserType.ADMIN).count()
-
-            if admin_count <= 1:
-
-                return jsonify({'error': 'Não é possível excluir o último admin'}), 400
-
-
-
-        # Verificar se é exclusao forçada
-
-        force = request.args.get('force', 'false').lower() == 'true'
-
-
-
-        # Exclui dados especificos do tipo
-
-        if user.user_type == UserType.DRIVER:
-
-            driver = Driver.query.filter_by(user_id=user.id).first()
-
-            if driver:
-
-                has_orders = Order.query.filter_by(driver_id=driver.id).first()
-
-                if has_orders and not force:
-
-                    return jsonify({
-
-                        'error': 'Entregador tem pedidos vinculados',
-
-                        'has_orders': True,
-
-                        'suggestion': 'Use ?force=true para excluir mesmo assim'
-
-                    }), 400
-
-                if force:
-                    # Limpar TODAS as referências ao driver
-                    Order.query.filter_by(driver_id=driver.id).update({'driver_id': None})
-                    from src.models.portal_models import Payment, Delivery, DriverScore, DriverBonus, DriverAchievement, DriverPenalty, DriverRestaurant
-                    Payment.query.filter_by(driver_id=driver.id).delete()
-                    Delivery.query.filter_by(driver_id=driver.id).update({'driver_id': None})
-                    DriverScore.query.filter_by(driver_id=driver.id).delete()
-                    DriverBonus.query.filter_by(driver_id=driver.id).delete()
-                    DriverAchievement.query.filter_by(driver_id=driver.id).delete()
-                    DriverPenalty.query.filter_by(driver_id=driver.id).delete()
-                    DriverRestaurant.query.filter_by(driver_id=driver.id).delete()
-                    # Limpar ganhos de entregadores próprios vinculados
-                    from src.models.portal_models import EstablishmentDriver, OwnDriverEarning
-                    # Buscar via restaurante do driver (EstablishmentDriver não tem user_id)
-                    if driver.restaurant_id:
-                        est_drivers = EstablishmentDriver.query.filter_by(restaurant_id=driver.restaurant_id).all()
-                    else:
-                        est_drivers = []
-                    for ed in est_drivers:
-                        OwnDriverEarning.query.filter_by(establishment_driver_id=ed.id).delete()
-                        db.session.delete(ed)
-
-                db.session.delete(driver)
-
-        elif user.user_type == UserType.CLIENT:
-
-            customer = Customer.query.filter_by(user_id=user.id).first()
-
-            if customer:
-
-                has_orders = Order.query.filter_by(customer_id=customer.id).first()
-
-                if has_orders and not force:
-
-                    # Informar quais dados existem
-
-                    order_count = Order.query.filter_by(customer_id=customer.id).count()
-
-                    return jsonify({
-
-                        'error': 'Estabelecimento tem pedidos vinculados',
-
-                        'has_orders': True,
-
-                        'order_count': order_count,
-
-                        'suggestion': 'Use ?force=true para excluir mesmo assim'
-
-                    }), 400
-
-                if force:
-                    # Limpar TODAS as referências ao customer
-                    Order.query.filter_by(customer_id=customer.id).update({'customer_id': None})
-                    Address.query.filter_by(customer_id=customer.id).delete()
-
-                db.session.delete(customer)
-
-
-
-        # Exclui notificacoes
-
-        Notification.query.filter_by(user_id=user.id).delete()
-
-
-
-        db.session.delete(user)
-
-        db.session.commit()
-
-
-
-        return jsonify({'message': 'Usuário excluído com sucesso'}), 200
+        # Soft delete - marcar como excluído, manter dados
+        success = soft_delete_user(user_id, current_user_id)
+        
+        if success:
+            return jsonify({'message': 'Usuário movido para a lixeira'}), 200
+        else:
+            return jsonify({'error': 'Erro ao excluir usuário'}), 500
 
     except Exception as e:
-
         db.session.rollback()
-
         return jsonify({'error': str(e)}), 500
-
-
-
-
 
 @admin_bp.route('/create-admin', methods=['POST'])
 
@@ -1727,6 +1629,9 @@ def get_drivers():
 
         # Excluir entregadores convertidos para próprio
         query = query.filter(Driver.converted_to_own == False)
+        
+        # Filtrar usuários excluídos (soft delete)
+        query = query.filter(User.deleted_at.is_(None))
 
 
 
@@ -7837,6 +7742,209 @@ def pay_invoice(invoice_id):
 
 
 
+
+
+# ============================================
+
+# SOFT DELETE - LIXEIRA
+
+# ============================================
+
+
+
+@admin_bp.route('/deleted-users', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_deleted_users():
+    """Lista usuários excluídos (lixeira)"""
+    try:
+        tenant_id = get_current_tenant_id()
+        user_type = request.args.get('user_type')
+        days = request.args.get('days', type=int)
+        
+        query = get_deleted_users_query(
+            tenant_id=tenant_id,
+            user_type=user_type,
+            days=days
+        )
+        
+        users = query.all()
+        
+        # Buscar nome de quem excluiu
+        users_data = []
+        for user in users:
+            user_dict = user.to_dict()
+            if user.deleted_by:
+                deleter = User.query.get(user.deleted_by)
+                user_dict['deleted_by_name'] = f"{deleter.first_name} {deleter.last_name}" if deleter else 'Desconhecido'
+            else:
+                user_dict['deleted_by_name'] = 'Sistema'
+            
+            # Calcular dias desde exclusão
+            if user.deleted_at:
+                from datetime import datetime, timezone
+                delta = datetime.now(timezone.utc) - user.deleted_at
+                user_dict['days_deleted'] = delta.days
+            
+            users_data.append(user_dict)
+        
+        # Buscar configuração de retenção
+        retention_config = SystemConfig.query.filter_by(config_key='retention_days').first()
+        retention_days = int(retention_config.config_value) if retention_config else 90
+        
+        return jsonify({
+            'users': users_data,
+            'total': len(users_data),
+            'config': {
+                'retention_days': retention_days
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/restore', methods=['POST'])
+@jwt_required()
+@admin_required
+def restore_user(user_id):
+    """Restaura um usuário excluído"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        if not user.deleted_at:
+            return jsonify({'error': 'Usuário não está excluído'}), 400
+        
+        # Verificar tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and user.tenant_id != tenant_id:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        # Restaurar
+        user.deleted_at = None
+        user.deleted_by = None
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Usuário restaurado com sucesso',
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/users/<int:user_id>/permanent', methods=['DELETE'])
+@jwt_required()
+@admin_required
+def delete_user_permanent(user_id):
+    """Exclui um usuário permanentemente (ação irreversível)"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        # Verificar tenant
+        tenant_id = get_current_tenant_id()
+        if tenant_id and user.tenant_id != tenant_id:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+        
+        # Só permite excluir permanentemente se já estiver na lixeira
+        if not user.deleted_at:
+            return jsonify({'error': 'Usuário deve estar na lixeira antes de ser excluído permanentemente'}), 400
+        
+        # Excluir permanentemente
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'message': 'Usuário excluído permanentemente'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/cleanup-deleted', methods=['POST'])
+@jwt_required()
+@admin_required
+def cleanup_deleted_users():
+    """Exclui permanentemente usuários selecionados da lixeira"""
+    try:
+        data = request.get_json()
+        user_ids = data.get('user_ids', [])
+        
+        if not user_ids:
+            return jsonify({'error': 'Nenhum usuário selecionado'}), 400
+        
+        # Verificar tenant
+        tenant_id = get_current_tenant_id()
+        
+        deleted_count = 0
+        for user_id in user_ids:
+            user = User.query.get(user_id)
+            if user and user.deleted_at:
+                # Verificar tenant
+                if tenant_id and user.tenant_id != tenant_id:
+                    continue
+                db.session.delete(user)
+                deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'{deleted_count} usuário(s) excluído(s) permanentemente',
+            'deleted_count': deleted_count
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/retention-config', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_retention_config():
+    """Retorna configuração de retenção da lixeira"""
+    try:
+        config = SystemConfig.query.filter_by(config_key='retention_days').first()
+        days = int(config.config_value) if config else 90
+        
+        return jsonify({'retention_days': days}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_bp.route('/retention-config', methods=['PUT'])
+@jwt_required()
+@admin_required
+def update_retention_config():
+    """Atualiza configuração de retenção da lixeira"""
+    try:
+        data = request.get_json()
+        days = data.get('retention_days', 90)
+        
+        if days not in [30, 60, 90]:
+            return jsonify({'error': 'Valor inválido. Use 30, 60 ou 90'}), 400
+        
+        config = SystemConfig.query.filter_by(config_key='retention_days').first()
+        if config:
+            config.config_value = str(days)
+        else:
+            config = SystemConfig(config_key='retention_days', config_value=str(days))
+            db.session.add(config)
+        
+        db.session.commit()
+        
+        return jsonify({'message': f'Retenção configurada para {days} dias'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 # ============================================
