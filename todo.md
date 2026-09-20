@@ -156,16 +156,7 @@
 - [x] PWA configurado (manifest.json + service worker)
 - [x] README.md criado
 
-## 📋 Pendencias Futuras
-- [ ] Testes manuais completos
-- [ ] Integracao iFood - testar webhook com estabelecimento correto
-- [ ] Integracao WhatsApp Business API (depende de custos)
-- [ ] Push notifications Firebase (conta criada, aguardando config)
-- [ ] Migrações versionadas (Alembic)
-- [ ] Máquina de estados central para pedidos
-- [ ] Ledger financeiro imutável
-
-## ✅ Itens Resolvidos (12/09/2026)
+## ✅ Itens Resolvidos (19/09/2026)
 - [x] Icones PWA criados a partir do logo
 - [x] Importacao de pedidos em lote via CSV
 - [x] Exportacao CSV de pedidos e entregadores
@@ -187,6 +178,25 @@
 - [x] func import em platform.py
 - [x] Email stub criado (src/services/email.py)
 - [x] Manual PDF v2.0 gerado
+- [x] Push notifications Firebase (FCM completo - frontend, backend, service worker, VAPID key, FIREBASE_SERVER_KEY)
+- [x] Soft delete para protecao contra exclusoes acidentais (campo deleted_at)
+- [x] TrashModal frontend - lixeira integrada em paginas de usuarios (AdminUsersPage, PlatformDashboardPage)
+- [x] Deploy backend migrado para Cloud Run (muvlog-api-890250693883.us-central1.run.app)
+- [x] Merge PR #16 de Éverton (feature/testes-app) - conflito em rate_limit.py resolvido
+- [x] Fix edicao de admin - handleEditUser nao definido no AdminsTab
+- [x] Fix edicao de admin abre modal correto e senha nao e obrigatoria
+- [x] Validacao de email em tempo real no cadastro
+- [x] Push notification Firebase para aprovacao/rejeicao de cadastro
+- [x] PendingApprovalPage com escuta de notificacao em tempo real
+
+## 📋 Pendencias Futuras
+- [ ] Testes manuais completos
+- [ ] Integracao iFood - testar webhook com estabelecimento correto
+- [ ] Integracao WhatsApp Business API (depende de custos)
+- [ ] Migrações versionadas (Alembic)
+- [ ] Máquina de estados central para pedidos
+- [ ] Ledger financeiro imutável
+- [ ] Merge main no branch-mauro (sincronizar commit Cloud Run)
 
 ## 📊 Metricas do Projeto
 - **Total de commits:** 100+

@@ -1125,7 +1125,7 @@
   <!-- NOVAS FUNCIONALIDADES          -->
   <!-- ============================== -->
   <div class="hierarchy" style="border-left: 4px solid #2563eb;">
-    <div class="hierarchy-title" style="color: #2563eb;">Novas Funcionalidades (Atualizado 12/09/2026)</div>
+    <div class="hierarchy-title" style="color: #2563eb;">Novas Funcionalidades (Atualizado 19/09/2026)</div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
       <div style="margin-bottom: 1rem;">
         <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Segurança e Multi-tenant</h4>
@@ -1157,6 +1157,27 @@
         </ul>
       </div>
       <div style="margin-bottom: 1rem;">
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Push Notifications (Firebase FCM)</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>Frontend:</strong> <code>src/lib/firebase.js</code> — config, VAPID key, requestPermission</li>
+          <li><strong>Service Worker:</strong> <code>public/firebase-messaging-sw.js</code> — background messages + click actions</li>
+          <li><strong>Backend:</strong> <code>src/services/push_notification.py</code> — 5 tipos de notificação</li>
+          <li><strong>Modelo:</strong> <code>PushToken</code> em portal_models.py — tokens persistidos no banco</li>
+          <li><strong>Endpoints:</strong> <code>/api/driver/push-token</code> e <code>/api/auth/register-push-token</code></li>
+          <li><strong>Integração:</strong> AuthContext registra token no login; PendingApprovalPage escuta aprovação</li>
+          <li><strong>Tipos:</strong> aprovação, rejeição, novo pedido, atualização de status, alerta admin</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Soft Delete e Lixeira</h4>
+        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
+          <li><strong>Backend:</strong> Campo <code>deleted_at</code> nos modelos — exclusão lógica</li>
+          <li><strong>Frontend:</strong> <code>TrashModal.jsx</code> — componente de lixeira com restauração</li>
+          <li><strong>Integração:</strong> AdminUsersPage e PlatformDashboardPage com botão de lixeira</li>
+          <li><strong>Proteção:</strong> Registros não são deletados fisicamente, apenas marcados</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 1rem;">
         <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Melhorias de Performance e Correções</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
           <li>AbortController no dashboard admin (evita thundering herd)</li>
@@ -1169,28 +1190,14 @@
           <li>Email stub criado (src/services/email.py)</li>
         </ul>
       </div>
-    </div>
-  </div>
       <div style="margin-bottom: 1rem;">
-        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Funcionalidades Novas</h4>
+        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Infraestrutura</h4>
         <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
-          <li><strong>Offline:</strong> Sistema de fila com IndexedDB para entregadores sem internet</li>
-          <li><strong>PWA:</strong> Instalável como app no celular e desktop</li>
-          <li><strong>Exportação CSV:</strong> <code>GET /api/admin/export/orders</code> e <code>/export/drivers</code></li>
-          <li><strong>Importação CSV:</strong> <code>POST /api/admin/import/orders</code></li>
-          <li><strong>Conversão inversa:</strong> <code>POST /api/admin/drivers/:id/convert-from-own</code></li>
-          <li><strong>Waze:</strong> Opção de Waze na navegação mobile</li>
-          <li><strong>Ganhos configuráveis:</strong> Backend retorna estimated_driver_earnings</li>
-        </ul>
-      </div>
-      <div style="margin-bottom: 1rem;">
-        <h4 style="color: #2563eb; margin-bottom: 0.5rem;">Melhorias de Performance</h4>
-        <ul style="font-size: 0.8125rem; color: #475569; padding-left: 1.25rem;">
-          <li>AbortController no dashboard admin (evita thundering herd)</li>
-          <li>useMemo em listas filtradas (HistoryPage)</li>
-          <li>datetime.utcnow() → datetime.now(timezone.utc) em 167 ocorrências</li>
-          <li>Sidebar admin colapsável em mobile</li>
-          <li>RATING_POINTS e LEVELS configuráveis via SystemConfig</li>
+          <li><strong>Deploy Backend:</strong> Migrado de Render para Google Cloud Run</li>
+          <li><strong>URL Produção:</strong> <code>muvlog-api-890250693883.us-central1.run.app</code></li>
+          <li><strong>Deploy Frontend:</strong> Vercel (sem alteração)</li>
+          <li><strong>Banco:</strong> PostgreSQL via Supabase (sem alteração)</li>
+          <li><strong>render.yaml:</strong> Deletado (obsoleto)</li>
         </ul>
       </div>
     </div>
