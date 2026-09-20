@@ -1,17 +1,43 @@
 """
 Serviço de integração com a API do iFood.
 Gerencia autenticação, confirmação de pedidos e callbacks de status.
+
+Suporta dois ambientes:
+- Sandbox: https://sandbox-api.ifood.com.br (testes)
+- Produção: https://merchant-api.ifood.com.br (real)
 """
 import os
 import requests
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
-# URLs do iFood (sandbox e produção)
-IFOOD_BASE_URL = os.getenv('IFOOD_BASE_URL', 'https://merchant-api.ifood.com.br')
-IFOOD_AUTH_URL = os.getenv('IFOOD_AUTH_URL', 'https://merchant-api.ifood.com.br/authentication/v1.0')
+# Ambiente: 'sandbox' ou 'production'
+IFOOD_ENV = os.getenv('IFOOD_ENV', 'sandbox')
+
+# URLs do iFood por ambiente
+IFOOD_URLS = {
+    'sandbox': {
+        'base': 'https://sandbox-api.ifood.com.br',
+        'auth': 'https://sandbox-api.ifood.com.br/authentication/v1.0',
+    },
+    'production': {
+        'base': 'https://merchant-api.ifood.com.br',
+        'auth': 'https://merchant-api.ifood.com.br/authentication/v1.0',
+    }
+}
+
+def get_ifood_urls():
+    """Retorna as URLs do iFood baseado no ambiente configurado."""
+    env = os.getenv('IFOOD_ENV', 'sandbox')
+    urls = IFOOD_URLS.get(env, IFOOD_URLS['sandbox'])
+    logger.info(f"iFood ambiente: {env} → {urls['base']}")
+    return urls
+
+# URLs padrão (backward compatibility)
+IFOOD_BASE_URL = os.getenv('IFOOD_BASE_URL', IFOOD_URLS[IFOOD_ENV]['base'])
+IFOOD_AUTH_URL = os.getenv('IFOOD_AUTH_URL', IFOOD_URLS[IFOOD_ENV]['auth'])
 
 
 def get_auth_headers(access_token):
@@ -23,6 +49,17 @@ def get_auth_headers(access_token):
     }
 
 
+def get_environment_info():
+    """Retorna informações sobre o ambiente iFood configurado."""
+    urls = get_ifood_urls()
+    return {
+        'environment': os.getenv('IFOOD_ENV', 'sandbox'),
+        'base_url': urls['base'],
+        'auth_url': urls['auth'],
+        'is_sandbox': os.getenv('IFOOD_ENV', 'sandbox') == 'sandbox'
+    }
+
+
 def authenticate(client_id, client_secret):
     """
     Autentica com o iFood usando OAuth 2.0 (Client Credentials).
@@ -31,12 +68,14 @@ def authenticate(client_id, client_secret):
         dict com access_token, expires_in, ou erro
     """
     try:
+        urls = get_ifood_urls()
         payload = {
             'clientId': client_id,
             'clientSecret': client_secret
         }
+        logger.info(f"Autenticando iFood em: {urls['auth']}/oauth/token")
         response = requests.post(
-            f"{IFOOD_AUTH_URL}/oauth/token",
+            f"{urls['auth']}/oauth/token",
             json=payload,
             timeout=30
         )
@@ -61,13 +100,14 @@ def authenticate(client_id, client_secret):
 def refresh_access_token(refresh_token, client_id, client_secret):
     """Renova o access token usando o refresh token"""
     try:
+        urls = get_ifood_urls()
         payload = {
             'clientId': client_id,
             'clientSecret': client_secret,
             'refreshToken': refresh_token
         }
         response = requests.post(
-            f"{IFOOD_AUTH_URL}/oauth/token",
+            f"{urls['auth']}/oauth/token",
             json=payload,
             timeout=30
         )
@@ -92,8 +132,9 @@ def confirm_order(access_token, order_id):
     Endpoint: PATCH /order/v1.0/{orderId}/confirm
     """
     try:
+        urls = get_ifood_urls()
         response = requests.patch(
-            f"{IFOOD_BASE_URL}/order/v1.0/{order_id}/confirm",
+            f"{urls['base']}/order/v1.0/{order_id}/confirm",
             headers=get_auth_headers(access_token),
             timeout=30
         )
@@ -117,6 +158,7 @@ def cancel_order(access_token, order_id, reason_code='OTHER', reason_description
     Endpoint: PATCH /order/v1.0/{orderId}/cancel
     """
     try:
+        urls = get_ifood_urls()
         payload = {
             'reason': {
                 'code': reason_code,
@@ -124,7 +166,7 @@ def cancel_order(access_token, order_id, reason_code='OTHER', reason_description
             }
         }
         response = requests.patch(
-            f"{IFOOD_BASE_URL}/order/v1.0/{order_id}/cancel",
+            f"{urls['base']}/order/v1.0/{order_id}/cancel",
             headers=get_auth_headers(access_token),
             json=payload,
             timeout=30
@@ -151,8 +193,9 @@ def update_status(access_token, order_id, status):
     Endpoint: PATCH /order/v1.0/{orderId}/status/{status}
     """
     try:
+        urls = get_ifood_urls()
         response = requests.patch(
-            f"{IFOOD_BASE_URL}/order/v1.0/{order_id}/status/{status}",
+            f"{urls['base']}/order/v1.0/{order_id}/status/{status}",
             headers=get_auth_headers(access_token),
             timeout=30
         )
@@ -176,8 +219,9 @@ def get_order_details(access_token, order_id):
     Endpoint: GET /order/v1.0/{orderId}
     """
     try:
+        urls = get_ifood_urls()
         response = requests.get(
-            f"{IFOOD_BASE_URL}/order/v1.0/{order_id}",
+            f"{urls['base']}/order/v1.0/{order_id}",
             headers=get_auth_headers(access_token),
             timeout=30
         )
@@ -285,3 +329,168 @@ INTERNAL_TO_IFOOD_STATUS = {
     'DELIVERED': 'DELIVERED',
     'CANCELLED': 'CANCELLED'
 }
+
+
+# =============================================
+# SANDBOX — Geração de pedidos de teste
+# =============================================
+
+# Dados da loja de teste do iFood (fornecidos pelo portal de desenvolvedores)
+IFOOD_SANDBOX_MERCHANT = {
+    'id': '5ef178ef-cb24-4bf0-8a56-b2bb428c7998',
+    'name': 'Teste - 65.525.361 EMMANUEL BOES LOPES',
+    'shortId': '4033304'
+}
+
+
+def generate_sandbox_order(order_number=None):
+    """
+    Gera um pedido de teste no formato real do iFood sandbox.
+    
+    Baseado no formato Open Delivery que o iFood envia via webhook.
+    Usa a loja de teste configurada no portal de desenvolvedores.
+    
+    Args:
+        order_number: número do pedido (auto-gerado se None)
+    
+    Returns:
+        dict no formato do iFood Open Delivery
+    """
+    import uuid
+    import random
+    
+    if order_number is None:
+        order_number = f"{random.randint(100000, 999999)}"
+    
+    order_id = str(uuid.uuid4())
+    
+    # Coordenadas de Canoas/RS (região de teste)
+    lat = -29.9150 + random.uniform(-0.01, 0.01)
+    lng = -51.1780 + random.uniform(-0.01, 0.01)
+    
+    # Itens de teste variados
+    test_items = [
+        [
+            {'name': 'X-Tudo', 'quantity': 1, 'unitPrice': 28.90, 'externalCode': 'XT001'},
+            {'name': 'Batata Frita Grande', 'quantity': 1, 'unitPrice': 15.90, 'externalCode': 'BF002'},
+            {'name': 'Coca-Cola 2L', 'quantity': 1, 'unitPrice': 12.00, 'externalCode': 'CC003'},
+        ],
+        [
+            {'name': 'Pizza Margherita Grande', 'quantity': 1, 'unitPrice': 45.00, 'externalCode': 'PZ001'},
+            {'name': 'Guaraná Lata', 'quantity': 2, 'unitPrice': 6.00, 'externalCode': 'GR002'},
+        ],
+        [
+            {'name': 'Açaí 500ml', 'quantity': 1, 'unitPrice': 22.00, 'externalCode': 'AC001'},
+            {'name': 'Banana', 'quantity': 1, 'unitPrice': 3.00, 'externalCode': 'AC002'},
+            {'name': 'Granola', 'quantity': 1, 'unitPrice': 4.00, 'externalCode': 'AC003'},
+            {'name': 'Leite Condensado', 'quantity': 1, 'unitPrice': 3.00, 'externalCode': 'AC004'},
+        ],
+    ]
+    
+    items = random.choice(test_items)
+    subtotal = sum(i['unitPrice'] * i['quantity'] for i in items)
+    delivery_fee = round(random.uniform(5.00, 15.00), 2)
+    total = subtotal + delivery_fee
+    
+    # Nomes de clientes de teste
+    customer_names = [
+        'Mauro Lopes', 'Ana Silva', 'Carlos Oliveira', 
+        'Maria Santos', 'Pedro Souza', 'Julia Costa'
+    ]
+    
+    # Endereços de teste em Canoas/RS
+    test_addresses = [
+        {'street': 'Rua das Flores, 123', 'neighborhood': 'Centro', 'city': 'Canoas', 'state': 'RS'},
+        {'street': 'Av. Getúlio Vargas, 456', 'neighborhood': 'Mathias Velho', 'city': 'Canoas', 'state': 'RS'},
+        {'street': 'Rua Marechal Deodoro, 789', 'neighborhood': 'Centro', 'city': 'Canoas', 'state': 'RS'},
+        {'street': 'Rua Sinimbu, 321', 'neighborhood': 'Harmonia', 'city': 'Canoas', 'state': 'RS'},
+    ]
+    
+    address = random.choice(test_addresses)
+    customer_name = random.choice(customer_names)
+    
+    # Formato real do iFood Open Delivery
+    return {
+        'id': order_id,
+        'order': order_number,
+        'displayId': order_number,
+        'createdAt': datetime.now(timezone.utc).isoformat(),
+        'preparationStartDateTime': datetime.now(timezone.utc).isoformat(),
+        'merchant': {
+            'id': IFOOD_SANDBOX_MERCHANT['id'],
+            'name': IFOOD_SANDBOX_MERCHANT['name'],
+            'shortId': IFOOD_SANDBOX_MERCHANT['shortId'],
+        },
+        'customer': {
+            'id': str(uuid.uuid4()),
+            'name': customer_name,
+            'phone': {
+                'number': f"519{random.randint(10000000, 99999999)}",
+                'localizer': str(uuid.uuid4()),
+                'localizerExpiration': (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
+            },
+            'documentNumber': None,
+            'ordersCountOnMerchant': random.randint(1, 20),
+        },
+        'items': [
+            {
+                'id': str(uuid.uuid4()),
+                'name': i['name'],
+                'externalCode': i['externalCode'],
+                'quantity': i['quantity'],
+                'unitPrice': i['unitPrice'],
+                'totalPrice': i['unitPrice'] * i['quantity'],
+                'observations': '',
+                'subItems': [],
+            }
+            for i in items
+        ],
+        'total': {
+            'subTotal': round(subtotal, 2),
+            'deliveryFee': delivery_fee,
+            'additionalFees': 0,
+            'orderAmount': round(total, 2),
+            'benefits': 0,
+        },
+        'payments': [
+            {
+                'type': 'CASH',
+                'value': round(total, 2),
+                'prepaid': 0,
+                'pending': round(total, 2),
+                'changeFor': round(total + 10, 2),
+            }
+        ],
+        'delivery': {
+            'deliveryAddress': {
+                'street': address['street'],
+                'streetNumber': ''.join(filter(str.isdigit, address['street'].split(',')[1].strip())) if ',' in address['street'] else '1',
+                'formattedAddress': f"{address['street']}, {address['neighborhood']}, {address['city']} - {address['state']}",
+                'neighborhood': address['neighborhood'],
+                'complement': '',
+                'postalCode': f"92{random.randint(100, 999)}-{random.randint(100, 999)}",
+                'city': address['city'],
+                'state': address['state'],
+                'country': 'BR',
+                'coordinates': {
+                    'latitude': lat,
+                    'longitude': lng,
+                },
+                'reference': None,
+            },
+            'mode': 'DEFAULT',
+            'deliveredBy': 'IFOOD',
+            'deliveryDateTime': (datetime.now(timezone.utc) + timedelta(minutes=45)).isoformat(),
+            'observations': '',
+        },
+        'pickUp': {
+            'mode': 'TAKEOUT',
+        },
+        'salesChannel': 'IFOOD',
+        'additionalInformation': {
+            'e2eId': str(uuid.uuid4()),
+            'salesChannel': 'IFOOD',
+            'utm': {},
+            'traceparent': str(uuid.uuid4()),
+        },
+    }
