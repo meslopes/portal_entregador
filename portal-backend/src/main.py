@@ -188,6 +188,26 @@ with app.app_context():
         print(f"Migração fixed_fee: {e}")
         db.session.rollback()
 
+    # Migration: external_merchant_id em restaurants (iFood)
+    try:
+        dialect = db.engine.dialect.name
+        if dialect == 'sqlite':
+            result = db.session.execute(db.text("PRAGMA table_info(restaurants)"))
+            columns = [row[1] for row in result.fetchall()]
+        else:
+            result = db.session.execute(db.text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'restaurants'"
+            ))
+            columns = [row[0] for row in result.fetchall()]
+
+        if 'external_merchant_id' not in columns:
+            db.session.execute(db.text("ALTER TABLE restaurants ADD COLUMN external_merchant_id VARCHAR(100)"))
+            db.session.commit()
+            print("Coluna external_merchant_id adicionada à tabela restaurants")
+    except Exception as e:
+        print(f"Migração external_merchant_id: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

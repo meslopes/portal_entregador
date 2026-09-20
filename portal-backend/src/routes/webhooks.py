@@ -497,11 +497,21 @@ def process_ifood_order_real(order_data):
         
         if not restaurant:
             logger.warning(f"Restaurante não encontrado, criando novo: {parsed['restaurant_name']}")
+            # Tentar encontrar tenant pelo merchant ID (iFood)
+            tenant_id = None
+            merchant_id = order_data.get('merchant', {}).get('id')
+            if merchant_id:
+                # Buscar restaurante existente com mesmo merchant_id para pegar o tenant
+                existing = Restaurant.query.filter_by(external_merchant_id=merchant_id).first()
+                if existing and existing.tenant_id:
+                    tenant_id = existing.tenant_id
+            
             restaurant = Restaurant(
                 name=parsed['restaurant_name'],
                 address=parsed['delivery_address'].get('street', 'Endereço não informado'),
                 latitude=parsed['delivery_address'].get('latitude') or -29.95,
-                longitude=parsed['delivery_address'].get('longitude') or -50.45
+                longitude=parsed['delivery_address'].get('longitude') or -50.45,
+                tenant_id=tenant_id
             )
             db.session.add(restaurant)
             db.session.flush()
@@ -552,7 +562,8 @@ def process_ifood_order_real(order_data):
             total_amount=parsed['total_amount'],
             payment_method=payment_method,
             special_instructions=parsed.get('special_instructions'),
-            status=OrderStatus.PENDING
+            status=OrderStatus.PENDING,
+            tenant_id=restaurant.tenant_id
         )
         db.session.add(order)
         db.session.commit()

@@ -461,6 +461,15 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+        # Migration: external_merchant_id em restaurants (iFood)
+        try:
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'restaurants' AND column_name = 'external_merchant_id') THEN ALTER TABLE restaurants ADD COLUMN external_merchant_id VARCHAR(100); END IF; END $$"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         # Migration: external_id e platform_source em orders
         try:
             db.session.execute(db.text(
