@@ -69,7 +69,7 @@ const TrackPage = () => {
       <div style={{ maxWidth: '500px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <img src="/logo-muvy.jpg" alt="muv.log" style={{ height: '60px', borderRadius: '0.5rem', marginBottom: '1rem' }} />
+          <img src="/logo-muvlog.jpg" alt="muv.log" style={{ height: '60px', borderRadius: '0.5rem', marginBottom: '1rem' }} />
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>Rastreio de Pedido</h1>
         </div>
 

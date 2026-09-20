@@ -42,7 +42,7 @@ const ClientLoginPage = () => {
       <div className="auth-branding" style={{ flex: '0 0 45%', background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%)' }}>
         <div className="auth-animate-in" style={{ position: 'relative', zIndex: 1, maxWidth: '400px' }}>
           <img
-            src="/logo-muvy.jpg"
+            src="/logo-muvlog.jpg"
             alt="muv.log"
             style={{ height: '80px', marginBottom: '2rem', borderRadius: '0.75rem', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
           />
