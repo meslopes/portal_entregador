@@ -307,8 +307,8 @@ def register_client():
         pickup_confirmation_type = data.get('pickup_confirmation_type', 'code')
         delivery_confirmation_type = data.get('delivery_confirmation_type', 'code')
 
-        if not email or not password or not establishment_name or not phone:
-            return jsonify({'error': 'Email, senha, nome do estabelecimento e telefone são obrigatórios'}), 400
+        if not email or not password or not establishment_name or not phone or not address:
+            return jsonify({'error': 'Email, senha, nome do estabelecimento, telefone e endereço são obrigatórios'}), 400
 
         # Validar formato de email
         import re

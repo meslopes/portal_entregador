@@ -258,6 +258,31 @@ def serve(path):
 def not_found(error):
     return {'error': 'Endpoint not found'}, 404
 
+@app.errorhandler(400)
+def bad_request(error):
+    """Trata erros de requisição inválida, incluindo JSON com encoding incorreto."""
+    return {'error': 'Requisição inválida. Verifique o formato e encoding (UTF-8) do body.'}, 400
+
+@app.before_request
+def fix_charset_encoding():
+    """Corrige requisições com encoding inválido (ex: Latin-1 em vez de UTF-8).
+    Converte o body para UTF-8 antes do Flask tentar decodificar o JSON."""
+    from flask import request as req
+    from werkzeug.exceptions import BadRequest
+    if req.content_type and 'application/json' in req.content_type:
+        raw = req.get_data()
+        if raw:
+            # Tenta decodificar como UTF-8; se falhar, tenta Latin-1 (Windows)
+            try:
+                raw.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    fixed = raw.decode('latin-1').encode('utf-8')
+                    req._cached_data = fixed
+                    req.content_type = 'application/json; charset=utf-8'
+                except Exception:
+                    pass
+
 @app.errorhandler(500)
 def internal_error(error):
     return {'error': 'Internal server error'}, 500
