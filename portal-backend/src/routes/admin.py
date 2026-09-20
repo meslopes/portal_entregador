@@ -1451,6 +1451,12 @@ def admin_update_order(order_id):
 
             order.distribution_method = data['distribution_method']
 
+        # Super admin pode alterar o tenant do pedido
+        current_user = get_current_user()
+        is_super_admin = current_user and current_user.user_type and current_user.user_type.value == 'ADMIN' and current_user.is_super_admin
+        if is_super_admin and 'tenant_id' in data:
+            order.tenant_id = data['tenant_id'] if data['tenant_id'] else None
+
 
 
         # Atualiza dados do cliente se fornecidos
@@ -4111,6 +4117,10 @@ def update_establishment(establishment_id):
         if 'delivery_confirmation_type' in data:
 
             est.delivery_confirmation_type = data['delivery_confirmation_type']
+
+        if 'external_merchant_id' in data:
+
+            est.external_merchant_id = data['external_merchant_id']
 
 
 

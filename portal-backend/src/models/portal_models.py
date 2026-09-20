@@ -486,6 +486,8 @@ class Restaurant(db.Model):
     bank_pix_key = db.Column(db.String(100))
     # Integração Asaas
     asaas_customer_id = db.Column(db.String(50))
+    # Integração iFood
+    external_merchant_id = db.Column(db.String(100))  # ID do merchant no iFood
     # Tipo de confirmacao de entrega
     pickup_confirmation_type = db.Column(db.String(20), default='code')  # code, photo, none
     delivery_confirmation_type = db.Column(db.String(20), default='code')  # code, photo, none
@@ -516,6 +518,7 @@ class Restaurant(db.Model):
             'bank_account': self.bank_account,
             'bank_pix_key': self.bank_pix_key,
             'asaas_customer_id': self.asaas_customer_id,
+            'external_merchant_id': self.external_merchant_id,
             'has_own_drivers': self.has_own_drivers,
             'own_driver_payment_type': self.own_driver_payment_type or 'PER_DELIVERY',
             'own_driver_fixed_value': float(self.own_driver_fixed_value) if self.own_driver_fixed_value else 5.00,

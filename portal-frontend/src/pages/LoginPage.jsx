@@ -74,7 +74,7 @@ const LoginPage = () => {
       <div className="auth-branding" style={{ flex: '0 0 45%' }}>
         <div className="auth-animate-in" style={{ position: 'relative', zIndex: 1, maxWidth: '400px' }}>
           <img
-            src="/logo-muvy.jpg"
+            src="/logo-muvlog.jpg"
             alt="muv.log"
             style={{ height: '80px', marginBottom: '2rem', borderRadius: '0.75rem', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
           />

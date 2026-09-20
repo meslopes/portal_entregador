@@ -188,6 +188,26 @@ with app.app_context():
         print(f"Migração fixed_fee: {e}")
         db.session.rollback()
 
+    # Migration: external_merchant_id em restaurants (iFood)
+    try:
+        dialect = db.engine.dialect.name
+        if dialect == 'sqlite':
+            result = db.session.execute(db.text("PRAGMA table_info(restaurants)"))
+            columns = [row[1] for row in result.fetchall()]
+        else:
+            result = db.session.execute(db.text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'restaurants'"
+            ))
+            columns = [row[0] for row in result.fetchall()]
+
+        if 'external_merchant_id' not in columns:
+            db.session.execute(db.text("ALTER TABLE restaurants ADD COLUMN external_merchant_id VARCHAR(100)"))
+            db.session.commit()
+            print("Coluna external_merchant_id adicionada à tabela restaurants")
+    except Exception as e:
+        print(f"Migração external_merchant_id: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:
@@ -257,6 +277,31 @@ def serve(path):
 @app.errorhandler(404)
 def not_found(error):
     return {'error': 'Endpoint not found'}, 404
+
+@app.errorhandler(400)
+def bad_request(error):
+    """Trata erros de requisição inválida, incluindo JSON com encoding incorreto."""
+    return {'error': 'Requisição inválida. Verifique o formato e encoding (UTF-8) do body.'}, 400
+
+@app.before_request
+def fix_charset_encoding():
+    """Corrige requisições com encoding inválido (ex: Latin-1 em vez de UTF-8).
+    Converte o body para UTF-8 antes do Flask tentar decodificar o JSON."""
+    from flask import request as req
+    from werkzeug.exceptions import BadRequest
+    if req.content_type and 'application/json' in req.content_type:
+        raw = req.get_data()
+        if raw:
+            # Tenta decodificar como UTF-8; se falhar, tenta Latin-1 (Windows)
+            try:
+                raw.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    fixed = raw.decode('latin-1').encode('utf-8')
+                    req._cached_data = fixed
+                    req.content_type = 'application/json; charset=utf-8'
+                except Exception:
+                    pass
 
 @app.errorhandler(500)
 def internal_error(error):

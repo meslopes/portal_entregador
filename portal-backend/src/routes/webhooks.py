@@ -197,6 +197,121 @@ def ifood_test_webhook():
         return jsonify({'error': str(e)}), 500
 
 
+@webhook_bp.route('/ifood/sandbox/generate', methods=['POST'])
+def ifood_sandbox_generate():
+    """
+    Gera e processa um pedido de teste do iFood sandbox.
+    
+    Não requer credenciais reais do iFood — gera o pedido localmente
+    no formato Open Delivery e processa como se viesse do webhook.
+    
+    Body (opcional):
+        {
+            "order_number": "123456",  // auto-gerado se omitido
+            "restaurant_id": 7,        // ID do restaurante no sistema local
+            "tenant_id": 2             // ID do tenant (para vincular o pedido)
+        }
+    """
+    try:
+        from src.services.ifood_service import generate_sandbox_order, IFOOD_SANDBOX_MERCHANT
+        
+        data = request.get_json() or {}
+        order_number = data.get('order_number')
+        restaurant_id = data.get('restaurant_id')
+        tenant_id = data.get('tenant_id')
+        
+        # Gerar pedido de teste
+        test_order = generate_sandbox_order(order_number)
+        
+        logger.info(f"iFood SANDBOX: Pedido gerado - {test_order['order']}")
+        logger.info(f"iFood SANDBOX: Merchant ID = {IFOOD_SANDBOX_MERCHANT['id']}")
+        
+        # Buscar restaurante específico ou criar um para o tenant
+        restaurant = None
+        if restaurant_id:
+            restaurant = Restaurant.query.get(restaurant_id)
+        
+        if not restaurant:
+            # Buscar restaurante iFood existente pelo nome
+            restaurant = Restaurant.query.filter_by(
+                name=IFOOD_SANDBOX_MERCHANT['name']
+            ).first()
+            
+            if not restaurant:
+                # Criar restaurante iFood de teste vinculado ao tenant
+                restaurant = Restaurant(
+                    name=IFOOD_SANDBOX_MERCHANT['name'],
+                    address='Rua Teste iFood, 100 - Canoas RS',
+                    latitude=-29.9150,
+                    longitude=-51.1780,
+                    tenant_id=tenant_id,
+                    is_active=True,
+                )
+                db.session.add(restaurant)
+                db.session.flush()
+                logger.info(f"iFood SANDBOX: Restaurante criado - {restaurant.name} (tenant: {tenant_id})")
+            elif tenant_id and not restaurant.tenant_id:
+                # Atualizar tenant do restaurante existente
+                restaurant.tenant_id = tenant_id
+                db.session.flush()
+        
+        # Processar o pedido (vai criar Customer, Address e Order)
+        result = process_ifood_order_real(test_order)
+        
+        # Atualizar tenant_id do pedido criado
+        if tenant_id:
+            order = Order.query.filter_by(
+                external_id=test_order['id'],
+                platform_source='IFOOD'
+            ).first()
+            if order:
+                order.tenant_id = tenant_id
+                if not order.restaurant.tenant_id:
+                    order.restaurant.tenant_id = tenant_id
+                db.session.commit()
+                logger.info(f"iFood SANDBOX: Pedido {order.order_number} vinculado ao tenant {tenant_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Pedido sandbox gerado e processado',
+            'order_data': test_order,
+            'restaurant_id': restaurant.id if restaurant else None,
+            'tenant_id': tenant_id,
+            'process_result': result.get_json() if hasattr(result, 'get_json') else str(result)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erro ao gerar pedido sandbox: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@webhook_bp.route('/ifood/sandbox/config', methods=['GET'])
+def ifood_sandbox_config():
+    """
+    Retorna a configuração atual do ambiente iFood (sandbox/produção).
+    Útil para verificar se o sandbox está configurado corretamente.
+    """
+    try:
+        from src.services.ifood_service import get_environment_info, IFOOD_SANDBOX_MERCHANT
+        
+        env_info = get_environment_info()
+        
+        # Verificar se há credenciais configuradas
+        creds = get_ifood_credentials()
+        has_credentials = creds is not None
+        
+        return jsonify({
+            'environment': env_info,
+            'sandbox_merchant': IFOOD_SANDBOX_MERCHANT,
+            'credentials_configured': has_credentials,
+            'webhook_url': f"{request.host_url}api/webhooks/ifood",
+            'test_url': f"{request.host_url}api/webhooks/ifood/sandbox/generate"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 def get_ifood_credentials(merchant_id=None):
     """Obtém credenciais do iFood do banco de dados"""
     from src.models.portal_models import SystemConfig
@@ -382,11 +497,21 @@ def process_ifood_order_real(order_data):
         
         if not restaurant:
             logger.warning(f"Restaurante não encontrado, criando novo: {parsed['restaurant_name']}")
+            # Tentar encontrar tenant pelo merchant ID (iFood)
+            tenant_id = None
+            merchant_id = order_data.get('merchant', {}).get('id')
+            if merchant_id:
+                # Buscar restaurante existente com mesmo merchant_id para pegar o tenant
+                existing = Restaurant.query.filter_by(external_merchant_id=merchant_id).first()
+                if existing and existing.tenant_id:
+                    tenant_id = existing.tenant_id
+            
             restaurant = Restaurant(
                 name=parsed['restaurant_name'],
                 address=parsed['delivery_address'].get('street', 'Endereço não informado'),
                 latitude=parsed['delivery_address'].get('latitude') or -29.95,
-                longitude=parsed['delivery_address'].get('longitude') or -50.45
+                longitude=parsed['delivery_address'].get('longitude') or -50.45,
+                tenant_id=tenant_id
             )
             db.session.add(restaurant)
             db.session.flush()
@@ -437,7 +562,8 @@ def process_ifood_order_real(order_data):
             total_amount=parsed['total_amount'],
             payment_method=payment_method,
             special_instructions=parsed.get('special_instructions'),
-            status=OrderStatus.PENDING
+            status=OrderStatus.PENDING,
+            tenant_id=restaurant.tenant_id
         )
         db.session.add(order)
         db.session.commit()
