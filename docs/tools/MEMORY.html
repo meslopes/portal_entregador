@@ -34,7 +34,7 @@ _What is this project? What's its goal? High-level identity._
 - Frontend: `portal-frontend/` (React + Vite + Leaflet via CDN)
 - Backend: `portal-backend/` (Flask + SQLAlchemy + PostgreSQL)
 - Deploy Frontend: Vercel (portal-entregador-gamma.vercel.app)
-- Deploy Backend: Render (muvlog-api.onrender.com)
+- Deploy Backend: Google Cloud Run (muvlog-api-890250693883.us-central1.run.app)
 - Equipe: Mauro (meslopes@gmail.com) + Éverton (programador Jr.)
 - Nível técnico da equipe: Intermediário
 
@@ -154,6 +154,47 @@ _Last commits and pending work for continuity._
   - F-05: main.py - falhar fechado em produção se SECRET_KEY/JWT_SECRET_KEY não definidas
 
 - **2026-09-06** — Todos na branch `feature/mapa-centralizado-cidade`, push pendente
+
+- **2026-09-12** — Push notifications Firebase implementadas
+  - Frontend: `firebase.js` (config, VAPID key, requestPermission, onForegroundMessage)
+  - Service Worker: `firebase-messaging-sw.js` (background messages, click actions, ações por tipo)
+  - Backend: `services/push_notification.py` (register_token, send_notification, 5 tipos)
+  - Modelo: `PushToken` em portal_models.py (tokens persistidos no banco)
+  - Endpoints: `/api/driver/push-token` (driver.py) e `/api/auth/register-push-token` (auth.py)
+  - Integração: AuthContext registra token no login automaticamente
+  - Commits: `074b261f`, `d465b951`
+
+- **2026-09-17** — Push notification para aprovação/rejeição de cadastro
+  - `admin.py`: importa `send_approval_notification` e `send_rejection_notification`
+  - `PendingApprovalPage.jsx`: escuta notificação em tempo real (foreground)
+  - Commit: `3d262cb0`
+
+- **2026-09-17** — Validação de email em tempo real no cadastro
+  - Commit incluído no push acima
+
+- **2026-09-19** — Soft delete e lixeira implementados
+  - Backend: campo `deleted_at` nos modelos (exclusão lógica)
+  - Frontend: `TrashModal.jsx` — componente de lixeira com restauração
+  - Integração: AdminUsersPage e PlatformDashboardPage com botão de lixeira
+  - Commits: `8122546c`, `2332df1b`
+
+- **2026-09-19** — Fixes de edição de admin
+  - `handleEditUser` não definido no AdminsTab — corrigido
+  - Edição de admin abre modal correto, senha não é obrigatória
+  - Commits: `f1c80d85`, `1dda2c90`
+
+- **2026-09-19** — Merge PR #16 de Éverton (feature/testes-app)
+  - Conflito em `rate_limit.py` resolvido
+  - Commit: `ab584c5e`
+
+- **2026-09-19** — Deploy backend migrado para Cloud Run
+  - URL: `muvlog-api-890250693883.us-central1.run.app`
+  - Fallback URLs atualizados em 7 arquivos frontend
+  - `render.yaml` deletado (obsoleto)
+  - Commit: `09427218` (branch main)
+
+- **2026-09-19** — Branch renomeada: `feature/mapa-centralizado-cidade` → `branch-mauro`
+  - `branch-mauro` está 1 commit atrás do `main` (precisa merge do Cloud Run commit)
 
 ## Auditoria - Itens Pendentes
 _Itens da auditoria de 05/09/2026 que devem ser implementados. Prioridade: CRÍTICO &gt; ALTO &gt; MÉDIO._

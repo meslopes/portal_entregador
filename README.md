@@ -89,7 +89,7 @@ VITE_API_URL=http://localhost:5000
 ## Deploy
 
 - **Frontend**: Vercel (auto-deploy da branch `main`)
-- **Backend**: Google Cloud Run (deploy manual via `gcloud run deploy`)
+- **Backend**: Google Cloud Run (`muvlog-api-890250693883.us-central1.run.app`)
 - **Banco**: Supabase (PostgreSQL)
 
 ## Documentação

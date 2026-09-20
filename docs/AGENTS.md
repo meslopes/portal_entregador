@@ -110,7 +110,7 @@ Registered in both entry points with prefixes:
 ### Deploy
 
 - Frontend: Vercel (auto-deploy from main). SPA rewrite configured in `vercel.json`.
-- Backend: Google Cloud Run. Deploy manual via `gcloud run deploy`. Health check at `/api/health`.
+- Backend: Google Cloud Run. URL: `muvlog-api-890250693883.us-central1.run.app`. Health check at `/api/health`.
 - Cloud Run cold start: ~10-15s na primeira requisição após inatividade.
 
 ### Known bugs
