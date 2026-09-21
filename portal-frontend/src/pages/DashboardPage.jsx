@@ -239,14 +239,21 @@ const DashboardPage = () => {
           updateUser({ ...user, driver: response.driver });
           setError('');
         } catch (locErr) {
-          if (locErr.code === 1) { // PERMISSION_DENIED
-            setError('Permissão de localização negada. Clique no ícone 🔒 na barra de endereço e permita o acesso à localização.');
-          } else if (locErr.code === 2) { // POSITION_UNAVAILABLE
-            setError('Localização indisponível. Verifique se o GPS está ativado.');
-          } else if (locErr.code === 3) { // TIMEOUT
-            setError('Tempo esgotado ao obter localização. Tente novamente.');
-          } else {
-            setError('Erro ao obter localização: ' + locErr.message);
+          // Se GPS falhar (HTTP, permissão, etc.), usar localização padrão da praça
+          // Permite que o entregador fique online para testes em rede local
+          const fallbackLat = user?.driver?.square?.latitude || -29.9150;
+          const fallbackLng = user?.driver?.square?.longitude || -51.1780;
+          
+          console.warn('GPS indisponível, usando localização padrão da praça:', fallbackLat, fallbackLng);
+          
+          try {
+            const response = await driverService.toggleOnlineStatus(true, fallbackLat, fallbackLng);
+            setIsOnline(true);
+            setLocation({ latitude: fallbackLat, longitude: fallbackLng });
+            updateUser({ ...user, driver: response.driver });
+            setError('⚠️ GPS não disponível — usando localização padrão da praça. Para GPS real, acesse via HTTPS.');
+          } catch (apiErr) {
+            setError('Erro ao ficar online: ' + (apiErr.message || 'Tente novamente'));
           }
         }
         return;
