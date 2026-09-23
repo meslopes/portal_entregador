@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  User, Phone, Mail, Store, Key, Save,
-  ArrowLeft, AlertCircle, CheckCircle, Eye, EyeOff
-} from 'lucide-react';
+import { User, Store, Key, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
+import ClientProfileForm from './client-profile/ClientProfileForm';
+import ClientEstablishmentForm from './client-profile/ClientEstablishmentForm';
+import ClientPasswordForm from './client-profile/ClientPasswordForm';
 
 const ClientProfilePage = () => {
   const navigate = useNavigate();
@@ -232,302 +232,34 @@ const ClientProfilePage = () => {
 
       {/* Tab: Perfil */}
       {activeTab === 'profile' && (
-        <div style={{
-          background: 'white', borderRadius: '0.75rem',
-          padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                Nome
-              </label>
-              <input
-                type="text"
-                value={profileData.first_name}
-                onChange={e => setProfileData({ ...profileData, first_name: e.target.value })}
-                style={{
-                  width: '100%', padding: '0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                Sobrenome
-              </label>
-              <input
-                type="text"
-                value={profileData.last_name}
-                onChange={e => setProfileData({ ...profileData, last_name: e.target.value })}
-                style={{
-                  width: '100%', padding: '0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={profileData.email}
-              disabled
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none',
-                background: '#f8fafc', color: '#64748b'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Telefone
-            </label>
-            <input
-              type="tel"
-              value={profileData.phone}
-              onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
-              placeholder="(51) 99999-9999"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <button
-            onClick={handleSaveProfile}
-            disabled={isSaving}
-            style={{
-              width: '100%', padding: '0.75rem',
-              borderRadius: '0.5rem', border: 'none',
-              background: '#0d9488', color: 'white',
-              fontSize: '0.9375rem', fontWeight: 600,
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', opacity: isSaving ? 0.7 : 1
-            }}
-          >
-            <Save size={18} />
-            {isSaving ? 'Salvando...' : 'Salvar Perfil'}
-          </button>
-        </div>
+        <ClientProfileForm
+          profileData={profileData}
+          setProfileData={setProfileData}
+          isSaving={isSaving}
+          onSave={handleSaveProfile}
+        />
       )}
 
       {/* Tab: Estabelecimento */}
       {activeTab === 'establishment' && (
-        <div style={{
-          background: 'white', borderRadius: '0.75rem',
-          padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Nome do Estabelecimento
-            </label>
-            <input
-              type="text"
-              value={establishmentData.name}
-              onChange={e => setEstablishmentData({ ...establishmentData, name: e.target.value })}
-              placeholder="Ex: Padaria Central"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Endereço
-            </label>
-            <input
-              type="text"
-              value={establishmentData.address}
-              onChange={e => setEstablishmentData({ ...establishmentData, address: e.target.value })}
-              placeholder="Rua, número - Bairro"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Telefone do Estabelecimento
-            </label>
-            <input
-              type="tel"
-              value={establishmentData.phone}
-              onChange={e => setEstablishmentData({ ...establishmentData, phone: e.target.value })}
-              placeholder="(51) 3333-4444"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Descrição (opcional)
-            </label>
-            <textarea
-              value={establishmentData.description}
-              onChange={e => setEstablishmentData({ ...establishmentData, description: e.target.value })}
-              placeholder="Breve descrição do estabelecimento"
-              rows={3}
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none', resize: 'vertical'
-              }}
-            />
-          </div>
-
-          <button
-            onClick={handleSaveEstablishment}
-            disabled={isSaving}
-            style={{
-              width: '100%', padding: '0.75rem',
-              borderRadius: '0.5rem', border: 'none',
-              background: '#0d9488', color: 'white',
-              fontSize: '0.9375rem', fontWeight: 600,
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', opacity: isSaving ? 0.7 : 1
-            }}
-          >
-            <Save size={18} />
-            {isSaving ? 'Salvando...' : 'Salvar Estabelecimento'}
-          </button>
-        </div>
+        <ClientEstablishmentForm
+          establishmentData={establishmentData}
+          setEstablishmentData={setEstablishmentData}
+          isSaving={isSaving}
+          onSave={handleSaveEstablishment}
+        />
       )}
 
       {/* Tab: Senha */}
       {activeTab === 'password' && (
-        <div style={{
-          background: 'white', borderRadius: '0.75rem',
-          padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Senha Atual
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword.current ? 'text' : 'password'}
-                value={passwordData.current_password}
-                onChange={e => setPasswordData({ ...passwordData, current_password: e.target.value })}
-                placeholder="Digite sua senha atual"
-                style={{
-                  width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
-                style={{
-                  position: 'absolute', right: '0.75rem', top: '50%',
-                  transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#64748b'
-                }}
-              >
-                {showPassword.current ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Nova Senha
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword.new ? 'text' : 'password'}
-                value={passwordData.new_password}
-                onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                placeholder="Mínimo 6 caracteres"
-                style={{
-                  width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
-                style={{
-                  position: 'absolute', right: '0.75rem', top: '50%',
-                  transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#64748b'
-                }}
-              >
-                {showPassword.new ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Confirmar Nova Senha
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword.confirm ? 'text' : 'password'}
-                value={passwordData.confirm_password}
-                onChange={e => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                placeholder="Repita a nova senha"
-                style={{
-                  width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
-                style={{
-                  position: 'absolute', right: '0.75rem', top: '50%',
-                  transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#64748b'
-                }}
-              >
-                {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            onClick={handleChangePassword}
-            disabled={isSaving || !passwordData.current_password || !passwordData.new_password}
-            style={{
-              width: '100%', padding: '0.75rem',
-              borderRadius: '0.5rem', border: 'none',
-              background: '#0d9488', color: 'white',
-              fontSize: '0.9375rem', fontWeight: 600,
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', opacity: isSaving ? 0.7 : 1
-            }}
-          >
-            <Key size={18} />
-            {isSaving ? 'Alterando...' : 'Alterar Senha'}
-          </button>
-        </div>
+        <ClientPasswordForm
+          passwordData={passwordData}
+          setPasswordData={setPasswordData}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          isSaving={isSaving}
+          onChangePassword={handleChangePassword}
+        />
       )}
 
       <style>{`
