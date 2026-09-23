@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart3, TrendingUp, Users, Store, DollarSign,
-  AlertCircle, Calendar, Star, Package, Clock, XCircle,
-  Target, ArrowUpDown
+  TrendingUp, Users, Store, DollarSign,
+  AlertCircle, Star, Package, XCircle,
+  Clock, Target
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
+import {
+  ReportCard, MiniReport, ReportTable, tdStyle, RankBadge, StarBadge
+} from './reports/shared';
+import PeakHoursReport from './reports/PeakHoursReport';
+import RatingsReport from './reports/RatingsReport';
 
 const AdminReportsPage = () => {
   const { squareId } = useSquare();
@@ -219,91 +224,6 @@ const CancellationsReport = ({ data }) => (
   </div>
 );
 
-// Relatório de Avaliações
-const RatingsReport = ({ data }) => (
-  <div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-      {[5,4,3,2,1].map(star => (
-        <div key={star} style={{ background: 'white', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.125rem', marginBottom: '0.25rem' }}>
-            {Array(star).fill(0).map((_, i) => <Star key={i} size={14} fill="#f59e0b" stroke="#f59e0b" />)}
-          </div>
-          <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{data.distribution?.[star] || 0}</p>
-        </div>
-      ))}
-    </div>
-    {data.drivers?.length > 0 && (
-      <ReportTable title="Avaliação por Entregador" headers={['Entregador', 'Média', 'Total', 'Positivas', 'Negativas']}>
-        {data.drivers.map((d, i) => (
-          <tr key={d.id}>
-            <td style={{ ...tdStyle, fontWeight: 500 }}>{d.name}</td>
-            <td style={{ ...tdStyle, textAlign: 'center' }}><StarBadge value={d.avg_rating} /></td>
-            <td style={{ ...tdStyle, textAlign: 'center' }}>{d.total_ratings}</td>
-            <td style={{ ...tdStyle, textAlign: 'center', color: '#16a34a' }}>{d.positive}</td>
-            <td style={{ ...tdStyle, textAlign: 'center', color: '#dc2626' }}>{d.negative}</td>
-          </tr>
-        ))}
-      </ReportTable>
-    )}
-  </div>
-);
-
-// Relatório de Horários
-const PeakHoursReport = ({ data }) => (
-  <div>
-    {data.hourly?.length > 0 && (
-      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Clock size={18} style={{ color: '#8b5cf6' }} />
-          <span style={{ fontWeight: 600, color: '#1e293b' }}>Pedidos por Hora</span>
-        </div>
-        <div style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '120px' }}>
-            {Array.from({ length: 24 }, (_, i) => {
-              const hourData = data.hourly.find(h => h.hour === i);
-              const count = hourData?.count || 0;
-              const maxCount = Math.max(...data.hourly.map(h => h.count));
-              const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}
-                  title={`${i}h: ${count} pedidos`}>
-                  <div style={{ width: '100%', maxWidth: '16px', height: `${Math.max(height, 2)}%`, background: count === maxCount ? '#dc2626' : '#8b5cf6', borderRadius: '2px 2px 0 0' }} />
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.5rem', color: '#64748b' }}>
-            <span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span>
-          </div>
-        </div>
-      </div>
-    )}
-    {data.daily?.length > 0 && (
-      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Calendar size={18} style={{ color: '#0d9488' }} />
-          <span style={{ fontWeight: 600, color: '#1e293b' }}>Pedidos por Dia da Semana</span>
-        </div>
-        <div style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', height: '100px' }}>
-            {data.daily.map((d, i) => {
-              const maxCount = Math.max(...data.daily.map(x => x.count));
-              const height = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}
-                  title={`${d.day}: ${d.count} pedidos`}>
-                  <div style={{ width: '100%', height: `${Math.max(height, 2)}%`, background: '#0d9488', borderRadius: '4px 4px 0 0' }} />
-                  <p style={{ fontSize: '0.625rem', color: '#64748b', marginTop: '0.25rem' }}>{d.day}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-);
-
 // Relatório de Entregas por Entregador
 const DeliveriesReport = ({ data }) => (
   <ReportTable title="Entregas Detalhadas por Entregador" headers={['Entregador', 'Veículo', 'Entregas', 'Frete Total', 'Distância Média', 'Avaliação']}>
@@ -318,64 +238,6 @@ const DeliveriesReport = ({ data }) => (
       </tr>
     ))}
   </ReportTable>
-);
-
-// Componentes auxiliares
-const ReportCard = ({ icon, iconBg, iconColor, label, value }) => (
-  <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-      <div style={{ padding: '0.5rem', borderRadius: '0.5rem', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-      <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>{label}</p>
-    </div>
-    <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
-  </div>
-);
-
-const MiniReport = ({ label, value }) => (
-  <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: '3px solid #2563eb' }}>
-    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>{label}</p>
-    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
-  </div>
-);
-
-const ReportTable = ({ title, headers, children }) => (
-  <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-    <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', fontWeight: 600, color: '#1e293b' }}>{title}</div>
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px' }}>
-        <thead>
-          <tr style={{ background: '#f8fafc' }}>
-            {headers.map((h, i) => (
-              <th key={i} style={{ padding: '0.625rem 1rem', fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', textAlign: i === 0 ? 'left' : 'center', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-    {React.Children.count(children) === 0 && (
-      <p style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Sem dados no período</p>
-    )}
-  </div>
-);
-
-const tdStyle = { padding: '0.75rem 1rem', fontSize: '0.8125rem', borderBottom: '1px solid #f8fafc' };
-
-const RankBadge = ({ rank }) => (
-  <span style={{
-    width: '1.5rem', height: '1.5rem', borderRadius: '50%',
-    background: rank === 1 ? '#22c55e' : rank === 2 ? '#3b82f6' : rank === 3 ? '#f59e0b' : '#e2e8f0',
-    color: rank <= 3 ? 'white' : '#64748b',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '0.625rem', fontWeight: 700
-  }}>{rank}</span>
-);
-
-const StarBadge = ({ value }) => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-    <Star size={14} fill="#f59e0b" stroke="#f59e0b" />
-    <span style={{ fontSize: '0.8125rem', fontWeight: 500 }}>{value}</span>
-  </span>
 );
 
 export default AdminReportsPage;

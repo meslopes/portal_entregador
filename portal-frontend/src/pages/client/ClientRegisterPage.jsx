@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Shield } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import StepIndicator from './client-register/StepIndicator';
+import BrandingSide from './client-register/BrandingSide';
 
 const ClientRegisterPage = () => {
   const [step, setStep] = useState(1);
@@ -33,46 +35,24 @@ const ClientRegisterPage = () => {
   };
 
   const validateStep = () => {
-    if (step === 1) {
-      if (!formData.name || !formData.phone) {
-        setLocalError('Nome do estabelecimento e telefone são obrigatórios');
-        return false;
-      }
+    if (step === 1 && (!formData.name || !formData.phone)) {
+      setLocalError('Nome do estabelecimento e telefone são obrigatórios');
+      return false;
     }
     if (step === 2) {
-      if (!formData.email) {
-        setLocalError('Email é obrigatório');
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setLocalError('As senhas não coincidem');
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setLocalError('A senha deve ter pelo menos 6 caracteres');
-        return false;
-      }
+      if (!formData.email) { setLocalError('Email é obrigatório'); return false; }
+      if (formData.password !== formData.confirmPassword) { setLocalError('As senhas não coincidem'); return false; }
+      if (formData.password.length < 6) { setLocalError('A senha deve ter pelo menos 6 caracteres'); return false; }
     }
-    if (step === 3) {
-      if (!formData.address_street || !formData.address_number || !formData.address_neighborhood) {
-        setLocalError('Preencha rua, número e bairro');
-        return false;
-      }
+    if (step === 3 && (!formData.address_street || !formData.address_number || !formData.address_neighborhood)) {
+      setLocalError('Preencha rua, número e bairro');
+      return false;
     }
     return true;
   };
 
-  const nextStep = () => {
-    if (validateStep()) {
-      setStep(s => s + 1);
-      setLocalError('');
-    }
-  };
-
-  const prevStep = () => {
-    setStep(s => s - 1);
-    setLocalError('');
-  };
+  const nextStep = () => { if (validateStep()) { setStep(s => s + 1); setLocalError(''); } };
+  const prevStep = () => { setStep(s => s - 1); setLocalError(''); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -135,27 +115,7 @@ const ClientRegisterPage = () => {
 
   return (
     <div className="auth-split-layout">
-      {/* Lado esquerdo - Branding */}
-      <div className="auth-branding" style={{ flex: '0 0 45%', background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%)' }}>
-        <div className="auth-animate-in" style={{ position: 'relative', zIndex: 1, maxWidth: '400px' }}>
-          <img
-            src="/logo-muvlog.jpg"
-            alt="muv.log"
-            style={{ height: '80px', marginBottom: '2rem', borderRadius: '0.75rem', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
-          />
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
-            muv.log
-          </h1>
-          <p style={{ fontSize: '1.125rem', opacity: 0.9, marginBottom: '2.5rem', lineHeight: 1.6 }}>
-            Cadastre seu estabelecimento
-          </p>
-          <div style={{ textAlign: 'left' }}>
-            <div className="feature-item"><div className="feature-icon"><Check size={20} /></div><span>Cadastro completo em minutos</span></div>
-            <div className="feature-item"><div className="feature-icon"><Check size={20} /></div><span>Gerencie suas entregas</span></div>
-            <div className="feature-item"><div className="feature-icon"><Check size={20} /></div><span>Acompanhe em tempo real</span></div>
-          </div>
-        </div>
-      </div>
+      <BrandingSide />
 
       {/* Lado direito - Formulário */}
       <div className="auth-form-panel">
@@ -169,30 +129,7 @@ const ClientRegisterPage = () => {
             </p>
           </div>
 
-          {/* Indicador de progresso */}
-          <div className="step-indicator">
-            {[
-              { num: 1, label: 'Estabelecimento' },
-              { num: 2, label: 'Acesso' },
-              { num: 3, label: 'Endereço' },
-              { num: 4, label: 'Configurações' },
-            ].map((s, i) => (
-              <React.Fragment key={s.num}>
-                <div style={{ textAlign: 'center' }}>
-                  <div className={`step-dot ${step === s.num ? 'active' : step > s.num ? 'completed' : ''}`}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: step === s.num ? '2.5rem' : '2rem', height: '2rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, color: step >= s.num ? 'white' : '#64748b' }}>
-                    {step > s.num ? <Check size={14} /> : s.num}
-                  </div>
-                  <span className="step-label" style={{ fontSize: '0.6875rem', marginTop: '0.375rem', display: 'block', whiteSpace: 'nowrap' }}>
-                    {s.label}
-                  </span>
-                </div>
-                {i < 3 && (
-                  <div style={{ width: '2rem', height: '2px', background: step > s.num ? '#22c55e' : '#e2e8f0', marginBottom: '1.25rem', transition: 'background 0.3s' }} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+          <StepIndicator step={step} />
 
           <div className="auth-form-card">
             <div style={{ minHeight: currentError ? 'auto' : '0' }}>
