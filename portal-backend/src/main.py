@@ -89,6 +89,16 @@ from src.routes.admin_finance import admin_finance_bp
 
 app.register_blueprint(admin_finance_bp, url_prefix='/api/admin')
 
+# Orders routes (extraído de admin.py)
+from src.routes.admin_orders import admin_orders_bp
+
+app.register_blueprint(admin_orders_bp, url_prefix='/api/admin')
+
+# Drivers routes (extraído de admin.py)
+from src.routes.admin_drivers import admin_drivers_bp
+
+app.register_blueprint(admin_drivers_bp, url_prefix='/api/admin')
+
 from src.routes.user import user_bp
 
 app.register_blueprint(user_bp, url_prefix='/api/user')
