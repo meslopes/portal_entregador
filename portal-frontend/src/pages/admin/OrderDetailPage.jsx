@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft, Package, Clock, Bike, CheckCircle, XCircle,
-  MapPin, User, Phone, Store, DollarSign, RefreshCw, AlertCircle, Map
-} from 'lucide-react';
-import api, { adminService, orderService, utils, API_BASE_URL } from '@/lib/api';
+import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
+import api, { adminService, orderService, utils } from '@/lib/api';
 import { showToast } from '@/components/Toast';
+import StatusActions from './order-detail/StatusActions';
+import OrderTimeline from './order-detail/OrderTimeline';
+import OrderInfoCards from './order-detail/OrderInfoCards';
+import EditOrderModal from './order-detail/EditOrderModal';
+import MapModal from './order-detail/MapModal';
 
 const STATUS_CONFIG = {
   SCHEDULED: { color: '#6366f1', bg: '#e0e7ff', text: 'Agendado', icon: '⏰' },
@@ -35,7 +37,7 @@ const OrderDetailPage = () => {
   useEffect(() => {
     loadOrder();
     loadDrivers();
-    const interval = setInterval(loadOrder, 10000); // Atualiza a cada 10s
+    const interval = setInterval(loadOrder, 10000);
     return () => clearInterval(interval);
   }, [orderId]);
 
@@ -67,20 +69,19 @@ const OrderDetailPage = () => {
 
   const handleChangeStatus = async (newStatus) => {
     try {
-      // Se for cancelamento, perguntar sobre estorno ao entregador
       if (newStatus === 'CANCELLED') {
         const hasDriver = order.driver_id || order.establishment_driver_id;
         let refundDriver = false;
         let reason = '';
-        
+
         if (hasDriver) {
           const confirmMsg = 'Deseja estornar o valor ao entregador?\n\n' +
             'Clique "OK" para estornar ou "Cancelar" para apenas cancelar o pedido.';
           refundDriver = window.confirm(confirmMsg);
         }
-        
+
         reason = window.prompt('Motivo do cancelamento (opcional):') || '';
-        
+
         await api.put(`/api/orders/${orderId}/cancel`, {
           refund_driver: refundDriver,
           reason: reason
@@ -123,6 +124,10 @@ const OrderDetailPage = () => {
     setShowEdit(true);
   };
 
+  const handleFormChange = (field, value) => {
+    setEditForm(p => ({ ...p, [field]: value }));
+  };
+
   const hasGeolocation = order && (
     (order.delivery_latitude && order.delivery_longitude) ||
     (order.pickup_latitude && order.pickup_longitude)
@@ -139,42 +144,34 @@ const OrderDetailPage = () => {
 
   const initMap = () => {
     if (!mapRef.current || !window.L) return;
-
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
     }
-
     const L = window.L;
     const map = L.map(mapRef.current);
     mapInstanceRef.current = map;
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-
     const markers = [];
-
     if (order.pickup_latitude && order.pickup_longitude) {
       const pickupMarker = L.marker([order.pickup_latitude, order.pickup_longitude])
         .addTo(map)
         .bindPopup(`<b>Coleta</b><br>${order.restaurant?.name || 'Estabelecimento'}`);
       markers.push(pickupMarker);
     }
-
     if (order.delivery_latitude && order.delivery_longitude) {
       const deliveryMarker = L.marker([order.delivery_latitude, order.delivery_longitude])
         .addTo(map)
         .bindPopup(`<b>Entrega</b><br>${order.delivery_address?.street || 'Endereço de entrega'}`);
       markers.push(deliveryMarker);
     }
-
     if (markers.length > 0) {
       const group = L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.1));
     }
   };
 
-  // Converte datetime UTC para horário local
   const toLocalTime = (dateStr) => {
     if (!dateStr) return null;
     const str = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
@@ -189,16 +186,12 @@ const OrderDetailPage = () => {
   const parseSpecialInstructions = (si) => {
     if (!si) return {};
     const info = {};
-    
-    // Parse JSON se existir
     try {
       const parsed = JSON.parse(si);
       Object.assign(info, parsed);
     } catch {
       // Não é JSON, parse como tags
     }
-    
-    // Parse rejection history
     const rejections = [];
     const reReject = /REJECTED_BY_(\d+)/g;
     let match;
@@ -206,132 +199,90 @@ const OrderDetailPage = () => {
       rejections.push(parseInt(match[1]));
     }
     info.rejections = rejections;
-    
-    // Parse timeout history
     const timeouts = [];
     const reTimeout = /TIMEOUT_BY_(\d+)/g;
     while ((match = reTimeout.exec(si)) !== null) {
       timeouts.push(parseInt(match[1]));
     }
     info.timeouts = timeouts;
-    
-    // Parse current offer (formato: OFFERED_TO_{driver_id}_{timestamp})
     const offerMatch = si.match(/OFFERED_TO_(\d+)(?:_(\d+))?/);
     info.current_offer = offerMatch ? parseInt(offerMatch[1]) : null;
     info.offer_timestamp = offerMatch && offerMatch[2] ? parseInt(offerMatch[2]) : null;
-    
     return info;
-  };
-
-  const getTimeline = () => {
-    if (!order) return [];
-    
-    const timeline = [];
-    const si = parseSpecialInstructions(order.special_instructions);
-    
-    // Pedido criado
-    timeline.push({
-      status: 'CREATED',
-      time: order.created_at,
-      label: 'Pedido criado',
-      detail: `Pedido #${order.order_number}`,
-      icon: '📝',
-      color: '#64748b'
-    });
-    
-    // Agendado
-    if (order.scheduled_at) {
-      timeline.push({
-        status: 'SCHEDULED',
-        time: order.scheduled_at,
-        label: 'Agendado para',
-        detail: `Lançamento programado`,
-        icon: '⏰',
-        color: '#6366f1'
-      });
-    }
-    
-    // Status atual
-    const statusConfig = STATUS_CONFIG[order.status];
-    if (statusConfig) {
-      timeline.push({
-        status: order.status,
-        time: order.updated_at,
-        label: statusConfig.text,
-        detail: getStatusDetail(order, si),
-        icon: statusConfig.icon,
-        color: statusConfig.color,
-        current: true
-      });
-    }
-    
-    // Rejeições
-    if (si.rejections && si.rejections.length > 0) {
-      si.rejections.forEach((driverId, idx) => {
-        const driverName = drivers[driverId] || `Entregador #${driverId}`;
-        timeline.push({
-          status: 'REJECTED',
-          time: null,
-          label: `${driverName} recusou`,
-          detail: `Pedido repassado para próximo entregador`,
-          icon: '❌',
-          color: '#ef4444'
-        });
-      });
-    }
-    
-    // Timeouts
-    if (si.timeouts && si.timeouts.length > 0) {
-      si.timeouts.forEach((driverId, idx) => {
-        const driverName = drivers[driverId] || `Entregador #${driverId}`;
-        timeline.push({
-          status: 'TIMEOUT',
-          time: null,
-          label: `${driverName} não respondeu`,
-          detail: `Timeout - pedido repassado para próximo entregador`,
-          icon: '⏰',
-          color: '#f59e0b'
-        });
-      });
-    }
-    
-    // Oferta atual
-    if (si.current_offer && order.status === 'PENDING') {
-      const driverName = drivers[si.current_offer] || `Entregador #${si.current_offer}`;
-      timeline.push({
-        status: 'OFFERED',
-        time: null,
-        label: `Oferecido para ${driverName}`,
-        detail: 'Aguardando aceite',
-        icon: '📱',
-        color: '#f59e0b'
-      });
-    }
-    
-    return timeline;
   };
 
   const getStatusDetail = (order, si) => {
     switch (order.status) {
-      case 'SCHEDULED':
-        return `Será lançado automaticamente`;
+      case 'SCHEDULED': return 'Será lançado automaticamente';
       case 'PENDING':
         if (si.current_offer) {
           const driverName = drivers[si.current_offer] || `Entregador #${si.current_offer}`;
           return `Oferecido para ${driverName}`;
         }
         return 'Aguardando entregador aceitar';
-      case 'ACCEPTED':
-        return `Aceito por ${order.driver?.user?.first_name || 'entregador'}`;
-      case 'PICKED_UP':
-        return 'Em rota de entrega';
-      case 'DELIVERED':
-        return 'Entrega concluída';
-      case 'CANCELLED':
-        return 'Pedido cancelado';
-      default:
-        return '';
+      case 'ACCEPTED': return `Aceito por ${order.driver?.user?.first_name || 'entregador'}`;
+      case 'PICKED_UP': return 'Em rota de entrega';
+      case 'DELIVERED': return 'Entrega concluída';
+      case 'CANCELLED': return 'Pedido cancelado';
+      default: return '';
     }
+  };
+
+  const getTimeline = () => {
+    if (!order) return [];
+    const timeline = [];
+    const si = parseSpecialInstructions(order.special_instructions);
+
+    timeline.push({
+      status: 'CREATED', time: order.created_at, label: 'Pedido criado',
+      detail: `Pedido #${order.order_number}`, icon: '📝', color: '#64748b'
+    });
+
+    if (order.scheduled_at) {
+      timeline.push({
+        status: 'SCHEDULED', time: order.scheduled_at, label: 'Agendado para',
+        detail: 'Lançamento programado', icon: '⏰', color: '#6366f1'
+      });
+    }
+
+    const statusConfig = STATUS_CONFIG[order.status];
+    if (statusConfig) {
+      timeline.push({
+        status: order.status, time: order.updated_at, label: statusConfig.text,
+        detail: getStatusDetail(order, si), icon: statusConfig.icon,
+        color: statusConfig.color, current: true
+      });
+    }
+
+    if (si.rejections && si.rejections.length > 0) {
+      si.rejections.forEach((driverId) => {
+        const driverName = drivers[driverId] || `Entregador #${driverId}`;
+        timeline.push({
+          status: 'REJECTED', time: null, label: `${driverName} recusou`,
+          detail: 'Pedido repassado para próximo entregador', icon: '❌', color: '#ef4444'
+        });
+      });
+    }
+
+    if (si.timeouts && si.timeouts.length > 0) {
+      si.timeouts.forEach((driverId) => {
+        const driverName = drivers[driverId] || `Entregador #${driverId}`;
+        timeline.push({
+          status: 'TIMEOUT', time: null, label: `${driverName} não respondeu`,
+          detail: 'Timeout - pedido repassado para próximo entregador', icon: '⏰', color: '#f59e0b'
+        });
+      });
+    }
+
+    if (si.current_offer && order.status === 'PENDING') {
+      const driverName = drivers[si.current_offer] || `Entregador #${si.current_offer}`;
+      timeline.push({
+        status: 'OFFERED', time: null, label: `Oferecido para ${driverName}`,
+        detail: 'Aguardando aceite', icon: '📱', color: '#f59e0b'
+      });
+    }
+
+    return timeline;
   };
 
   if (loading) {
@@ -373,313 +324,35 @@ const OrderDetailPage = () => {
             Criado em {formatLocalDateTime(order.created_at)}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button onClick={loadOrder} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: '#64748b' }}>
-            <RefreshCw size={14} /> Atualizar
-          </button>
-        </div>
+        <button onClick={loadOrder} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: '#64748b' }}>
+          <RefreshCw size={14} /> Atualizar
+        </button>
       </div>
 
-      {/* Status atual */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${statusConfig.color || '#64748b'}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-          <span style={{ fontSize: '2rem' }}>{statusConfig.icon}</span>
-          <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: statusConfig.color }}>{statusConfig.text}</h2>
-            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>{getStatusDetail(order, si)}</p>
-          </div>
-        </div>
-        
-        {/* Ações rápidas */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {['SCHEDULED', 'PENDING', 'OFFERED', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status) && (
-            <button onClick={openEditModal} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #2563eb', background: 'white', color: '#2563eb', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-              ✏️ Editar
-            </button>
-          )}
-          <button onClick={handleShowMap} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #059669', background: 'white', color: '#059669', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-            <Map size={14} style={{ marginRight: '0.25rem', verticalAlign: 'middle' }} /> Ver no Mapa
-          </button>
-          {order.status === 'SCHEDULED' && (
-            <button onClick={() => handleChangeStatus('PENDING')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-              🔔 Tocar Agora
-            </button>
-          )}
-          {order.status === 'PENDING' && (
-            <button onClick={() => handleChangeStatus('CANCELLED')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #ef4444', background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '0.8125rem' }}>
-              Cancelar Pedido
-            </button>
-          )}
-          {order.status === 'ACCEPTED' && (
-            <button onClick={() => handleChangeStatus('PREPARING')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#f59e0b', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-              👨‍🍳 Marcar Preparando
-            </button>
-          )}
-          {order.status === 'PREPARING' && (
-            <button onClick={() => handleChangeStatus('READY')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#8b5cf6', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-              📦 Marcar Pronto
-            </button>
-          )}
-          {order.status === 'READY' && (
-            <button onClick={() => handleChangeStatus('PICKED_UP')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-              🏍️ Marcar Coletado
-            </button>
-          )}
-          {order.status === 'PICKED_UP' && (
-            <button onClick={() => handleChangeStatus('DELIVERED')} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#22c55e', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-              ✅ Marcar Entregue
-            </button>
-          )}
-        </div>
-      </div>
+      <StatusActions
+        order={order}
+        statusConfig={statusConfig}
+        statusDetail={getStatusDetail(order, si)}
+        onEdit={openEditModal}
+        onShowMap={handleShowMap}
+        onChangeStatus={handleChangeStatus}
+      />
 
-      {/* Timeline */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', marginBottom: '1rem' }}>Acompanhamento</h3>
-        <div style={{ position: 'relative', paddingLeft: '2rem' }}>
-          {/* Linha vertical */}
-          <div style={{ position: 'absolute', left: '0.75rem', top: 0, bottom: 0, width: '2px', background: '#e2e8f0' }} />
-          
-          {timeline.map((item, idx) => (
-            <div key={idx} style={{ position: 'relative', marginBottom: '1.25rem', paddingBottom: idx < timeline.length - 1 ? '0.25rem' : 0 }}>
-              {/* Ponto na linha */}
-              <div style={{
-                position: 'absolute', left: '-1.5rem', top: '0.25rem',
-                width: '12px', height: '12px', borderRadius: '50%',
-                background: item.current ? item.color : '#e2e8f0',
-                border: item.current ? `2px solid ${item.color}` : '2px solid #cbd5e1',
-                zIndex: 1
-              }} />
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '1rem' }}>{item.icon}</span>
-                    <span style={{ fontWeight: 600, color: item.current ? item.color : '#1e293b', fontSize: '0.875rem' }}>{item.label}</span>
-                    {item.current && (
-                      <span style={{ padding: '0.125rem 0.375rem', borderRadius: '9999px', background: statusConfig.bg, color: statusConfig.color, fontSize: '0.625rem', fontWeight: 600 }}>
-                        ATUAL
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.detail}</p>
-                </div>
-                {item.time && (
-                  <span style={{ color: '#64748b', fontSize: '0.6875rem', whiteSpace: 'nowrap' }}>
-                    {formatLocalDateTime(item.time)}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <OrderTimeline timeline={timeline} statusConfig={statusConfig} formatLocalDateTime={formatLocalDateTime} />
 
-      {/* Detalhes do pedido */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-        {/* Cliente */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <User size={16} /> Cliente
-          </h3>
-          <p style={{ fontWeight: 500, color: '#1e293b' }}>{order.customer?.name || 'N/A'}</p>
-          <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{order.customer?.phone || 'N/A'}</p>
-        </div>
+      <OrderInfoCards order={order} si={si} utils={utils} />
 
-        {/* Estabelecimento */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Store size={16} /> Estabelecimento
-          </h3>
-          <p style={{ fontWeight: 500, color: '#1e293b' }}>{order.restaurant?.name || 'N/A'}</p>
-          <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{order.restaurant?.address || 'N/A'}</p>
-        </div>
-      </div>
+      {showMap && <MapModal order={order} mapRef={mapRef} onClose={() => setShowMap(false)} />}
 
-      {/* Endereço de entrega */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <MapPin size={16} /> Endereço de Entrega
-        </h3>
-        <p style={{ fontWeight: 500, color: '#1e293b' }}>
-          {order.delivery_address?.street}, {order.delivery_address?.neighborhood}
-        </p>
-        <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>
-          {order.delivery_address?.city}/{order.delivery_address?.state}
-        </p>
-      </div>
-
-      {/* Prova de Entrega */}
-      {order.delivery?.proof_of_delivery_url && (
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            📸 Prova de Entrega
-          </h3>
-          <div style={{ borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-            <img
-              src={order.delivery.proof_of_delivery_url.startsWith('http') ? order.delivery.proof_of_delivery_url : `${API_BASE_URL}${order.delivery.proof_of_delivery_url}`}
-              alt="Prova de entrega"
-              style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#f8fafc' }}
-              onError={(e) => { e.target.style.display = 'none'; }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Avaliações */}
-      {(order.delivery?.customer_rating || order.delivery?.driver_rating) && (
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem' }}>
-            ⭐ Avaliações
-          </h3>
-          {order.delivery?.customer_rating && (
-            <div style={{ marginBottom: '0.75rem' }}>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Estabelecimento → Entregador</p>
-              <p style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{'★'.repeat(order.delivery.customer_rating)}{'☆'.repeat(5 - order.delivery.customer_rating)}</p>
-              {order.delivery.customer_feedback && <p style={{ fontSize: '0.8125rem', color: '#475569', marginTop: '0.25rem' }}>"{order.delivery.customer_feedback}"</p>}
-            </div>
-          )}
-          {order.delivery?.driver_rating && (
-            <div>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Entregador → Estabelecimento</p>
-              <p style={{ fontSize: '1.25rem', color: '#f59e0b' }}>{'★'.repeat(order.delivery.driver_rating)}{'☆'.repeat(5 - order.delivery.driver_rating)}</p>
-              {order.delivery.driver_feedback && <p style={{ fontSize: '0.8125rem', color: '#475569', marginTop: '0.25rem' }}>"{order.delivery.driver_feedback}"</p>}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Valores */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <DollarSign size={16} /> Valores
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Frete</p>
-            <p style={{ fontWeight: 600, color: '#1e293b' }}>R$ {parseFloat(order.delivery_fee || 0).toFixed(2).replace('.', ',')}</p>
-          </div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Total</p>
-            <p style={{ fontWeight: 600, color: '#1e293b' }}>R$ {parseFloat(order.total_amount || 0).toFixed(2).replace('.', ',')}</p>
-          </div>
-          {si.product_value && (
-            <div>
-              <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Valor dos Itens (cobrar do cliente)</p>
-              <p style={{ fontWeight: 600, color: '#f59e0b' }}>R$ {parseFloat(si.product_value || 0).toFixed(2).replace('.', ',')}</p>
-            </div>
-          )}
-          <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Pagamento</p>
-            <p style={{ fontWeight: 500, color: '#1e293b' }}>{utils.getStatusText(order.payment_method)}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Entregador */}
-      {order.driver && (
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Bike size={16} /> Entregador
-          </h3>
-          <p style={{ fontWeight: 500, color: '#1e293b' }}>
-            {order.driver.user?.first_name} {order.driver.user?.last_name}
-          </p>
-          <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{order.driver.vehicle_type}</p>
-          {order.driver.user?.phone && (
-            <a
-              href={`https://wa.me/55${order.driver.user.phone.replace(/\D/g, '')}?text=Olá ${order.driver.user?.first_name}, sobre o pedido #${order.order_number}...`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
-                marginTop: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
-                background: '#25d366', color: 'white', fontSize: '0.75rem', fontWeight: 600,
-                textDecoration: 'none', cursor: 'pointer'
-              }}
-            >
-              💬 WhatsApp
-            </a>
-          )}
-        </div>
-      )}
-
-      {/* Informações extras */}
-      {si.distance_km && (
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.75rem' }}>Informações da Entrega</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-            <div>
-              <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Distância</p>
-              <p style={{ fontWeight: 500, color: '#1e293b' }}>{si.distance_km} km</p>
-            </div>
-            {si.price_per_km && (
-              <div>
-                <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Preço por km</p>
-                <p style={{ fontWeight: 500, color: '#1e293b' }}>R$ {parseFloat(si.price_per_km || 0).toFixed(2).replace('.', ',')}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Modal do Mapa */}
-      {showMap && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '800px', height: '80vh', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Pedido #{order?.order_number} - Mapa</h2>
-              <button onClick={() => setShowMap(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.25rem' }}>✕</button>
-            </div>
-            <div ref={mapRef} style={{ flex: 1, minHeight: '400px' }} />
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Edição */}
       {showEdit && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', maxHeight: '90vh', overflow: 'auto' }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Pedido #{order?.order_number}</h2>
-              <button onClick={() => setShowEdit(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>✕</button>
-            </div>
-            <div style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Nome do Cliente</label>
-                <input value={editForm.customer_name} onChange={e => setEditForm(p => ({ ...p, customer_name: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Telefone</label>
-                <input value={editForm.customer_phone} onChange={e => setEditForm(p => ({ ...p, customer_phone: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Endereço</label>
-                <input value={editForm.delivery_address} onChange={e => setEditForm(p => ({ ...p, delivery_address: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Bairro</label>
-                  <input value={editForm.delivery_neighborhood} onChange={e => setEditForm(p => ({ ...p, delivery_neighborhood: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Cidade</label>
-                  <input value={editForm.delivery_city} onChange={e => setEditForm(p => ({ ...p, delivery_city: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }} />
-                </div>
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Observações</label>
-                <textarea value={editForm.special_instructions} onChange={e => setEditForm(p => ({ ...p, special_instructions: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box', resize: 'vertical', minHeight: '60px' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowEdit(false)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>
-                <button onClick={handleEdit} disabled={editLoading} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: editLoading ? 'not-allowed' : 'pointer', opacity: editLoading ? 0.7 : 1 }}>
-                  {editLoading ? 'Salvando...' : 'Salvar Alterações'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <EditOrderModal
+          order={order}
+          editForm={editForm}
+          editLoading={editLoading}
+          onClose={() => setShowEdit(false)}
+          onSave={handleEdit}
+          onFormChange={handleFormChange}
+        />
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
