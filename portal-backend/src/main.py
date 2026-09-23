@@ -99,6 +99,11 @@ from src.routes.admin_drivers import admin_drivers_bp
 
 app.register_blueprint(admin_drivers_bp, url_prefix='/api/admin')
 
+# Establishment drivers routes (extraído de admin.py)
+from src.routes.admin_establishment_drivers import admin_est_drivers_bp
+
+app.register_blueprint(admin_est_drivers_bp, url_prefix='/api/admin')
+
 from src.routes.user import user_bp
 
 app.register_blueprint(user_bp, url_prefix='/api/user')
