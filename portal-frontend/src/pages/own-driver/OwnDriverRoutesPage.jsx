@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Route, ArrowLeft, MapPin, Package, CheckCircle,
-  Navigation, AlertCircle, Bell, Camera, Shield, X, Loader2
-} from 'lucide-react';
+import { Route, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
+import PageHeader from './own-driver-routes/PageHeader';
+import RouteCard from './own-driver-routes/RouteCard';
+import DeliveryConfirmationModal from './own-driver-routes/DeliveryConfirmationModal';
 
 const OwnDriverRoutesPage = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const OwnDriverRoutesPage = () => {
   const audioEnabledRef = useRef(false);
 
   // Estado do modal de entrega via rota
-  const [deliveryModal, setDeliveryModal] = useState(null); // { routeId, stopId, orderId, orderNumber, deliveryCode, pickupCode }
+  const [deliveryModal, setDeliveryModal] = useState(null);
   const [codeInput, setCodeInput] = useState('');
   const [proofPhoto, setProofPhoto] = useState(null);
   const [delivering, setDelivering] = useState(false);
@@ -34,7 +34,7 @@ const OwnDriverRoutesPage = () => {
     };
     document.addEventListener('click', enableAudio, { once: true });
     document.addEventListener('touchstart', enableAudio, { once: true });
-    
+
     return () => {
       document.removeEventListener('click', enableAudio);
       document.removeEventListener('touchstart', enableAudio);
@@ -60,25 +60,23 @@ const OwnDriverRoutesPage = () => {
 
   const playNotification = () => {
     try {
-      // Usar Web Audio API para gerar beep
       if (audioEnabledRef.current && audioContextRef.current) {
         const ctx = audioContextRef.current;
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
-        
-        oscillator.frequency.value = 800; // Frequência do beep
+
+        oscillator.frequency.value = 800;
         oscillator.type = 'sine';
-        
+
         gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        
+
         oscillator.start(ctx.currentTime);
         oscillator.stop(ctx.currentTime + 0.3);
-        
-        // Segundo beep mais agudo
+
         setTimeout(() => {
           const osc2 = ctx.createOscillator();
           const gain2 = ctx.createGain();
@@ -92,8 +90,7 @@ const OwnDriverRoutesPage = () => {
           osc2.stop(ctx.currentTime + 0.3);
         }, 350);
       }
-      
-      // Vibração no celular (se suportado)
+
       if (navigator.vibrate) {
         navigator.vibrate([200, 100, 200, 100, 200]);
       }
@@ -109,7 +106,6 @@ const OwnDriverRoutesPage = () => {
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get('/api/routes/own-driver/active', { headers });
       const allRoutes = res.data.routes || [];
-      // Filtrar rotas onde todas as paradas já foram concluídas
       const activeRoutes = allRoutes.filter(route => {
         if (route.status === 'COMPLETED') return false;
         if (route.stops && route.stops.length > 0) {
@@ -150,7 +146,6 @@ const OwnDriverRoutesPage = () => {
     }
   };
 
-  // Abrir modal de entrega (substitui o antigo completeStop)
   const handleDeliverStop = (routeId, stop) => {
     setDeliveryModal({
       routeId,
@@ -164,7 +159,6 @@ const OwnDriverRoutesPage = () => {
     setProofPhoto(null);
   };
 
-  // Confirmar entrega via fluxo regular (PUT /api/own-driver/orders/{id}/status)
   const confirmDelivery = async () => {
     if (!deliveryModal) return;
     try {
@@ -173,7 +167,6 @@ const OwnDriverRoutesPage = () => {
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Obter localização GPS atual
       let locationData = {};
       try {
         const pos = await new Promise((resolve, reject) => {
@@ -184,7 +177,6 @@ const OwnDriverRoutesPage = () => {
 
       const payload = { status: 'DELIVERED', ...locationData };
 
-      // Código de entrega (se configurado no pedido)
       if (deliveryModal.deliveryCode) {
         if (!codeInput) {
           setError('Informe o código de entrega');
@@ -194,7 +186,6 @@ const OwnDriverRoutesPage = () => {
         payload.delivery_code = codeInput;
       }
 
-      // Foto de prova (se capturada)
       if (proofPhoto) {
         payload.proof_of_delivery = proofPhoto;
       }
@@ -211,7 +202,6 @@ const OwnDriverRoutesPage = () => {
     }
   };
 
-  // Capturar foto de prova de entrega
   const handleTakePhoto = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -228,49 +218,11 @@ const OwnDriverRoutesPage = () => {
     input.click();
   };
 
-  const getStopIcon = (stop) => {
-    if (stop.status === 'COMPLETED') return <CheckCircle size={16} style={{ color: '#16a34a' }} />;
-    if (stop.stop_type === 'PICKUP') return <Package size={16} style={{ color: '#2563eb' }} />;
-    return <MapPin size={16} style={{ color: '#f59e0b' }} />;
-  };
-
-  const getStopLabel = (stop) => {
-    if (stop.stop_type === 'PICKUP') return 'Coleta';
-    return 'Entrega';
-  };
-
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
-      {/* Header */}
-      <header style={{
-        background: pendingCount > 0 
-          ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
-          : 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
-        color: 'white', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
-        transition: 'background 0.3s'
-      }}>
-        <button onClick={() => navigate('/own-driver')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-          <ArrowLeft size={24} />
-        </button>
-        <Route size={20} />
-        <h1 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Minhas Rotas</h1>
-        {pendingCount > 0 && (
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            marginLeft: 'auto', padding: '0.375rem 0.75rem', 
-            borderRadius: '9999px', background: 'rgba(255,255,255,0.25)',
-            animation: 'pulse 1.5s ease-in-out infinite'
-          }}>
-            <Bell size={16} style={{ animation: 'ring 0.5s ease-in-out' }} />
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
-              {pendingCount} rota{pendingCount > 1 ? 's' : ''} aguardando
-            </span>
-          </div>
-        )}
-      </header>
+      <PageHeader pendingCount={pendingCount} onBack={() => navigate('/own-driver')} />
 
       <div style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
-        {/* Erro */}
         {error && (
           <div style={{
             background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
@@ -281,7 +233,6 @@ const OwnDriverRoutesPage = () => {
           </div>
         )}
 
-        {/* Loading */}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
             <div style={{ width: '2rem', height: '2rem', border: '3px solid #e2e8f0', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -301,196 +252,29 @@ const OwnDriverRoutesPage = () => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {routes.map(route => (
-              <div key={route.id} style={{
-                background: 'white', borderRadius: '0.75rem', padding: '1rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-              }}>
-                {/* Header da rota */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <div>
-                    <p style={{ fontWeight: 600, color: '#1e293b' }}>Rota #{route.id}</p>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      {route.stops?.length || 0} paradas
-                      {route.total_distance_km && ` • ${route.total_distance_km.toFixed(1)} km`}
-                      {route.total_duration_min && ` • ~${Math.round(route.total_duration_min)} min`}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.5rem', borderRadius: '9999px',
-                      fontSize: '0.6875rem', fontWeight: 600,
-                      background: route.status === 'ACTIVE' ? '#dbeafe' : route.status === 'PENDING' ? '#fef3c7' : '#dcfce7',
-                      color: route.status === 'ACTIVE' ? '#2563eb' : route.status === 'PENDING' ? '#92400e' : '#16a34a'
-                    }}>
-                      {route.status === 'ACTIVE' ? 'Em andamento' : route.status === 'PENDING' ? 'Aguardando' : 'Concluída'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Botões de aceite/rejeição para rotas pendentes */}
-                {route.status === 'PENDING' && (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <button
-                      onClick={() => acceptRoute(route.id)}
-                      style={{
-                        flex: 1, padding: '0.625rem', borderRadius: '0.5rem',
-                        border: 'none', background: '#16a34a', color: 'white',
-                        fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                      }}
-                    >
-                      ✓ Aceitar Rota
-                    </button>
-                    <button
-                      onClick={() => rejectRoute(route.id)}
-                      style={{
-                        flex: 1, padding: '0.625rem', borderRadius: '0.5rem',
-                        border: '1px solid #ef4444', background: 'white', color: '#ef4444',
-                        fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                      }}
-                    >
-                      ✕ Rejeitar
-                    </button>
-                  </div>
-                )}
-
-                {/* Lista de paradas */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {route.stops?.map((stop, index) => (
-                    <div key={stop.id} style={{
-                      display: 'flex', alignItems: 'center', gap: '0.75rem',
-                      padding: '0.75rem', borderRadius: '0.5rem',
-                      background: stop.status === 'COMPLETED' ? '#f0fdf4' : '#f8fafc',
-                      border: stop.status === 'COMPLETED' ? '1px solid #bbf7d0' : '1px solid #e2e8f0'
-                    }}>
-                      {/* Ícone */}
-                      {getStopIcon(stop)}
-                      
-                      {/* Info */}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: '#1e293b' }}>
-                            {getStopLabel(stop)} #{index + 1}
-                          </span>
-                          <span style={{ fontSize: '0.6875rem', color: '#64748b' }}>
-                            Pedido #{stop.order_number || stop.order_id}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                          {stop.address || 'Endereço não informado'}
-                        </p>
-                      </div>
-
-                      {/* Botão concluir — agora abre modal de entrega com código/foto */}
-                      {stop.status !== 'COMPLETED' && (
-                        <button
-                          onClick={() => handleDeliverStop(route.id, stop)}
-                          style={{
-                            padding: '0.375rem 0.75rem', borderRadius: '0.375rem',
-                            border: 'none', background: '#0d9488', color: 'white',
-                            fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
-                          }}
-                        >
-                          Concluir
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <RouteCard
+                key={route.id}
+                route={route}
+                onAccept={acceptRoute}
+                onReject={rejectRoute}
+                onDeliverStop={handleDeliverStop}
+              />
             ))}
           </div>
         )}
       </div>
 
-      {/* Modal de Confirmação de Entrega via Rota */}
-      {deliveryModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            {/* Header */}
-            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b' }}>
-                Concluir Entrega — Pedido #{deliveryModal.orderNumber}
-              </h3>
-              <button onClick={() => setDeliveryModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div style={{ padding: '1.25rem' }}>
-              {/* Código de entrega (se configurado) */}
-              {deliveryModal.deliveryCode && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <Shield size={16} style={{ color: '#92400e' }} />
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#92400e' }}>Código de Entrega</span>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Informe o código do cliente"
-                    value={codeInput}
-                    onChange={e => setCodeInput(e.target.value)}
-                    maxLength={6}
-                    style={{
-                      width: '100%', padding: '0.75rem', border: '1.5px solid #fde68a',
-                      borderRadius: '0.5rem', fontSize: '1.25rem', textAlign: 'center',
-                      fontFamily: 'monospace', letterSpacing: '0.3em', outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Foto de prova de entrega */}
-              <div style={{ marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.5rem' }}>
-                  Foto de Prova (opcional)
-                </span>
-                {proofPhoto ? (
-                  <div style={{ position: 'relative' }}>
-                    <img src={proofPhoto} alt="Prova" style={{ width: '100%', borderRadius: '0.5rem', maxHeight: '200px', objectFit: 'cover' }} />
-                    <button
-                      onClick={() => setProofPhoto(null)}
-                      style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: '1.75rem', height: '1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                    >
-                      <X size={14} color="white" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleTakePhoto}
-                    style={{
-                      width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                      border: '1.5px dashed #cbd5e1', background: '#f8fafc',
-                      color: '#64748b', cursor: 'pointer', fontSize: '0.8125rem',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                    }}
-                  >
-                    <Camera size={16} /> Tirar Foto
-                  </button>
-                )}
-              </div>
-
-              {/* Botão confirmar */}
-              <button
-                onClick={confirmDelivery}
-                disabled={delivering}
-                style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                  border: 'none', background: delivering ? '#94a3b8' : '#16a34a',
-                  color: 'white', cursor: delivering ? 'not-allowed' : 'pointer',
-                  fontSize: '0.9375rem', fontWeight: 600,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-              >
-                {delivering ? <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite' }} /> : <CheckCircle size={16} />}
-                {delivering ? 'Confirmando...' : 'Confirmar Entrega'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeliveryConfirmationModal
+        deliveryModal={deliveryModal}
+        codeInput={codeInput}
+        onCodeInputChange={setCodeInput}
+        proofPhoto={proofPhoto}
+        onRemovePhoto={() => setProofPhoto(null)}
+        onTakePhoto={handleTakePhoto}
+        onConfirm={confirmDelivery}
+        delivering={delivering}
+        onClose={() => setDeliveryModal(null)}
+      />
 
       <style>{`
         @keyframes pulse {
