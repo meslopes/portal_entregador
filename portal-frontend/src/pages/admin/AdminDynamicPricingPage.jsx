@@ -3,6 +3,7 @@ import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckC
 import { adminService } from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
 import { showToast } from '@/components/Toast';
+import FeeTile from './DynamicPricingFeeTile';
 
 const AdminDynamicPricingPage = () => {
   const { squareId } = useSquare();
@@ -173,62 +174,23 @@ const AdminDynamicPricingPage = () => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
-                {/* Taxa de Chuva */}
-                <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.rainy_day_active ? '#eff6ff' : '#f8fafc', border: `1px solid ${config.rainy_day_active ? '#bfdbfe' : '#e2e8f0'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <CloudRain size={14} color={config.rainy_day_active ? '#2563eb' : '#64748b'} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Taxa de Chuva</span>
-                    </div>
-                    <button onClick={() => toggleActive(config, 'rainy_day_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.rainy_day_active ? '#2563eb' : '#e2e8f0', color: config.rainy_day_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
-                      {config.rainy_day_active ? 'ATIVA' : 'INATIVA'}
-                    </button>
-                  </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.rainy_day_bonus || 0).toFixed(2)}</span>
-                </div>
-
-                {/* Alta Demanda */}
-                <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.high_demand_active ? '#fefce8' : '#f8fafc', border: `1px solid ${config.high_demand_active ? '#fde68a' : '#e2e8f0'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <TrendingUp size={14} color={config.high_demand_active ? '#ca8a04' : '#64748b'} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Alta Demanda</span>
-                    </div>
-                    <button onClick={() => toggleActive(config, 'high_demand_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.high_demand_active ? '#ca8a04' : '#e2e8f0', color: config.high_demand_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
-                      {config.high_demand_active ? 'ATIVA' : 'INATIVA'}
-                    </button>
-                  </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.high_demand_bonus || 0).toFixed(2)}</span>
-                  <span style={{ fontSize: '0.6875rem', color: '#64748b', marginLeft: '0.25rem' }}>({config.high_demand_threshold}+ pedidos)</span>
-                </div>
-
-                {/* Feriado */}
-                <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.holiday_active ? '#fdf2f8' : '#f8fafc', border: `1px solid ${config.holiday_active ? '#fbcfe8' : '#e2e8f0'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <Calendar size={14} color={config.holiday_active ? '#db2777' : '#64748b'} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Feriado</span>
-                    </div>
-                    <button onClick={() => toggleActive(config, 'holiday_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.holiday_active ? '#db2777' : '#e2e8f0', color: config.holiday_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
-                      {config.holiday_active ? 'ATIVA' : 'INATIVA'}
-                    </button>
-                  </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>+R$ {parseFloat(config.holiday_bonus || 0).toFixed(2)}</span>
-                </div>
-
-                {/* Cancelamento */}
-                <div style={{ padding: '0.75rem', borderRadius: '0.5rem', background: config.cancellation_fee_active ? '#fef2f2' : '#f8fafc', border: `1px solid ${config.cancellation_fee_active ? '#fecaca' : '#e2e8f0'}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.375rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <XCircle size={14} color={config.cancellation_fee_active ? '#dc2626' : '#64748b'} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>Cancelamento</span>
-                    </div>
-                    <button onClick={() => toggleActive(config, 'cancellation_fee_active')} style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', border: 'none', background: config.cancellation_fee_active ? '#dc2626' : '#e2e8f0', color: config.cancellation_fee_active ? 'white' : '#64748b', fontSize: '0.6875rem', cursor: 'pointer', fontWeight: 600 }}>
-                      {config.cancellation_fee_active ? 'ATIVA' : 'INATIVA'}
-                    </button>
-                  </div>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' }}>R$ {parseFloat(config.cancellation_fee || 0).toFixed(2)}</span>
-                </div>
+                <FeeTile active={config.rainy_day_active} activeColor="#2563eb" bgActive="#eff6ff" borderActive="#bfdbfe"
+                  icon={CloudRain} label="Taxa de Chuva"
+                  value={`+R$ ${parseFloat(config.rainy_day_bonus || 0).toFixed(2)}`}
+                  onToggle={() => toggleActive(config, 'rainy_day_active')} />
+                <FeeTile active={config.high_demand_active} activeColor="#ca8a04" bgActive="#fefce8" borderActive="#fde68a"
+                  icon={TrendingUp} label="Alta Demanda"
+                  value={`+R$ ${parseFloat(config.high_demand_bonus || 0).toFixed(2)}`}
+                  extra={<span style={{ fontSize: '0.6875rem', color: '#64748b', marginLeft: '0.25rem' }}>({config.high_demand_threshold}+ pedidos)</span>}
+                  onToggle={() => toggleActive(config, 'high_demand_active')} />
+                <FeeTile active={config.holiday_active} activeColor="#db2777" bgActive="#fdf2f8" borderActive="#fbcfe8"
+                  icon={Calendar} label="Feriado"
+                  value={`+R$ ${parseFloat(config.holiday_bonus || 0).toFixed(2)}`}
+                  onToggle={() => toggleActive(config, 'holiday_active')} />
+                <FeeTile active={config.cancellation_fee_active} activeColor="#dc2626" bgActive="#fef2f2" borderActive="#fecaca"
+                  icon={XCircle} label="Cancelamento"
+                  value={`R$ ${parseFloat(config.cancellation_fee || 0).toFixed(2)}`}
+                  onToggle={() => toggleActive(config, 'cancellation_fee_active')} />
               </div>
             </div>
           ))}

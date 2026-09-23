@@ -6,6 +6,7 @@ import {
 import api, { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import TrashModal from '@/components/TrashModal';
+import { FormField, inputStyle, btnPrimary, btnSecondary, pagBtn } from './usersFormShared';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -336,18 +337,6 @@ const AdminUsersPage = () => {
     </div>
   );
 };
-
-const FormField = ({ label, children }) => (
-  <div style={{ marginBottom: '1rem' }}>
-    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>{label}</label>
-    {children}
-  </div>
-);
-
-const inputStyle = { width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' };
-const btnPrimary = { padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' };
-const btnSecondary = { padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', color: '#475569' };
-const pagBtn = (disabled) => ({ padding: '0.5rem 1rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, fontSize: '0.875rem' });
 
 export default AdminUsersPage;
 

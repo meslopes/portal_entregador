@@ -91,8 +91,7 @@ C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Regi
   105:6  warning  React Hook useEffect has missing dependencies: 'detectNearestSquare' and 'searchParams'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\SubscriptionPage.jsx
-  20:10  error    'actionLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                     no-unused-vars
-  33:6   warning  React Hook useEffect has a missing dependency: 'checkUserRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  33:6  warning  React Hook useEffect has a missing dependency: 'checkUserRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\TrackPage.jsx
   28:6  warning  React Hook useEffect has a missing dependency: 'loadTracking'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
@@ -105,17 +104,16 @@ C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\acti
   179:49  warning  The ref value 'videoRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'videoRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminDashboardPage.jsx
-    1:1   error    File too large (372 lines | max 350).
+    1:1  error    File too large (372 lines | max 350).
 
 Refactor into smaller, focused units:
   - Business logic -> domain service or use-case module
   - Repeated UI blocks -> reusable sub-component
   - Data access code -> repository or adapter
   - Helper clusters -> domain-specific utility module  quality/max-lines
-   49:52  error    'err' is not defined                                                                                                                                                                                                                                                                       no-undef
-  238:6   warning  React Hook useEffect has missing dependencies: 'loadDashboard', 'loadOrders', and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                       react-hooks/exhaustive-deps
-  254:6   warning  React Hook useEffect has missing dependencies: 'loadDashboard', 'loadOrders', and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                       react-hooks/exhaustive-deps
-  262:6   warning  React Hook useEffect has missing dependencies: 'loadOrders' and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                                         react-hooks/exhaustive-deps
+  238:6  warning  React Hook useEffect has missing dependencies: 'loadDashboard', 'loadOrders', and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                       react-hooks/exhaustive-deps
+  254:6  warning  React Hook useEffect has missing dependencies: 'loadDashboard', 'loadOrders', and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                       react-hooks/exhaustive-deps
+  262:6  warning  React Hook useEffect has missing dependencies: 'loadOrders' and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                                         react-hooks/exhaustive-deps
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminDriversPage.jsx
   48:131  warning  React Hook useEffect has missing dependencies: 'isSuperAdmin', 'loadDrivers', and 'loadEstablishments'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
@@ -216,8 +214,6 @@ C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clie
   18:38  warning  React Hook useEffect has a missing dependency: 'loadOrders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\OwnDriverFinancialPage.jsx
-  21:10  error    'paymentConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
-  22:10  error    'editingConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
   39:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\OwnDriverMetricsPage.jsx
@@ -245,7 +241,6 @@ C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\driv
   15:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\driver\PlatformDriverDashboardPage.jsx
-  31:10  error    'error' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
   33:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\driver\PlatformDriverRoutesPage.jsx
@@ -273,5 +268,5 @@ C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-
    4:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
   10:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
 
-✖ 98 problems (14 errors, 84 warnings)
+✖ 93 problems (9 errors, 84 warnings)
 
