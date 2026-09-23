@@ -41,7 +41,7 @@ const OwnDriverDeliveryPage = () => {
       } else {
         setError('Pedido não encontrado');
       }
-    } catch (err) {
+    } catch {
       setError('Erro ao carregar pedido');
     } finally {
       setLoading(false);
@@ -75,7 +75,7 @@ const OwnDriverDeliveryPage = () => {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude
         };
-      } catch (e) {
+      } catch {
         // Sem localização
       }
 

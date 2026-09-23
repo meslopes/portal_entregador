@@ -37,7 +37,7 @@ const tryIncreaseVolume = () => {
       tempOsc.start();
       tempOsc.stop(audioContext.currentTime + 0.01);
     }
-  } catch (e) {
+  } catch {
     // Silencioso - nao falha o sistema
   }
 };
@@ -50,7 +50,7 @@ export const stopSiren = () => {
     sirenInterval = null;
   }
   sirenOscillators.forEach(osc => {
-    try { osc.stop(); } catch (e) {}
+    try { osc.stop(); } catch { /* intentionally empty */ }
   });
   sirenOscillators = [];
 };
@@ -182,7 +182,7 @@ export const startOrderMonitor = (onNewOrders) => {
         try {
           const user = JSON.parse(userStr);
           if (user.user_type === 'DRIVER') return;
-        } catch (e) { /* ignore parse error */ }
+        } catch { /* ignore parse error */ }
       }
 
       const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
@@ -217,7 +217,7 @@ export const startOrderMonitor = (onNewOrders) => {
       }
 
       previousOrderCount = currentCount;
-    } catch (e) {
+    } catch {
       // Silencioso - nao perturbar o usuario
     }
   };

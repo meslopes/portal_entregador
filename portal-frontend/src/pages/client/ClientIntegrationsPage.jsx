@@ -68,7 +68,7 @@ const ClientIntegrationsPage = () => {
       await api.put('/api/admin/settings', payload);
       setSuccess('Integrações salvas com sucesso!');
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
+    } catch {
       setError('Erro ao salvar');
     } finally {
       setSaving(false);

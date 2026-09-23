@@ -26,7 +26,7 @@ export default function MapSection({
   const mapCallbackRef = useCallback((node) => {
     if (!node) {
       if (mapInstanceRef.current) {
-        try { mapInstanceRef.current.remove(); } catch (e) {}
+        try { mapInstanceRef.current.remove(); } catch { /* intentionally empty */ }
         mapInstanceRef.current = null;
         markersRef.current = [];
       }
@@ -37,7 +37,7 @@ export default function MapSection({
     const initMap = () => {
       if (!node || !window.L) return;
       if (mapInstanceRef.current) {
-        try { mapInstanceRef.current.remove(); } catch (e) {}
+        try { mapInstanceRef.current.remove(); } catch { /* intentionally empty */ }
         mapInstanceRef.current = null;
         markersRef.current = [];
       }

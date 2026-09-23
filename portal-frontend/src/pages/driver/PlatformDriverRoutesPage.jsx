@@ -11,7 +11,6 @@ const PlatformDriverRoutesPage = () => {
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedRoute, setSelectedRoute] = useState(null);
   const prevPendingCount = useRef(0);
   const audioContextRef = useRef(null);
   const audioEnabledRef = useRef(false);
@@ -22,7 +21,7 @@ const PlatformDriverRoutesPage = () => {
       try {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
         audioEnabledRef.current = true;
-      } catch (e) {}
+      } catch { /* intentionally empty */ }
       document.removeEventListener('click', enableAudio);
       document.removeEventListener('touchstart', enableAudio);
     };
@@ -83,7 +82,7 @@ const PlatformDriverRoutesPage = () => {
           osc2.stop(ctx.currentTime + 0.3);
         }, 200);
       }
-    } catch (e) {}
+    } catch { /* intentionally empty */ }
   };
 
   const loadRoutes = async (isRefresh = false) => {
@@ -217,7 +216,7 @@ const PlatformDriverRoutesPage = () => {
 
                   {/* Preview das paradas */}
                   <div style={{ marginBottom: '0.75rem' }}>
-                    {route.stops?.slice(0, 3).map((stop, idx) => (
+                    {route.stops?.slice(0, 3).map((stop) => (
                       <div key={stop.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.25rem 0', fontSize: '0.8125rem', color: '#64748b' }}>
                         {getStopIcon(stop)}
                         <span style={{ fontSize: '0.625rem', padding: '0.125rem 0.25rem', borderRadius: '4px', background: stop.stop_type === 'PICKUP' ? '#fef3c7' : '#dbeafe', color: stop.stop_type === 'PICKUP' ? '#92400e' : '#1d4ed8' }}>

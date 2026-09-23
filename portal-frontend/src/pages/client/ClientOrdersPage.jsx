@@ -13,7 +13,6 @@ const ClientOrdersPage = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => { loadOrders(); }, [page, filter]);
@@ -24,7 +23,6 @@ const ClientOrdersPage = () => {
       const data = await orderService.getMyOrders(page, 15, filter);
       setOrders(data.orders || []);
       setTotalPages(data.pages || 1);
-      setTotal(data.total || 0);
     } catch (err) {
       setError('Erro ao carregar pedidos');
       console.error(err);

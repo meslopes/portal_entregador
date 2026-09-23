@@ -76,7 +76,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
     try {
       const data = await adminService.getPricingTables(sqId);
       setPricingTables(data.pricing_tables || []);
-    } catch (e) { setPricingTables([]); }
+    } catch { setPricingTables([]); }
   };
 
   useEffect(() => {
@@ -176,7 +176,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
       setFormData(prev => ({ ...prev, latitude: res.data.latitude, longitude: res.data.longitude }));
       setFormError('');
       showToast('Geocodificação realizada com sucesso!', 'success');
-    } catch (e) {
+    } catch {
       showToast('Erro ao geocodificar', 'error');
     }
   };

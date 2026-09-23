@@ -3,7 +3,7 @@ import {
   Users, Search, Plus, Edit, Trash2, AlertCircle, X,
   Bike, Store, Shield, Mail, Phone, CheckCircle
 } from 'lucide-react';
-import api, { adminService, utils } from '@/lib/api';
+import api, { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import TrashModal from '@/components/TrashModal';
 
@@ -26,7 +26,6 @@ const AdminUsersPage = () => {
   // Modais
   const [showForm, setShowForm] = useState(false);
   const [showEdit, setShowEdit] = useState(null);
-  const [showDetails, setShowDetails] = useState(null);
   const [showTrash, setShowTrash] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: 'admin123', first_name: '', last_name: '', tenant_id: '' });
   const [editData, setEditData] = useState({});

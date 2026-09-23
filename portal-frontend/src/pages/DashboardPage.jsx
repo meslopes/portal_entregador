@@ -29,7 +29,7 @@ const DashboardPage = () => {
       try {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
         audioEnabledRef.current = true;
-      } catch (e) {}
+      } catch { /* intentionally empty */ }
       document.removeEventListener('click', enableAudio);
       document.removeEventListener('touchstart', enableAudio);
     };
@@ -53,7 +53,7 @@ const DashboardPage = () => {
         }
         prevPendingRoutes.current = pending;
         setPendingRoutes(pending);
-      } catch (e) { /* Silenciar erro de polling */ }
+      } catch { /* Silenciar erro de polling */ }
     };
     checkRoutes();
     const interval = setInterval(checkRoutes, 20000);
@@ -88,7 +88,7 @@ const DashboardPage = () => {
         }, 350);
       }
       if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
-    } catch (e) {}
+    } catch { /* intentionally empty */ }
   };
 
   useEffect(() => {
@@ -209,7 +209,7 @@ const DashboardPage = () => {
           setIsOnline(true);
           updateUser({ ...user, driver: response.driver });
           setError('');
-        } catch (locErr) {
+        } catch {
           const fallbackLat = user?.driver?.square?.latitude || -29.9150;
           const fallbackLng = user?.driver?.square?.longitude || -51.1780;
           console.warn('GPS indisponível, usando localização padrão da praça:', fallbackLat, fallbackLng);
@@ -229,7 +229,7 @@ const DashboardPage = () => {
       setIsOnline(newStatus);
       updateUser({ ...user, driver: response.driver });
       setError('');
-    } catch (error) {
+    } catch {
       setError('Erro ao alterar status');
     }
   };

@@ -55,7 +55,7 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const { orderId, type, url } = event.notification.data || {};
+  const { orderId, url } = event.notification.data || {};
 
   // Abrir ou focar no app
   event.waitUntil(

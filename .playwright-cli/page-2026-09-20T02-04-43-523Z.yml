@@ -1,0 +1,70 @@
+- generic [ref=f18e65]:
+  - banner [ref=f18e66]:
+    - generic [ref=f18e68]:
+      - link "Litoral Entregas Litoral Entregas" [ref=f18e69] [cursor=pointer]:
+        - /url: /admin
+        - img "Litoral Entregas" [ref=f18e70]
+        - generic [ref=f18e71]: Litoral Entregas
+      - generic [ref=f18e72]:
+        - button "Atualizar dados" [ref=f18e73] [cursor=pointer]
+        - button "Notificações (50 não lidas)" [ref=f18e80] [cursor=pointer]:
+          - generic [ref=f18e84]: 9+
+        - button "EL" [ref=f18e85] [cursor=pointer]
+        - button "Abrir menu" [ref=f18e90] [cursor=pointer]
+  - main [ref=f18e92]:
+    - generic [ref=f18e93]:
+      - button [ref=f18e94] [cursor=pointer]
+      - generic [ref=f18e97]:
+        - generic [ref=f18e98]:
+          - generic [ref=f18e99]:
+            - generic [ref=f18e103]: Mapa em Tempo Real
+            - generic [ref=f18e104]: 6 entregadores | 3 estabelecimentos
+            - generic [ref=f18e105]: "Atualizado: 23:04:42"
+          - combobox [ref=f18e107]:
+            - option "Todas as Praças" [selected]
+            - option "CAPAO"
+            - option "TRAMANDAÍ"
+        - generic [ref=f18e108]:
+          - generic [ref=f18e109]:
+            - generic:
+              - generic:
+                - button [ref=f18e110] [cursor=pointer]
+                - button [ref=f18e114] [cursor=pointer]
+                - button [ref=f18e118] [cursor=pointer]
+                - button [ref=f18e122] [cursor=pointer]
+                - button [ref=f18e126] [cursor=pointer]
+                - button [ref=f18e130] [cursor=pointer]
+                - button [ref=f18e134] [cursor=pointer]
+                - button [ref=f18e138] [cursor=pointer]
+                - button [ref=f18e142] [cursor=pointer]
+                - button [ref=f18e146] [cursor=pointer]
+                - button [ref=f18e150] [cursor=pointer]
+                - button [ref=f18e154] [cursor=pointer]
+                - button [ref=f18e158] [cursor=pointer]
+                - button [ref=f18e162] [cursor=pointer]
+                - button [ref=f18e166] [cursor=pointer]
+            - generic:
+              - generic [ref=f18e170]:
+                - button "Zoom in" [ref=f18e171] [cursor=pointer]: +
+                - button "Zoom out" [ref=f18e172] [cursor=pointer]: −
+              - generic [ref=f18e173]:
+                - link "Leaflet" [ref=f18e174] [cursor=pointer]:
+                  - /url: https://leafletjs.com
+                - text: "| © OpenStreetMap"
+          - button "Centralizar Mapa" [ref=f18e179] [cursor=pointer]
+          - generic [ref=f18e182]:
+            - generic [ref=f18e183]: Legenda
+            - generic [ref=f18e184]:
+              - generic [ref=f18e185]: Entregador em entrega
+              - generic [ref=f18e188]: Entregador livre
+              - generic [ref=f18e191]: Estabelecimento
+              - generic [ref=f18e194]: Local de entrega
+        - generic [ref=f18e197]:
+          - generic [ref=f18e198]: © 2026 muv.log — Controle de Entregadores
+          - generic [ref=f18e200]:
+            - link "Suporte" [ref=f18e201] [cursor=pointer]:
+              - /url: /support
+            - link "Termos" [ref=f18e202] [cursor=pointer]:
+              - /url: /terms
+            - link "Privacidade" [ref=f18e203] [cursor=pointer]:
+              - /url: /privacy

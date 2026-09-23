@@ -66,7 +66,7 @@ const OrderOfferPopup = () => {
           });
         }, 1000);
       }
-    } catch (err) {
+    } catch {
       // Silencioso
     }
   };

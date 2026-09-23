@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const formatDate = (date) => {

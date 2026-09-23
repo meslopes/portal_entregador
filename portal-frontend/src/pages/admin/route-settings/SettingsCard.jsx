@@ -1,6 +1,8 @@
 import React from 'react';
 
-const SettingsCard = ({ icon: Icon, iconColor, title, subtitle, children }) => (
+const SettingsCard = (props) => {
+  const { icon: Icon, iconColor, title, subtitle, children } = props;
+  return (
   <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem', overflow: 'hidden' }}>
     <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
       <Icon size={20} style={{ color: iconColor }} />
@@ -13,6 +15,7 @@ const SettingsCard = ({ icon: Icon, iconColor, title, subtitle, children }) => (
       {children}
     </div>
   </div>
-);
+  );
+};
 
 export default SettingsCard;

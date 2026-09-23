@@ -14,11 +14,12 @@ const OwnDriverFinancialPage = () => {
   const [success, setSuccess] = useState('');
   
   // Dados
-  const [paymentConfig, setPaymentConfig] = useState(null);
   const [earnings, setEarnings] = useState([]);
   const [summary, setSummary] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [comparison, setComparison] = useState(null);
+  const [_paymentConfig, setPaymentConfig] = useState(null);
+  const [_editingConfig, setEditingConfig] = useState(false);
   
   // Filtros
   const [period, setPeriod] = useState('week');
@@ -26,7 +27,6 @@ const OwnDriverFinancialPage = () => {
   const [paidFilter, setPaidFilter] = useState('');
   
   // Edição
-  const [editingConfig, setEditingConfig] = useState(false);
   const [configForm, setConfigForm] = useState({
     payment_type: 'PER_DELIVERY',
     fixed_value: 5.00,
@@ -126,7 +126,7 @@ const OwnDriverFinancialPage = () => {
       setEditingConfig(false);
       setSuccess('Configuração salva!');
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
+    } catch {
       setError('Erro ao salvar configuração');
     }
   };
@@ -139,7 +139,7 @@ const OwnDriverFinancialPage = () => {
       loadEarnings();
       setSuccess('Pagamento registrado!');
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
+    } catch {
       setError('Erro ao registrar pagamento');
     }
   };
@@ -154,7 +154,7 @@ const OwnDriverFinancialPage = () => {
       loadEarnings();
       setSuccess(`${res.data.count} pagamentos registrados! Total: R$ ${(res.data.total_paid || 0).toFixed(2)}`);
       setTimeout(() => setSuccess(''), 5000);
-    } catch (err) {
+    } catch {
       setError('Erro ao registrar pagamentos');
     }
   };

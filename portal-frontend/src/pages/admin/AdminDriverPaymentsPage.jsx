@@ -3,7 +3,7 @@ import {
   CreditCard, Users, DollarSign, AlertCircle, CheckCircle,
   Star, Bike, Phone, Mail, Send, Filter
 } from 'lucide-react';
-import api, { adminService, utils } from '@/lib/api';
+import api, { utils } from '@/lib/api';
 import { showToast } from '@/components/Toast';
 
 const AdminDriverPaymentsPage = () => {

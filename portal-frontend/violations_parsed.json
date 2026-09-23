@@ -1,0 +1,1082 @@
+[
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 84,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 140,
+    "col": 26,
+    "msg": "'x' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 152,
+    "col": 20,
+    "msg": "'x' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 415,
+    "col": 22,
+    "msg": "'_err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 2991,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3158,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3346,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3706,
+    "col": 15,
+    "msg": "'isCancel2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3709,
+    "col": 10,
+    "msg": "'all2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3711,
+    "col": 19,
+    "msg": "'isAxiosError2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3712,
+    "col": 13,
+    "msg": "'spread2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3713,
+    "col": 17,
+    "msg": "'toFormData2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3716,
+    "col": 5,
+    "msg": "'formToJSON' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3717,
+    "col": 5,
+    "msg": "'getAdapter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 3718,
+    "col": 18,
+    "msg": "'mergeConfig2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 4135,
+    "col": 12,
+    "msg": "'total' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\ClientOrdersPage.js",
+    "line": 4229,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 84,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 140,
+    "col": 26,
+    "msg": "'x' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 152,
+    "col": 20,
+    "msg": "'x' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 415,
+    "col": 22,
+    "msg": "'_err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 1012,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 1418,
+    "col": 7,
+    "msg": "'validMutationMethods' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 1425,
+    "col": 7,
+    "msg": "'validRequestMethods' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 1729,
+    "col": 80,
+    "msg": "'future' is assigned a value but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 2041,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 2268,
+    "col": 7,
+    "msg": "'objectProtoNames' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 2509,
+    "col": 12,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 2571,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 2988,
+    "col": 18,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 4998,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5165,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5353,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5713,
+    "col": 15,
+    "msg": "'isCancel2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5716,
+    "col": 10,
+    "msg": "'all2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5718,
+    "col": 19,
+    "msg": "'isAxiosError2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5719,
+    "col": 13,
+    "msg": "'spread2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5720,
+    "col": 17,
+    "msg": "'toFormData2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5723,
+    "col": 5,
+    "msg": "'formToJSON' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5724,
+    "col": 5,
+    "msg": "'getAdapter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 5725,
+    "col": 18,
+    "msg": "'mergeConfig2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 6426,
+    "col": 43,
+    "msg": "'idx' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\OrderDetailPage.js",
+    "line": 6439,
+    "col": 41,
+    "msg": "'idx' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 84,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 140,
+    "col": 26,
+    "msg": "'x' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 152,
+    "col": 20,
+    "msg": "'x' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 415,
+    "col": 22,
+    "msg": "'_err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 1012,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 1418,
+    "col": 7,
+    "msg": "'validMutationMethods' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 1425,
+    "col": 7,
+    "msg": "'validRequestMethods' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 1724,
+    "col": 80,
+    "msg": "'future' is assigned a value but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 2036,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 2263,
+    "col": 7,
+    "msg": "'objectProtoNames' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 2504,
+    "col": 12,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 2566,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 2983,
+    "col": 18,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5056,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5223,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5411,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5771,
+    "col": 15,
+    "msg": "'isCancel2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5774,
+    "col": 10,
+    "msg": "'all2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5776,
+    "col": 19,
+    "msg": "'isAxiosError2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5777,
+    "col": 13,
+    "msg": "'spread2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5778,
+    "col": 17,
+    "msg": "'toFormData2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5781,
+    "col": 5,
+    "msg": "'formToJSON' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5782,
+    "col": 5,
+    "msg": "'getAdapter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5783,
+    "col": 18,
+    "msg": "'mergeConfig2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5840,
+    "col": 11,
+    "msg": "'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5950,
+    "col": 16,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\dev\\null\\PlatformDashboardPage.js",
+    "line": 5959,
+    "col": 16,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\public\\firebase-messaging-sw.js",
+    "line": 58,
+    "col": 20,
+    "msg": "'type' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\public\\sw.js",
+    "line": 7,
+    "col": 35,
+    "msg": "'event' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\ClientLayout.jsx",
+    "line": 30,
+    "col": 16,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\ClientLayout.jsx",
+    "line": 39,
+    "col": 9,
+    "msg": "'isClient' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\DateRangeFilter.jsx",
+    "line": 1,
+    "col": 27,
+    "msg": "'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\NotificationBell.jsx",
+    "line": 10,
+    "col": 10,
+    "msg": "'isLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\NotificationBell.jsx",
+    "line": 10,
+    "col": 21,
+    "msg": "'setIsLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\NotificationBell.jsx",
+    "line": 51,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\NotificationBell.jsx",
+    "line": 66,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\NotificationBell.jsx",
+    "line": 86,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\OrderOfferPopup.jsx",
+    "line": 69,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\OwnDriverProtectedRoute.jsx",
+    "line": 28,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\TrashModal.jsx",
+    "line": 27,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\components\\TrashModal.jsx",
+    "line": 80,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\contexts\\AuthContext.jsx",
+    "line": 107,
+    "col": 16,
+    "msg": "'error' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\contexts\\AuthContext.jsx",
+    "line": 150,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\contexts\\SquareContext.jsx",
+    "line": 40,
+    "col": 16,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\lib\\notify.js",
+    "line": 40,
+    "col": 12,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\lib\\notify.js",
+    "line": 53,
+    "col": 32,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\lib\\notify.js",
+    "line": 185,
+    "col": 18,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\lib\\notify.js",
+    "line": 220,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DashboardPage.jsx",
+    "line": 32,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DashboardPage.jsx",
+    "line": 56,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DashboardPage.jsx",
+    "line": 91,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DashboardPage.jsx",
+    "line": 212,
+    "col": 18,
+    "msg": "'locErr' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DashboardPage.jsx",
+    "line": 232,
+    "col": 14,
+    "msg": "'error' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DriverRankingPage.jsx",
+    "line": 27,
+    "col": 10,
+    "msg": "'error' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DriverRankingPage.jsx",
+    "line": 67,
+    "col": 9,
+    "msg": "'getScoreColor' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DriverRouteMap.jsx",
+    "line": 4,
+    "col": 24,
+    "msg": "'utils' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\DriverRouteMap.jsx",
+    "line": 199,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\LoginPage.jsx",
+    "line": 15,
+    "col": 9,
+    "msg": "'from' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\LoginPage.jsx",
+    "line": 30,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\RegisterPage.jsx",
+    "line": 31,
+    "col": 11,
+    "msg": "'register' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\RegisterPage.jsx",
+    "line": 75,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\RegisterPage.jsx",
+    "line": 208,
+    "col": 15,
+    "msg": "'confirmPassword' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\SubscriptionPage.jsx",
+    "line": 20,
+    "col": 10,
+    "msg": "'actionLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\TrackPage.jsx",
+    "line": 35,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\WalletPage.jsx",
+    "line": 24,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\active-delivery\\CodeModal.jsx",
+    "line": 6,
+    "col": 3,
+    "msg": "'order' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\active-delivery\\CodeModal.jsx",
+    "line": 6,
+    "col": 10,
+    "msg": "'proofPhoto' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDashboardPage.jsx",
+    "line": 13,
+    "col": 11,
+    "msg": "'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDashboardPage.jsx",
+    "line": 17,
+    "col": 10,
+    "msg": "'dashboard' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDashboardPage.jsx",
+    "line": 91,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDashboardPage.jsx",
+    "line": 162,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDriverPaymentsPage.jsx",
+    "line": 6,
+    "col": 15,
+    "msg": "'adminService' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDriversPage.jsx",
+    "line": 32,
+    "col": 10,
+    "msg": "'dateRange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDriversPage.jsx",
+    "line": 32,
+    "col": 21,
+    "msg": "'setDateRange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDriversPage.jsx",
+    "line": 71,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDriversPage.jsx",
+    "line": 155,
+    "col": 130,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDriversPage.jsx",
+    "line": 156,
+    "col": 140,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminDriversPage.jsx",
+    "line": 157,
+    "col": 178,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminEstablishmentsPage.jsx",
+    "line": 41,
+    "col": 98,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminEstablishmentsPage.jsx",
+    "line": 45,
+    "col": 105,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminEstablishmentsPage.jsx",
+    "line": 52,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminEstablishmentsPage.jsx",
+    "line": 133,
+    "col": 12,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminEstablishmentsPage.jsx",
+    "line": 138,
+    "col": 12,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminFinancePage.jsx",
+    "line": 18,
+    "col": 10,
+    "msg": "'period' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminFinancePage.jsx",
+    "line": 18,
+    "col": 18,
+    "msg": "'setPeriod' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminOrdersPage.jsx",
+    "line": 11,
+    "col": 24,
+    "msg": "'getStatusLabel' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminPricingPage.jsx",
+    "line": 31,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminReportsPage.jsx",
+    "line": 230,
+    "col": 19,
+    "msg": "'i' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminUsersPage.jsx",
+    "line": 6,
+    "col": 29,
+    "msg": "'utils' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminUsersPage.jsx",
+    "line": 29,
+    "col": 10,
+    "msg": "'showDetails' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminUsersPage.jsx",
+    "line": 29,
+    "col": 23,
+    "msg": "'setShowDetails' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\AdminWithdrawalsPage.jsx",
+    "line": 18,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\PlatformDashboardPage.jsx",
+    "line": 27,
+    "col": 10,
+    "msg": "'squares' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\PlatformDashboardPage.jsx",
+    "line": 143,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\PlatformDashboardPage.jsx",
+    "line": 153,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\dashboard-tabs\\MapSection.jsx",
+    "line": 29,
+    "col": 57,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\dashboard-tabs\\MapSection.jsx",
+    "line": 40,
+    "col": 57,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\establishments\\EstablishmentDetails.jsx",
+    "line": 19,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\establishments\\EstablishmentForm.jsx",
+    "line": 79,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\establishments\\EstablishmentForm.jsx",
+    "line": 179,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\establishments\\ui.jsx",
+    "line": 3,
+    "col": 35,
+    "msg": "'onClose' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\reports\\RatingsReport.jsx",
+    "line": 18,
+    "col": 31,
+    "msg": "'i' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\route-settings\\SettingsCard.jsx",
+    "line": 3,
+    "col": 31,
+    "msg": "'Icon' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\admin\\white-label\\SectionCard.jsx",
+    "line": 3,
+    "col": 30,
+    "msg": "'Icon' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\ClientDashboardPage.jsx",
+    "line": 73,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\ClientIntegrationsPage.jsx",
+    "line": 71,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\ClientLoginPage.jsx",
+    "line": 32,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\ClientOrdersPage.jsx",
+    "line": 16,
+    "col": 10,
+    "msg": "'total' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\ClientRegisterPage.jsx",
+    "line": 97,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\NewOrderPage.jsx",
+    "line": 30,
+    "col": 10,
+    "msg": "'mapInitialized' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\OwnDriverFinancialPage.jsx",
+    "line": 17,
+    "col": 10,
+    "msg": "'paymentConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\OwnDriverFinancialPage.jsx",
+    "line": 29,
+    "col": 10,
+    "msg": "'editingConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\OwnDriverFinancialPage.jsx",
+    "line": 129,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\OwnDriverFinancialPage.jsx",
+    "line": 142,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\OwnDriverFinancialPage.jsx",
+    "line": 157,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\client-dashboard\\OrderDetailsModal.jsx",
+    "line": 22,
+    "col": 12,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\client-dashboard\\OrderDetailsModal.jsx",
+    "line": 48,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\client\\client-orders\\order-detail\\OrderInfoSection.jsx",
+    "line": 33,
+    "col": 104,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\driver-profile\\shared.jsx",
+    "line": 35,
+    "col": 33,
+    "msg": "'label' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\driver\\PlatformDriverDashboardPage.jsx",
+    "line": 31,
+    "col": 10,
+    "msg": "'error' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\driver\\PlatformDriverRoutesPage.jsx",
+    "line": 14,
+    "col": 10,
+    "msg": "'selectedRoute' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\driver\\PlatformDriverRoutesPage.jsx",
+    "line": 14,
+    "col": 25,
+    "msg": "'setSelectedRoute' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\driver\\PlatformDriverRoutesPage.jsx",
+    "line": 25,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\driver\\PlatformDriverRoutesPage.jsx",
+    "line": 86,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\driver\\PlatformDriverRoutesPage.jsx",
+    "line": 220,
+    "col": 58,
+    "msg": "'idx' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\orders\\OrderCard.jsx",
+    "line": 84,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverDashboardPage.jsx",
+    "line": 31,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverDashboardPage.jsx",
+    "line": 97,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverDashboardPage.jsx",
+    "line": 117,
+    "col": 20,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverDashboardPage.jsx",
+    "line": 186,
+    "col": 69,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverDashboardPage.jsx",
+    "line": 216,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverDeliveryPage.jsx",
+    "line": 44,
+    "col": 14,
+    "msg": "'err' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverDeliveryPage.jsx",
+    "line": 78,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverOrdersPage.jsx",
+    "line": 7,
+    "col": 10,
+    "msg": "'utils' is defined but never used. Allowed unused vars must match /^[A-Z_]/u."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverRoutesPage.jsx",
+    "line": 31,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverRoutesPage.jsx",
+    "line": 97,
+    "col": 14,
+    "msg": "'e' is defined but never used."
+  },
+  {
+    "file": "C:\\Users\\Dell\\portal_entregador\\portal_entregador\\portal-frontend\\src\\pages\\own-driver\\OwnDriverRoutesPage.jsx",
+    "line": 176,
+    "col": 16,
+    "msg": "'e' is defined but never used."
+  }
+]

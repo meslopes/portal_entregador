@@ -27,7 +27,7 @@ const ClientLayout = ({ children }) => {
       try {
         const res = await api.get('/api/user/profile');
         setHasOwnDrivers(res.data.has_own_drivers || false);
-      } catch (err) {
+      } catch {
         // Silencia erro - assume false
       }
     };
@@ -36,7 +36,6 @@ const ClientLayout = ({ children }) => {
 
   const isAdmin = user?.user_type === 'ADMIN';
   const isSuperAdmin = isAdmin && user?.is_super_admin;
-  const isClient = user?.user_type === 'CLIENT';
 
   const handleLogout = () => {
     logout();

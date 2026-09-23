@@ -1,0 +1,86 @@
+- generic [ref=f1e63]:
+  - banner [ref=f1e64]:
+    - generic [ref=f1e66]:
+      - link "muv.log muv.log Platform" [ref=f1e67] [cursor=pointer]:
+        - /url: /platform
+        - img "muv.log" [ref=f1e68]
+        - generic [ref=f1e69]: muv.log Platform
+      - navigation [ref=f1e70]:
+        - link "Dashboard" [ref=f1e71] [cursor=pointer]:
+          - /url: /platform
+      - generic [ref=f1e77]:
+        - button "Notificações" [ref=f1e79] [cursor=pointer]
+        - button "ML" [ref=f1e83] [cursor=pointer]
+  - main [ref=f1e88]:
+    - generic [ref=f1e89]:
+      - generic [ref=f1e90]:
+        - generic [ref=f1e91]:
+          - heading "Painel da Plataforma" [level=1] [ref=f1e92]
+          - paragraph [ref=f1e93]: Gerencie todos os tenants e monitore o sistema
+        - generic [ref=f1e94]:
+          - link "🗺️ Mapa do Banco" [ref=f1e95] [cursor=pointer]:
+            - /url: /admin/database-map
+          - button "Atualizar" [ref=f1e96] [cursor=pointer]
+      - generic [ref=f1e102]:
+        - button "Visão Geral" [ref=f1e103] [cursor=pointer]
+        - button "Tenants" [ref=f1e106] [cursor=pointer]
+        - button "Usuários" [ref=f1e111] [cursor=pointer]
+        - button "Admins" [ref=f1e117] [cursor=pointer]
+        - button "Pendentes" [ref=f1e120] [cursor=pointer]
+      - generic [ref=f1e126]:
+        - generic [ref=f1e134]:
+          - paragraph [ref=f1e135]: Tenants Ativos
+          - paragraph [ref=f1e136]: "5"
+        - generic [ref=f1e145]:
+          - paragraph [ref=f1e146]: Total Usuários
+          - paragraph [ref=f1e147]: "35"
+        - generic [ref=f1e156]:
+          - paragraph [ref=f1e157]: Entregadores
+          - paragraph [ref=f1e158]: "16"
+        - generic [ref=f1e166]:
+          - paragraph [ref=f1e167]: Total Pedidos
+          - paragraph [ref=f1e168]: "10"
+        - generic [ref=f1e174]:
+          - paragraph [ref=f1e175]: Receita Total
+          - paragraph [ref=f1e176]: R$ 40.96
+        - generic [ref=f1e182]:
+          - paragraph [ref=f1e183]: Pedidos (7 dias)
+          - paragraph [ref=f1e184]: "10"
+      - generic [ref=f1e185]:
+        - heading "Top Tenants por Pedidos" [level=2] [ref=f1e186]
+        - generic [ref=f1e187]:
+          - generic [ref=f1e188]:
+            - generic [ref=f1e189]:
+              - generic [ref=f1e190]: "1"
+              - generic [ref=f1e191]:
+                - paragraph [ref=f1e192]: Litoral Entregas
+                - paragraph [ref=f1e193]: •
+            - generic [ref=f1e194]: 8 pedidos
+          - generic [ref=f1e195]:
+            - generic [ref=f1e196]:
+              - generic [ref=f1e197]: "2"
+              - generic [ref=f1e198]:
+                - paragraph [ref=f1e199]: Canoas Plataforma
+                - paragraph [ref=f1e200]: •
+            - generic [ref=f1e201]: 1 pedidos
+          - generic [ref=f1e202]:
+            - generic [ref=f1e203]:
+              - generic [ref=f1e204]: "3"
+              - generic [ref=f1e205]:
+                - paragraph [ref=f1e206]: Canoas Entregas
+                - paragraph [ref=f1e207]: •
+            - generic [ref=f1e208]: 0 pedidos
+          - generic [ref=f1e209]:
+            - generic [ref=f1e210]:
+              - generic [ref=f1e211]: "4"
+              - generic [ref=f1e212]:
+                - paragraph [ref=f1e213]: entregas osorio
+                - paragraph [ref=f1e214]: •
+            - generic [ref=f1e215]: 0 pedidos
+          - generic [ref=f1e216]:
+            - generic [ref=f1e217]:
+              - generic [ref=f1e218]: "5"
+              - generic [ref=f1e219]:
+                - paragraph [ref=f1e220]: tenat pra excluir
+                - paragraph [ref=f1e221]: •
+            - generic [ref=f1e222]: 0 pedidos

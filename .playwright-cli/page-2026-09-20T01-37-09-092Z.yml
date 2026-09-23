@@ -1,0 +1,137 @@
+- generic [ref=f2e5]:
+  - banner [ref=f2e6]:
+    - generic [ref=f2e8]:
+      - link "muv.log muv.log" [ref=f2e9] [cursor=pointer]:
+        - /url: /admin
+        - img "muv.log" [ref=f2e10]
+        - generic [ref=f2e11]: muv.log
+      - navigation [ref=f2e12]:
+        - link "Dashboard" [ref=f2e13] [cursor=pointer]:
+          - /url: /admin
+        - generic [ref=f2e19]:
+          - button "Operações" [active] [ref=f2e20] [cursor=pointer]
+          - generic [ref=f2e267]:
+            - link "Pedidos" [ref=f2e268] [cursor=pointer]:
+              - /url: /admin/orders
+            - link "Rotas" [ref=f2e273] [cursor=pointer]:
+              - /url: /admin/platform-routes
+            - link "Config. Rotas" [ref=f2e279] [cursor=pointer]:
+              - /url: /admin/route-settings
+        - button "Negócios" [ref=f2e28] [cursor=pointer]
+        - button "Financeiro" [ref=f2e37] [cursor=pointer]
+        - button "Configurações" [ref=f2e43] [cursor=pointer]
+        - link "Lançar Pedido" [ref=f2e49] [cursor=pointer]:
+          - /url: /client/new-order
+      - generic [ref=f2e51]:
+        - button "Atualizar dados" [ref=f2e52] [cursor=pointer]
+        - button "Notificações" [ref=f2e59] [cursor=pointer]
+        - button "ML" [ref=f2e63] [cursor=pointer]
+  - main [ref=f2e68]:
+    - generic [ref=f2e69]:
+      - button [ref=f2e70] [cursor=pointer]
+      - generic [ref=f2e74]:
+        - generic [ref=f2e75]:
+          - generic [ref=f2e76]: Filtros
+          - textbox "Buscar por ID, cliente..." [ref=f2e85]
+        - generic [ref=f2e86]:
+          - button "Status" [ref=f2e87] [cursor=pointer]
+          - button "Entreg." [ref=f2e88] [cursor=pointer]
+          - button "Estab." [ref=f2e89] [cursor=pointer]
+          - button "Praças" [ref=f2e90] [cursor=pointer]
+          - button "⚙️" [ref=f2e92] [cursor=pointer]
+        - generic [ref=f2e93]:
+          - button "⏰ Pedidos Agendado 0" [ref=f2e95] [cursor=pointer]:
+            - generic [ref=f2e96]:
+              - generic [ref=f2e97]: ⏰
+              - generic [ref=f2e98]: Pedidos Agendado
+            - generic [ref=f2e99]: "0"
+          - generic [ref=f2e103]:
+            - button "⏳ Pedidos Pendente 1" [ref=f2e104] [cursor=pointer]:
+              - generic [ref=f2e105]:
+                - generic [ref=f2e106]: ⏳
+                - generic [ref=f2e107]: Pedidos Pendente
+              - generic [ref=f2e108]: "1"
+            - generic [ref=f2e113]:
+              - generic [ref=f2e114]:
+                - generic [ref=f2e115]: "#PED20260917105710E043"
+                - generic [ref=f2e116]:
+                  - generic [ref=f2e117]: R$ 10,14
+                  - button "⋮" [ref=f2e118] [cursor=pointer]
+              - generic [ref=f2e119]: asdf
+          - button "✅ Pedidos Aceito 0" [ref=f2e121] [cursor=pointer]:
+            - generic [ref=f2e122]:
+              - generic [ref=f2e123]: ✅
+              - generic [ref=f2e124]: Pedidos Aceito
+            - generic [ref=f2e125]: "0"
+          - button "🚚 Pedidos A Caminho 3" [ref=f2e130] [cursor=pointer]:
+            - generic [ref=f2e131]:
+              - generic [ref=f2e132]: 🚚
+              - generic [ref=f2e133]: Pedidos A Caminho
+            - generic [ref=f2e134]: "3"
+          - button "✅ Pedidos Entregue 2" [ref=f2e139] [cursor=pointer]:
+            - generic [ref=f2e140]:
+              - generic [ref=f2e141]: ✅
+              - generic [ref=f2e142]: Pedidos Entregue
+            - generic [ref=f2e143]: "2"
+          - button "❌ Pedidos Cancelado 2" [ref=f2e148] [cursor=pointer]:
+            - generic [ref=f2e149]:
+              - generic [ref=f2e150]: ❌
+              - generic [ref=f2e151]: Pedidos Cancelado
+            - generic [ref=f2e152]: "2"
+      - generic [ref=f2e156]:
+        - generic [ref=f2e157]:
+          - generic [ref=f2e158]:
+            - generic [ref=f2e162]: Mapa em Tempo Real
+            - generic [ref=f2e163]: 7 entregadores | 3 estabelecimentos
+            - generic [ref=f2e164]: "Atualizado: 22:37:00"
+          - combobox [ref=f2e166]:
+            - option "Todas as Praças" [selected]
+            - option "Canoas"
+            - option "CAPAO"
+            - option "esteio"
+            - option "TRAMANDAÍ"
+        - generic [ref=f2e167]:
+          - generic [ref=f2e168]:
+            - generic:
+              - generic:
+                - button [ref=f2e284] [cursor=pointer]
+                - button [ref=f2e288] [cursor=pointer]
+                - button [ref=f2e292] [cursor=pointer]
+                - button [ref=f2e296] [cursor=pointer]
+                - button [ref=f2e300] [cursor=pointer]
+                - button [ref=f2e304] [cursor=pointer]
+                - button [ref=f2e308] [cursor=pointer]
+                - button [ref=f2e312] [cursor=pointer]
+                - button [ref=f2e316] [cursor=pointer]
+                - button [ref=f2e320] [cursor=pointer]
+                - button [ref=f2e324] [cursor=pointer]
+                - button [ref=f2e328] [cursor=pointer]
+                - button [ref=f2e332] [cursor=pointer]
+                - button [ref=f2e336] [cursor=pointer]
+                - button [ref=f2e340] [cursor=pointer]
+                - button [ref=f2e344] [cursor=pointer]
+            - generic:
+              - generic [ref=f2e233]:
+                - button "Zoom in" [ref=f2e234] [cursor=pointer]: +
+                - button "Zoom out" [ref=f2e235] [cursor=pointer]: −
+              - generic [ref=f2e236]:
+                - link "Leaflet" [ref=f2e237] [cursor=pointer]:
+                  - /url: https://leafletjs.com
+                - text: "| © OpenStreetMap"
+          - button "Centralizar Mapa" [ref=f2e242] [cursor=pointer]
+          - generic [ref=f2e245]:
+            - generic [ref=f2e246]: Legenda
+            - generic [ref=f2e247]:
+              - generic [ref=f2e248]: Entregador em entrega
+              - generic [ref=f2e251]: Entregador livre
+              - generic [ref=f2e254]: Estabelecimento
+              - generic [ref=f2e257]: Local de entrega
+        - generic [ref=f2e260]:
+          - generic [ref=f2e261]: © 2026 muv.log — Controle de Entregadores
+          - generic [ref=f2e263]:
+            - link "Suporte" [ref=f2e264] [cursor=pointer]:
+              - /url: /support
+            - link "Termos" [ref=f2e265] [cursor=pointer]:
+              - /url: /terms
+            - link "Privacidade" [ref=f2e266] [cursor=pointer]:
+              - /url: /privacy

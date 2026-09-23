@@ -38,18 +38,18 @@ const AdminEstablishmentsPage = () => {
   }, [page, search, squareId]);
 
   const loadSquares = async () => {
-    try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch (e) {}
+    try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch { /* intentionally empty */ }
   };
 
   const loadTenants = async () => {
-    try { const res = await api.get('/api/admin/tenants'); setTenants(res.data.tenants || []); } catch (e) { setTenants([]); }
+    try { const res = await api.get('/api/admin/tenants'); setTenants(res.data.tenants || []); } catch { setTenants([]); }
   };
 
   const loadPendingEstablishments = async () => {
     try {
       const res = await api.get('/api/admin/pending-users');
       setPendingEstablishments((res.data.users || []).filter(u => u.user_type === 'CLIENT'));
-    } catch (err) {}
+    } catch { /* intentionally empty */ }
   };
 
   const loadEstablishments = async () => {
@@ -130,12 +130,12 @@ const AdminEstablishmentsPage = () => {
 
   const openDetails = async (id) => {
     try { const data = await adminService.getEstablishmentDetails(id); setShowDetails(data); }
-    catch (err) { showToast('Erro ao carregar detalhes', 'error'); }
+    catch { showToast('Erro ao carregar detalhes', 'error'); }
   };
 
   const toggleActive = async (est) => {
     try { await adminService.updateEstablishment(est.id, { is_active: !est.is_active }); loadEstablishments(); }
-    catch (err) { showToast('Erro ao alterar status', 'error'); }
+    catch { showToast('Erro ao alterar status', 'error'); }
   };
 
   return (

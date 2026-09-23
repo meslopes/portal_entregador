@@ -1,0 +1,15 @@
+- generic [ref=f12e4]:
+  - generic [ref=f12e5]:
+    - heading "muv.log" [level=1] [ref=f12e12]
+    - paragraph [ref=f12e13]: Área do Entregador Próprio
+  - generic [ref=f12e14]:
+    - generic [ref=f12e15]:
+      - generic [ref=f12e16]: Telefone
+      - textbox "(51) 99999-9999" [ref=f12e20]
+    - generic [ref=f12e21]:
+      - generic [ref=f12e22]: PIN (4 dígitos)
+      - generic [ref=f12e23]:
+        - textbox "****" [ref=f12e27]
+        - button [ref=f12e28] [cursor=pointer]
+    - button "Entrar" [ref=f12e32] [cursor=pointer]
+  - paragraph [ref=f12e33]: Não tem seu PIN? Peça ao estabelecimento para cadastrar.

@@ -94,7 +94,7 @@ const ClientRegisterPage = () => {
       }
 
       navigate('/pending-approval');
-    } catch (err) {
+    } catch {
       setLocalError('Erro ao conectar com o servidor');
     } finally {
       setIsLoading(false);

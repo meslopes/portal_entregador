@@ -1,6 +1,8 @@
 import React from 'react';
 
-const SectionCard = ({ icon: Icon, title, children }) => (
+const SectionCard = (props) => {
+  const { icon: Icon, title, children } = props;
+  return (
   <div style={{
     background: 'white', borderRadius: '0.75rem', padding: '1.5rem',
     boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem'
@@ -13,6 +15,7 @@ const SectionCard = ({ icon: Icon, title, children }) => (
     </div>
     {children}
   </div>
-);
+  );
+};
 
 export default SectionCard;

@@ -24,7 +24,6 @@ const PlatformDashboardPage = () => {
   const [selectedTenantFilter, setSelectedTenantFilter] = useState('');
   const [pendingUsers, setPendingUsers] = useState([]);
   const [pendingLoading, setPendingLoading] = useState(false);
-  const [squares, setSquares] = useState([]);
   const [showUserEditModal, setShowUserEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userEditForm, setUserEditForm] = useState({ first_name: '', last_name: '', email: '', phone: '', status: 'ACTIVE', tenant_id: '', password: '' });
@@ -35,7 +34,6 @@ const PlatformDashboardPage = () => {
     loadDashboard();
     loadTenants();
     loadPendingUsers();
-    loadSquares();
   }, []);
 
   useEffect(() => {
@@ -101,15 +99,6 @@ const PlatformDashboardPage = () => {
     }
   };
 
-  const loadSquares = async () => {
-    try {
-      const response = await api.get('/api/admin/squares');
-      setSquares(response.data.squares || []);
-    } catch (err) {
-      console.error('Erro ao carregar praças:', err);
-    }
-  };
-
   const handleApprove = async (userId, squareId = null, tenantId = null) => {
     try {
       const data = {};
@@ -140,7 +129,7 @@ const PlatformDashboardPage = () => {
       await api.post(`/api/platform/tenants/${tenantId}/toggle`);
       loadTenants();
       loadDashboard();
-    } catch (err) {
+    } catch {
       showToast('Erro ao alterar status do tenant', 'error');
     }
   };
@@ -150,7 +139,7 @@ const PlatformDashboardPage = () => {
       const response = await api.get(`/api/platform/tenants/${tenantId}`);
       setSelectedTenant(response.data.tenant);
       setShowTenantModal(true);
-    } catch (err) {
+    } catch {
       showToast('Erro ao carregar detalhes do tenant', 'error');
     }
   };

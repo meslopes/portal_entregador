@@ -28,7 +28,7 @@ const PlatformDriverDashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [muvScore, setMuvScore] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [_error, setError] = useState('');
 
   useEffect(() => { loadData(); }, []);
 
@@ -65,7 +65,7 @@ const PlatformDriverDashboardPage = () => {
       await api.post(`/api/platform-routes/${routeId}/accept`, {}, { headers });
       loadData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao aceitar rota');
+      console.error(err.response?.data?.error || 'Erro ao aceitar rota');
     }
   };
 
@@ -77,7 +77,7 @@ const PlatformDriverDashboardPage = () => {
       await api.post(`/api/platform-routes/${routeId}/reject`, {}, { headers });
       loadData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao rejeitar rota');
+      console.error(err.response?.data?.error || 'Erro ao rejeitar rota');
     }
   };
 
@@ -88,7 +88,7 @@ const PlatformDriverDashboardPage = () => {
       await api.post(`/api/platform-routes/${routeId}/complete-stop`, { stop_id: stopId }, { headers });
       loadData(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao concluir parada');
+      console.error(err.response?.data?.error || 'Erro ao concluir parada');
     }
   };
 

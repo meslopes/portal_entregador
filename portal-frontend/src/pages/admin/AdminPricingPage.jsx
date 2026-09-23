@@ -28,7 +28,7 @@ const AdminPricingPage = () => {
       ]);
       setTables(tablesRes.pricing_tables || []);
       setSquares(squaresRes.squares || []);
-    } catch (err) {
+    } catch {
       setError('Erro ao carregar dados');
     } finally {
       setLoading(false);

@@ -15,7 +15,7 @@ const RatingsReport = ({ data }) => (
     </div>
     {data.drivers?.length > 0 && (
       <ReportTable title="Avaliação por Entregador" headers={['Entregador', 'Média', 'Total', 'Positivas', 'Negativas']}>
-        {data.drivers.map((d, i) => (
+        {data.drivers.map((d) => (
           <tr key={d.id}>
             <td style={{ ...tdStyle, fontWeight: 500 }}>{d.name}</td>
             <td style={{ ...tdStyle, textAlign: 'center' }}><StarBadge value={d.avg_rating} /></td>

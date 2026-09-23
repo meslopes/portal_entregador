@@ -3,7 +3,6 @@ import { Package } from 'lucide-react';
 
 const CodeModal = ({
   showCodeModal, codeInput, setCodeInput, pendingStatus, isUpdating,
-  order, proofPhoto,
   onClose, onConfirm
 }) => {
   if (!showCodeModal) return null;

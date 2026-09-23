@@ -37,7 +37,7 @@ export const SquareProvider = ({ children }) => {
             setSelectedSquare(validSquares[0] || null);
           }
         }
-      } catch (err) {
+      } catch {
         // Se falhar, mantém o estado atual
       }
     };

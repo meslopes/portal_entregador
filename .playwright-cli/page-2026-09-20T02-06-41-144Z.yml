@@ -1,0 +1,125 @@
+- generic:
+  - generic [aria-hidden]:
+    - generic:
+      - banner:
+        - generic:
+          - generic:
+            - link:
+              - /url: /client
+              - generic: Canoas Plataforma
+              - generic: Estabelecimento
+            - generic:
+              - generic:
+                - button
+              - button [expanded]:
+                - generic: A
+              - button [expanded]
+        - generic:
+          - link:
+            - /url: /client
+            - text: Início
+          - link:
+            - /url: /client/new-order
+            - text: Novo Pedido
+          - link:
+            - /url: /client/orders
+            - text: Meus Pedidos
+          - link:
+            - /url: /client/financial
+            - text: Financeiro
+          - link:
+            - /url: /client/invoices
+            - text: Faturas
+          - link:
+            - /url: /client/integrations
+            - text: Integrações
+          - link:
+            - /url: /client/drivers
+            - text: Meus Entregadores
+          - link:
+            - /url: /client/routes
+            - text: Rotas
+          - link:
+            - /url: /client/drivers/financial
+            - text: Pagamentos Entregadores
+          - link:
+            - /url: /client/payment-reports
+            - text: Pagamentos Próprios
+          - link:
+            - /url: /client/drivers/metrics
+            - text: Desempenho Entregadores
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=1]: Olá, agropet canoas
+              - paragraph: Gerencie seus pedidos de entrega
+            - button: NOVO PEDIDO
+          - generic:
+            - generic:
+              - generic: Entregas em Andamento
+              - generic: 0 entregador(es) ativo(s)
+            - generic:
+              - generic:
+                - button [ref=f20e170] [cursor=pointer]:
+                  - generic [ref=f20e171]: 🏪
+                - generic [ref=f20e45]:
+                  - button [ref=f20e172] [cursor=pointer]: +
+                  - button [ref=f20e173] [cursor=pointer]: −
+                - generic [ref=f20e48]:
+                  - link [ref=f20e174] [cursor=pointer]:
+                    - /url: https://leafletjs.com
+                    - text: Leaflet
+                  - text: "| © OpenStreetMap"
+              - button: Centralizar
+            - generic: Nenhuma entrega em andamento no momento
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Pedidos Hoje
+                  - paragraph: "0"
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Em Andamento
+                  - paragraph: "0"
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Esta Semana
+                  - paragraph: "0"
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Total Receita
+                  - paragraph: R$ 0,00
+          - generic:
+            - button: Todos
+            - button: Pendentes
+            - button: Em Andamento
+            - button: Entregues
+            - button: Cancelados
+          - generic:
+            - paragraph: Nenhum pedido ainda
+            - paragraph: Clique em "NOVO PEDIDO" para começar
+      - contentinfo:
+        - generic:
+          - paragraph: © 2026 muv.log — Portal do Estabelecimento
+          - generic:
+            - link:
+              - /url: /support
+              - text: Suporte
+            - link:
+              - /url: /terms
+              - text: Termos
+            - link:
+              - /url: /privacy
+              - text: Privacidade
+  - menu "A" [active] [ref=f20e175]:
+    - generic [ref=f20e176]:
+      - paragraph [ref=f20e177]: agropet canoas
+      - paragraph [ref=f20e178]: agropet@canoas
+    - menuitem "Perfil" [ref=f20e179] [cursor=pointer]
+    - separator [ref=f20e181]
+    - menuitem "Sair" [ref=f20e182] [cursor=pointer]

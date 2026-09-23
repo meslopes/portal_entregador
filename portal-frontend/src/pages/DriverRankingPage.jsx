@@ -24,7 +24,6 @@ const DriverRankingPage = () => {
   const [achievements, setAchievements] = useState([]);
   const [period, setPeriod] = useState('monthly');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     loadData();
@@ -33,7 +32,6 @@ const DriverRankingPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      setError('');
       const [rankingRes, bonusesRes, achievementsRes] = await Promise.all([
         api.get(`/api/bonus/ranking?period=${period}`),
         api.get('/api/bonus/bonuses'),
@@ -48,7 +46,6 @@ const DriverRankingPage = () => {
       const myPos = rankingRes.data.ranking?.find(r => r.driver_id === user?.driver?.id);
       setMyPosition(myPos);
     } catch (err) {
-      setError('Erro ao carregar dados');
       console.error(err);
     } finally {
       setLoading(false);
@@ -62,13 +59,6 @@ const DriverRankingPage = () => {
       }
     }
     return LEVEL_THRESHOLDS[0];
-  };
-
-  const getScoreColor = (value, max) => {
-    const pct = (value / max) * 100;
-    if (pct >= 80) return '#22c55e';
-    if (pct >= 60) return '#f59e0b';
-    return '#ef4444';
   };
 
   if (loading) {

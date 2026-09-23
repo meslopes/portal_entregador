@@ -29,7 +29,6 @@ const AdminDriversPage = () => {
   const [squares, setSquares] = useState([]);
   const [tenants, setTenants] = useState([]);
   const [establishments, setEstablishments] = useState([]);
-  const [dateRange, setDateRange] = useState(null);
 
   // Verificar se é super admin
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -68,7 +67,7 @@ const AdminDriversPage = () => {
       const response = await api.get('/api/admin/pending-users');
       const users = (response.data.users || []).filter(u => u.user_type === 'DRIVER');
       setPendingDrivers(users);
-    } catch (err) {
+    } catch {
       // Silently fail
     }
   };
@@ -152,9 +151,9 @@ const AdminDriversPage = () => {
     setEditData(prev => ({ ...prev, [field]: value }));
   };
 
-  const loadSquares = async () => { try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch (e) {} };
-  const loadTenants = async () => { try { const res = await api.get('/api/platform/tenants'); setTenants(res.data.tenants || []); } catch (err) {} };
-  const loadEstablishments = async () => { try { const data = await adminService.getEstablishments(1, 100, '', squareId); setEstablishments(data.establishments || []); } catch (err) {} };
+  const loadSquares = async () => { try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch { /* intentionally empty */ } };
+  const loadTenants = async () => { try { const res = await api.get('/api/platform/tenants'); setTenants(res.data.tenants || []); } catch { /* intentionally empty */ } };
+  const loadEstablishments = async () => { try { const data = await adminService.getEstablishments(1, 100, '', squareId); setEstablishments(data.establishments || []); } catch { /* intentionally empty */ } };
 
   const handleConvertToOwn = async () => {
     const select = document.getElementById('convert-restaurant');

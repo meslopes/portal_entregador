@@ -1,0 +1,102 @@
+- generic [ref=f1e63]:
+  - banner [ref=f1e64]:
+    - generic [ref=f1e66]:
+      - link "muv.log muv.log Platform" [ref=f1e67] [cursor=pointer]:
+        - /url: /platform
+        - img "muv.log" [ref=f1e68]
+        - generic [ref=f1e69]: muv.log Platform
+      - navigation [ref=f1e70]:
+        - link "Dashboard" [ref=f1e71] [cursor=pointer]:
+          - /url: /platform
+      - generic [ref=f1e77]:
+        - button "Notificações" [ref=f1e79] [cursor=pointer]
+        - button "ML" [ref=f1e83] [cursor=pointer]
+  - main [ref=f1e88]:
+    - generic [ref=f1e89]:
+      - generic [ref=f1e90]:
+        - generic [ref=f1e91]:
+          - heading "Painel da Plataforma" [level=1] [ref=f1e92]
+          - paragraph [ref=f1e93]: Gerencie todos os tenants e monitore o sistema
+        - generic [ref=f1e94]:
+          - link "🗺️ Mapa do Banco" [ref=f1e95] [cursor=pointer]:
+            - /url: /admin/database-map
+          - button "Atualizar" [ref=f1e96] [cursor=pointer]
+      - generic [ref=f1e102]:
+        - button "Visão Geral" [ref=f1e103] [cursor=pointer]
+        - button "Tenants" [ref=f1e106] [cursor=pointer]
+        - button "Usuários" [ref=f1e111] [cursor=pointer]
+        - button "Admins" [active] [ref=f1e117] [cursor=pointer]
+        - button "Pendentes" [ref=f1e120] [cursor=pointer]
+      - generic [ref=f1e350]:
+        - generic [ref=f1e351]:
+          - heading "Admins da Plataforma" [level=2] [ref=f1e352]
+          - generic [ref=f1e353]:
+            - button "Lixeira" [ref=f1e354] [cursor=pointer]
+            - button "Novo Admin" [ref=f1e358] [cursor=pointer]
+        - table [ref=f1e362]:
+          - rowgroup [ref=f1e363]:
+            - row [ref=f1e364]:
+              - columnheader "Admin" [ref=f1e365]
+              - columnheader "Empresa" [ref=f1e366]
+              - columnheader "Estab." [ref=f1e367]
+              - columnheader "Entr." [ref=f1e368]
+              - columnheader "Pedidos" [ref=f1e369]
+              - columnheader "Status" [ref=f1e370]
+              - columnheader "Ações" [ref=f1e371]
+          - rowgroup [ref=f1e372]:
+            - row [ref=f1e373]:
+              - cell [ref=f1e374]:
+                - generic [ref=f1e375]:
+                  - paragraph [ref=f1e376]: Éverton Lopes
+                  - paragraph [ref=f1e377]: esl52@gmail.com
+              - cell "Canoas Plataforma" [ref=f1e378]
+              - cell "4" [ref=f1e379]
+              - cell "1" [ref=f1e380]
+              - cell "1" [ref=f1e381]
+              - cell "Ativo" [ref=f1e382]
+              - cell [ref=f1e383]:
+                - generic [ref=f1e384]:
+                  - button "Editar" [ref=f1e385] [cursor=pointer]
+                  - button "Excluir" [ref=f1e389] [cursor=pointer]
+            - row [ref=f1e393]:
+              - cell [ref=f1e394]:
+                - generic [ref=f1e395]:
+                  - paragraph [ref=f1e396]: Emmanuel Lopes
+                  - paragraph [ref=f1e397]: emmanuelboeslopes@outlook.com
+              - cell "Litoral Entregas" [ref=f1e398]
+              - cell "6" [ref=f1e399]
+              - cell "13" [ref=f1e400]
+              - cell "8" [ref=f1e401]
+              - cell "Ativo" [ref=f1e402]
+              - cell [ref=f1e403]:
+                - generic [ref=f1e404]:
+                  - button "Editar" [ref=f1e405] [cursor=pointer]
+                  - button "Excluir" [ref=f1e409] [cursor=pointer]
+            - row [ref=f1e413]:
+              - cell [ref=f1e414]:
+                - generic [ref=f1e415]:
+                  - paragraph [ref=f1e416]: Éverton Lopes
+                  - paragraph [ref=f1e417]: esl52@email.com
+              - cell "Canoas Plataforma" [ref=f1e418]
+              - cell "4" [ref=f1e419]
+              - cell "1" [ref=f1e420]
+              - cell "1" [ref=f1e421]
+              - cell "Ativo" [ref=f1e422]
+              - cell [ref=f1e423]:
+                - generic [ref=f1e424]:
+                  - button "Editar" [ref=f1e425] [cursor=pointer]
+                  - button "Excluir" [ref=f1e429] [cursor=pointer]
+            - row [ref=f1e433]:
+              - cell [ref=f1e434]:
+                - generic [ref=f1e435]:
+                  - paragraph [ref=f1e436]: tenant pra exclusao
+                  - paragraph [ref=f1e437]: tenant@exclusao
+              - cell "tenat pra excluir" [ref=f1e438]
+              - cell "0" [ref=f1e439]
+              - cell "0" [ref=f1e440]
+              - cell "0" [ref=f1e441]
+              - cell "Ativo" [ref=f1e442]
+              - cell [ref=f1e443]:
+                - generic [ref=f1e444]:
+                  - button "Editar" [ref=f1e445] [cursor=pointer]
+                  - button "Excluir" [ref=f1e449] [cursor=pointer]

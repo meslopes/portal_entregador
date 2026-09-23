@@ -1,0 +1,356 @@
+﻿
+    84:20   error    'e' is defined but never used                                                                  
+no-unused-vars
+   140:26   error    'x' is defined but never used                                                                  
+no-unused-vars
+   152:20   error    'x' is defined but never used                                                                  
+no-unused-vars
+   415:22   error    '_err' is defined but never used                                                               
+no-unused-vars
+  2991:14   error    'e' is defined but never used                                                                  
+no-unused-vars
+  3158:16   error    'e' is defined but never used                                                                  
+no-unused-vars
+  3346:20   error    'e' is defined but never used                                                                  
+no-unused-vars
+  3706:15   error    'isCancel2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      
+no-unused-vars
+  3709:10   error    'all2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           
+no-unused-vars
+  3711:19   error    'isAxiosError2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  
+no-unused-vars
+  3712:13   error    'spread2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        
+no-unused-vars
+  3713:17   error    'toFormData2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    
+no-unused-vars
+  3716:5    error    'formToJSON' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     
+no-unused-vars
+  3717:5    error    'getAdapter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     
+no-unused-vars
+  3718:18   error    'mergeConfig2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   
+no-unused-vars
+  4135:12   error    'total' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          
+no-unused-vars
+  4229:14   error    'e' is defined but never used                                                                  
+no-unused-vars
+    84:20   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+   140:26   error    'x' is defined but never used                                                                     
+                                          no-unused-vars
+   152:20   error    'x' is defined but never used                                                                     
+                                          no-unused-vars
+   415:22   error    '_err' is defined but never used                                                                  
+                                          no-unused-vars
+  1012:16   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  1418:7    error    'validMutationMethods' is assigned a value but never used. Allowed unused vars must match 
+/^[A-Z_]/u                                        no-unused-vars
+  1425:7    error    'validRequestMethods' is assigned a value but never used. Allowed unused vars must match 
+/^[A-Z_]/u                                         no-unused-vars
+  1729:80   error    'future' is assigned a value but never used                                                       
+                                          no-unused-vars
+  2041:16   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  2268:7    error    'objectProtoNames' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  
+                                          no-unused-vars
+  2509:12   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  2571:20   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  2988:18   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  4998:14   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  5165:16   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  5353:20   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  5713:15   error    'isCancel2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         
+                                          no-unused-vars
+  5716:10   error    'all2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              
+                                          no-unused-vars
+  5718:19   error    'isAxiosError2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     
+                                          no-unused-vars
+  5719:13   error    'spread2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           
+                                          no-unused-vars
+  5720:17   error    'toFormData2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       
+                                          no-unused-vars
+  5723:5    error    'formToJSON' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        
+                                          no-unused-vars
+  5724:5    error    'getAdapter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        
+                                          no-unused-vars
+  5725:18   error    'mergeConfig2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      
+                                          no-unused-vars
+  6426:43   error    'idx' is defined but never used                                                                   
+                                          no-unused-vars
+  6439:41   error    'idx' is defined but never used                                                                   
+                                          no-unused-vars
+    84:20   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+   140:26   error    'x' is defined but never used                                                                     
+                                          no-unused-vars
+   152:20   error    'x' is defined but never used                                                                     
+                                          no-unused-vars
+   415:22   error    '_err' is defined but never used                                                                  
+                                          no-unused-vars
+  1012:16   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  1418:7    error    'validMutationMethods' is assigned a value but never used. Allowed unused vars must match 
+/^[A-Z_]/u                                        no-unused-vars
+  1425:7    error    'validRequestMethods' is assigned a value but never used. Allowed unused vars must match 
+/^[A-Z_]/u                                         no-unused-vars
+  1724:80   error    'future' is assigned a value but never used                                                       
+                                          no-unused-vars
+  2036:16   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  2263:7    error    'objectProtoNames' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  
+                                          no-unused-vars
+  2504:12   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  2566:20   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  2983:18   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  5056:14   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  5223:16   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  5411:20   error    'e' is defined but never used                                                                     
+                                          no-unused-vars
+  5771:15   error    'isCancel2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         
+                                          no-unused-vars
+  5774:10   error    'all2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              
+                                          no-unused-vars
+  5776:19   error    'isAxiosError2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     
+                                          no-unused-vars
+  5777:13   error    'spread2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           
+                                          no-unused-vars
+  5778:17   error    'toFormData2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       
+                                          no-unused-vars
+  5781:5    error    'formToJSON' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        
+                                          no-unused-vars
+  5782:5    error    'getAdapter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        
+                                          no-unused-vars
+  5783:18   error    'mergeConfig2' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      
+                                          no-unused-vars
+  5840:11   error    'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          
+                                          no-unused-vars
+  5950:16   error    'err' is defined but never used                                                                   
+                                          no-unused-vars
+  5959:16   error    'err' is defined but never used                                                                   
+                                          no-unused-vars
+  58:20  error  'type' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   7:35  error  'event' is defined but never used  no-unused-vars
+  30:16  error  'err' is defined but never used                                                           
+no-unused-vars
+  39:9   error  'isClient' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  
+no-unused-vars
+  1:27  error  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:10  error    'isLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            
+                                                                                                                       
+                                                               no-unused-vars
+  10:21  error    'setIsLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         
+                                                                                                                       
+                                                               no-unused-vars
+  51:14  error    'err' is defined but never used                                                                      
+                                                                                                                       
+                                                               no-unused-vars
+  66:14  error    'err' is defined but never used                                                                      
+                                                                                                                       
+                                                               no-unused-vars
+  86:14  error    'e' is defined but never used                                                                        
+                                                                                                                       
+                                                               no-unused-vars
+  69:14  error    'err' is defined but never used                                                                      
+              no-unused-vars
+  28:16  error  'e' is defined but never used  no-unused-vars
+  27:14  error    'err' is defined but never used                                                                      
+                no-unused-vars
+  80:14  error    'err' is defined but never used                                                                      
+                no-unused-vars
+  107:16  error    'error' is defined but never used                                                                   
+                            no-unused-vars
+  150:16  error    'e' is defined but never used                                                                       
+                            no-unused-vars
+  40:16  error    'err' is defined but never used                                                                      
+                           no-unused-vars
+   40:12  error  'e' is defined but never used  no-unused-vars
+   53:32  error  'e' is defined but never used  no-unused-vars
+  185:18  error  'e' is defined but never used  no-unused-vars
+  220:14  error  'e' is defined but never used  no-unused-vars
+   32:16  error    'e' is defined but never used                                                                       
+                        no-unused-vars
+   56:16  error    'e' is defined but never used                                                                       
+                        no-unused-vars
+   91:14  error    'e' is defined but never used                                                                       
+                        no-unused-vars
+  212:18  error    'locErr' is defined but never used                                                                  
+                        no-unused-vars
+  232:14  error    'error' is defined but never used                                                                   
+                        no-unused-vars
+  27:10  error    'error' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                
+        no-unused-vars
+  67:9   error    'getScoreColor' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        
+        no-unused-vars
+    4:24  error    'utils' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                        
+                                                       no-unused-vars
+  199:16  error    'e' is defined but never used                                                                       
+                                                       no-unused-vars
+  15:9   error  'from' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  30:14  error  'err' is defined but never used                                                       no-unused-vars
+   31:11  error    'register' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            
+                                         no-unused-vars
+   75:14  error    'err' is defined but never used                                                                     
+                                         no-unused-vars
+  208:15  error    'confirmPassword' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     
+                                         no-unused-vars
+  20:10  error    'actionLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        
+             no-unused-vars
+  35:14  error    'err' is defined but never used                                                                      
+            no-unused-vars
+  24:14  error  'err' is defined but never used  no-unused-vars
+  6:3   error  'order' is defined but never used       no-unused-vars
+  6:10  error  'proofPhoto' is defined but never used  no-unused-vars
+   13:11  error    'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                
+                                                                                                                       
+                                                                no-unused-vars
+   17:10  error    'dashboard' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           
+                                                                                                                       
+                                                                no-unused-vars
+   91:14  error    'err' is defined but never used                                                                     
+                                                                                                                       
+                                                                no-unused-vars
+  162:14  error    'err' is defined but never used                                                                     
+                                                                                                                       
+                                                                no-unused-vars
+  6:15  error  'adminService' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   32:10   error    'dateRange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          
+                                                         no-unused-vars
+   32:21   error    'setDateRange' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       
+                                                         no-unused-vars
+   71:14   error    'err' is defined but never used                                                                    
+                                                         no-unused-vars
+  155:130  error    'e' is defined but never used                                                                      
+                                                         no-unused-vars
+  156:140  error    'err' is defined but never used                                                                    
+                                                         no-unused-vars
+  157:178  error    'err' is defined but never used                                                                    
+                                                         no-unused-vars
+   41:98   error    'e' is defined but never used                                                                      
+                                         no-unused-vars
+   45:105  error    'e' is defined but never used                                                                      
+                                         no-unused-vars
+   52:14   error    'err' is defined but never used                                                                    
+                                         no-unused-vars
+  133:12   error    'err' is defined but never used                                                                    
+                                         no-unused-vars
+  138:12   error    'err' is defined but never used                                                                    
+                                         no-unused-vars
+  18:10  error    'period' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u               
+        no-unused-vars
+  18:18  error    'setPeriod' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            
+        no-unused-vars
+  11:24  error    'getStatusLabel' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                
+          no-unused-vars
+  31:14  error  'err' is defined but never used  no-unused-vars
+  230:19  error    'i' is defined but never used                                                                       
+        no-unused-vars
+   6:29  error    'utils' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                         
+                                                                                                                       
+                                                               no-unused-vars
+  29:10  error    'showDetails' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          
+                                                                                                                       
+                                                               no-unused-vars
+  29:23  error    'setShowDetails' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       
+                                                                                                                       
+                                                               no-unused-vars
+  18:14  error  'err' is defined but never used  no-unused-vars
+   27:10  error    'squares' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             
+          no-unused-vars
+  143:14  error    'err' is defined but never used                                                                     
+          no-unused-vars
+  153:14  error    'err' is defined but never used                                                                     
+          no-unused-vars
+  29:57  error    'e' is defined but never used                                                                        
+            no-unused-vars
+  40:57  error    'e' is defined but never used                                                                        
+            no-unused-vars
+  19:14  error  'err' is defined but never used  no-unused-vars
+   79:14  error  'e' is defined but never used                                                                         
+                                                                                                                       
+                                                              no-unused-vars
+  179:14  error  'e' is defined but never used                                                                         
+                                                                                                                       
+                                                              no-unused-vars
+   3:35  error    'onClose' is defined but never used                                                                  
+                           no-unused-vars
+  18:31  error  'i' is defined but never used  no-unused-vars
+  3:31  error  'Icon' is defined but never used  no-unused-vars
+  3:30  error  'Icon' is defined but never used  no-unused-vars
+  73:16  error    'e' is defined but never used                                                                        
+        no-unused-vars
+  71:14  error  'err' is defined but never used  no-unused-vars
+  32:14  error  'err' is defined but never used  no-unused-vars
+  16:10  error    'total' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                
+          no-unused-vars
+  97:14  error  'err' is defined but never used  no-unused-vars
+  30:10  error  'mapInitialized' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  
+no-unused-vars
+   17:10  error    'paymentConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       
+         no-unused-vars
+   29:10  error    'editingConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       
+         no-unused-vars
+  129:14  error    'err' is defined but never used                                                                     
+         no-unused-vars
+  142:14  error    'err' is defined but never used                                                                     
+         no-unused-vars
+  157:14  error    'err' is defined but never used                                                                     
+         no-unused-vars
+  22:12  error    'e' is defined but never used                                                                        
+                                                                                                                       
+                                                               no-unused-vars
+  48:14  error    'e' is defined but never used                                                                        
+                                                                                                                       
+                                                               no-unused-vars
+  33:104  error  'e' is defined but never used  no-unused-vars
+  35:33  error    'label' is defined but never used                                                                    
+                           no-unused-vars
+  31:10  error    'error' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                
+        no-unused-vars
+   14:10  error  'selectedRoute' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         
+                                                                                                                       
+                                                              no-unused-vars
+   14:25  error  'setSelectedRoute' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      
+                                                                                                                       
+                                                              no-unused-vars
+   25:16  error  'e' is defined but never used                                                                         
+                                                                                                                       
+                                                              no-unused-vars
+   86:14  error  'e' is defined but never used                                                                         
+                                                                                                                       
+                                                              no-unused-vars
+  220:58  error  'idx' is defined but never used                                                                       
+                                                                                                                       
+                                                              no-unused-vars
+  84:20  error  'e' is defined but never used  no-unused-vars
+   31:16  error    'e' is defined but never used                                                                       
+                          no-unused-vars
+   97:16  error    'e' is defined but never used                                                                       
+                          no-unused-vars
+  117:20  error    'e' is defined but never used                                                                       
+                          no-unused-vars
+  186:69  error    'e' is defined but never used                                                                       
+                          no-unused-vars
+  216:16  error    'e' is defined but never used                                                                       
+                          no-unused-vars
+  44:14  error    'err' is defined but never used                                                                      
+         no-unused-vars
+  78:16  error    'e' is defined but never used                                                                        
+         no-unused-vars
+   7:10  error    'utils' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                         
+          no-unused-vars
+   31:16  error  'e' is defined but never used  no-unused-vars
+   97:14  error  'e' is defined but never used  no-unused-vars
+  176:16  error  'e' is defined but never used  no-unused-vars
+
+

@@ -24,7 +24,7 @@ const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
       const data = await adminService.getDeletedUsers(filterDays || null, userType);
       setDeletedUsers(data.users || []);
       setSelectedUsers([]);
-    } catch (err) {
+    } catch {
       showToast('Erro ao carregar lixeira', 'error');
     } finally {
       setLoading(false);
@@ -35,7 +35,7 @@ const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
     try {
       const data = await adminService.getRetentionConfig();
       setRetentionDays(data.retention_days || 90);
-    } catch {}
+    } catch { /* intentionally empty */ }
   };
 
   const handleRestore = async (userId) => {
@@ -77,7 +77,7 @@ const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
       setSelectedUsers([]);
       loadDeletedUsers();
       if (onRestore) onRestore();
-    } catch (err) {
+    } catch {
       showToast('Erro ao restaurar usuários', 'error');
     } finally {
       setProcessing(false);

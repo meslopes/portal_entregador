@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSquare } from '@/contexts/SquareContext';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import { showToast } from '@/components/Toast';
-import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
+import { ORDER_STATUS } from '@/constants/status';
 import { showConfirm } from '@/components/ConfirmDialog';
 import StatusFilterBar from './admin-orders/StatusFilterBar';
 import EditOrderModal from './admin-orders/EditOrderModal';

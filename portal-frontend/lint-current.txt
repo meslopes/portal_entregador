@@ -1,0 +1,277 @@
+﻿
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ConfirmDialog.jsx
+  6:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\NotificationBell.jsx
+   1:1  error    File too large (351 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+  25:6  warning  React Hook useEffect has missing dependencies: 'isAdmin', 'loadNotifications', and 'loadPendingUsers'. Either include them or remove the dependency array                                                                                                                                  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\OrderOfferPopup.jsx
+  26:6  warning  React Hook useEffect has a missing dependency: 'checkForOffers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\SquareSelector.jsx
+  13:6  warning  React Hook useEffect has a missing dependency: 'loadSquares'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\Toast.jsx
+  7:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\TrashModal.jsx
+  19:6  warning  React Hook useEffect has a missing dependency: 'loadDeletedUsers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\badge.jsx
+  44:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\button.jsx
+  55:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\form.jsx
+  135:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\navigation-menu.jsx
+  151:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\sidebar\index.jsx
+   3:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  28:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\sidebar\sidebar-menu.jsx
+  245:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\sidebar\sidebar-provider.jsx
+  113:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  114:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  115:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  116:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  117:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  118:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  120:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\ui\toggle.jsx
+  43:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\contexts\AuthContext.jsx
+  233:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\contexts\SquareContext.jsx
+  6:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\lib\services\adminService.js
+  1:1  error  File too large (422 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\DashboardPage.jsx
+   97:6  warning  React Hook useEffect has a missing dependency: 'user?.driver?.is_online'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  247:6  warning  React Hook useEffect has a missing dependency: 'updateLocation'. Either include it or remove the dependency array           react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\DriverRankingPage.jsx
+  30:6  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\DriverRouteMap.jsx
+  67:6  warning  React Hook useEffect has missing dependencies: 'activeOrders.length' and 'user?.driver?.square_state'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\HistoryPage.jsx
+  18:6  warning  React Hook useEffect has a missing dependency: 'loadHistory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\PaymentReportsPage.jsx
+   40:6  warning  React Hook useEffect has a missing dependency: 'checkUserRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  115:6  warning  React Hook useEffect has a missing dependency: 'loadReports'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\RegisterPage.jsx
+  105:6  warning  React Hook useEffect has missing dependencies: 'detectNearestSquare' and 'searchParams'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\SubscriptionPage.jsx
+  20:10  error    'actionLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                     no-unused-vars
+  33:6   warning  React Hook useEffect has a missing dependency: 'checkUserRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\TrackPage.jsx
+  28:6  warning  React Hook useEffect has a missing dependency: 'loadTracking'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\active-delivery\MapModal.jsx
+  28:6  warning  React Hook useEffect has a missing dependency: 'mapRef'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\active-delivery\useDelivery.js
+   60:6   warning  React Hook useEffect has a missing dependency: 'loadCurrentOrder'. Either include it or remove the dependency array                                                                                                                                              react-hooks/exhaustive-deps
+  179:49  warning  The ref value 'videoRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'videoRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminDashboardPage.jsx
+    1:1   error    File too large (372 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+   49:52  error    'err' is not defined                                                                                                                                                                                                                                                                       no-undef
+  238:6   warning  React Hook useEffect has missing dependencies: 'loadDashboard', 'loadOrders', and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                       react-hooks/exhaustive-deps
+  254:6   warning  React Hook useEffect has missing dependencies: 'loadDashboard', 'loadOrders', and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                       react-hooks/exhaustive-deps
+  262:6   warning  React Hook useEffect has missing dependencies: 'loadOrders' and 'loadTracking'. Either include them or remove the dependency array                                                                                                                                                         react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminDriversPage.jsx
+  48:131  warning  React Hook useEffect has missing dependencies: 'isSuperAdmin', 'loadDrivers', and 'loadEstablishments'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminDynamicPricingPage.jsx
+   1:1   error    File too large (358 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+  24:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array                                                                                                                                                                                react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminEstablishmentsPage.jsx
+  38:6  warning  React Hook useEffect has missing dependencies: 'isSuperAdmin' and 'loadEstablishments'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminFinancePage.jsx
+  22:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  23:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminInvoicesPage.jsx
+  18:59  warning  React Hook useEffect has a missing dependency: 'loadInvoices'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminOrdersPage.jsx
+  39:38  warning  React Hook useEffect has a missing dependency: 'loadOrders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminReportsPage.jsx
+  32:35  warning  React Hook useEffect has a missing dependency: 'loadAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  33:50  warning  React Hook useEffect has a missing dependency: 'loadAll'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\AdminUsersPage.jsx
+   1:1   error    File too large (355 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+  35:67  warning  React Hook useEffect has a missing dependency: 'loadUsers'. Either include it or remove the dependency array                                                                                                                                                                               react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\OrderDetailPage.jsx
+   1:1  error    File too large (364 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+  42:6  warning  React Hook useEffect has a missing dependency: 'loadOrder'. Either include it or remove the dependency array                                                                                                                                                                               react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\PlatformDashboardPage.jsx
+  52:6  warning  React Hook useEffect has a missing dependency: 'loadUsers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\admin-drivers\shared.jsx
+  17:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  22:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  27:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  33:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\admin-settings\shared.jsx
+  20:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\dashboard-tabs\MapSection.jsx
+  73:6  warning  React Hook useCallback has a missing dependency: 'cityCenter'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\database-map\DataSection.jsx
+   9:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  16:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  20:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  31:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\establishments\EstablishmentForm.jsx
+  1:1  error  File too large (362 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\establishments\ui.jsx
+  18:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  23:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  29:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  35:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\platform-routes\PlatformRoutesList.jsx
+  13:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin\reports\shared.jsx
+  4:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\ClientDashboardPage.jsx
+  41:6  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\ClientOrdersPage.jsx
+  18:38  warning  React Hook useEffect has a missing dependency: 'loadOrders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\OwnDriverFinancialPage.jsx
+  21:10  error    'paymentConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
+  22:10  error    'editingConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
+  39:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\OwnDriverMetricsPage.jsx
+  18:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\client-dashboard\OrderDetailsModal.jsx
+   1:1  error    File too large (367 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+  38:6  warning  React Hook useEffect has a missing dependency: 'canAssign'. Either include it or remove the dependency array                                                                                                                                                                               react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\client\new-order\shared.jsx
+  3:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\driver-dashboard\DriverMap.jsx
+  88:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\driver-profile\shared.jsx
+   4:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   9:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  15:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\driver\PlatformDriverDashboardPage.jsx
+  31:10  error    'error' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
+  33:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\driver\PlatformDriverRoutesPage.jsx
+  1:1  error  File too large (360 lines | max 350).
+
+Refactor into smaller, focused units:
+  - Business logic -> domain service or use-case module
+  - Repeated UI blocks -> reusable sub-component
+  - Data access code -> repository or adapter
+  - Helper clusters -> domain-specific utility module  quality/max-lines
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-driver\OwnDriverDashboardPage.jsx
+  55:6  warning  React Hook useEffect has missing dependencies: 'loadData' and 'navigate'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-driver\OwnDriverDeliveryPage.jsx
+  30:6  warning  React Hook useEffect has a missing dependency: 'loadOrder'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-driver\OwnDriverEarningsPage.jsx
+  22:40  warning  React Hook useEffect has a missing dependency: 'loadEarnings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-driver\OwnDriverOrdersPage.jsx
+  23:38  warning  React Hook useEffect has a missing dependency: 'loadOrders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-driver\own-driver-routes\StopItem.jsx
+   4:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  10:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+✖ 98 problems (14 errors, 84 warnings)
+

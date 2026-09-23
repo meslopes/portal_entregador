@@ -27,7 +27,6 @@ const NewOrderPage = () => {
   const [showPinMap, setShowPinMap] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
   const [pinAdjusted, setPinAdjusted] = useState(false);
-  const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainerRef = useRef(null);
   const previewMapRef = useRef(null);
   const previewMapInstanceRef = useRef(null);
@@ -156,7 +155,6 @@ const NewOrderPage = () => {
       const pos = e.target.getLatLng();
       setPinLocation({ lat: pos.lat, lng: pos.lng });
     });
-    setMapInitialized(true);
   };
 
   const initPreviewMap = (lat, lng) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, Bike, MapPin, BarChart3, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,8 +11,6 @@ const LoginPage = () => {
 
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -27,7 +25,7 @@ const LoginPage = () => {
       const response = await login(formData.email, formData.password, userType);
       const user = response?.user || JSON.parse(localStorage.getItem('user'));
       navigateToDashboard(user);
-    } catch (err) {
+    } catch {
       // erro tratado no contexto
     } finally {
       setIsLoading(false);

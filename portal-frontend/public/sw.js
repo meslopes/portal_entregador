@@ -4,7 +4,7 @@
 const CACHE_NAME = 'muvlog-v1';
 
 // Instalar
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 

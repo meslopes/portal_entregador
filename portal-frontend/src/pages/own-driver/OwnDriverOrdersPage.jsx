@@ -4,7 +4,6 @@ import {
   Package, ArrowLeft, MapPin, Clock, CheckCircle, Bike, DollarSign, AlertCircle
 } from 'lucide-react';
 import api from '@/lib/api';
-import { utils } from '@/lib/api';
 
 const STATUS_CONFIG = {
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },

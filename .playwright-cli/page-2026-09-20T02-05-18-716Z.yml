@@ -1,0 +1,68 @@
+- generic [ref=f19e62]:
+  - banner [ref=f19e63]:
+    - generic [ref=f19e65]:
+      - link "Canoas Plataforma Canoas Plataforma Estabelecimento" [ref=f19e66] [cursor=pointer]:
+        - /url: /client
+        - img "Canoas Plataforma" [ref=f19e67]
+        - generic [ref=f19e68]: Canoas Plataforma
+        - generic [ref=f19e69]: Estabelecimento
+      - generic [ref=f19e70]:
+        - button "Notificações" [ref=f19e72] [cursor=pointer]
+        - button "A" [ref=f19e76] [cursor=pointer]
+        - button "Abrir menu" [ref=f19e81] [cursor=pointer]
+  - main [ref=f19e83]:
+    - generic [ref=f19e84]:
+      - generic [ref=f19e85]:
+        - generic [ref=f19e86]:
+          - heading "Olá, agropet canoas" [level=1] [ref=f19e87]
+          - paragraph [ref=f19e88]: Gerencie seus pedidos de entrega
+        - button "NOVO PEDIDO" [ref=f19e89] [cursor=pointer]
+      - generic [ref=f19e91]:
+        - generic [ref=f19e92]:
+          - generic [ref=f19e93]: Entregas em Andamento
+          - generic [ref=f19e97]: 0 entregador(es) ativo(s)
+        - generic [ref=f19e98]:
+          - generic [ref=f19e99]:
+            - button "🏪" [ref=f19e100] [cursor=pointer]
+            - generic:
+              - generic [ref=f19e102]:
+                - button "Zoom in" [ref=f19e103] [cursor=pointer]: +
+                - button "Zoom out" [ref=f19e104] [cursor=pointer]: −
+              - generic [ref=f19e105]:
+                - link "Leaflet" [ref=f19e106] [cursor=pointer]:
+                  - /url: https://leafletjs.com
+                - text: "| © OpenStreetMap"
+          - button "Centralizar" [ref=f19e111] [cursor=pointer]
+        - generic [ref=f19e114]: Nenhuma entrega em andamento no momento
+      - generic [ref=f19e115]:
+        - generic [ref=f19e123]:
+          - paragraph [ref=f19e124]: Pedidos Hoje
+          - paragraph [ref=f19e125]: "0"
+        - generic [ref=f19e132]:
+          - paragraph [ref=f19e133]: Em Andamento
+          - paragraph [ref=f19e134]: "0"
+        - generic [ref=f19e141]:
+          - paragraph [ref=f19e142]: Esta Semana
+          - paragraph [ref=f19e143]: "0"
+        - generic [ref=f19e149]:
+          - paragraph [ref=f19e150]: Total Receita
+          - paragraph [ref=f19e151]: R$ 0,00
+      - generic [ref=f19e152]:
+        - button "Todos" [ref=f19e153] [cursor=pointer]
+        - button "Pendentes" [ref=f19e154] [cursor=pointer]
+        - button "Em Andamento" [ref=f19e155] [cursor=pointer]
+        - button "Entregues" [ref=f19e156] [cursor=pointer]
+        - button "Cancelados" [ref=f19e157] [cursor=pointer]
+      - generic [ref=f19e158]:
+        - paragraph [ref=f19e164]: Nenhum pedido ainda
+        - paragraph [ref=f19e165]: Clique em "NOVO PEDIDO" para começar
+  - contentinfo [ref=f19e166]:
+    - generic [ref=f19e167]:
+      - paragraph [ref=f19e168]: © 2026 muv.log — Portal do Estabelecimento
+      - generic [ref=f19e169]:
+        - link "Suporte" [ref=f19e170] [cursor=pointer]:
+          - /url: /support
+        - link "Termos" [ref=f19e171] [cursor=pointer]:
+          - /url: /terms
+        - link "Privacidade" [ref=f19e172] [cursor=pointer]:
+          - /url: /privacy

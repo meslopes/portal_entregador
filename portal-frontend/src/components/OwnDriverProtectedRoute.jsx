@@ -25,7 +25,7 @@ const OwnDriverProtectedRoute = ({ children }) => {
         });
         driverId = res.data?.id;
         tenantId = res.data?.tenant_id;
-      } catch (e) { /* Ignorar erro */ }
+      } catch { /* Ignorar erro */ }
     };
 
     const broadcast = () => {

@@ -5,12 +5,23 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import quality from './eslint-rules/index.cjs'
 
 export default [
-  { ignores: ['dist', 'build', 'coverage', 'node_modules', '.vite', '.playwright-cli', '.mimocode'] },
+  { ignores: ['dist', 'build', 'coverage', 'node_modules', '.vite', '.playwright-cli', '.mimocode', 'dev'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        // Vite / bundler-provided Node-like globals
+        process: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+        setImmediate: 'readonly',
+        // ES2021+ built-in
+        AggregateError: 'readonly',
+        // React DevTools browser extension
+        __REACT_DEVTOOLS_GLOBAL_HOOK__: 'readonly',
+      },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
@@ -52,6 +63,29 @@ export default [
     languageOptions: {
       sourceType: 'commonjs',
       globals: { module: 'readonly', require: 'readonly' },
+    },
+  },
+  {
+    // Node.js config files (Vite, etc.)
+    files: ['vite.config.js', '*.config.{js,cjs,mjs}'],
+    languageOptions: {
+      globals: {
+        ...globals.nodeBuiltin,
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
+    },
+  },
+  {
+    // Service worker files
+    files: ['public/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        importScripts: 'readonly',
+        firebase: 'readonly',
+        clients: 'readonly',
+      },
     },
   },
 ]

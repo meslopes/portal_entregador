@@ -29,7 +29,7 @@ const ClientLoginPage = () => {
       } else {
         navigate('/dashboard', { replace: true });
       }
-    } catch (err) {
+    } catch {
       // erro tratado no contexto
     } finally {
       setIsLoading(false);

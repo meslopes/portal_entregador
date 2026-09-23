@@ -16,7 +16,7 @@ const EstablishmentDetails = ({
         enable_platform_routing: !routingState
       });
       setRoutingState(!routingState);
-    } catch (err) {
+    } catch {
       showToast('Erro ao alterar configuração', 'error');
     }
   };

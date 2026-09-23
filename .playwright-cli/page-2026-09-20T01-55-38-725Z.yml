@@ -1,0 +1,37 @@
+- generic [ref=e63]:
+  - generic [ref=e65]:
+    - img "muv.log" [ref=e66]
+    - heading "muv.log" [level=1] [ref=e67]
+    - paragraph [ref=e68]: Plataforma completa para gestãode entregadores
+    - generic [ref=e69]:
+      - generic [ref=e70]: Gestão completa de entregadores
+      - generic [ref=e78]: Tracking em tempo real
+      - generic [ref=e84]: Relatórios e analytics
+      - generic [ref=e89]: Pagamentos seguros e rápidos
+  - generic [ref=e95]:
+    - generic [ref=e96]:
+      - heading "Bem-vindo de volta" [level=2] [ref=e97]
+      - paragraph [ref=e98]: Faça login para acessar sua conta
+    - generic [ref=e100]:
+      - generic [ref=e101]: Credenciais inválidas
+      - generic [ref=e104]:
+        - generic [ref=e105]: Email
+        - textbox "Email" [ref=e106]:
+          - /placeholder: seu@email.com
+      - generic [ref=e107]:
+        - generic [ref=e108]: Senha
+        - generic [ref=e109]:
+          - textbox "Senha" [ref=e110]:
+            - /placeholder: Sua senha
+          - button [ref=e111] [cursor=pointer]
+      - link "Esqueci minha senha" [ref=e116] [cursor=pointer]:
+        - /url: /support
+      - button "Entrar" [ref=e117] [cursor=pointer]
+    - generic [ref=e120]:
+      - paragraph [ref=e121]: Não tem uma conta?
+      - generic [ref=e122]:
+        - link "Cadastre-se como entregador" [ref=e123] [cursor=pointer]:
+          - /url: /register
+        - generic [ref=e124]: "|"
+        - link "Cadastre-se como estabelecimento" [ref=e125] [cursor=pointer]:
+          - /url: /client/register

@@ -1,0 +1,69 @@
+- generic [ref=f16e65]:
+  - banner [ref=f16e66]:
+    - generic [ref=f16e68]:
+      - link "Litoral Entregas Litoral Entregas" [ref=f16e69] [cursor=pointer]:
+        - /url: /dashboard
+        - img "Litoral Entregas" [ref=f16e70]
+        - generic [ref=f16e71]: Litoral Entregas
+      - generic [ref=f16e72]:
+        - button "Notificações (50 não lidas)" [ref=f16e74] [cursor=pointer]:
+          - generic [ref=f16e78]: 9+
+        - button "e1" [ref=f16e79] [cursor=pointer]
+        - button "Abrir menu" [ref=f16e84] [cursor=pointer]
+  - main [ref=f16e86]:
+    - generic [ref=f16e87]:
+      - generic [ref=f16e88]:
+        - generic [ref=f16e89]:
+          - heading "Olá, entregador 👋" [level=1] [ref=f16e90]
+          - paragraph [ref=f16e91]: Você está online e pronto para entregar
+        - button [ref=f16e92] [cursor=pointer]
+      - generic [ref=f16e95]:
+        - generic [ref=f16e101]:
+          - paragraph [ref=f16e102]: Ganhos Hoje
+          - paragraph [ref=f16e103]: R$ 0,00
+        - generic [ref=f16e110]:
+          - paragraph [ref=f16e111]: Ganhos da Semana
+          - paragraph [ref=f16e112]: R$ 0,00
+        - generic [ref=f16e120]:
+          - paragraph [ref=f16e121]: Total Entregas
+          - paragraph [ref=f16e122]: "0"
+        - generic [ref=f16e128]:
+          - paragraph [ref=f16e129]: Avaliação
+          - paragraph [ref=f16e130]: 5.0/5.0
+      - generic [ref=f16e131]:
+        - button "Pedidos Disponíveis" [ref=f16e132] [cursor=pointer]:
+          - generic [ref=f16e140]:
+            - heading "Pedidos Disponíveis" [level=3] [ref=f16e141]
+            - paragraph [ref=f16e142]: Veja os pedidos disponíveis na sua região
+        - button "Rotas da Plataforma" [ref=f16e145] [cursor=pointer]:
+          - generic [ref=f16e154]:
+            - heading "Rotas da Plataforma" [level=3] [ref=f16e155]
+            - paragraph [ref=f16e156]: Veja suas rotas atribuídas e aceite/rejeite
+        - button "Meus Ganhos" [ref=f16e159] [cursor=pointer]:
+          - generic [ref=f16e165]:
+            - heading "Meus Ganhos" [level=3] [ref=f16e166]
+            - paragraph [ref=f16e167]: Acompanhe seu histórico de ganhos
+        - button "Histórico" [ref=f16e170] [cursor=pointer]:
+          - generic [ref=f16e177]:
+            - heading "Histórico" [level=3] [ref=f16e178]
+            - paragraph [ref=f16e179]: Veja suas entregas anteriores
+      - generic [ref=f16e182]:
+        - generic [ref=f16e183]:
+          - generic [ref=f16e184]: Minha Localização
+          - button "Navegar" [ref=f16e189] [cursor=pointer]
+        - generic [ref=f16e192]:
+          - generic:
+            - generic:
+              - button [ref=f16e193] [cursor=pointer]
+              - button [ref=f16e197] [cursor=pointer]
+          - generic:
+            - generic [ref=f16e201]:
+              - button "Zoom in" [ref=f16e202] [cursor=pointer]: +
+              - button "Zoom out" [ref=f16e203] [cursor=pointer]: −
+            - generic [ref=f16e204]:
+              - link "Leaflet" [ref=f16e205] [cursor=pointer]:
+                - /url: https://leafletjs.com
+              - text: "| © OpenStreetMap"
+      - generic [ref=f16e210]:
+        - generic [ref=f16e211]: "-29.72275, -49.99712"
+        - button "Atualizar" [ref=f16e216] [cursor=pointer]

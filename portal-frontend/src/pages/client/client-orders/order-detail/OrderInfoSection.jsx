@@ -30,7 +30,7 @@ const OrderInfoSection = ({ order }) => {
   const hasOwnDriver = order.assigned_to_own_driver;
 
   let specialInfo = {};
-  try { if (order.special_instructions) specialInfo = JSON.parse(order.special_instructions); } catch (e) {}
+  try { if (order.special_instructions) specialInfo = JSON.parse(order.special_instructions); } catch { /* intentionally empty */ }
 
   return (
     <>

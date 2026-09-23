@@ -1,0 +1,118 @@
+- generic [ref=f1e63]:
+  - banner [ref=f1e64]:
+    - generic [ref=f1e66]:
+      - link "muv.log muv.log Platform" [ref=f1e67] [cursor=pointer]:
+        - /url: /platform
+        - img "muv.log" [ref=f1e68]
+        - generic [ref=f1e69]: muv.log Platform
+      - navigation [ref=f1e70]:
+        - link "Dashboard" [ref=f1e71] [cursor=pointer]:
+          - /url: /platform
+      - generic [ref=f1e77]:
+        - button "Notificações" [ref=f1e79] [cursor=pointer]
+        - button "ML" [ref=f1e83] [cursor=pointer]
+  - main [ref=f1e88]:
+    - generic [ref=f1e89]:
+      - generic [ref=f1e90]:
+        - generic [ref=f1e91]:
+          - heading "Painel da Plataforma" [level=1] [ref=f1e92]
+          - paragraph [ref=f1e93]: Gerencie todos os tenants e monitore o sistema
+        - generic [ref=f1e94]:
+          - link "🗺️ Mapa do Banco" [ref=f1e95] [cursor=pointer]:
+            - /url: /admin/database-map
+          - button "Atualizar" [ref=f1e96] [cursor=pointer]
+      - generic [ref=f1e102]:
+        - button "Visão Geral" [ref=f1e103] [cursor=pointer]
+        - button "Tenants" [active] [ref=f1e106] [cursor=pointer]
+        - button "Usuários" [ref=f1e111] [cursor=pointer]
+        - button "Admins" [ref=f1e117] [cursor=pointer]
+        - button "Pendentes" [ref=f1e120] [cursor=pointer]
+      - generic [ref=f1e223]:
+        - generic [ref=f1e224]:
+          - heading "Todos os Tenants" [level=2] [ref=f1e225]
+          - button "Novo Tenant" [ref=f1e226] [cursor=pointer]
+        - table [ref=f1e229]:
+          - rowgroup [ref=f1e230]:
+            - row [ref=f1e231]:
+              - columnheader "NOME" [ref=f1e232]
+              - columnheader "SLUG" [ref=f1e233]
+              - columnheader "PLANO" [ref=f1e234]
+              - columnheader "USUÁRIOS" [ref=f1e235]
+              - columnheader "ENTREGADORES" [ref=f1e236]
+              - columnheader "PEDIDOS" [ref=f1e237]
+              - columnheader "RECEITA" [ref=f1e238]
+              - columnheader "STATUS" [ref=f1e239]
+              - columnheader "AÇÕES" [ref=f1e240]
+          - rowgroup [ref=f1e241]:
+            - row [ref=f1e242]:
+              - cell "Canoas Plataforma" [ref=f1e243]
+              - cell "entregas-canoas" [ref=f1e244]
+              - cell "platinum" [ref=f1e245]
+              - cell "8" [ref=f1e246]
+              - cell "1" [ref=f1e247]
+              - cell "1" [ref=f1e248]
+              - cell "R$ 0.00" [ref=f1e249]
+              - cell [ref=f1e250]:
+                - button "Ativo" [ref=f1e251] [cursor=pointer]
+              - cell [ref=f1e255]:
+                - button "Ver detalhes" [ref=f1e256] [cursor=pointer]
+            - row [ref=f1e260]:
+              - cell "Canoas Entregas" [ref=f1e261]
+              - cell "canoas-entregas" [ref=f1e262]
+              - cell "free" [ref=f1e263]
+              - cell "1" [ref=f1e264]
+              - cell "1" [ref=f1e265]
+              - cell "0" [ref=f1e266]
+              - cell "R$ 0.00" [ref=f1e267]
+              - cell [ref=f1e268]:
+                - button "Ativo" [ref=f1e269] [cursor=pointer]
+              - cell [ref=f1e273]:
+                - button "Ver detalhes" [ref=f1e274] [cursor=pointer]
+            - row [ref=f1e278]:
+              - cell "entregas osorio" [ref=f1e279]
+              - cell "osorio" [ref=f1e280]
+              - cell "platinum" [ref=f1e281]
+              - cell "0" [ref=f1e282]
+              - cell "0" [ref=f1e283]
+              - cell "0" [ref=f1e284]
+              - cell "R$ 0.00" [ref=f1e285]
+              - cell [ref=f1e286]:
+                - button "Ativo" [ref=f1e287] [cursor=pointer]
+              - cell [ref=f1e291]:
+                - button "Ver detalhes" [ref=f1e292] [cursor=pointer]
+            - row [ref=f1e296]:
+              - cell "Everton Tenant" [ref=f1e297]
+              - cell "esl" [ref=f1e298]
+              - cell "basic" [ref=f1e299]
+              - cell "1" [ref=f1e300]
+              - cell "1" [ref=f1e301]
+              - cell "0" [ref=f1e302]
+              - cell "R$ 0.00" [ref=f1e303]
+              - cell [ref=f1e304]:
+                - button "Inativo" [ref=f1e305] [cursor=pointer]
+              - cell [ref=f1e309]:
+                - button "Ver detalhes" [ref=f1e310] [cursor=pointer]
+            - row [ref=f1e314]:
+              - cell "Litoral Entregas" [ref=f1e315]
+              - cell "litoral-entregas" [ref=f1e316]
+              - cell "free" [ref=f1e317]
+              - cell "22" [ref=f1e318]
+              - cell "13" [ref=f1e319]
+              - cell "8" [ref=f1e320]
+              - cell "R$ 0.00" [ref=f1e321]
+              - cell [ref=f1e322]:
+                - button "Ativo" [ref=f1e323] [cursor=pointer]
+              - cell [ref=f1e327]:
+                - button "Ver detalhes" [ref=f1e328] [cursor=pointer]
+            - row [ref=f1e332]:
+              - cell "tenat pra excluir" [ref=f1e333]
+              - cell "tenat-pra-excluir" [ref=f1e334]
+              - cell "free" [ref=f1e335]
+              - cell "1" [ref=f1e336]
+              - cell "0" [ref=f1e337]
+              - cell "0" [ref=f1e338]
+              - cell "R$ 0.00" [ref=f1e339]
+              - cell [ref=f1e340]:
+                - button "Ativo" [ref=f1e341] [cursor=pointer]
+              - cell [ref=f1e345]:
+                - button "Ver detalhes" [ref=f1e346] [cursor=pointer]

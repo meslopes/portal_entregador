@@ -32,7 +32,7 @@ export const FormField = ({ label, children }) => (
   </div>
 );
 
-export const PasswordField = ({ label, value, onChange, visible, onToggle, placeholder }) => (
+export const PasswordField = ({ value, onChange, visible, onToggle, placeholder }) => (
   <div style={{ position: 'relative' }}>
     <input
       type={visible ? 'text' : 'password'}

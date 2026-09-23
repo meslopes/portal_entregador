@@ -28,7 +28,7 @@ const RegisterPage = () => {
   const [searchParams] = useSearchParams();
   const geocodeCache = useRef({});
 
-  const { register, error, clearError } = useAuth();
+  const { error, clearError } = useAuth();
   const navigate = useNavigate();
 
   // Função Haversine para calcular distância entre coordenadas (em km)
@@ -72,7 +72,7 @@ const RegisterPage = () => {
         geocodeCache.current[cacheKey] = coords;
         return coords;
       }
-    } catch (err) {}
+    } catch { /* intentionally empty */ }
     return null;
   };
 
@@ -205,7 +205,7 @@ const RegisterPage = () => {
     }
     setIsLoading(true);
     try {
-      const { confirmPassword, ...registerData } = formData;
+      const { confirmPassword: _confirmPassword, ...registerData } = formData;
       // Chamar API via axios (com interceptor e base URL configurada)
       const response = await api.post('/api/auth/register', registerData);
       const data = response.data;

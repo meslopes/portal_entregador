@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { authService } from '@/lib/api';
+import api, { authService } from '@/lib/api';
 
 // Estado inicial
 const initialState = {
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
         }
-      } catch (error) {
+      } catch {
         // Token inválido, remove do localStorage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -147,7 +147,7 @@ export const AuthProvider = ({ children }) => {
         if (fcmToken) {
           api.post('/api/driver/push-token', { token: fcmToken }).catch(() => {});
         }
-      } catch (e) {
+      } catch {
         // Push notification é opcional — não bloqueia login
       }
 

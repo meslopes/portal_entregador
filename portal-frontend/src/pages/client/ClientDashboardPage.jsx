@@ -70,7 +70,7 @@ const ClientDashboardPage = () => {
         setTrackingDrivers(data.drivers || []);
         setRestaurantData(data.restaurant || null);
         setDeliveryAddresses(data.delivery_addresses || []);
-      } catch (e) {}
+      } catch { /* intentionally empty */ }
     }, 10000);
     return () => clearInterval(interval);
   }, []);

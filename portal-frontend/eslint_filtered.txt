@@ -1,0 +1,577 @@
+﻿
+  portal-frontend\eslint_full.txt:3:    39:13   error    Expected to return a value in method 'get'                    
+                                 getter-return
+> portal-frontend\eslint_full.txt:4:    84:20   error    'e' is defined but never used                                 
+                                 no-unused-vars
+> portal-frontend\eslint_full.txt:5:   140:26   error    'x' is defined but never used                                 
+                                 no-unused-vars
+  portal-frontend\eslint_full.txt:6:   140:29   error    Empty block statement                                         
+                                 no-empty
+> portal-frontend\eslint_full.txt:7:   152:20   error    'x' is defined but never used                                 
+                                 no-unused-vars
+> portal-frontend\eslint_full.txt:8:   415:22   error    '_err' is defined but never used                              
+                                 no-unused-vars
+  portal-frontend\eslint_full.txt:26:  2264:34   error    Expected a conditional expression and instead saw an 
+assignment                                no-cond-assign
+> portal-frontend\eslint_full.txt:27:  2991:14   error    'e' is defined but never used                                
+                                  no-unused-vars
+> portal-frontend\eslint_full.txt:28:  3158:16   error    'e' is defined but never used                                
+                                  no-unused-vars
+  portal-frontend\eslint_full.txt:29:  3158:19   error    Empty block statement                                        
+                                  no-empty
+> portal-frontend\eslint_full.txt:30:  3346:20   error    'e' is defined but never used                                
+                                  no-unused-vars
+  portal-frontend\eslint_full.txt:32:  3380:48   error    Empty block statement                                        
+                                  no-empty
+> portal-frontend\eslint_full.txt:33:  3706:15   error    'isCancel2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u      no-unused-vars
+> portal-frontend\eslint_full.txt:34:  3709:10   error    'all2' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u           no-unused-vars
+> portal-frontend\eslint_full.txt:35:  3711:19   error    'isAxiosError2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u  no-unused-vars
+> portal-frontend\eslint_full.txt:36:  3712:13   error    'spread2' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u        no-unused-vars
+> portal-frontend\eslint_full.txt:37:  3713:17   error    'toFormData2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u    no-unused-vars
+> portal-frontend\eslint_full.txt:38:  3716:5    error    'formToJSON' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u     no-unused-vars
+> portal-frontend\eslint_full.txt:39:  3717:5    error    'getAdapter' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u     no-unused-vars
+> portal-frontend\eslint_full.txt:40:  3718:18   error    'mergeConfig2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u   no-unused-vars
+> portal-frontend\eslint_full.txt:41:  4135:12   error    'total' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u          no-unused-vars
+> portal-frontend\eslint_full.txt:42:  4229:14   error    'e' is defined but never used                                
+                                  no-unused-vars
+  portal-frontend\eslint_full.txt:46:    39:13   error    Expected to return a value in method 'get'                   
+                                                                               getter-return
+> portal-frontend\eslint_full.txt:47:    84:20   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+> portal-frontend\eslint_full.txt:48:   140:26   error    'x' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:49:   140:29   error    Empty block statement                                        
+                                                                               no-empty
+> portal-frontend\eslint_full.txt:50:   152:20   error    'x' is defined but never used                                
+                                                                               no-unused-vars
+> portal-frontend\eslint_full.txt:51:   415:22   error    '_err' is defined but never used                             
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:61:   976:11   error    Unexpected constant condition                                
+                                                                               no-constant-condition
+> portal-frontend\eslint_full.txt:62:  1012:16   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:64:  1292:12   error    Empty block statement                                        
+                                                                               no-empty
+> portal-frontend\eslint_full.txt:65:  1418:7    error    'validMutationMethods' is assigned a value but never used. 
+Allowed unused vars must match /^[A-Z_]/u                                        no-unused-vars
+> portal-frontend\eslint_full.txt:66:  1425:7    error    'validRequestMethods' is assigned a value but never used. 
+Allowed unused vars must match /^[A-Z_]/u                                         no-unused-vars
+  portal-frontend\eslint_full.txt:70:  1529:10   error    Redundant double negation                                    
+                                                                               no-extra-boolean-cast
+> portal-frontend\eslint_full.txt:71:  1729:80   error    'future' is assigned a value but never used                  
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:72:  1769:68   error    Do not access Object.prototype method 'hasOwnProperty' from 
+target object                                                                   no-prototype-builtins
+> portal-frontend\eslint_full.txt:73:  2041:16   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+> portal-frontend\eslint_full.txt:74:  2268:7    error    'objectProtoNames' is assigned a value but never used. 
+Allowed unused vars must match /^[A-Z_]/u                                            no-unused-vars
+> portal-frontend\eslint_full.txt:75:  2509:12   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:76:  2509:15   error    Empty block statement                                        
+                                                                               no-empty
+> portal-frontend\eslint_full.txt:77:  2571:20   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:80:  2980:7    error    React Hook "React10.useLayoutEffect" is called 
+conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+> portal-frontend\eslint_full.txt:81:  2988:18   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:92:  4271:34   error    Expected a conditional expression and instead saw an 
+assignment                                                                             no-cond-assign
+> portal-frontend\eslint_full.txt:93:  4998:14   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+> portal-frontend\eslint_full.txt:94:  5165:16   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:95:  5165:19   error    Empty block statement                                        
+                                                                               no-empty
+> portal-frontend\eslint_full.txt:96:  5353:20   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:98:  5387:48   error    Empty block statement                                        
+                                                                               no-empty
+> portal-frontend\eslint_full.txt:99:  5713:15   error    'isCancel2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                   no-unused-vars
+> portal-frontend\eslint_full.txt:100:  5716:10   error    'all2' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                                                        no-unused-vars
+> portal-frontend\eslint_full.txt:101:  5718:19   error    'isAxiosError2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                               no-unused-vars
+> portal-frontend\eslint_full.txt:102:  5719:13   error    'spread2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                     no-unused-vars
+> portal-frontend\eslint_full.txt:103:  5720:17   error    'toFormData2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                 no-unused-vars
+> portal-frontend\eslint_full.txt:104:  5723:5    error    'formToJSON' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+> portal-frontend\eslint_full.txt:105:  5724:5    error    'getAdapter' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+> portal-frontend\eslint_full.txt:106:  5725:18   error    'mergeConfig2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                no-unused-vars
+  portal-frontend\eslint_full.txt:107:  6371:15   error    Empty block statement                                       
+                                                                                no-empty
+> portal-frontend\eslint_full.txt:108:  6426:43   error    'idx' is defined but never used                             
+                                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:109:  6439:41   error    'idx' is defined but never used                             
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:112:    39:13   error    Expected to return a value in method 'get'                  
+                                                                                getter-return
+> portal-frontend\eslint_full.txt:113:    84:20   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:114:   140:26   error    'x' is defined but never used                               
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:115:   140:29   error    Empty block statement                                       
+                                                                                no-empty
+> portal-frontend\eslint_full.txt:116:   152:20   error    'x' is defined but never used                               
+                                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:117:   415:22   error    '_err' is defined but never used                            
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:127:   976:11   error    Unexpected constant condition                               
+                                                                                no-constant-condition
+> portal-frontend\eslint_full.txt:128:  1012:16   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:130:  1292:12   error    Empty block statement                                       
+                                                                                no-empty
+> portal-frontend\eslint_full.txt:131:  1418:7    error    'validMutationMethods' is assigned a value but never used. 
+Allowed unused vars must match /^[A-Z_]/u                                        no-unused-vars
+> portal-frontend\eslint_full.txt:132:  1425:7    error    'validRequestMethods' is assigned a value but never used. 
+Allowed unused vars must match /^[A-Z_]/u                                         no-unused-vars
+  portal-frontend\eslint_full.txt:136:  1529:10   error    Redundant double negation                                   
+                                                                                no-extra-boolean-cast
+> portal-frontend\eslint_full.txt:137:  1724:80   error    'future' is assigned a value but never used                 
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:138:  1764:68   error    Do not access Object.prototype method 'hasOwnProperty' from 
+target object                                                                   no-prototype-builtins
+> portal-frontend\eslint_full.txt:139:  2036:16   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:140:  2263:7    error    'objectProtoNames' is assigned a value but never used. 
+Allowed unused vars must match /^[A-Z_]/u                                            no-unused-vars
+> portal-frontend\eslint_full.txt:141:  2504:12   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:142:  2504:15   error    Empty block statement                                       
+                                                                                no-empty
+> portal-frontend\eslint_full.txt:143:  2566:20   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:146:  2975:7    error    React Hook "React10.useLayoutEffect" is called 
+conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+> portal-frontend\eslint_full.txt:147:  2983:18   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:158:  4329:34   error    Expected a conditional expression and instead saw an 
+assignment                                                                             no-cond-assign
+> portal-frontend\eslint_full.txt:159:  5056:14   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:160:  5223:16   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:161:  5223:19   error    Empty block statement                                       
+                                                                                no-empty
+> portal-frontend\eslint_full.txt:162:  5411:20   error    'e' is defined but never used                               
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:164:  5445:48   error    Empty block statement                                       
+                                                                                no-empty
+> portal-frontend\eslint_full.txt:165:  5771:15   error    'isCancel2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                   no-unused-vars
+> portal-frontend\eslint_full.txt:166:  5774:10   error    'all2' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                                                        no-unused-vars
+> portal-frontend\eslint_full.txt:167:  5776:19   error    'isAxiosError2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                               no-unused-vars
+> portal-frontend\eslint_full.txt:168:  5777:13   error    'spread2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                     no-unused-vars
+> portal-frontend\eslint_full.txt:169:  5778:17   error    'toFormData2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                 no-unused-vars
+> portal-frontend\eslint_full.txt:170:  5781:5    error    'formToJSON' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+> portal-frontend\eslint_full.txt:171:  5782:5    error    'getAdapter' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+> portal-frontend\eslint_full.txt:172:  5783:18   error    'mergeConfig2' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                no-unused-vars
+> portal-frontend\eslint_full.txt:173:  5840:11   error    'navigate' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                    no-unused-vars
+> portal-frontend\eslint_full.txt:174:  5950:16   error    'err' is defined but never used                             
+                                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:175:  5959:16   error    'err' is defined but never used                             
+                                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:181:  16:19  error  'firebase' is not defined                                        
+                     no-undef
+> portal-frontend\eslint_full.txt:182:  58:20  error  'type' is assigned a value but never used. Allowed unused vars 
+must match /^[A-Z_]/u  no-unused-vars
+  portal-frontend\eslint_full.txt:186:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\public\sw.js
+> portal-frontend\eslint_full.txt:187:   7:35  error  'event' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:192:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\
+ClientLayout.jsx
+> portal-frontend\eslint_full.txt:193:  30:16  error  'err' is defined but never used                                  
+                         no-unused-vars
+> portal-frontend\eslint_full.txt:194:  39:9   error  'isClient' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u  no-unused-vars
+  portal-frontend\eslint_full.txt:199:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\
+DateRangeFilter.jsx
+> portal-frontend\eslint_full.txt:200:  1:27  error  'useRef' is defined but never used. Allowed unused vars must 
+match /^[A-Z_]/u  no-unused-vars
+  portal-frontend\eslint_full.txt:209:  - Helper clusters -> domain-specific utility module  quality/max-lines
+> portal-frontend\eslint_full.txt:210:  10:10  error    'isLoading' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                                                                                             
+                                                                                                     no-unused-vars
+> portal-frontend\eslint_full.txt:211:  10:21  error    'setIsLoading' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                                      
+                                                                                                         no-unused-vars
+  portal-frontend\eslint_full.txt:212:  26:6   warning  React Hook useEffect has missing dependencies: 'isAdmin', 
+'loadNotifications', and 'loadPendingUsers'. Either include them or remove the dependency array                        
+                                                                                                          
+react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:213:  51:14  error    'err' is defined but never used                                
+                                                                                                                       
+                                                                                                     no-unused-vars
+> portal-frontend\eslint_full.txt:214:  66:14  error    'err' is defined but never used                                
+                                                                                                                       
+                                                                                                     no-unused-vars
+> portal-frontend\eslint_full.txt:215:  86:14  error    'e' is defined but never used                                  
+                                                                                                                       
+                                                                                                     no-unused-vars
+  portal-frontend\eslint_full.txt:218:  26:6   warning  React Hook useEffect has a missing dependency: 
+'checkForOffers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:219:  69:14  error    'err' is defined but never used                                
+                                                    no-unused-vars
+  portal-frontend\eslint_full.txt:221:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\components\
+OwnDriverProtectedRoute.jsx
+> portal-frontend\eslint_full.txt:222:  28:16  error  'e' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:231:  19:6   warning  React Hook useEffect has a missing dependency: 
+'loadDeletedUsers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:232:  27:14  error    'err' is defined but never used                                
+                                                      no-unused-vars
+  portal-frontend\eslint_full.txt:233:  38:13  error    Empty block statement                                          
+                                                      no-empty
+> portal-frontend\eslint_full.txt:234:  80:14  error    'err' is defined but never used                                
+                                                      no-unused-vars
+  portal-frontend\eslint_full.txt:267:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\contexts\Au
+thContext.jsx
+> portal-frontend\eslint_full.txt:268:  107:16  error    'error' is defined but never used                             
+                                                                  no-unused-vars
+  portal-frontend\eslint_full.txt:269:  148:11  error    'api' is not defined                                          
+                                                                  no-undef
+> portal-frontend\eslint_full.txt:270:  150:16  error    'e' is defined but never used                                 
+                                                                  no-unused-vars
+  portal-frontend\eslint_full.txt:274:   6:14  warning  Fast refresh only works when a file only exports components. 
+Use a new file to share constants or functions between components  react-refresh/only-export-components
+> portal-frontend\eslint_full.txt:275:  40:16  error    'err' is defined but never used                                
+                                                                 no-unused-vars
+  
+portal-frontend\eslint_full.txt:277:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\lib\notify.js
+> portal-frontend\eslint_full.txt:278:   40:12  error  'e' is defined but never used  no-unused-vars
+> portal-frontend\eslint_full.txt:279:   53:32  error  'e' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:280:   53:35  error  Empty block statement          no-empty
+> portal-frontend\eslint_full.txt:281:  185:18  error  'e' is defined but never used  no-unused-vars
+> portal-frontend\eslint_full.txt:282:  220:14  error  'e' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:293:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Dashb
+oardPage.jsx
+> portal-frontend\eslint_full.txt:294:   32:16  error    'e' is defined but never used                                 
+                                                              no-unused-vars
+  portal-frontend\eslint_full.txt:295:   32:19  error    Empty block statement                                         
+                                                              no-empty
+> portal-frontend\eslint_full.txt:296:   56:16  error    'e' is defined but never used                                 
+                                                              no-unused-vars
+> portal-frontend\eslint_full.txt:297:   91:14  error    'e' is defined but never used                                 
+                                                              no-unused-vars
+  portal-frontend\eslint_full.txt:299:   97:6   warning  React Hook useEffect has a missing dependency: 
+'user?.driver?.is_online'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:300:  212:18  error    'locErr' is defined but never used                            
+                                                              no-unused-vars
+> portal-frontend\eslint_full.txt:301:  232:14  error    'error' is defined but never used                             
+                                                              no-unused-vars
+  portal-frontend\eslint_full.txt:304:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Drive
+rRankingPage.jsx
+> portal-frontend\eslint_full.txt:305:  27:10  error    'error' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                        no-unused-vars
+  portal-frontend\eslint_full.txt:306:  31:6   warning  React Hook useEffect has a missing dependency: 'loadData'. 
+Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:307:  67:9   error    'getScoreColor' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                no-unused-vars
+  portal-frontend\eslint_full.txt:309:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Drive
+rRouteMap.jsx
+> portal-frontend\eslint_full.txt:310:    4:24  error    'utils' is defined but never used. Allowed unused vars must 
+match /^[A-Z_]/u                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:311:   67:6   warning  React Hook useEffect has missing dependencies: 
+'activeOrders.length' and 'user?.driver?.square_state'. Either include them or remove the dependency array  
+react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:312:  199:16  error    'e' is defined but never used                                 
+                                                                                             no-unused-vars
+  portal-frontend\eslint_full.txt:318:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Login
+Page.jsx
+> portal-frontend\eslint_full.txt:319:  15:9   error  'from' is assigned a value but never used. Allowed unused vars 
+must match /^[A-Z_]/u  no-unused-vars
+> portal-frontend\eslint_full.txt:320:  30:14  error  'err' is defined but never used                                  
+                     no-unused-vars
+  portal-frontend\eslint_full.txt:330:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Regis
+terPage.jsx
+> portal-frontend\eslint_full.txt:331:   31:11  error    'register' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                                                     no-unused-vars
+> portal-frontend\eslint_full.txt:332:   75:14  error    'err' is defined but never used                               
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:334:  105:6   warning  React Hook useEffect has missing dependencies: 
+'detectNearestSquare' and 'searchParams'. Either include them or remove the dependency array  
+react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:335:  208:15  error    'confirmPassword' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                              no-unused-vars
+  portal-frontend\eslint_full.txt:337:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Subsc
+riptionPage.jsx
+> portal-frontend\eslint_full.txt:338:  20:10  error    'actionLoading' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                     no-unused-vars
+  portal-frontend\eslint_full.txt:342:  28:6   warning  React Hook useEffect has a missing dependency: 'loadTracking'. 
+Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:343:  35:14  error    'err' is defined but never used                                
+                                                  no-unused-vars
+  portal-frontend\eslint_full.txt:345:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\Walle
+tPage.jsx
+> portal-frontend\eslint_full.txt:346:  24:14  error  'err' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:348:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\activ
+e-delivery\CodeModal.jsx
+> portal-frontend\eslint_full.txt:349:  6:3   error  'order' is defined but never used       no-unused-vars
+> portal-frontend\eslint_full.txt:350:  6:10  error  'proofPhoto' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:366:  - Helper clusters -> domain-specific utility module  quality/max-lines
+> portal-frontend\eslint_full.txt:367:   13:11  error    'user' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                                                                                             
+                                                                                                          
+no-unused-vars
+> portal-frontend\eslint_full.txt:368:   17:10  error    'dashboard' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                                      
+                                                                                                            
+no-unused-vars
+> portal-frontend\eslint_full.txt:369:   91:14  error    'err' is defined but never used                               
+                                                                                                                       
+                                                                                                      no-unused-vars
+> portal-frontend\eslint_full.txt:370:  162:14  error    'err' is defined but never used                               
+                                                                                                                       
+                                                                                                      no-unused-vars
+  portal-frontend\eslint_full.txt:375:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\AdminDriverPaymentsPage.jsx
+> portal-frontend\eslint_full.txt:376:  6:15  error  'adminService' is defined but never used. Allowed unused vars 
+must match /^[A-Z_]/u  no-unused-vars
+  portal-frontend\eslint_full.txt:378:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\AdminDriversPage.jsx
+> portal-frontend\eslint_full.txt:379:   32:10   error    'dateRange' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                   no-unused-vars
+> portal-frontend\eslint_full.txt:380:   32:21   error    'setDateRange' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:381:   49:131  warning  React Hook useEffect has missing dependencies: 
+'isSuperAdmin', 'loadDrivers', and 'loadEstablishments'. Either include them or remove the dependency array  
+react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:382:   71:14   error    'err' is defined but never used                              
+                                                                                               no-unused-vars
+> portal-frontend\eslint_full.txt:383:  155:130  error    'e' is defined but never used                                
+                                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:384:  155:133  error    Empty block statement                                        
+                                                                                               no-empty
+> portal-frontend\eslint_full.txt:385:  156:140  error    'err' is defined but never used                              
+                                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:386:  156:145  error    Empty block statement                                        
+                                                                                               no-empty
+> portal-frontend\eslint_full.txt:387:  157:178  error    'err' is defined but never used                              
+                                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:401:   38:6    warning  React Hook useEffect has missing dependencies: 
+'isSuperAdmin' and 'loadEstablishments'. Either include them or remove the dependency array  
+react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:402:   41:98   error    'e' is defined but never used                                
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:403:   41:101  error    Empty block statement                                        
+                                                                               no-empty
+> portal-frontend\eslint_full.txt:404:   45:105  error    'e' is defined but never used                                
+                                                                               no-unused-vars
+> portal-frontend\eslint_full.txt:405:   52:14   error    'err' is defined but never used                              
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:406:   52:19   error    Empty block statement                                        
+                                                                               no-empty
+> portal-frontend\eslint_full.txt:407:  133:12   error    'err' is defined but never used                              
+                                                                               no-unused-vars
+> portal-frontend\eslint_full.txt:408:  138:12   error    'err' is defined but never used                              
+                                                                               no-unused-vars
+  portal-frontend\eslint_full.txt:410:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\AdminFinancePage.jsx
+> portal-frontend\eslint_full.txt:411:  18:10  error    'period' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                       no-unused-vars
+> portal-frontend\eslint_full.txt:412:  18:18  error    'setPeriod' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                    no-unused-vars
+  portal-frontend\eslint_full.txt:419:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\AdminOrdersPage.jsx
+> portal-frontend\eslint_full.txt:420:  11:24  error    'getStatusLabel' is defined but never used. Allowed unused 
+vars must match /^[A-Z_]/u                          no-unused-vars
+  portal-frontend\eslint_full.txt:423:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\AdminPricingPage.jsx
+> portal-frontend\eslint_full.txt:424:  31:14  error  'err' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:428:   33:50  warning  React Hook useEffect has a missing dependency: 'loadAll'. 
+Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:429:  230:19  error    'i' is defined but never used                                 
+                                              no-unused-vars
+  portal-frontend\eslint_full.txt:438:  - Helper clusters -> domain-specific utility module  quality/max-lines
+> portal-frontend\eslint_full.txt:439:   6:29  error    'utils' is defined but never used. Allowed unused vars must 
+match /^[A-Z_]/u                                                                                                       
+                                                                                                        no-unused-vars
+> portal-frontend\eslint_full.txt:440:  29:10  error    'showDetails' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                                      
+                                                                                                          
+no-unused-vars
+> portal-frontend\eslint_full.txt:441:  29:23  error    'setShowDetails' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                                      
+                                                                                                       no-unused-vars
+  portal-frontend\eslint_full.txt:444:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\AdminWithdrawalsPage.jsx
+> portal-frontend\eslint_full.txt:445:  18:14  error  'err' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:457:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\PlatformDashboardPage.jsx
+> portal-frontend\eslint_full.txt:458:   27:10  error    'squares' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                       no-unused-vars
+  portal-frontend\eslint_full.txt:459:   54:6   warning  React Hook useEffect has a missing dependency: 'loadUsers'. 
+Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:460:  143:14  error    'err' is defined but never used                               
+                                                no-unused-vars
+> portal-frontend\eslint_full.txt:461:  153:14  error    'err' is defined but never used                               
+                                                no-unused-vars
+  portal-frontend\eslint_full.txt:472:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\dashboard-tabs\MapSection.jsx
+> portal-frontend\eslint_full.txt:473:  29:57  error    'e' is defined but never used                                  
+                                                  no-unused-vars
+  portal-frontend\eslint_full.txt:474:  29:60  error    Empty block statement                                          
+                                                  no-empty
+> portal-frontend\eslint_full.txt:475:  40:57  error    'e' is defined but never used                                  
+                                                  no-unused-vars
+  portal-frontend\eslint_full.txt:485:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\establishments\EstablishmentDetails.jsx
+> portal-frontend\eslint_full.txt:486:  19:14  error  'err' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:495:  - Helper clusters -> domain-specific utility module  quality/max-lines
+> portal-frontend\eslint_full.txt:496:   79:14  error  'e' is defined but never used                                   
+                                                                                                                       
+                                                                                                    no-unused-vars
+> portal-frontend\eslint_full.txt:497:  179:14  error  'e' is defined but never used                                   
+                                                                                                                       
+                                                                                                    no-unused-vars
+  portal-frontend\eslint_full.txt:499:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\establishments\ui.jsx
+> portal-frontend\eslint_full.txt:500:   3:35  error    'onClose' is defined but never used                            
+                                                                 no-unused-vars
+  portal-frontend\eslint_full.txt:509:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\reports\RatingsReport.jsx
+> portal-frontend\eslint_full.txt:510:  18:31  error  'i' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:515:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\route-settings\SettingsCard.jsx
+> portal-frontend\eslint_full.txt:516:  3:31  error  'Icon' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:518:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\admin
+\white-label\SectionCard.jsx
+> portal-frontend\eslint_full.txt:519:  3:30  error  'Icon' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:522:  41:6   warning  React Hook useEffect has a missing dependency: 'loadData'. 
+Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:523:  73:16  error    'e' is defined but never used                                  
+                                              no-unused-vars
+  portal-frontend\eslint_full.txt:526:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clien
+t\ClientIntegrationsPage.jsx
+> portal-frontend\eslint_full.txt:527:  71:14  error  'err' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:529:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clien
+t\ClientLoginPage.jsx
+> portal-frontend\eslint_full.txt:530:  32:14  error  'err' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:532:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clien
+t\ClientOrdersPage.jsx
+> portal-frontend\eslint_full.txt:533:  16:10  error    'total' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                          no-unused-vars
+  portal-frontend\eslint_full.txt:536:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clien
+t\ClientRegisterPage.jsx
+> portal-frontend\eslint_full.txt:537:  97:14  error  'err' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:539:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clien
+t\NewOrderPage.jsx
+> portal-frontend\eslint_full.txt:540:  30:10  error  'mapInitialized' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u  no-unused-vars
+  portal-frontend\eslint_full.txt:542:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clien
+t\OwnDriverFinancialPage.jsx
+> portal-frontend\eslint_full.txt:543:   17:10  error    'paymentConfig' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                no-unused-vars
+> portal-frontend\eslint_full.txt:544:   29:10  error    'editingConfig' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                no-unused-vars
+  portal-frontend\eslint_full.txt:545:   39:36  warning  React Hook useEffect has a missing dependency: 'loadData'. 
+Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:546:  129:14  error    'err' is defined but never used                               
+                                               no-unused-vars
+> portal-frontend\eslint_full.txt:547:  142:14  error    'err' is defined but never used                               
+                                               no-unused-vars
+> portal-frontend\eslint_full.txt:548:  157:14  error    'err' is defined but never used                               
+                                               no-unused-vars
+  portal-frontend\eslint_full.txt:560:  - Helper clusters -> domain-specific utility module  quality/max-lines
+> portal-frontend\eslint_full.txt:561:  22:12  error    'e' is defined but never used                                  
+                                                                                                                       
+                                                                                                     no-unused-vars
+  portal-frontend\eslint_full.txt:563:  38:6   warning  React Hook useEffect has a missing dependency: 'canAssign'. 
+Either include it or remove the dependency array                                                                       
+                                                                                                        
+react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:564:  48:14  error    'e' is defined but never used                                  
+                                                                                                                       
+                                                                                                     no-unused-vars
+  portal-frontend\eslint_full.txt:567:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\clien
+t\client-orders\order-detail\OrderInfoSection.jsx
+> portal-frontend\eslint_full.txt:568:  33:104  error  'e' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:580:  15:14  warning  Fast refresh only works when a file only exports components. 
+Use a new file to share constants or functions between components  react-refresh/only-export-components
+> portal-frontend\eslint_full.txt:581:  35:33  error    'label' is defined but never used                              
+                                                                 no-unused-vars
+  portal-frontend\eslint_full.txt:583:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\drive
+r\PlatformDriverDashboardPage.jsx
+> portal-frontend\eslint_full.txt:584:  31:10  error    'error' is assigned a value but never used. Allowed unused 
+vars must match /^[A-Z_]/u                        no-unused-vars
+  portal-frontend\eslint_full.txt:594:  - Helper clusters -> domain-specific utility module  quality/max-lines
+> portal-frontend\eslint_full.txt:595:   14:10  error  'selectedRoute' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                                      
+                                                                                                        no-unused-vars
+> portal-frontend\eslint_full.txt:596:   14:25  error  'setSelectedRoute' is assigned a value but never used. Allowed 
+unused vars must match /^[A-Z_]/u                                                                                      
+                                                                                                     no-unused-vars
+> portal-frontend\eslint_full.txt:597:   25:16  error  'e' is defined but never used                                   
+                                                                                                                       
+                                                                                                    no-unused-vars
+  portal-frontend\eslint_full.txt:598:   25:19  error  Empty block statement                                           
+                                                                                                                       
+                                                                                                    no-empty
+> portal-frontend\eslint_full.txt:599:   86:14  error  'e' is defined but never used                                   
+                                                                                                                       
+                                                                                                    no-unused-vars
+  portal-frontend\eslint_full.txt:600:   86:17  error  Empty block statement                                           
+                                                                                                                       
+                                                                                                    no-empty
+> portal-frontend\eslint_full.txt:601:  220:58  error  'idx' is defined but never used                                 
+                                                                                                                       
+                                                                                                    no-unused-vars
+  portal-frontend\eslint_full.txt:603:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\order
+s\OrderCard.jsx
+> portal-frontend\eslint_full.txt:604:  84:20  error  'e' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:607:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-d
+river\OwnDriverDashboardPage.jsx
+> portal-frontend\eslint_full.txt:608:   31:16  error    'e' is defined but never used                                 
+                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:610:   55:6   warning  React Hook useEffect has missing dependencies: 'loadData' and 
+'navigate'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:611:   97:16  error    'e' is defined but never used                                 
+                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:612:   97:19  error    Empty block statement                                         
+                                                                no-empty
+> portal-frontend\eslint_full.txt:613:  117:20  error    'e' is defined but never used                                 
+                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:614:  186:69  error    'e' is defined but never used                                 
+                                                                no-unused-vars
+> portal-frontend\eslint_full.txt:615:  216:16  error    'e' is defined but never used                                 
+                                                                no-unused-vars
+  portal-frontend\eslint_full.txt:618:  30:6   warning  React Hook useEffect has a missing dependency: 'loadOrder'. 
+Either include it or remove the dependency array  react-hooks/exhaustive-deps
+> portal-frontend\eslint_full.txt:619:  44:14  error    'err' is defined but never used                                
+                                               no-unused-vars
+> portal-frontend\eslint_full.txt:620:  78:16  error    'e' is defined but never used                                  
+                                               no-unused-vars
+  portal-frontend\eslint_full.txt:625:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-d
+river\OwnDriverOrdersPage.jsx
+> portal-frontend\eslint_full.txt:626:   7:10  error    'utils' is defined but never used. Allowed unused vars must 
+match /^[A-Z_]/u                                   no-unused-vars
+  portal-frontend\eslint_full.txt:629:C:\Users\Dell\portal_entregador\portal_entregador\portal-frontend\src\pages\own-d
+river\OwnDriverRoutesPage.jsx
+> portal-frontend\eslint_full.txt:630:   31:16  error  'e' is defined but never used  no-unused-vars
+  portal-frontend\eslint_full.txt:631:   31:19  error  Empty block statement          no-empty
+> portal-frontend\eslint_full.txt:632:   97:14  error  'e' is defined but never used  no-unused-vars
+> portal-frontend\eslint_full.txt:633:  176:16  error  'e' is defined but never used  no-unused-vars
+
+

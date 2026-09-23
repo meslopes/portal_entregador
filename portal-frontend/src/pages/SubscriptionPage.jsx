@@ -17,7 +17,7 @@ const SubscriptionPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [restaurants, setRestaurants] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [_actionLoading, setActionLoading] = useState(false);
 
   // Formulário de criação
   const [createForm, setCreateForm] = useState({

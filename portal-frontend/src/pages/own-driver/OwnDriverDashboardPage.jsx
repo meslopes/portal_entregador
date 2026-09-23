@@ -28,7 +28,7 @@ const OwnDriverDashboardPage = () => {
       try {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
         audioEnabledRef.current = true;
-      } catch (e) {}
+      } catch { /* intentionally empty */ }
       document.removeEventListener('click', enableAudio);
       document.removeEventListener('touchstart', enableAudio);
     };
@@ -94,7 +94,7 @@ const OwnDriverDashboardPage = () => {
         if (navigator.vibrate) {
           navigator.vibrate([200, 100, 200, 100, 200]);
         }
-      } catch (e) {}
+      } catch { /* intentionally empty */ }
     }
     prevPendingRoutes.current = pendingRoutes;
   }, [pendingRoutes]);
@@ -114,7 +114,7 @@ const OwnDriverDashboardPage = () => {
               latitude: pos.coords.latitude,
               longitude: pos.coords.longitude
             }, { headers: { Authorization: `Bearer ${token}` } });
-          } catch (e) { /* silent */ }
+          } catch { /* silent */ }
         },
         () => { /* geolocation error - silent */ },
         { timeout: 10000, maximumAge: 15000 }
@@ -183,7 +183,7 @@ const OwnDriverDashboardPage = () => {
 
       const storedRestaurant = localStorage.getItem('own_driver_restaurant');
       if (storedRestaurant) {
-        try { setRestaurant(JSON.parse(storedRestaurant)); } catch (e) { /* corrupted data */ }
+        try { setRestaurant(JSON.parse(storedRestaurant)); } catch { /* corrupted data */ }
       }
     } catch (err) {
       if (err.response?.status === 401) {
@@ -213,7 +213,7 @@ const OwnDriverDashboardPage = () => {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude
         };
-      } catch (e) {
+      } catch {
         // Sem localização, toggle sem GPS
       }
 

@@ -3,18 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { adminService, orderService } from '@/lib/api';
 import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
 import { useSquare } from '@/contexts/SquareContext';
 import { showToast } from '@/components/Toast';
 import { Sidebar, MapSection, AssignDriverModal, SettingsModal } from './dashboard-tabs';
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { squareId, selectedSquare, setSelectedSquare } = useSquare();
 
   // ── State ──────────────────────────────────────────────────────────────────
-  const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -47,8 +44,7 @@ const AdminDashboardPage = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await adminService.getDashboard(squareId);
-      setDashboard(data);
+      await adminService.getDashboard(squareId);
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);
       setError('Erro ao carregar dados do dashboard');
@@ -88,7 +84,7 @@ const AdminDashboardPage = () => {
     try {
       const response = await api.get('/api/platform/tenants');
       setTenants(response.data.tenants || []);
-    } catch (err) {
+    } catch {
       console.log('Tenants not available');
     }
   };
@@ -159,7 +155,7 @@ const AdminDashboardPage = () => {
       await orderService.updateOrderStatus(orderId, newStatus);
       setSelectedOrderMenu(null);
       loadOrders();
-    } catch (err) {
+    } catch {
       showToast('Erro ao alterar status', 'error');
     }
   };

@@ -19,7 +19,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
     if (order.special_instructions) {
       specialInfo = JSON.parse(order.special_instructions);
     }
-  } catch (e) {}
+  } catch { /* intentionally empty */ }
 
   const canRate = order.status === 'DELIVERED' && !order.delivery?.customer_rating;
   const canCancel = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status);
@@ -45,7 +45,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
         const res = await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`);
         setOwnDrivers(res.data.drivers || []);
       }
-    } catch (e) {}
+    } catch { /* intentionally empty */ }
   };
 
   const handleAssignOwn = async (driverId) => {

@@ -7,7 +7,6 @@ const NotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef(null);
 
   // Verificar se é admin
@@ -48,7 +47,7 @@ const NotificationBell = () => {
       
       setNotifications(newNotifications);
       setUnreadCount(newUnread);
-    } catch (err) {
+    } catch {
       // Silently fail - not critical
     }
   };
@@ -63,7 +62,7 @@ const NotificationBell = () => {
       if (users.length > prevCount && prevCount > 0) {
         playNotificationSound();
       }
-    } catch (err) {
+    } catch {
       // Silently fail
     }
   };
@@ -83,7 +82,7 @@ const NotificationBell = () => {
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.3);
       setTimeout(() => ctx.close(), 500);
-    } catch (e) {
+    } catch {
       // Silently fail
     }
   };

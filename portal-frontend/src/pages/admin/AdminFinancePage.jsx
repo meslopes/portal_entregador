@@ -15,7 +15,6 @@ const AdminFinancePage = () => {
   const [driverPayments, setDriverPayments] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [period, setPeriod] = useState('month');
   const [dateRange, setDateRange] = useState(null);
   const [commission, setCommission] = useState(30); // % que o admin retém
   const [savingCommission, setSavingCommission] = useState(false);

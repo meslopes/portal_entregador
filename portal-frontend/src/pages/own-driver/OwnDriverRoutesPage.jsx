@@ -28,7 +28,7 @@ const OwnDriverRoutesPage = () => {
       try {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
         audioEnabledRef.current = true;
-      } catch (e) {}
+      } catch { /* intentionally empty */ }
       document.removeEventListener('click', enableAudio);
       document.removeEventListener('touchstart', enableAudio);
     };
@@ -94,7 +94,7 @@ const OwnDriverRoutesPage = () => {
       if (navigator.vibrate) {
         navigator.vibrate([200, 100, 200, 100, 200]);
       }
-    } catch (e) {
+    } catch {
       // Silenciar erro de áudio
     }
   };
@@ -173,7 +173,7 @@ const OwnDriverRoutesPage = () => {
           navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
         });
         locationData = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      } catch (e) { /* Sem GPS */ }
+      } catch { /* Sem GPS */ }
 
       const payload = { status: 'DELIVERED', ...locationData };
 

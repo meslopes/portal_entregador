@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { orderService, utils } from '@/lib/api';
+import { orderService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { STATUS_MAP } from './driver-route-map/constants';
 import RouteMapView from './driver-route-map/RouteMapView';
@@ -196,7 +196,7 @@ const DriverRouteMap = () => {
             driverService.updateLocation(lat, lng).catch(() => {});
           });
         }
-      } catch (e) {}
+      } catch { /* intentionally empty */ }
     };
 
     // Iniciar rastreamento contínuo

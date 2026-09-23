@@ -1,0 +1,80 @@
+- generic [ref=f13e65]:
+  - banner [ref=f13e66]:
+    - generic [ref=f13e68]:
+      - link "Litoral Entregas Litoral Entregas" [ref=f13e69] [cursor=pointer]:
+        - /url: /dashboard
+        - img "Litoral Entregas" [ref=f13e70]
+        - generic [ref=f13e71]: Litoral Entregas
+      - generic [ref=f13e72]:
+        - button "Notificações (50 não lidas)" [ref=f13e74] [cursor=pointer]:
+          - generic [ref=f13e78]: 9+
+        - button "e1" [ref=f13e79] [cursor=pointer]
+        - button "Abrir menu" [ref=f13e84] [cursor=pointer]
+  - main [ref=f13e86]:
+    - generic [ref=f13e87]:
+      - generic [ref=f13e88]:
+        - generic [ref=f13e89]:
+          - heading "Olá, entregador 👋" [level=1] [ref=f13e90]
+          - paragraph [ref=f13e91]: Você está online e pronto para entregar
+        - button [ref=f13e92] [cursor=pointer]
+      - generic [ref=f13e95]:
+        - generic [ref=f13e101]:
+          - paragraph [ref=f13e102]: Ganhos Hoje
+          - paragraph [ref=f13e103]: R$ 0,00
+        - generic [ref=f13e110]:
+          - paragraph [ref=f13e111]: Ganhos da Semana
+          - paragraph [ref=f13e112]: R$ 0,00
+        - generic [ref=f13e120]:
+          - paragraph [ref=f13e121]: Total Entregas
+          - paragraph [ref=f13e122]: "0"
+        - generic [ref=f13e128]:
+          - paragraph [ref=f13e129]: Avaliação
+          - paragraph [ref=f13e130]: 5.0/5.0
+      - generic [ref=f13e131]:
+        - button "Pedidos Disponíveis" [ref=f13e132] [cursor=pointer]:
+          - generic [ref=f13e140]:
+            - heading "Pedidos Disponíveis" [level=3] [ref=f13e141]
+            - paragraph [ref=f13e142]: Veja os pedidos disponíveis na sua região
+        - button "Rotas da Plataforma" [ref=f13e145] [cursor=pointer]:
+          - generic [ref=f13e154]:
+            - heading "Rotas da Plataforma" [level=3] [ref=f13e155]
+            - paragraph [ref=f13e156]: Veja suas rotas atribuídas e aceite/rejeite
+        - button "Meus Ganhos" [ref=f13e159] [cursor=pointer]:
+          - generic [ref=f13e165]:
+            - heading "Meus Ganhos" [level=3] [ref=f13e166]
+            - paragraph [ref=f13e167]: Acompanhe seu histórico de ganhos
+        - button "Histórico" [ref=f13e170] [cursor=pointer]:
+          - generic [ref=f13e177]:
+            - heading "Histórico" [level=3] [ref=f13e178]
+            - paragraph [ref=f13e179]: Veja suas entregas anteriores
+      - generic [ref=f13e182]:
+        - generic [ref=f13e183]:
+          - generic [ref=f13e184]: Minha Localização
+          - button "Navegar" [ref=f13e189] [cursor=pointer]
+        - generic [ref=f13e192]:
+          - generic:
+            - generic:
+              - button [ref=f13e193] [cursor=pointer]
+              - button [ref=f13e197] [cursor=pointer]
+          - generic:
+            - generic [ref=f13e201]:
+              - button "Zoom in" [ref=f13e202] [cursor=pointer]: +
+              - button "Zoom out" [ref=f13e203] [cursor=pointer]: −
+            - generic [ref=f13e204]:
+              - link "Leaflet" [ref=f13e205] [cursor=pointer]:
+                - /url: https://leafletjs.com
+              - text: "| © OpenStreetMap"
+      - generic [ref=f13e210]:
+        - generic [ref=f13e211]: "-29.72276, -49.99713"
+        - button "Atualizar" [ref=f13e216] [cursor=pointer]
+  - generic [ref=f13e220]:
+    - button [ref=f13e221] [cursor=pointer]
+    - heading "Novo Pedido Disponivel!" [level=2] [ref=f13e230]
+    - generic [ref=f13e231]: "Tempo restante: 60s"
+    - generic [ref=f13e232]:
+      - generic [ref=f13e233]: fora de hora
+      - generic [ref=f13e240]: rua poti, 234
+      - generic [ref=f13e245]: R$ 10.14
+    - generic [ref=f13e249]:
+      - button "Rejeitar" [ref=f13e250] [cursor=pointer]
+      - button "Aceitar Pedido" [ref=f13e251] [cursor=pointer]

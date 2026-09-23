@@ -1,0 +1,91 @@
+- generic [ref=f20e5]:
+  - banner [ref=f20e6]:
+    - generic [ref=f20e8]:
+      - link "Canoas Plataforma Canoas Plataforma Estabelecimento" [ref=f20e9] [cursor=pointer]:
+        - /url: /client
+        - img "Canoas Plataforma" [ref=f20e10]
+        - generic [ref=f20e11]: Canoas Plataforma
+        - generic [ref=f20e12]: Estabelecimento
+      - generic [ref=f20e13]:
+        - button "Notificações" [ref=f20e15] [cursor=pointer]
+        - button "A" [ref=f20e19] [cursor=pointer]
+        - button "Fechar menu" [expanded] [active] [ref=f20e116] [cursor=pointer]
+    - generic [ref=f20e120]:
+      - link "Início" [ref=f20e121] [cursor=pointer]:
+        - /url: /client
+      - link "Novo Pedido" [ref=f20e125] [cursor=pointer]:
+        - /url: /client/new-order
+      - link "Meus Pedidos" [ref=f20e127] [cursor=pointer]:
+        - /url: /client/orders
+      - link "Financeiro" [ref=f20e132] [cursor=pointer]:
+        - /url: /client/financial
+      - link "Faturas" [ref=f20e135] [cursor=pointer]:
+        - /url: /client/invoices
+      - link "Integrações" [ref=f20e139] [cursor=pointer]:
+        - /url: /client/integrations
+      - link "Meus Entregadores" [ref=f20e143] [cursor=pointer]:
+        - /url: /client/drivers
+      - link "Rotas" [ref=f20e149] [cursor=pointer]:
+        - /url: /client/routes
+      - link "Pagamentos Entregadores" [ref=f20e154] [cursor=pointer]:
+        - /url: /client/drivers/financial
+      - link "Pagamentos Próprios" [ref=f20e157] [cursor=pointer]:
+        - /url: /client/payment-reports
+      - link "Desempenho Entregadores" [ref=f20e161] [cursor=pointer]:
+        - /url: /client/drivers/metrics
+  - main [ref=f20e26]:
+    - generic [ref=f20e27]:
+      - generic [ref=f20e28]:
+        - generic [ref=f20e29]:
+          - heading "Olá, agropet canoas" [level=1] [ref=f20e30]
+          - paragraph [ref=f20e31]: Gerencie seus pedidos de entrega
+        - button "NOVO PEDIDO" [ref=f20e32] [cursor=pointer]
+      - generic [ref=f20e34]:
+        - generic [ref=f20e35]:
+          - generic [ref=f20e36]: Entregas em Andamento
+          - generic [ref=f20e40]: 0 entregador(es) ativo(s)
+        - generic [ref=f20e41]:
+          - generic [ref=f20e42]:
+            - button "🏪" [ref=f20e164] [cursor=pointer]
+            - generic:
+              - generic [ref=f20e45]:
+                - button "Zoom in" [ref=f20e46] [cursor=pointer]: +
+                - button "Zoom out" [ref=f20e47] [cursor=pointer]: −
+              - generic [ref=f20e48]:
+                - link "Leaflet" [ref=f20e49] [cursor=pointer]:
+                  - /url: https://leafletjs.com
+                - text: "| © OpenStreetMap"
+          - button "Centralizar" [ref=f20e54] [cursor=pointer]
+        - generic [ref=f20e57]: Nenhuma entrega em andamento no momento
+      - generic [ref=f20e58]:
+        - generic [ref=f20e66]:
+          - paragraph [ref=f20e67]: Pedidos Hoje
+          - paragraph [ref=f20e68]: "0"
+        - generic [ref=f20e75]:
+          - paragraph [ref=f20e76]: Em Andamento
+          - paragraph [ref=f20e77]: "0"
+        - generic [ref=f20e84]:
+          - paragraph [ref=f20e85]: Esta Semana
+          - paragraph [ref=f20e86]: "0"
+        - generic [ref=f20e92]:
+          - paragraph [ref=f20e93]: Total Receita
+          - paragraph [ref=f20e94]: R$ 0,00
+      - generic [ref=f20e95]:
+        - button "Todos" [ref=f20e96] [cursor=pointer]
+        - button "Pendentes" [ref=f20e97] [cursor=pointer]
+        - button "Em Andamento" [ref=f20e98] [cursor=pointer]
+        - button "Entregues" [ref=f20e99] [cursor=pointer]
+        - button "Cancelados" [ref=f20e100] [cursor=pointer]
+      - generic [ref=f20e101]:
+        - paragraph [ref=f20e107]: Nenhum pedido ainda
+        - paragraph [ref=f20e108]: Clique em "NOVO PEDIDO" para começar
+  - contentinfo [ref=f20e109]:
+    - generic [ref=f20e110]:
+      - paragraph [ref=f20e111]: © 2026 muv.log — Portal do Estabelecimento
+      - generic [ref=f20e112]:
+        - link "Suporte" [ref=f20e113] [cursor=pointer]:
+          - /url: /support
+        - link "Termos" [ref=f20e114] [cursor=pointer]:
+          - /url: /terms
+        - link "Privacidade" [ref=f20e115] [cursor=pointer]:
+          - /url: /privacy

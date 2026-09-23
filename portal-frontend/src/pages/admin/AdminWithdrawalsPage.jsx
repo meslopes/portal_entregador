@@ -15,7 +15,7 @@ const AdminWithdrawalsPage = () => {
       setLoading(true);
       const response = await api.get('/api/admin/withdrawals');
       setWithdrawals(response.data.withdrawals || []);
-    } catch (err) {
+    } catch {
       setError('Erro ao carregar saques');
     } finally {
       setLoading(false);

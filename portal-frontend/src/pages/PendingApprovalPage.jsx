@@ -80,7 +80,7 @@ const PendingApprovalPage = () => {
             playSound();
           }
         });
-      } catch {}
+      } catch { /* intentionally empty */ }
     };
     setupForeground();
     return () => unsubscribe();
@@ -103,7 +103,7 @@ const PendingApprovalPage = () => {
         osc.start(ctx.currentTime + i * 0.15);
         osc.stop(ctx.currentTime + i * 0.15 + 0.4);
       });
-    } catch {}
+    } catch { /* intentionally empty */ }
   };
 
   // Status: Aprovado

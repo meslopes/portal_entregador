@@ -81,7 +81,7 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
             }
             if (parsed.change_for) parts.push(`Troco para R$ ${parsed.change_for}`);
             if (parts.length > 0) instructions = parts.join(' | ');
-          } catch (e) {}
+          } catch { /* intentionally empty */ }
           if (!instructions) return null;
           return (
             <div style={{ background: '#fffbeb', borderLeft: '3px solid #f59e0b', padding: '0.75rem 1rem', borderRadius: '0 0.375rem 0.375rem 0', marginBottom: '1rem', fontSize: '0.8125rem', color: '#92400e' }}>

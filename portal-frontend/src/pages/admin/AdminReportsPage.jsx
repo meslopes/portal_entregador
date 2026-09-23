@@ -227,7 +227,7 @@ const CancellationsReport = ({ data }) => (
 // Relatório de Entregas por Entregador
 const DeliveriesReport = ({ data }) => (
   <ReportTable title="Entregas Detalhadas por Entregador" headers={['Entregador', 'Veículo', 'Entregas', 'Frete Total', 'Distância Média', 'Avaliação']}>
-    {data.map((d, i) => (
+    {data.map((d) => (
       <tr key={d.id}>
         <td style={{ ...tdStyle, fontWeight: 500 }}>{d.name}</td>
         <td style={tdStyle}>{d.vehicle}</td>

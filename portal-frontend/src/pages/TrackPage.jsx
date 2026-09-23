@@ -32,7 +32,7 @@ const TrackPage = () => {
       const response = await api.get(`/api/orders/track/${token}`);
       setTracking(response.data);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Pedido não encontrado');
     } finally {
       setLoading(false);
