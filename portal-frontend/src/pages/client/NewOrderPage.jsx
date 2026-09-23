@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft, User, Phone, MapPin, DollarSign, Package,
-  AlertCircle, CheckCircle, ShoppingCart, Bike, Info, Store, Map
-} from 'lucide-react';
+import { ArrowLeft, Package, AlertCircle, Store } from 'lucide-react';
 import { orderService, adminService } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import DistributionModal from '@/components/DistributionModal';
-
-const inputStyle = {
-  width: '100%', padding: '0.625rem 0.875rem',
-  borderRadius: '0.5rem', border: '1.5px solid #e2e8f0',
-  fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
-  fontFamily: 'inherit'
-};
+import { Card, Label, inputStyle } from './new-order/shared';
+import CustomerFields from './new-order/CustomerFields';
+import DeliveryAddressFields from './new-order/DeliveryAddressFields';
+import PaymentFields from './new-order/PaymentFields';
+import OrderSummary from './new-order/OrderSummary';
+import PinMapModal from './new-order/PinMapModal';
+import SuccessView from './new-order/SuccessView';
 
 const NewOrderPage = () => {
   const navigate = useNavigate();
@@ -57,7 +53,6 @@ const NewOrderPage = () => {
     special_instructions: '',
   });
 
-  // Carrega se tem entregadores próprios
   useEffect(() => {
     if (!isAdmin) {
       import('@/lib/api').then(({ default: api }) => {
@@ -68,7 +63,6 @@ const NewOrderPage = () => {
     }
   }, [isAdmin]);
 
-  // Carregar Leaflet dinamicamente
   useEffect(() => {
     if (!document.querySelector('link[href*="leaflet.css"]')) {
       const link = document.createElement('link');
@@ -84,7 +78,6 @@ const NewOrderPage = () => {
     }
   }, []);
 
-  // Carrega estabelecimentos para admin
   useEffect(() => {
     if (isAdmin) {
       adminService.getEstablishments(1, 100).then(data => {
@@ -93,7 +86,6 @@ const NewOrderPage = () => {
     }
   }, [isAdmin]);
 
-  // Carrega tabela de preços quando estabelecimento é selecionado
   useEffect(() => {
     if (form.selected_establishment) {
       const est = establishments.find(e => e.id === parseInt(form.selected_establishment));
@@ -130,14 +122,10 @@ const NewOrderPage = () => {
       }
       const res = await api.post('/api/orders/estimate-fee', payload);
       setEstimatedFee(res.data);
-      
-      // Sempre salvar coordenadas para permitir ajuste no mapa
       if (res.data.latitude && res.data.longitude) {
         setPinLocation({ lat: res.data.latitude, lng: res.data.longitude });
-        // Inicializar mapa de preview após um pequeno delay
         setTimeout(() => initPreviewMap(res.data.latitude, res.data.longitude), 300);
       }
-      
       if (res.data.distance_km === 0 && !customLat) {
         setError('Não foi possível calcular a distância. Use "Ajustar no Mapa" para marcar o local exato.');
       }
@@ -155,47 +143,31 @@ const NewOrderPage = () => {
 
   const initPinMap = (lat, lng) => {
     if (!mapContainerRef.current || !window.L) return;
-    
     const L = window.L;
-    
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-    }
-    
+    if (mapInstanceRef.current) mapInstanceRef.current.remove();
     const map = L.map(mapContainerRef.current).setView([lat, lng], 15);
     mapInstanceRef.current = map;
-    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
-    
     const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
     markerRef.current = marker;
-    
     marker.on('dragend', function(e) {
       const pos = e.target.getLatLng();
       setPinLocation({ lat: pos.lat, lng: pos.lng });
     });
-    
     setMapInitialized(true);
   };
 
   const initPreviewMap = (lat, lng) => {
     if (!previewMapRef.current || !window.L) return;
-    
     const L = window.L;
-    
-    if (previewMapInstanceRef.current) {
-      previewMapInstanceRef.current.remove();
-    }
-    
+    if (previewMapInstanceRef.current) previewMapInstanceRef.current.remove();
     const map = L.map(previewMapRef.current).setView([lat, lng], 16);
     previewMapInstanceRef.current = map;
-    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
-    
     L.marker([lat, lng]).addTo(map);
   };
 
@@ -218,21 +190,21 @@ const NewOrderPage = () => {
     setError('');
   };
 
-  // Distância será calculada pelo backend com Haversine
-  // No frontend mostramos apenas o preço por km da tabela
-  const DISTANCE_KM = 0; // Será calculado pelo backend
+  const handleOpenPinMap = () => {
+    setShowPinMap(true);
+    if (pinLocation) setTimeout(() => initPinMap(pinLocation.lat, pinLocation.lng), 200);
+  };
+
+  const DISTANCE_KM = 0;
   const PRICE_PER_KM = pricingTable?.price_per_km || 2.95;
   const MIN_DISTANCE_KM = pricingTable?.min_distance_km || 4;
-  const DELIVERY_FEE = 0; // Será calculado pelo backend
-  // Converte vírgula para ponto antes de parseFloat
+  const DELIVERY_FEE = 0;
   const PRODUCT_VALUE = parseFloat((form.product_value || '').replace(',', '.')) || 0;
-  // Total = apenas frete (valor dos itens é info para entregador, não entra no cálculo)
   const TOTAL = DELIVERY_FEE;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
     if (isAdmin && !form.selected_establishment) { setError('Selecione um estabelecimento'); return; }
     if (!form.customer_name.trim()) { setError('Nome do cliente é obrigatório'); return; }
     if (!form.customer_phone.trim()) { setError('Telefone do cliente é obrigatório'); return; }
@@ -240,22 +212,16 @@ const NewOrderPage = () => {
     if (!form.delivery_number.trim()) { setError('Número é obrigatório'); return; }
     if (!form.delivery_neighborhood.trim()) { setError('Bairro é obrigatório'); return; }
     if (!estimatedFee) { setError('Calcule o frete antes de enviar o pedido'); return; }
-    // Valor dos itens só é obrigatório quando cobrança na entrega
     if (form.product_payment_type === 'DELIVERY' && !form.product_value) { setError('Valor dos itens é obrigatório para cobrança na entrega'); return; }
-
     try {
       setIsLoading(true);
       const fullAddress = form.delivery_address + ', ' + form.delivery_number + (form.delivery_complement ? ' - ' + form.delivery_complement : '');
       const DELIVERY_FEE = estimatedFee.delivery_fee || 0;
-
-      // Itens do pedido (frete não entra como item para não duplicar)
       const orderItems = [{ name: 'Entrega', quantity: 1, price: 0 }];
       if (form.product_payment_type === 'DELIVERY' && PRODUCT_VALUE > 0) {
         orderItems.push({ name: 'Produtos', quantity: 1, price: PRODUCT_VALUE });
       }
-      
       const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
       const orderData = {
         ...(isAdmin && { restaurant_id: form.selected_establishment }),
         customer_name: form.customer_name,
@@ -276,16 +242,12 @@ const NewOrderPage = () => {
         change_for: form.change_for || null,
         ...(form.product_payment_type === 'DELIVERY' && { product_value: PRODUCT_VALUE }),
       };
-      
-      // Incluir coordenadas do pino se disponíveis
       if (pinLocation) {
         orderData.delivery_latitude = pinLocation.lat;
         orderData.delivery_longitude = pinLocation.lng;
       }
-      
       const response = await orderService.createOrder(orderData);
       setSuccess(true);
-      // Mostrar modal de distribuição apenas para estabelecimentos com entregadores próprios
       if (!isAdmin && hasOwnDrivers && response.order) {
         setCreatedOrder(response.order);
         setShowDistribution(true);
@@ -303,30 +265,12 @@ const NewOrderPage = () => {
 
   if (success) {
     return (
-      <div style={{ padding: '1.5rem', maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '4rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-            <CheckCircle size={40} style={{ color: '#22c55e' }} />
-          </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#166534', marginBottom: '0.5rem' }}>Pedido Enviado!</h2>
-          <p style={{ color: '#16a34a' }}>O pedido foi registrado com sucesso.</p>
-        </div>
-
-        {/* Modal de Distribuição */}
-        {showDistribution && createdOrder && (
-          <DistributionModal
-            order={createdOrder}
-            onClose={() => {
-              setShowDistribution(false);
-              navigate('/client/orders');
-            }}
-            onDistributed={() => {
-              setShowDistribution(false);
-              navigate('/client/orders');
-            }}
-          />
-        )}
-      </div>
+      <SuccessView
+        showDistribution={showDistribution}
+        createdOrder={createdOrder}
+        onCloseDistribution={() => { setShowDistribution(false); navigate('/client/orders'); }}
+        onDistributed={() => { setShowDistribution(false); navigate('/client/orders'); }}
+      />
     );
   }
 
@@ -346,7 +290,6 @@ const NewOrderPage = () => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Seletor de Estabelecimento (apenas para admin) */}
         {isAdmin && (
           <Card title="Estabelecimento" icon={<Store size={16} />}>
             <Label>Selecionar Estabelecimento *</Label>
@@ -359,271 +302,41 @@ const NewOrderPage = () => {
           </Card>
         )}
 
-        {/* Dados do Cliente */}
-        <Card title="Dados do Cliente" icon={<User size={16} />}>
-          <Label>Nome do Cliente *</Label>
-          <input name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="Ex: Seu Jair das Quantas" required style={inputStyle} />
+        <CustomerFields form={form} handleChange={handleChange} />
 
-          <Label>Telefone *</Label>
-          <input name="customer_phone" value={form.customer_phone} onChange={handleChange} placeholder="(51) 99999-9999" required style={inputStyle} />
-        </Card>
+        <DeliveryAddressFields
+          form={form}
+          handleChange={handleChange}
+          feeCalculatorProps={{
+            pricingTable, pricePerKm: PRICE_PER_KM, minDistanceKm: MIN_DISTANCE_KM,
+            estimatedFee, pinLocation, previewMapRef, calculatingFee,
+            calculateFee, pinAdjusted, handleResetPin, onOpenPinMap: handleOpenPinMap,
+          }}
+        />
 
-        {/* Endereço */}
-        <Card title="Endereço de Entrega" icon={<MapPin size={16} />}>
-          <Label>Endereço/Rua *</Label>
-          <input name="delivery_address" value={form.delivery_address} onChange={handleChange} placeholder="Rua, avenida, travessa..." required style={inputStyle} />
+        <PaymentFields form={form} setForm={setForm} handleChange={handleChange} />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-            <div><Label>Número *</Label><input name="delivery_number" value={form.delivery_number} onChange={handleChange} placeholder="Nº" required style={inputStyle} /></div>
-            <div><Label>Complemento</Label><input name="delivery_complement" value={form.delivery_complement} onChange={handleChange} placeholder="Casa 2, Apto 506" style={inputStyle} /></div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
-            <div><Label>Bairro *</Label><input name="delivery_neighborhood" value={form.delivery_neighborhood} onChange={handleChange} placeholder="Bairro" required style={inputStyle} /></div>
-            <div><Label>CEP</Label><input name="delivery_zip_code" value={form.delivery_zip_code} onChange={handleChange} placeholder="95555-000" style={inputStyle} /></div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
-            <div><Label>Cidade</Label><input name="delivery_city" value={form.delivery_city} onChange={handleChange} style={inputStyle} /></div>
-            <div><Label>Estado</Label><input name="delivery_state" value={form.delivery_state} onChange={handleChange} style={inputStyle} /></div>
-          </div>
-
-          <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <Bike size={16} style={{ color: '#0d9488' }} />
-              <span style={{ fontWeight: 600, color: '#0f766e', fontSize: '0.875rem' }}>Valor da Entrega</span>
-              {pricingTable && (
-                <span style={{ marginLeft: 'auto', padding: '0.125rem 0.5rem', background: '#dbeafe', borderRadius: '9999px', fontSize: '0.625rem', color: '#2563eb', fontWeight: 600 }}>
-                  {pricingTable.name}
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8125rem', color: '#475569' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Preço por km</span>
-                <span>R$ {PRICE_PER_KM.toFixed(2).replace('.', ',')}/km</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Distância mínima</span>
-                <span>{MIN_DISTANCE_KM} km</span>
-              </div>
-              {estimatedFee ? (
-                <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Distância calculada</span>
-                    <span>{estimatedFee.distance_km?.toFixed(1)} km</span>
-                  </div>
-                  {estimatedFee.duration_min > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Tempo estimado</span>
-                      <span>{Math.round(estimatedFee.duration_min)} min</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.5rem', marginTop: '0.25rem', fontSize: '1rem' }}>
-                    <span>Frete</span>
-                    <span>R$ {estimatedFee.delivery_fee?.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  <div style={{ fontSize: '0.625rem', color: '#94a3b8', textAlign: 'right', marginTop: '0.25rem' }}>
-                    {estimatedFee.distance_source === 'osrm' ? 'Distância real (rota)' : 'Distância estimada (linha reta)'}
-                  </div>
-                  {/* Mapa de preview */}
-                  {pinLocation && (
-                    <div style={{ marginTop: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.375rem' }}>
-                        <Map size={12} style={{ color: '#0d9488' }} />
-                        <span style={{ fontSize: '0.75rem', color: '#0d9488', fontWeight: 500 }}>Localização no mapa</span>
-                      </div>
-                      <div 
-                        ref={previewMapRef} 
-                        style={{ 
-                          height: '150px', 
-                          borderRadius: '0.375rem', 
-                          border: '1px solid #e2e8f0',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => {
-                          setShowPinMap(true);
-                          setTimeout(() => initPinMap(pinLocation.lat, pinLocation.lng), 200);
-                        }}
-                      />
-                      <p style={{ fontSize: '0.625rem', color: '#94a3b8', textAlign: 'center', marginTop: '0.25rem' }}>
-                        Clique no mapa para ajustar o local
-                      </p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.25rem', marginTop: '0.25rem' }}>
-                  <span>Frete</span>
-                  <span>Preencha o endereço e clique calcular</span>
-                </div>
-              )}
-            </div>
-            {!pinAdjusted ? (
-              <button
-                type="button"
-                onClick={calculateFee}
-                disabled={calculatingFee}
-                style={{
-                  width: '100%', marginTop: '0.75rem', padding: '0.5rem', borderRadius: '0.375rem',
-                  border: 'none', background: calculatingFee ? '#94a3b8' : '#0d9488', color: 'white',
-                  fontSize: '0.8125rem', fontWeight: 600, cursor: calculatingFee ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {calculatingFee ? 'Calculando...' : 'Calcular Frete'}
-              </button>
-            ) : (
-              <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#dcfce7', borderRadius: '0.375rem', border: '1px solid #86efac', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.8125rem', color: '#166534', fontWeight: 500 }}>✓ Local confirmado no mapa</span>
-                <button type="button" onClick={handleResetPin} style={{ fontSize: '0.75rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                  Recalcular
-                </button>
-              </div>
-            )}
-            {estimatedFee && pinLocation && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPinMap(true);
-                  setTimeout(() => initPinMap(pinLocation.lat, pinLocation.lng), 200);
-                }}
-                style={{
-                  width: '100%', marginTop: '0.5rem', padding: '0.5rem', borderRadius: '0.375rem',
-                  border: '1.5px solid #2563eb', background: 'white', color: '#2563eb',
-                  fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-              >
-                <Map size={14} /> {pinAdjusted ? 'Ajustar Novamente' : 'Ajustar Local no Mapa'}
-              </button>
-            )}
-          </div>
-        </Card>
-
-        {/* Pagamento */}
-        <Card title="Pagamento do Cliente" icon={<ShoppingCart size={16} />}>
-          <Label>Como o cliente vai pagar?</Label>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <PayBtn active={form.product_payment_type === 'ESTABLISHMENT'} onClick={() => setForm(p => ({ ...p, product_payment_type: 'ESTABLISHMENT', product_value: '' }))} label="No Estabelecimento" desc="Cliente já pagou no local" />
-            <PayBtn active={form.product_payment_type === 'DELIVERY'} onClick={() => setForm(p => ({ ...p, product_payment_type: 'DELIVERY' }))} label="Na Entrega" desc="Cliente paga ao entregador" />
-          </div>
-
-          <Label>Forma de pagamento:</Label>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            {[{k:'CASH',l:'Dinheiro'},{k:'CARD',l:'Cartão'},{k:'PIX',l:'PIX'}].map(pm => (
-              <button key={pm.k} type="button" onClick={() => setForm(p => ({ ...p, product_payment_method: pm.k }))}
-                style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1.5px solid', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer', borderColor: form.product_payment_method === pm.k ? '#0d9488' : '#e2e8f0', background: form.product_payment_method === pm.k ? '#f0fdfa' : 'white', color: form.product_payment_method === pm.k ? '#0f766e' : '#475569' }}>
-                {pm.l}
-              </button>
-            ))}
-          </div>
-
-          {form.product_payment_type === 'DELIVERY' && (
-            <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-              <Label>Valor dos Itens/Produtos (R$) *</Label>
-              <input type="text" inputMode="decimal" name="product_value" value={form.product_value} onChange={handleChange} placeholder="Ex: 45,00" required style={inputStyle} />
-
-              {form.product_payment_method === 'CASH' && (<div><Label>Troco para (R$)</Label><input name="change_for" value={form.change_for} onChange={handleChange} placeholder="Ex: 50,00" style={inputStyle} /></div>)}
-              {form.product_payment_method !== 'CASH' && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.75rem', background: '#fffbeb', borderRadius: '0.375rem', fontSize: '0.8125rem', color: '#92400e' }}>
-                  <Info size={16} style={{ flexShrink: 0, marginTop: '0.125rem' }} />
-                  <span>{form.product_payment_method === 'CARD' ? 'Fornecer a máquina de cartão ao entregador.' : 'Enviar o código PIX para o entregador.'}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </Card>
-
-        {/* Observações */}
         <Card title="Observações" icon={<Package size={16} />}>
           <textarea name="special_instructions" value={form.special_instructions} onChange={handleChange} placeholder="Ex: Urgente, cuidado ao manusear..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
         </Card>
 
-        {/* Resumo */}
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.75rem' }}>Resumo</h3>
-          <Row label="Cliente" value={form.customer_name || '—'} />
-          <Row label="Endereço" value={form.delivery_address ? form.delivery_address + ', ' + (form.delivery_number || 's/n') : '—'} />
-          <Row label="Pagamento" value={form.product_payment_type === 'ESTABLISHMENT' ? 'No estabelecimento' : 'Na entrega (' + (form.product_payment_method === 'CASH' ? 'Dinheiro' : form.product_payment_method === 'CARD' ? 'Cartão' : 'PIX') + ')'} />
-          {form.product_payment_type === 'DELIVERY' && PRODUCT_VALUE > 0 && (
-            <Row label="Valor dos Itens (cobrar do cliente)" value={'R$ ' + PRODUCT_VALUE.toFixed(2).replace('.', ',')} />
-          )}
-          <div style={{ borderTop: '1px solid #f1f5f9', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
-            <Row
-              label={'Frete' + (estimatedFee ? ' (' + estimatedFee.distance_km?.toFixed(1) + ' km' + (estimatedFee.duration_min ? ', ~' + Math.round(estimatedFee.duration_min) + ' min' : '') + ')' : '')}
-              value={estimatedFee ? 'R$ ' + estimatedFee.delivery_fee?.toFixed(2).replace('.', ',') : 'Calcule o frete primeiro'}
-              bold
-            />
-          </div>
-          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px solid #0d9488', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.25rem', color: '#0f766e' }}>
-            <span>Valor da Entrega</span>
-            <span>R$ {(estimatedFee?.delivery_fee || 0).toFixed(2).replace('.', ',')}</span>
-          </div>
-        </div>
+        <OrderSummary form={form} estimatedFee={estimatedFee} productValue={PRODUCT_VALUE} />
 
         <button type="submit" disabled={isLoading} style={{ width: '100%', padding: '1rem', borderRadius: '0.75rem', border: 'none', background: '#0d9488', color: 'white', fontSize: '1rem', fontWeight: 600, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1, boxShadow: '0 4px 14px rgba(13, 148, 136, 0.3)' }}>
           {isLoading ? 'Enviando Pedido...' : 'Enviar Pedido'}
         </button>
       </form>
 
-      {/* Modal do Mapa para Ajustar Pino */}
       {showPinMap && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
-          <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '700px', height: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Ajustar Local da Entrega</h2>
-                <p style={{ fontSize: '0.8125rem', color: '#64748b', marginTop: '0.25rem' }}>Arraste o pino para o local exato da entrega</p>
-              </div>
-              <button onClick={() => setShowPinMap(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.25rem' }}>✕</button>
-            </div>
-            <div ref={mapContainerRef} style={{ flex: 1, minHeight: '300px' }} />
-            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
-                {pinLocation ? `${pinLocation.lat.toFixed(6)}, ${pinLocation.lng.toFixed(6)}` : 'Arraste o pino'}
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button onClick={() => setShowPinMap(false)} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>
-                  Cancelar
-                </button>
-                <button onClick={handleConfirmPin} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>
-                  Confirmar Local
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PinMapModal
+          pinLocation={pinLocation}
+          mapContainerRef={mapContainerRef}
+          onClose={() => setShowPinMap(false)}
+          onConfirm={handleConfirmPin}
+        />
       )}
     </div>
   );
 };
-
-const Card = ({ title, icon, children }) => (
-  <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-      <span style={{ color: '#0d9488' }}>{icon}</span>
-      <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>{title}</span>
-    </div>
-    {children}
-  </div>
-);
-
-const Label = ({ children }) => (
-  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem', marginTop: '0.75rem' }}>{children}</label>
-);
-
-const Row = ({ label, value, bold }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.375rem', fontSize: '0.875rem' }}>
-    <span style={{ color: '#64748b' }}>{label}</span>
-    <span style={{ color: '#1e293b', fontWeight: bold ? 600 : 400 }}>{value}</span>
-  </div>
-);
-
-const PayBtn = ({ active, onClick, label, desc }) => (
-  <button type="button" onClick={onClick} style={{ flex: 1, minWidth: '180px', padding: '0.75rem', borderRadius: '0.5rem', border: '1.5px solid', borderColor: active ? '#0d9488' : '#e2e8f0', background: active ? '#f0fdfa' : 'white', cursor: 'pointer', textAlign: 'left' }}>
-    <p style={{ fontWeight: 600, color: active ? '#0f766e' : '#1e293b', fontSize: '0.875rem', marginBottom: '0.125rem' }}>{label}</p>
-    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{desc}</p>
-  </button>
-);
 
 export default NewOrderPage;

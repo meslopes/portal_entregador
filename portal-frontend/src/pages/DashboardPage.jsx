@@ -1,21 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Bike, MapPin, DollarSign, Clock, Star, Package,
-  TrendingUp, AlertCircle, Navigation, Zap, ArrowRight, Bell, Route
-} from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { driverService, orderService, utils } from '@/lib/api';
-import {
-  startOrderMonitor, stopOrderMonitor,
-  requestNotificationPermission
-} from '@/lib/notify';
-
-// Proteção contra XSS em popups do Leaflet
-const escapeHtml = (str) => {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-};
+import { driverService, orderService } from '@/lib/api';
+import { startOrderMonitor, stopOrderMonitor } from '@/lib/notify';
+import DriverStats from '@/pages/driver-dashboard/DriverStats';
+import QuickActions from '@/pages/driver-dashboard/QuickActions';
+import DriverMap, { escapeHtml } from '@/pages/driver-dashboard/DriverMap';
 
 const DashboardPage = () => {
   const { user, updateUser } = useAuth();
@@ -30,6 +21,7 @@ const DashboardPage = () => {
   const prevPendingRoutes = useRef(0);
   const audioContextRef = useRef(null);
   const audioEnabledRef = useRef(false);
+  const mapInstanceRef = useRef(null);
 
   // Habilitar áudio após primeira interação do usuário
   useEffect(() => {
@@ -101,17 +93,10 @@ const DashboardPage = () => {
 
   useEffect(() => {
     loadDashboardData();
-    // Solicitar localização apenas se o usuário estiver online
-    if (user?.driver?.is_online) {
-      getCurrentLocation().catch(() => {}); // Ignorar erro silenciosamente
-    }
+    if (user?.driver?.is_online) getCurrentLocation().catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (user?.driver) {
-      setIsOnline(user.driver.is_online);
-    }
-  }, [user]);
+  useEffect(() => { if (user?.driver) setIsOnline(user.driver.is_online); }, [user]);
 
   // Inicializar mapa quando localização estiver disponível
   useEffect(() => {
@@ -119,16 +104,13 @@ const DashboardPage = () => {
       const initMap = () => {
         const L = window.L;
         if (!L) return;
-        
         const container = document.getElementById('driver-map');
         if (!container) return;
-        
         const map = L.map(container).setView([location.latitude, location.longitude], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Marcador do entregador
         const driverIcon = L.divIcon({
           html: '<div style="background:#2563eb;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/></svg></div>',
           className: '',
@@ -138,7 +120,6 @@ const DashboardPage = () => {
         L.marker([location.latitude, location.longitude], { icon: driverIcon }).addTo(map)
           .bindPopup('Sua localização');
 
-        // Marcador do pedido atual (se houver)
         if (currentOrder?.delivery_address?.latitude && currentOrder?.delivery_address?.longitude) {
           const orderIcon = L.divIcon({
             html: '<div style="background:#ef4444;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"><svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>',
@@ -148,15 +129,12 @@ const DashboardPage = () => {
           });
           L.marker([currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude], { icon: orderIcon }).addTo(map)
             .bindPopup(`Pedido #${escapeHtml(currentOrder.order_number)}`);
-          
-          // Ajustar zoom para mostrar ambos os pontos
           const bounds = L.latLngBounds([
             [location.latitude, location.longitude],
             [currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude]
           ]);
           map.fitBounds(bounds.pad(0.2));
         }
-
         mapInstanceRef.current = map;
       };
 
@@ -167,7 +145,6 @@ const DashboardPage = () => {
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
-
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
         script.onload = initMap;
@@ -175,7 +152,6 @@ const DashboardPage = () => {
       }
     }
 
-    // Cleanup function to remove map on unmount
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
@@ -183,8 +159,6 @@ const DashboardPage = () => {
       }
     };
   }, [location, currentOrder]);
-
-  const mapInstanceRef = useRef(null);
 
   const loadDashboardData = async () => {
     try {
@@ -209,7 +183,6 @@ const DashboardPage = () => {
         reject(new Error('Geolocalização não suportada pelo navegador'));
         return;
       }
-      
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
@@ -228,8 +201,6 @@ const DashboardPage = () => {
   const handleToggleOnline = async () => {
     try {
       const newStatus = !isOnline;
-      
-      // Se vai ficar online, solicitar localização primeiro
       if (newStatus && !location) {
         setError('Solicitando localização...');
         try {
@@ -239,13 +210,9 @@ const DashboardPage = () => {
           updateUser({ ...user, driver: response.driver });
           setError('');
         } catch (locErr) {
-          // Se GPS falhar (HTTP, permissão, etc.), usar localização padrão da praça
-          // Permite que o entregador fique online para testes em rede local
           const fallbackLat = user?.driver?.square?.latitude || -29.9150;
           const fallbackLng = user?.driver?.square?.longitude || -51.1780;
-          
           console.warn('GPS indisponível, usando localização padrão da praça:', fallbackLat, fallbackLng);
-          
           try {
             const response = await driverService.toggleOnlineStatus(true, fallbackLat, fallbackLng);
             setIsOnline(true);
@@ -258,8 +225,6 @@ const DashboardPage = () => {
         }
         return;
       }
-      
-      // Se já tem localização ou vai ficar offline
       const response = await driverService.toggleOnlineStatus(newStatus, location?.latitude, location?.longitude);
       setIsOnline(newStatus);
       updateUser({ ...user, driver: response.driver });
@@ -316,8 +281,6 @@ const DashboardPage = () => {
             {isOnline ? 'Você está online e pronto para entregar' : 'Fique online para receber pedidos'}
           </p>
         </div>
-
-        {/* Toggle Online/Offline */}
         <button
           onClick={handleToggleOnline}
           style={{
@@ -369,150 +332,9 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* Cards de Estatísticas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <StatCard
-          icon={<DollarSign size={22} />}
-          iconBg="#dcfce7"
-          iconColor="#16a34a"
-          label="Ganhos Hoje"
-          value={stats ? utils.formatCurrency(stats.today_earnings) : 'R$ 0,00'}
-        />
-        <StatCard
-          icon={<TrendingUp size={22} />}
-          iconBg="#dbeafe"
-          iconColor="#2563eb"
-          label="Ganhos da Semana"
-          value={stats ? utils.formatCurrency(stats.week_earnings) : 'R$ 0,00'}
-        />
-        <StatCard
-          icon={<Package size={22} />}
-          iconBg="#f3e8ff"
-          iconColor="#9333ea"
-          label="Total Entregas"
-          value={stats?.total_deliveries || 0}
-        />
-        <StatCard
-          icon={<Star size={22} />}
-          iconBg="#fef3c7"
-          iconColor="#d97706"
-          label="Avaliação"
-          value={stats ? (stats.average_rating ?? 5).toFixed(1) : '5.0'}
-          suffix="/5.0"
-        />
-      </div>
-
-      {/* Ações Rápidas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <ActionCard
-          icon={<Package size={24} />}
-          iconBg="#eff6ff"
-          iconColor="#2563eb"
-          title="Pedidos Disponíveis"
-          description="Veja os pedidos disponíveis na sua região"
-          onClick={() => navigate('/orders')}
-        />
-        <ActionCard
-          icon={<Bike size={24} />}
-          iconBg="#dbeafe"
-          iconColor="#1d4ed8"
-          title="Rotas da Plataforma"
-          description={pendingRoutes > 0 ? `${pendingRoutes} rota${pendingRoutes > 1 ? 's' : ''} aguardando aceite!` : 'Veja suas rotas atribuídas e aceite/rejeite'}
-          onClick={() => navigate('/platform-driver/routes')}
-          badge={pendingRoutes > 0 ? pendingRoutes : null}
-        />
-        <ActionCard
-          icon={<DollarSign size={24} />}
-          iconBg="#f0fdf4"
-          iconColor="#16a34a"
-          title="Meus Ganhos"
-          description="Acompanhe seu histórico de ganhos"
-          onClick={() => navigate('/earnings')}
-        />
-        <ActionCard
-          icon={<Clock size={24} />}
-          iconBg="#faf5ff"
-          iconColor="#9333ea"
-          title="Histórico"
-          description="Veja suas entregas anteriores"
-          onClick={() => navigate('/history')}
-        />
-      </div>
-
-      {/* Mapa */}
-      {location && (
-        <div style={{ background: 'white', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
-          <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MapPin size={16} style={{ color: '#2563eb' }} />
-              <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>Minha Localização</span>
-            </div>
-            {currentOrder?.delivery_address?.latitude && (
-              <button
-                onClick={() => {
-                  const lat = currentOrder.delivery_address.latitude;
-                  const lng = currentOrder.delivery_address.longitude;
-                  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                  if (isMobile) {
-                    const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
-                    if (useWaze) {
-                      window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
-                    } else {
-                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-                    }
-                  } else {
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-                  }
-                }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.375rem',
-                  padding: '0.375rem 0.75rem', borderRadius: '0.5rem',
-                  border: 'none', background: '#2563eb', color: 'white',
-                  cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
-                }}
-              >
-                <Navigation size={14} /> Navegar
-              </button>
-            )}
-          </div>
-          <div id="driver-map" style={{ height: '250px', width: '100%' }} />
-        </div>
-      )}
-
-      {/* Localização */}
-      {location && (
-        <div style={{
-          background: 'white',
-          borderRadius: '0.75rem',
-          padding: '1rem 1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <MapPin size={16} style={{ color: '#22c55e' }} />
-            <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>
-              {(location.latitude || 0).toFixed(5)}, {(location.longitude || 0).toFixed(5)}
-            </span>
-          </div>
-          <button
-            onClick={getCurrentLocation}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.375rem',
-              padding: '0.375rem 0.75rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #e2e8f0',
-              background: 'white',
-              color: '#64748b',
-              fontSize: '0.8125rem',
-              cursor: 'pointer'
-            }}
-          >
-            <Navigation size={14} /> Atualizar
-          </button>
-        </div>
-      )}
+      <DriverStats stats={stats} />
+      <QuickActions navigate={navigate} pendingRoutes={pendingRoutes} />
+      <DriverMap location={location} currentOrder={currentOrder} getCurrentLocation={getCurrentLocation} />
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -520,91 +342,5 @@ const DashboardPage = () => {
     </div>
   );
 };
-
-// Componente de Card de Estatística
-const StatCard = ({ icon, iconBg, iconColor, label, value, suffix = '' }) => (
-  <div style={{
-    background: 'white',
-    borderRadius: '0.75rem',
-    padding: '1.25rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-    transition: 'transform 0.15s, box-shadow 0.15s',
-    cursor: 'default'
-  }}
-  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
-  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
-  >
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-      <div style={{
-        padding: '0.625rem',
-        borderRadius: '0.5rem',
-        background: iconBg,
-        color: iconColor,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        {icon}
-      </div>
-      <div>
-        <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
-        <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}<span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#64748b' }}>{suffix}</span></p>
-      </div>
-    </div>
-  </div>
-);
-
-// Componente de Ação Rápida
-const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick, badge }) => (
-  <div
-    onClick={onClick}
-    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); }}}
-    role="button"
-    tabIndex={0}
-    aria-label={title}
-    style={{
-      background: 'white',
-      borderRadius: '0.75rem',
-      padding: '1.5rem',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      cursor: 'pointer',
-      transition: 'all 0.15s',
-      border: badge ? '2px solid #f59e0b' : '1px solid transparent'
-    }}
-    onMouseEnter={e => { if (!badge) { e.currentTarget.style.borderColor = '#e2e8f0'; } e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
-    onMouseLeave={e => { e.currentTarget.style.borderColor = badge ? '#f59e0b' : 'transparent'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}
-  >
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{
-          padding: '0.75rem',
-          borderRadius: '0.5rem',
-          background: iconBg,
-          color: iconColor,
-          position: 'relative'
-        }}>
-          {icon}
-          {badge && (
-            <div style={{
-              position: 'absolute', top: '-0.375rem', right: '-0.375rem',
-              background: '#ef4444', color: 'white', borderRadius: '9999px',
-              width: '1.25rem', height: '1.25rem', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.6875rem', fontWeight: 700,
-              animation: 'pulse 1.5s ease-in-out infinite'
-            }}>
-              {badge}
-            </div>
-          )}
-        </div>
-        <div>
-          <h3 style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>{title}</h3>
-          <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>{description}</p>
-        </div>
-      </div>
-      <ArrowRight size={18} style={{ color: '#cbd5e1' }} />
-    </div>
-  </div>
-);
 
 export default DashboardPage;

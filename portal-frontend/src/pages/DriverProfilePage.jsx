@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Phone, Mail, Car, Key, CreditCard, Save,
-  ArrowLeft, AlertCircle, CheckCircle, Eye, EyeOff, Camera
+  User, Car, Key, ArrowLeft, AlertCircle, CheckCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
+import ProfileInfoCard from './driver-profile/ProfileInfoCard';
+import VehicleInfoCard from './driver-profile/VehicleInfoCard';
+import PasswordForm from './driver-profile/PasswordForm';
 
 const DriverProfilePage = () => {
   const navigate = useNavigate();
@@ -235,342 +237,34 @@ const DriverProfilePage = () => {
         </div>
       )}
 
-      {/* Tab: Perfil */}
+      {/* Tab content */}
       {activeTab === 'profile' && (
-        <div style={{
-          background: 'white', borderRadius: '0.75rem',
-          padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                Nome
-              </label>
-              <input
-                type="text"
-                value={profileData.first_name}
-                onChange={e => setProfileData({ ...profileData, first_name: e.target.value })}
-                style={{
-                  width: '100%', padding: '0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                Sobrenome
-              </label>
-              <input
-                type="text"
-                value={profileData.last_name}
-                onChange={e => setProfileData({ ...profileData, last_name: e.target.value })}
-                style={{
-                  width: '100%', padding: '0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={profileData.email}
-              disabled
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none',
-                background: '#f8fafc', color: '#64748b'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Telefone
-            </label>
-            <input
-              type="tel"
-              value={profileData.phone}
-              onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
-              placeholder="(11) 99999-9999"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <button
-            onClick={handleSaveProfile}
-            disabled={isSaving}
-            style={{
-              width: '100%', padding: '0.75rem',
-              borderRadius: '0.5rem', border: 'none',
-              background: '#2563eb', color: 'white',
-              fontSize: '0.9375rem', fontWeight: 600,
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', opacity: isSaving ? 0.7 : 1
-            }}
-          >
-            <Save size={18} />
-            {isSaving ? 'Salvando...' : 'Salvar Perfil'}
-          </button>
-        </div>
+        <ProfileInfoCard
+          profileData={profileData}
+          setProfileData={setProfileData}
+          onSave={handleSaveProfile}
+          isSaving={isSaving}
+        />
       )}
 
-      {/* Tab: Veículo */}
       {activeTab === 'vehicle' && (
-        <div style={{
-          background: 'white', borderRadius: '0.75rem',
-          padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Tipo de Veículo
-            </label>
-            <select
-              value={vehicleData.vehicle_type}
-              onChange={e => setVehicleData({ ...vehicleData, vehicle_type: e.target.value })}
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none', background: 'white'
-              }}
-            >
-              <option value="MOTORCYCLE">Moto</option>
-              <option value="CAR">Carro</option>
-              <option value="BICYCLE">Bicicleta</option>
-              <option value="FOOT">A pé</option>
-            </select>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                Placa
-              </label>
-              <input
-                type="text"
-                value={vehicleData.vehicle_plate}
-                onChange={e => setVehicleData({ ...vehicleData, vehicle_plate: e.target.value.toUpperCase() })}
-                placeholder="ABC-1234"
-                style={{
-                  width: '100%', padding: '0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none', textTransform: 'uppercase'
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                Modelo
-              </label>
-              <input
-                type="text"
-                value={vehicleData.vehicle_model}
-                onChange={e => setVehicleData({ ...vehicleData, vehicle_model: e.target.value })}
-                placeholder="Ex: Honda CG 160"
-                style={{
-                  width: '100%', padding: '0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Ano
-            </label>
-            <input
-              type="number"
-              value={vehicleData.vehicle_year}
-              onChange={e => setVehicleData({ ...vehicleData, vehicle_year: e.target.value })}
-              placeholder="Ex: 2023"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Chave PIX
-            </label>
-            <input
-              type="text"
-              value={vehicleData.pix_key}
-              onChange={e => setVehicleData({ ...vehicleData, pix_key: e.target.value })}
-              placeholder="Sua chave PIX (CPF, email ou telefone)"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Dados Bancários (opcional)
-            </label>
-            <input
-              type="text"
-              value={vehicleData.bank_account}
-              onChange={e => setVehicleData({ ...vehicleData, bank_account: e.target.value })}
-              placeholder="Agência + Conta"
-              style={{
-                width: '100%', padding: '0.625rem 0.75rem',
-                border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                fontSize: '0.9375rem', outline: 'none'
-              }}
-            />
-          </div>
-
-          <button
-            onClick={handleSaveVehicle}
-            disabled={isSaving}
-            style={{
-              width: '100%', padding: '0.75rem',
-              borderRadius: '0.5rem', border: 'none',
-              background: '#2563eb', color: 'white',
-              fontSize: '0.9375rem', fontWeight: 600,
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', opacity: isSaving ? 0.7 : 1
-            }}
-          >
-            <Save size={18} />
-            {isSaving ? 'Salvando...' : 'Salvar Veículo'}
-          </button>
-        </div>
+        <VehicleInfoCard
+          vehicleData={vehicleData}
+          setVehicleData={setVehicleData}
+          onSave={handleSaveVehicle}
+          isSaving={isSaving}
+        />
       )}
 
-      {/* Tab: Senha */}
       {activeTab === 'password' && (
-        <div style={{
-          background: 'white', borderRadius: '0.75rem',
-          padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-        }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Senha Atual
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword.current ? 'text' : 'password'}
-                value={passwordData.current_password}
-                onChange={e => setPasswordData({ ...passwordData, current_password: e.target.value })}
-                placeholder="Digite sua senha atual"
-                style={{
-                  width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
-                style={{
-                  position: 'absolute', right: '0.75rem', top: '50%',
-                  transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#64748b'
-                }}
-              >
-                {showPassword.current ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Nova Senha
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword.new ? 'text' : 'password'}
-                value={passwordData.new_password}
-                onChange={e => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                placeholder="Mínimo 6 caracteres"
-                style={{
-                  width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
-                style={{
-                  position: 'absolute', right: '0.75rem', top: '50%',
-                  transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#64748b'
-                }}
-              >
-                {showPassword.new ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Confirmar Nova Senha
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword.confirm ? 'text' : 'password'}
-                value={passwordData.confirm_password}
-                onChange={e => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                placeholder="Repita a nova senha"
-                style={{
-                  width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.75rem',
-                  border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-                  fontSize: '0.9375rem', outline: 'none'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword({ ...showPassword, confirm: !showPassword.confirm })}
-                style={{
-                  position: 'absolute', right: '0.75rem', top: '50%',
-                  transform: 'translateY(-50%)', background: 'none',
-                  border: 'none', cursor: 'pointer', color: '#64748b'
-                }}
-              >
-                {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            onClick={handleChangePassword}
-            disabled={isSaving || !passwordData.current_password || !passwordData.new_password}
-            style={{
-              width: '100%', padding: '0.75rem',
-              borderRadius: '0.5rem', border: 'none',
-              background: '#2563eb', color: 'white',
-              fontSize: '0.9375rem', fontWeight: 600,
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '0.5rem', opacity: isSaving ? 0.7 : 1
-            }}
-          >
-            <Key size={18} />
-            {isSaving ? 'Alterando...' : 'Alterar Senha'}
-          </button>
-        </div>
+        <PasswordForm
+          passwordData={passwordData}
+          setPasswordData={setPasswordData}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          onSave={handleChangePassword}
+          isSaving={isSaving}
+        />
       )}
 
       <style>{`
