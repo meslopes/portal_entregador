@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Save, Upload, Palette, Globe, Image, Phone, Mail, MapPin, FileText, Loader2
+  ArrowLeft, Save, Globe, FileText, Loader2
 } from 'lucide-react';
 import { adminService } from '@/lib/api';
+import LogoUpload from './white-label/LogoUpload';
+import ColorPicker from './white-label/ColorPicker';
+import SectionCard from './white-label/SectionCard';
 
 const inputStyle = {
   width: '100%', padding: '0.625rem 0.875rem',
@@ -15,11 +18,6 @@ const inputStyle = {
 const labelStyle = {
   display: 'block', fontSize: '0.8125rem', fontWeight: 500,
   color: '#374151', marginBottom: '0.375rem'
-};
-
-const cardStyle = {
-  background: 'white', borderRadius: '0.75rem', padding: '1.5rem',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem'
 };
 
 const AdminWhiteLabelPage = () => {
@@ -163,132 +161,21 @@ const AdminWhiteLabelPage = () => {
       )}
 
       {/* Logo Section */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <Image size={20} style={{ color: '#6366f1' }} />
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
-            Logo da Organização
-          </h2>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{
-            width: '100px', height: '100px', borderRadius: '0.75rem',
-            border: '2px dashed #e2e8f0', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', overflow: 'hidden', background: '#f8fafc'
-          }}>
-            {tenant?.logo_url ? (
-              <img
-                src={tenant.logo_url}
-                alt="Logo"
-                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              />
-            ) : (
-              <Image size={32} style={{ color: '#64748b' }} />
-            )}
-          </div>
-
-          <div>
-            <label style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.5rem 1rem', borderRadius: '0.5rem', background: '#6366f1',
-              color: 'white', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500
-            }}>
-              <Upload size={16} /> Enviar Logo
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                style={{ display: 'none' }}
-              />
-            </label>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
-              PNG, JPG ou SVG. Máximo 2MB.
-            </p>
-          </div>
-        </div>
-      </div>
+      <LogoUpload
+        logoUrl={tenant?.logo_url}
+        onUpload={handleLogoUpload}
+      />
 
       {/* Colors Section */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <Palette size={20} style={{ color: '#6366f1' }} />
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
-            Cores da Marca
-          </h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div>
-            <label style={labelStyle}>Cor Primária</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <input
-                type="color"
-                value={formData.primary_color}
-                onChange={(e) => setFormData(prev => ({ ...prev, primary_color: e.target.value }))}
-                style={{ width: '48px', height: '40px', border: 'none', cursor: 'pointer' }}
-              />
-              <input
-                type="text"
-                value={formData.primary_color}
-                onChange={(e) => setFormData(prev => ({ ...prev, primary_color: e.target.value }))}
-                style={{ ...inputStyle, flex: 1 }}
-                placeholder="#6366f1"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label style={labelStyle}>Cor Secundária</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <input
-                type="color"
-                value={formData.secondary_color}
-                onChange={(e) => setFormData(prev => ({ ...prev, secondary_color: e.target.value }))}
-                style={{ width: '48px', height: '40px', border: 'none', cursor: 'pointer' }}
-              />
-              <input
-                type="text"
-                value={formData.secondary_color}
-                onChange={(e) => setFormData(prev => ({ ...prev, secondary_color: e.target.value }))}
-                style={{ ...inputStyle, flex: 1 }}
-                placeholder="#ffffff"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Preview */}
-        <div style={{ marginTop: '1rem', padding: '1rem', borderRadius: '0.5rem', background: '#f8fafc' }}>
-          <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>Pré-visualização</p>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <div style={{
-              padding: '0.5rem 1rem', borderRadius: '0.375rem',
-              background: formData.primary_color, color: 'white',
-              fontSize: '0.875rem', fontWeight: 500
-            }}>
-              Botão Primário
-            </div>
-            <div style={{
-              padding: '0.5rem 1rem', borderRadius: '0.375rem',
-              background: formData.secondary_color, color: '#1e293b',
-              border: '1px solid #e2e8f0', fontSize: '0.875rem', fontWeight: 500
-            }}>
-              Botão Secundário
-            </div>
-          </div>
-        </div>
-      </div>
+      <ColorPicker
+        primaryColor={formData.primary_color}
+        secondaryColor={formData.secondary_color}
+        onPrimaryChange={(e) => setFormData(prev => ({ ...prev, primary_color: e.target.value }))}
+        onSecondaryChange={(e) => setFormData(prev => ({ ...prev, secondary_color: e.target.value }))}
+      />
 
       {/* Organization Info */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <Globe size={20} style={{ color: '#6366f1' }} />
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
-            Informações da Organização
-          </h2>
-        </div>
-
+      <SectionCard icon={Globe} title="Informações da Organização">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div>
             <label style={labelStyle}>Nome da Organização</label>
@@ -345,17 +232,10 @@ const AdminWhiteLabelPage = () => {
             placeholder="Rua, número - Bairro, Cidade - UF"
           />
         </div>
-      </div>
+      </SectionCard>
 
       {/* Domain Section */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <Globe size={20} style={{ color: '#6366f1' }} />
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
-            Domínio Personalizado
-          </h2>
-        </div>
-
+      <SectionCard icon={Globe} title="Domínio Personalizado">
         <div>
           <label style={labelStyle}>Domínio Próprio</label>
           <input
@@ -369,17 +249,10 @@ const AdminWhiteLabelPage = () => {
             Configure um domínio personalizado para o portal do cliente
           </p>
         </div>
-      </div>
+      </SectionCard>
 
       {/* Legal Links */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          <FileText size={20} style={{ color: '#6366f1' }} />
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>
-            Links Legais
-          </h2>
-        </div>
-
+      <SectionCard icon={FileText} title="Links Legais">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div>
             <label style={labelStyle}>URL dos Termos de Uso</label>
@@ -403,7 +276,7 @@ const AdminWhiteLabelPage = () => {
             />
           </div>
         </div>
-      </div>
+      </SectionCard>
 
       {/* Save Button */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
