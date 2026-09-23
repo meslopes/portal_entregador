@@ -1,23 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Store, Search, Plus, Phone, Mail, Package, DollarSign,
-  Edit, Trash2, X, AlertCircle, MapPin, Clock, TrendingUp,
-  ChevronRight, User, CheckCircle, Bike, Users, ToggleLeft, ToggleRight, Copy
-} from 'lucide-react';
-import { adminService, utils } from '@/lib/api';
+import { Plus, Copy, AlertCircle } from 'lucide-react';
+import { adminService } from '@/lib/api';
 import api from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext';
 import { showToast } from '@/components/Toast';
-
-const STATUS_CONFIG = {
-  PENDING: { color: '#f59e0b', bg: '#fef3c7', text: 'Pendente' },
-  ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito' },
-  PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando' },
-  READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto' },
-  PICKED_UP: { color: '#3b82f6', bg: '#dbeafe', text: 'Coletado' },
-  DELIVERED: { color: '#22c55e', bg: '#dcfce7', text: 'Entregue' },
-  CANCELLED: { color: '#ef4444', bg: '#fee2e2', text: 'Cancelado' },
-};
+import EstablishmentStats from './establishments/EstablishmentStats';
+import PendingApprovals from './establishments/PendingApprovals';
+import EstablishmentsList from './establishments/EstablishmentsList';
+import EstablishmentForm from './establishments/EstablishmentForm';
+import EstablishmentDetails from './establishments/EstablishmentDetails';
 
 const AdminEstablishmentsPage = () => {
   const { squareId } = useSquare();
@@ -30,26 +21,14 @@ const AdminEstablishmentsPage = () => {
   const [total, setTotal] = useState(0);
   const [squares, setSquares] = useState([]);
   const [tenants, setTenants] = useState([]);
+  const [pendingEstablishments, setPendingEstablishments] = useState([]);
 
-  // Verificar se é super admin
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
-  // Modal states
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '', cnpj: '', phone: '', email: '', password: '123456',
-    address_street: '', address_number: '', address_neighborhood: '',
-    address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-    latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
-    pickup_confirmation_type: 'code', delivery_confirmation_type: 'code'
-  });
-  const [formError, setFormError] = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-  const [pricingTables, setPricingTables] = useState([]);
-  const [pendingEstablishments, setPendingEstablishments] = useState([]);
 
   useEffect(() => {
     loadEstablishments();
@@ -59,56 +38,18 @@ const AdminEstablishmentsPage = () => {
   }, [page, search, squareId]);
 
   const loadSquares = async () => {
-    try {
-      const data = await adminService.getSquares();
-      setSquares(data.squares || []);
-    } catch (e) {}
+    try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch (e) {}
   };
 
   const loadTenants = async () => {
-    try {
-      const response = await api.get('/api/admin/tenants');
-      setTenants(response.data.tenants || []);
-    } catch (e) { setTenants([]); }
+    try { const res = await api.get('/api/admin/tenants'); setTenants(res.data.tenants || []); } catch (e) { setTenants([]); }
   };
 
   const loadPendingEstablishments = async () => {
     try {
-      const response = await api.get('/api/admin/pending-users');
-      const users = (response.data.users || []).filter(u => u.user_type === 'CLIENT');
-      setPendingEstablishments(users);
-    } catch (err) {
-      // Silently fail
-    }
-  };
-
-  const handleApprove = async (userId) => {
-    try {
-      await api.post(`/api/admin/users/${userId}/approve`);
-      showToast('Estabelecimento aprovado!', 'success');
-      loadPendingEstablishments();
-      loadEstablishments();
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Erro ao aprovar', 'error');
-    }
-  };
-
-  const handleReject = async (userId) => {
-    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
-    try {
-      await api.post(`/api/admin/users/${userId}/reject`);
-      showToast('Cadastro rejeitado', 'info');
-      loadPendingEstablishments();
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Erro ao rejeitar', 'error');
-    }
-  };
-
-  const loadPricingTables = async (sqId) => {
-    try {
-      const data = await adminService.getPricingTables(sqId);
-      setPricingTables(data.pricing_tables || []);
-    } catch (e) { setPricingTables([]); }
+      const res = await api.get('/api/admin/pending-users');
+      setPendingEstablishments((res.data.users || []).filter(u => u.user_type === 'CLIENT'));
+    } catch (err) {}
   };
 
   const loadEstablishments = async () => {
@@ -126,9 +67,22 @@ const AdminEstablishmentsPage = () => {
     }
   };
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
-    setPage(1);
+  const handleApprove = async (userId) => {
+    try {
+      await api.post(`/api/admin/users/${userId}/approve`);
+      showToast('Estabelecimento aprovado!', 'success');
+      loadPendingEstablishments();
+      loadEstablishments();
+    } catch (err) { showToast(err.response?.data?.error || 'Erro ao aprovar', 'error'); }
+  };
+
+  const handleReject = async (userId) => {
+    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    try {
+      await api.post(`/api/admin/users/${userId}/reject`);
+      showToast('Cadastro rejeitado', 'info');
+      loadPendingEstablishments();
+    } catch (err) { showToast(err.response?.data?.error || 'Erro ao rejeitar', 'error'); }
   };
 
   const handleToggleOwnDrivers = async (establishment) => {
@@ -136,34 +90,18 @@ const AdminEstablishmentsPage = () => {
     const confirmMsg = newValue
       ? `Ativar entregadores próprios para "${establishment.name}"?\n\nO estabelecimento terá acesso ao menu "Meus Entregadores" e poderá cadastrar seus próprios entregadores.`
       : `Desativar entregadores próprios para "${establishment.name}"?\n\nO estabelecimento usará apenas entregadores da plataforma MUV.`;
-
     if (!window.confirm(confirmMsg)) return;
-
     try {
-      await api.put(`/api/admin/establishments/${establishment.id}/subscription`, {
-        has_own_drivers: newValue
-      });
-      // Fechar modal e recarregar lista
+      await api.put(`/api/admin/establishments/${establishment.id}/subscription`, { has_own_drivers: newValue });
       setShowDetails(null);
       await loadEstablishments();
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Erro ao alterar configuração', 'error');
-    }
+    } catch (err) { showToast(err.response?.data?.error || 'Erro ao alterar configuração', 'error'); }
   };
 
-  const openCreateForm = () => {
-    setEditing(null);
-    setFormData({
-      name: '', cnpj: '', phone: '', email: '', password: '123456',
-      address_street: '', address_number: '', address_neighborhood: '',
-      address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-      latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
-      preparation_minutes: '10',
-      pickup_confirmation_type: 'code', delivery_confirmation_type: 'code'
-    });
-    setFormError('');
-    setShowForm(true);
-  };
+  const openCreateForm = () => { setEditing(null); setShowForm(true); };
+  const openEditForm = (est) => { setEditing(est); setShowForm(true); };
+
+  const handleFormSave = () => { setShowForm(false); loadEstablishments(); };
 
   const copyRegistrationLink = () => {
     const link = `${window.location.origin}/client/register`;
@@ -180,210 +118,32 @@ const AdminEstablishmentsPage = () => {
     });
   };
 
-  const openEditForm = (est) => {
-    setEditing(est);
-    // Tenta separar endereco em campos
-    const addr = est.address || '';
-    
-    // Remove CEP se existir no final
-    let cleanAddr = addr.replace(/,\s*\d{5}-?\d{3}\s*$/, '').trim();
-    // Remove virgulas duplas
-    cleanAddr = cleanAddr.replace(/,\s*,/g, ',').trim().replace(/,+$/, '');
-    
-    // Formatos possiveis:
-    // "Rua X, 123 - Bairro, Cidade - UF"
-    // "Rua X, 123, Bairro, Cidade, UF"
-    // "Rua X, Numero, Bairro, Cidade/UF"
-    
-    let street = '';
-    let number = '';
-    let neighborhood = '';
-    let city = 'Capão da Canoa';
-    let state = 'RS';
-    let zip = '';
-    
-    // Tenta extrair numero do endereco (procura por numeros)
-    const numberMatch = cleanAddr.match(/,\s*(\d+)/);
-    if (numberMatch) {
-      number = numberMatch[1];
-      // Remove o numero do endereco para facilitar o parse
-      cleanAddr = cleanAddr.replace(/,\s*\d+/, ',');
-    }
-    
-    // Divide por virgulas
-    const parts = cleanAddr.split(',').map(s => s.trim()).filter(p => p);
-    
-    if (parts.length >= 1) {
-      // Primeira parte e a rua (pode ter " - numero" no final)
-      street = parts[0].replace(/\s*-\s*\d+\s*$/, '').trim();
-    }
-    
-    if (parts.length >= 2) {
-      // Segunda parte e o bairro (pode ter " - Cidade/UF")
-      const hoodPart = parts[1];
-      if (hoodPart.includes(' - ')) {
-        const hoodParts = hoodPart.split(' - ');
-        neighborhood = hoodParts[0].trim();
-        if (hoodParts[1]) {
-          const csParts = hoodParts[1].split('/');
-          city = (csParts[0] || city).trim();
-          state = (csParts[1] || state).trim();
-        }
-      } else if (hoodPart.includes('/')) {
-        const csParts = hoodPart.split('/');
-        city = (csParts[0] || city).trim();
-        state = (csParts[1] || state).trim();
-      } else {
-        neighborhood = hoodPart.trim();
-      }
-    }
-    
-    if (parts.length >= 3) {
-      // Terceira parte pode ser Cidade/UF
-      const lastPart = parts[parts.length - 1];
-      if (lastPart.includes('/')) {
-        const csParts = lastPart.split('/');
-        city = (csParts[0] || city).trim();
-        state = (csParts[1] || state).trim();
-      } else if (lastPart.length <= 2) {
-        state = lastPart.trim();
-      } else {
-        city = lastPart.trim();
-      }
-    }
-
-    setFormData({
-      name: est.name || '',
-      cnpj: est.cnpj || '',
-      phone: est.phone || '',
-      email: est.email || '',
-      password: '',
-      address_street: street,
-      address_number: number,
-      address_neighborhood: neighborhood,
-      address_city: city,
-      address_state: state,
-      address_zip: zip,
-      latitude: est.latitude || '',
-      longitude: est.longitude || '',
-      tenant_id: est.tenant_id || '',
-      square_id: est.square_id || '',
-      pricing_table_id: est.pricing_table_id || '',
-      preparation_minutes: est.preparation_minutes || '10',
-      pickup_confirmation_type: est.pickup_confirmation_type || 'code',
-      delivery_confirmation_type: est.delivery_confirmation_type || 'code'
-    });
-    // Carregar tabelas de preços da praça selecionada
-    if (est.square_id) {
-      loadPricingTables(est.square_id);
-    }
-    setFormError('');
-    setShowForm(true);
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setFormError('');
-    // Quando mudar a praça, carregar tabelas de preços
-    if (name === 'square_id') {
-      loadPricingTables(value || null);
-      setFormData(prev => ({ ...prev, pricing_table_id: '' }));
-    }
-  };
-
-  const handleSubmitForm = async (e) => {
-    e.preventDefault();
-    if (!formData.name || !formData.address_street || !formData.address_number || !formData.address_neighborhood) {
-      setFormError('Nome, rua, número e bairro são obrigatórios');
-      return;
-    }
-
-    try {
-      setFormLoading(true);
-      const fullAddress = `${formData.address_street}, ${formData.address_number} - ${formData.address_neighborhood}, ${formData.address_city} - ${formData.address_state}, ${formData.address_zip}`;
-
-      const payload = {
-        name: formData.name,
-        cnpj: formData.cnpj || null,
-        phone: formData.phone || null,
-        email: formData.email || null,
-        address: fullAddress,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-        square_id: formData.square_id || null,
-        pricing_table_id: formData.pricing_table_id || null,
-        preparation_minutes: parseInt(formData.preparation_minutes) || 10,
-        pickup_confirmation_type: formData.pickup_confirmation_type || 'code',
-        delivery_confirmation_type: formData.delivery_confirmation_type || 'code',
-      };
-
-      // Super admin pode enviar tenant_id
-      if (isSuperAdmin && formData.tenant_id) {
-        payload.tenant_id = parseInt(formData.tenant_id);
-      }
-
-      if (!editing && formData.password) {
-        payload.password = formData.password;
-      }
-
-      if (editing) {
-        await adminService.updateEstablishment(editing.id, payload);
-      } else {
-        await adminService.createEstablishment(payload);
-      }
-      setShowForm(false);
-      loadEstablishments();
-    } catch (err) {
-      setFormError(err.response?.data?.error || 'Erro ao salvar estabelecimento');
-    } finally {
-      setFormLoading(false);
-    }
-  };
-
   const handleDelete = async (id, hasOrders) => {
     if (hasOrders) {
       if (!window.confirm('Este estabelecimento tem pedidos vinculados. Deseja excluir mesmo assim? Todos os pedidos serão apagados.')) return;
     } else {
       if (!window.confirm('Tem certeza que deseja excluir este estabelecimento?')) return;
     }
-    try {
-      await adminService.deleteEstablishment(id, hasOrders);
-      loadEstablishments();
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Erro ao excluir', 'error');
-    }
+    try { await adminService.deleteEstablishment(id, hasOrders); loadEstablishments(); }
+    catch (err) { showToast(err.response?.data?.error || 'Erro ao excluir', 'error'); }
   };
 
   const openDetails = async (id) => {
-    try {
-      const data = await adminService.getEstablishmentDetails(id);
-      setShowDetails(data);
-    } catch (err) {
-      showToast('Erro ao carregar detalhes', 'error');
-    }
+    try { const data = await adminService.getEstablishmentDetails(id); setShowDetails(data); }
+    catch (err) { showToast('Erro ao carregar detalhes', 'error'); }
   };
 
   const toggleActive = async (est) => {
-    try {
-      await adminService.updateEstablishment(est.id, { is_active: !est.is_active });
-      loadEstablishments();
-    } catch (err) {
-      showToast('Erro ao alterar status', 'error');
-    }
+    try { await adminService.updateEstablishment(est.id, { is_active: !est.is_active }); loadEstablishments(); }
+    catch (err) { showToast('Erro ao alterar status', 'error'); }
   };
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
-            Estabelecimentos
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-            Gerencie todos os estabelecimentos do sistema
-          </p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Estabelecimentos</h1>
+          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Gerencie todos os estabelecimentos do sistema</p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button onClick={copyRegistrationLink} style={{
@@ -393,15 +153,11 @@ const AdminEstablishmentsPage = () => {
           }}>
             <Copy size={16} /> LINK DE CADASTRO
           </button>
-          <button
-            onClick={openCreateForm}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
-              background: '#2563eb', color: 'white', border: 'none',
-              fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
-              transition: 'all 0.15s'
-            }}
+          <button onClick={openCreateForm} style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem',
+            borderRadius: '0.5rem', background: '#2563eb', color: 'white', border: 'none',
+            fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s'
+          }}
             onMouseEnter={e => e.currentTarget.style.background = '#1d4ed8'}
             onMouseLeave={e => e.currentTarget.style.background = '#2563eb'}
           >
@@ -410,695 +166,37 @@ const AdminEstablishmentsPage = () => {
         </div>
       </div>
 
-      {/* Erro */}
       {error && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
           <AlertCircle size={16} /> {error}
         </div>
       )}
 
-      {/* Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <StatCard icon={<Store size={22} />} iconBg="#f0fdfa" iconColor="#0d9488" label="Total" value={total} />
-        <StatCard icon={<CheckCircle size={22} />} iconBg="#dcfce7" iconColor="#16a34a" label="Ativos" value={establishments.filter(e => e.is_active).length} />
-        <StatCard icon={<TrendingUp size={22} />} iconBg="#dbeafe" iconColor="#2563eb" label="Pedidos Hoje" value={establishments.reduce((sum, e) => sum + (e.today_orders || 0), 0)} />
-        <StatCard icon={<DollarSign size={22} />} iconBg="#fef3c7" iconColor="#d97706" label="Receita Total" value={utils.formatCurrency(establishments.reduce((sum, e) => sum + (e.total_revenue || 0), 0))} />
-      </div>
+      <EstablishmentStats establishments={establishments} total={total} />
+      <PendingApprovals pendingEstablishments={pendingEstablishments} onApprove={handleApprove} onReject={handleReject} />
+      <EstablishmentsList
+        establishments={establishments} loading={loading} search={search}
+        page={page} totalPages={totalPages}
+        onSearch={e => { setSearch(e.target.value); setPage(1); }}
+        onPageChange={setPage} onOpenDetails={openDetails}
+        onEdit={openEditForm} onDelete={handleDelete} onToggleActive={toggleActive}
+      />
 
-      {/* Busca */}
-      <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem 1.25rem', marginBottom: '1rem' }}>
-        <div style={{ position: 'relative', maxWidth: '500px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-          <input
-            type="text"
-            placeholder="Buscar por nome, endereço, CNPJ ou telefone..."
-            value={search}
-            onChange={handleSearch}
-            style={{
-              width: '100%', padding: '0.625rem 0.75rem 0.625rem 2.5rem',
-              border: '1.5px solid #e2e8f0', borderRadius: '0.5rem',
-              fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Estabelecimentos pendentes de aprovação */}
-      {pendingEstablishments.length > 0 && (
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <AlertCircle size={16} style={{ color: '#d97706' }} />
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#92400e' }}>
-              {pendingEstablishments.length} estabelecimento(s) aguardando aprovação
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {pendingEstablishments.map(est => (
-              <div key={est.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0.75rem', background: 'white', borderRadius: '0.5rem',
-                border: '1px solid #fde68a', flexWrap: 'wrap', gap: '0.5rem'
-              }}>
-                <div>
-                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>{est.first_name} {est.last_name}</span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{est.email}</span>
-                  {est.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{est.phone}</span>}
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => handleApprove(est.id)} style={{
-                    padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none',
-                    background: '#16a34a', color: 'white', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
-                  }}>Aprovar</button>
-                  <button onClick={() => handleReject(est.id)} style={{
-                    padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #ef4444',
-                    background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
-                  }}>Rejeitar</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Lista */}
-      {loading ? (
-        <div style={{ minHeight: '30vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '3rem', height: '3rem', border: '3px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        </div>
-      ) : establishments.length === 0 ? (
-        <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem 2rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-            <Store size={24} style={{ color: '#64748b' }} />
-          </div>
-          <p style={{ fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>
-            {search ? 'Nenhum estabelecimento encontrado' : 'Nenhum estabelecimento cadastrado'}
-          </p>
-          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-            {search ? 'Tente outro termo de busca' : 'Clique em "NOVO ESTABELECIMENTO" para cadastrar'}
-          </p>
-        </div>
-      ) : (
-        <>
-          <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-            {/* Header da tabela */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 100px',
-              padding: '0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9',
-              background: '#f8fafc', fontSize: '0.75rem', fontWeight: 600,
-              color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em'
-            }} className="table-header">
-              <span>Estabelecimento</span>
-              <span>Contato</span>
-              <span style={{ textAlign: 'center' }}>Status</span>
-              <span style={{ textAlign: 'center' }}>Hoje</span>
-              <span style={{ textAlign: 'center' }}>Semana</span>
-              <span style={{ textAlign: 'right' }}>Receita Total</span>
-              <span style={{ textAlign: 'center' }}>Ações</span>
-            </div>
-
-            {/* Linhas */}
-            {establishments.map((est) => (
-              <div
-                key={est.id}
-                style={{
-                  display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 100px',
-                  padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc',
-                  alignItems: 'center', cursor: 'pointer', transition: 'background 0.1s'
-                }}
-                className="table-row"
-                onClick={() => openDetails(est.id)}
-              >
-                {/* Estabelecimento */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{
-                    width: '2.25rem', height: '2.25rem', borderRadius: '50%',
-                    background: '#f0fdfa', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', flexShrink: 0
-                  }}>
-                    <Store size={16} style={{ color: '#0d9488' }} />
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>{est.name}</p>
-                      {est.has_own_drivers && (
-                        <span style={{
-                          padding: '0.0625rem 0.375rem', borderRadius: '9999px',
-                          fontSize: '0.5625rem', fontWeight: 600,
-                          background: '#dbeafe', color: '#1d4ed8'
-                        }}>
-                          Próprios
-                        </span>
-                      )}
-                      {!est.square_id && (
-                        <span style={{
-                          padding: '0.0625rem 0.375rem', borderRadius: '9999px',
-                          fontSize: '0.5625rem', fontWeight: 600,
-                          background: '#fef3c7', color: '#92400e'
-                        }}>
-                          Sem Praça
-                        </span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: '0.6875rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <MapPin size={10} /> {est.address?.length > 30 ? est.address.substring(0, 30) + '...' : est.address}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Contato */}
-                <div>
-                  {est.phone && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.125rem' }}>
-                      <Phone size={12} style={{ color: '#64748b' }} />
-                      <span style={{ fontSize: '0.8125rem', color: '#475569' }}>{est.phone}</span>
-                    </div>
-                  )}
-                  {est.email && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <Mail size={12} style={{ color: '#64748b' }} />
-                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{est.email}</span>
-                    </div>
-                  )}
-                  {!est.phone && !est.email && (
-                    <span style={{ fontSize: '0.8125rem', color: '#cbd5e1' }}>-</span>
-                  )}
-                </div>
-
-                {/* Status */}
-                <div style={{ textAlign: 'center' }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleActive(est); }}
-                    style={{
-                      padding: '0.125rem 0.625rem', borderRadius: '9999px',
-                      fontSize: '0.6875rem', fontWeight: 600, border: 'none',
-                      cursor: 'pointer',
-                      background: est.is_active ? '#dcfce7' : '#f1f5f9',
-                      color: est.is_active ? '#16a34a' : '#64748b'
-                    }}
-                  >
-                    {est.is_active ? 'Ativo' : 'Inativo'}
-                  </button>
-                </div>
-
-                {/* Pedidos Hoje */}
-                <div style={{ textAlign: 'center' }}>
-                  <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>
-                    {est.today_orders || 0}
-                  </span>
-                </div>
-
-                {/* Pedidos Semana */}
-                <div style={{ textAlign: 'center' }}>
-                  <span style={{ fontWeight: 600, color: '#2563eb', fontSize: '0.875rem' }}>
-                    {est.week_orders || 0}
-                  </span>
-                </div>
-
-                {/* Receita */}
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>
-                    {utils.formatCurrency(est.total_revenue || 0)}
-                  </span>
-                </div>
-
-                {/* Ações */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.25rem' }} onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => openEditForm(est)}
-                    style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'color 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#2563eb'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
-                    title="Editar"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(est.id, est.total_orders > 0)}
-                    style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'color 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#dc2626'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
-                    title="Excluir"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Paginação */}
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                style={{
-                  padding: '0.5rem 1rem', borderRadius: '0.375rem',
-                  border: '1px solid #e2e8f0', background: 'white',
-                  cursor: page === 1 ? 'not-allowed' : 'pointer',
-                  opacity: page === 1 ? 0.5 : 1, fontSize: '0.875rem'
-                }}
-              >
-                Anterior
-              </button>
-              <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                Página {page} de {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                style={{
-                  padding: '0.5rem 1rem', borderRadius: '0.375rem',
-                  border: '1px solid #e2e8f0', background: 'white',
-                  cursor: page === totalPages ? 'not-allowed' : 'pointer',
-                  opacity: page === totalPages ? 0.5 : 1, fontSize: '0.875rem'
-                }}
-              >
-                Próxima
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Modal de Formulário */}
       {showForm && (
-        <Modal onClose={() => setShowForm(false)}>
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>
-              {editing ? 'Editar Estabelecimento' : 'Novo Estabelecimento'}
-            </h2>
-            <button onClick={() => setShowForm(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
-              <X size={20} />
-            </button>
-          </div>
-          <form onSubmit={handleSubmitForm} style={{ padding: '1.5rem' }}>
-            {formError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <AlertCircle size={14} /> {formError}
-              </div>
-            )}
-
-            <FormField label="Nome *">
-              <input type="text" name="name" value={formData.name} onChange={handleFormChange} style={inputStyle} placeholder="Ex: Farmácia da Esquina" />
-            </FormField>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <FormField label="CNPJ">
-                <input type="text" name="cnpj" value={formData.cnpj} onChange={handleFormChange} style={inputStyle} placeholder="00.000.000/0001-00" />
-              </FormField>
-              <FormField label="Telefone">
-                <input type="text" name="phone" value={formData.phone} onChange={handleFormChange} style={inputStyle} placeholder="(53) 99999-9999" />
-              </FormField>
-            </div>
-
-            <FormField label="E-mail">
-              <input type="email" name="email" value={formData.email} onChange={handleFormChange} style={inputStyle} placeholder="contato@estabelecimento.com" />
-            </FormField>
-
-            {!editing && (
-              <FormField label="Senha de Acesso">
-                <input type="text" name="password" value={formData.password} onChange={handleFormChange} style={inputStyle} placeholder="123456 (padrão)" />
-                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Senha para o estabelecimento fazer login no portal</p>
-              </FormField>
-            )}
-
-            {/* Seletor de Tenant - visível apenas para super admin */}
-            {isSuperAdmin && (
-              <FormField label="Organização (Tenant)">
-                <select name="tenant_id" value={formData.tenant_id} onChange={handleFormChange} style={inputStyle}>
-                  <option value="">Selecione uma organização</option>
-                  {tenants.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Selecione a qual organização este estabelecimento pertence
-                </p>
-              </FormField>
-            )}
-
-            <FormField label="Praça">
-              <select name="square_id" value={formData.square_id} onChange={handleFormChange} style={inputStyle}>
-                <option value="">Selecione uma praça</option>
-                {squares.map(sq => (
-                  <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
-                ))}
-              </select>
-            </FormField>
-
-            <FormField label="Tabela de Preços">
-              <select name="pricing_table_id" value={formData.pricing_table_id} onChange={handleFormChange} style={inputStyle}>
-                <option value="">Padrão da praça</option>
-                {pricingTables.map(pt => (
-                  <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km || 0).toFixed(2)}/km)</option>
-                ))}
-              </select>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                Selecione uma tabela específica ou deixe vazio para usar a padrão da praça
-              </p>
-            </FormField>
-
-            <FormField label="Tempo de Preparo (minutos)">
-              <input type="number" name="preparation_minutes" value={formData.preparation_minutes} onChange={handleFormChange} style={inputStyle} placeholder="10" min="1" max="120" />
-              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                Tempo estimado que o estabelecimento leva para preparar um pedido. O entregador é notificado após este tempo para buscar o pedido.
-              </p>
-            </FormField>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <FormField label="Confirmação de Coleta">
-                <select name="pickup_confirmation_type" value={formData.pickup_confirmation_type} onChange={handleFormChange} style={inputStyle}>
-                  <option value="code">Código 6 dígitos</option>
-                  <option value="photo">Foto</option>
-                  <option value="code_and_photo">Código + Foto</option>
-                  <option value="none">Nenhuma</option>
-                </select>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Como o entregador confirma que coletou o pedido no estabelecimento. Código é mais seguro, foto é mais rápido.
-                </p>
-              </FormField>
-
-              <FormField label="Confirmação de Entrega">
-                <select name="delivery_confirmation_type" value={formData.delivery_confirmation_type} onChange={handleFormChange} style={inputStyle}>
-                  <option value="code">Código 6 dígitos</option>
-                  <option value="photo">Foto</option>
-                  <option value="code_and_photo">Código + Foto</option>
-                  <option value="none">Nenhuma</option>
-                </select>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Como o entregador confirma que entregou ao cliente. Recomendado: Código para evitar fraudes.
-                </p>
-              </FormField>
-            </div>
-
-            <FormField label="Rua/Avenida *">
-              <input type="text" name="address_street" value={formData.address_street} onChange={handleFormChange} style={inputStyle} placeholder="Ex: Rua das Flores" />
-            </FormField>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <FormField label="Número *">
-                <input type="text" name="address_number" value={formData.address_number} onChange={handleFormChange} style={inputStyle} placeholder="123" />
-              </FormField>
-              <FormField label="Bairro *">
-                <input type="text" name="address_neighborhood" value={formData.address_neighborhood} onChange={handleFormChange} style={inputStyle} placeholder="Centro" />
-              </FormField>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <FormField label="Cidade">
-                <input type="text" name="address_city" value={formData.address_city} onChange={handleFormChange} style={inputStyle} placeholder="Capão da Canoa" />
-              </FormField>
-              <FormField label="UF">
-                <input type="text" name="address_state" value={formData.address_state} onChange={handleFormChange} style={inputStyle} placeholder="RS" />
-              </FormField>
-            </div>
-
-            <FormField label="CEP">
-              <input type="text" name="address_zip" value={formData.address_zip} onChange={handleFormChange} style={inputStyle} placeholder="95555-000" />
-            </FormField>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <FormField label="Latitude">
-                <input type="text" name="latitude" value={formData.latitude} onChange={handleFormChange} style={inputStyle} placeholder="-29.9500" />
-              </FormField>
-              <FormField label="Longitude">
-                <input type="text" name="longitude" value={formData.longitude} onChange={handleFormChange} style={inputStyle} placeholder="-50.4500" />
-              </FormField>
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <button type="button" onClick={async () => {
-                const addr = `${formData.address_street || ''}, ${formData.address_number || ''} - ${formData.address_neighborhood || ''}, ${formData.address_city || 'Capão da Canoa'} - ${formData.address_state || 'RS'}`;
-                if (!formData.address_street) {
-                  setFormError('Preencha pelo menos a rua para geocodificar');
-                  return;
-                }
-                try {
-                  const endpoint = editing
-                    ? `/api/admin/establishments/${editing.id}/geocode`
-                    : '/api/admin/establishments/geocode';
-                  const res = await api.post(endpoint, { address: addr });
-                  setFormData(prev => ({ ...prev, latitude: res.data.latitude, longitude: res.data.longitude }));
-                  setFormError('');
-                  showToast('Geocodificação realizada com sucesso!', 'success');
-                } catch (e) {
-                  showToast('Erro ao geocodificar', 'error');
-                }
-              }} style={{
-                padding: '0.5rem 1rem', borderRadius: '0.5rem',
-                border: '1px solid #e2e8f0', background: '#f8fafc',
-                fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer'
-              }}>
-                📍 Geolocalizar endereço
-              </button>
-            </div>
-
-            {editing && (
-              <div style={{ marginBottom: '1rem' }}>
-                <button type="button" onClick={async () => {
-                  try {
-                    const res = await api.post(`/api/admin/establishments/${editing.id}/geocode`);
-                    setFormData(prev => ({ ...prev, latitude: res.data.latitude, longitude: res.data.longitude }));
-                    setFormError('');
-                    showToast('Geocodificação realizada com sucesso!', 'success');
-                  } catch (e) {
-                    showToast('Erro ao geocodificar', 'error');
-                  }
-                }} style={{
-                  padding: '0.5rem 1rem', borderRadius: '0.5rem',
-                  border: '1px solid #e2e8f0', background: '#f8fafc',
-                  fontSize: '0.8125rem', color: '#64748b', cursor: 'pointer'
-                }}>
-                  🔄 Re-geocodificar endereço
-                </button>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setShowForm(false)} style={btnSecondary}>Cancelar</button>
-              <button type="submit" disabled={formLoading} style={{ ...btnPrimary, opacity: formLoading ? 0.7 : 1 }}>
-                {formLoading ? 'Salvando...' : editing ? 'Salvar Alterações' : 'Criar Estabelecimento'}
-              </button>
-            </div>
-          </form>
-        </Modal>
+        <EstablishmentForm
+          editing={editing} isSuperAdmin={isSuperAdmin}
+          squares={squares} tenants={tenants}
+          onClose={() => setShowForm(false)} onSave={handleFormSave}
+        />
       )}
 
-      {/* Modal de Detalhes */}
       {showDetails && (
-        <Modal onClose={() => setShowDetails(null)}>
-          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Detalhes do Estabelecimento</h2>
-            <button onClick={() => setShowDetails(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
-              <X size={20} />
-            </button>
-          </div>
-          <div style={{ padding: '1.5rem' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ width: '3.5rem', height: '3.5rem', borderRadius: '50%', background: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Store size={24} style={{ color: '#0d9488' }} />
-              </div>
-              <div>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>{showDetails.name}</h3>
-                <p style={{ fontSize: '0.8125rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <MapPin size={12} /> {showDetails.address}
-                </p>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
-              <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Total Pedidos</p>
-                <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#2563eb' }}>{showDetails.total_orders}</p>
-              </div>
-              <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Receita Total</p>
-                <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#22c55e' }}>{utils.formatCurrency(showDetails.total_revenue)}</p>
-              </div>
-              <div style={{ background: '#f8fafc', borderRadius: '0.5rem', padding: '1rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.25rem' }}>Status</p>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: showDetails.is_active ? '#16a34a' : '#64748b' }}>
-                  {showDetails.is_active ? 'Ativo' : 'Inativo'}
-                </p>
-              </div>
-            </div>
-
-            {/* Tipo de Entregador */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Tipo de Entregador
-              </p>
-              <div style={{
-                padding: '1rem', borderRadius: '0.5rem',
-                background: showDetails.has_own_drivers ? '#eff6ff' : '#f0fdf4',
-                border: `1px solid ${showDetails.has_own_drivers ? '#93c5fd' : '#86efac'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{
-                    width: '2.5rem', height: '2.5rem', borderRadius: '50%',
-                    background: showDetails.has_own_drivers ? '#2563eb' : '#16a34a',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                    {showDetails.has_own_drivers
-                      ? <Users size={16} style={{ color: 'white' }} />
-                      : <Bike size={16} style={{ color: 'white' }} />
-                    }
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
-                      {showDetails.has_own_drivers ? 'Entregadores Próprios' : 'Plataforma MUV'}
-                    </p>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      {showDetails.has_own_drivers
-                        ? 'Gerencia seus próprios entregadores'
-                        : 'Usa entregadores da plataforma'
-                      }
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleToggleOwnDrivers(showDetails)}
-                  style={{
-                    padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
-                    background: showDetails.has_own_drivers ? '#16a34a' : '#2563eb',
-                    color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
-                    display: 'flex', alignItems: 'center', gap: '0.375rem',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {showDetails.has_own_drivers
-                    ? <><Bike size={14} /> Mudar p/ Plataforma</>
-                    : <><Users size={14} /> Mudar p/ Próprios</>
-                  }
-                </button>
-              </div>
-            </div>
-
-            {/* Roteirização para Plataforma */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Roteirização
-              </p>
-              <div style={{
-                padding: '1rem', borderRadius: '0.5rem',
-                background: showDetails.enable_platform_routing ? '#f0fdf4' : '#f8fafc',
-                border: `1px solid ${showDetails.enable_platform_routing ? '#86efac' : '#e2e8f0'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-              }}>
-                <div>
-                  <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
-                    Roteirização Multi-Parada
-                  </p>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    {showDetails.enable_platform_routing
-                      ? 'Entregadores podem sair com múltiplos pedidos'
-                      : 'Cada pedido é entregue individualmente'
-                    }
-                  </p>
-                </div>
-                <button
-                  onClick={async () => {
-                    try {
-                      await api.put(`/api/admin/establishments/${showDetails.id}`, {
-                        enable_platform_routing: !showDetails.enable_platform_routing
-                      });
-                      setShowDetails({ ...showDetails, enable_platform_routing: !showDetails.enable_platform_routing });
-                    } catch (err) {
-                      showToast('Erro ao alterar configuração', 'error');
-                    }
-                  }}
-                  style={{
-                    padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
-                    background: showDetails.enable_platform_routing ? '#16a34a' : '#94a3b8',
-                    color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600
-                  }}
-                >
-                  {showDetails.enable_platform_routing ? 'Ativado' : 'Desativado'}
-                </button>
-              </div>
-            </div>
-
-            {/* Contato */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contato</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                {showDetails.phone && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Phone size={14} style={{ color: '#64748b' }} />
-                    <span style={{ fontSize: '0.875rem', color: '#475569' }}>{showDetails.phone}</span>
-                  </div>
-                )}
-                {showDetails.email && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Mail size={14} style={{ color: '#64748b' }} />
-                    <span style={{ fontSize: '0.875rem', color: '#475569' }}>{showDetails.email}</span>
-                  </div>
-                )}
-                {showDetails.cnpj && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Store size={14} style={{ color: '#64748b' }} />
-                    <span style={{ fontSize: '0.875rem', color: '#475569' }}>CNPJ: {showDetails.cnpj}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Pedidos por status */}
-            {showDetails.orders_by_status && Object.keys(showDetails.orders_by_status).length > 0 && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pedidos por Status</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {Object.entries(showDetails.orders_by_status).map(([status, count]) => {
-                    const config = STATUS_CONFIG[status] || { color: '#64748b', bg: '#f1f5f9', text: status };
-                    return (
-                      <div key={status} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.25rem 0.625rem', borderRadius: '9999px', background: config.bg, color: config.color, fontSize: '0.75rem', fontWeight: 600 }}>
-                        <div style={{ width: '0.375rem', height: '0.375rem', borderRadius: '50%', background: config.color }} />
-                        {config.text}: {count}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Últimos pedidos */}
-            {showDetails.recent_orders?.length > 0 && (
-              <div>
-                <p style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Últimos Pedidos</p>
-                {showDetails.recent_orders.slice(0, 8).map((order) => {
-                  const config = STATUS_CONFIG[order.status] || { color: '#64748b', bg: '#f1f5f9', text: order.status };
-                  return (
-                    <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f8fafc' }}>
-                      <div>
-                        <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
-                        <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{utils.formatDate(order.created_at)}</p>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1e293b' }}>{utils.formatCurrency(order.total_amount)}</p>
-                        <span style={{ fontSize: '0.625rem', fontWeight: 600, padding: '0.125rem 0.375rem', borderRadius: '9999px', background: config.bg, color: config.color }}>
-                          {config.text}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => { setShowDetails(null); openEditForm(showDetails); }}
-              style={{ ...btnSecondary, display: 'flex', alignItems: 'center', gap: '0.375rem' }}
-            >
-              <Edit size={14} /> Editar
-            </button>
-          </div>
-        </Modal>
+        <EstablishmentDetails
+          details={showDetails}
+          onClose={() => setShowDetails(null)}
+          onEdit={details => { setShowDetails(null); openEditForm(details); }}
+          onToggleOwnDrivers={handleToggleOwnDrivers}
+        />
       )}
 
       <style>{`
@@ -1112,53 +210,6 @@ const AdminEstablishmentsPage = () => {
       `}</style>
     </div>
   );
-};
-
-// Componentes auxiliares
-const Modal = ({ children, onClose }) => (
-  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-    <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '550px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-      {children}
-    </div>
-  </div>
-);
-
-const StatCard = ({ icon, iconBg, iconColor, label, value }) => (
-  <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.15s' }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-      <div style={{ padding: '0.625rem', borderRadius: '0.5rem', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-      <div>
-        <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.125rem' }}>{label}</p>
-        <p style={{ fontSize: '1.375rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
-      </div>
-    </div>
-  </div>
-);
-
-const FormField = ({ label, children }) => (
-  <div style={{ marginBottom: '1rem' }}>
-    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>{label}</label>
-    {children}
-  </div>
-);
-
-const inputStyle = {
-  width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0',
-  borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
-};
-
-const btnPrimary = {
-  padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
-  border: 'none', background: '#2563eb', color: 'white',
-  fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
-};
-
-const btnSecondary = {
-  padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
-  border: '1.5px solid #e2e8f0', background: 'white',
-  fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', color: '#475569'
 };
 
 export default AdminEstablishmentsPage;

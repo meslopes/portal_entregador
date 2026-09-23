@@ -1,28 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  Users, Bike, Package, DollarSign, TrendingUp,
-  AlertCircle, Clock, CheckCircle, MapPin,
-  Search, Filter, ChevronDown, ChevronRight, Store, X, Navigation, Plus, Route
-} from 'lucide-react';
-import { adminService, orderService, utils } from '@/lib/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
+import { adminService, orderService } from '@/lib/api';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-
-// Proteção contra XSS em popups do Leaflet
-const escapeHtml = (str) => {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-};
 import { useSquare } from '@/contexts/SquareContext';
 import { showToast } from '@/components/Toast';
-import { ORDER_STATUS, getStatusLabel } from '@/constants/status';
-import Tooltip from '@/components/Tooltip';
+import { Sidebar, MapSection, AssignDriverModal, SettingsModal } from './dashboard-tabs';
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { squareId, selectedSquare, setSelectedSquare } = useSquare();
+
+  // ── State ──────────────────────────────────────────────────────────────────
   const [dashboard, setDashboard] = useState(null);
   const [tracking, setTracking] = useState(null);
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -30,16 +21,12 @@ const AdminDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('status');
-  const [expandedStatus, setExpandedStatus] = useState('PENDING');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterClient, setFilterClient] = useState('');
-  const [filterDriver, setFilterDriver] = useState('');
   const [squares, setSquares] = useState([]);
   const [tenants, setTenants] = useState([]);
-  const [timeInterval, setTimeInterval] = useState(60); // minutos
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768); // Fechado em mobile
+  const [timeInterval, setTimeInterval] = useState(60);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedOrderMenu, setSelectedOrderMenu] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [orderToAssign, setOrderToAssign] = useState(null);
   const [onlineDrivers, setOnlineDrivers] = useState([]);
@@ -48,124 +35,14 @@ const AdminDashboardPage = () => {
   const [platformRoutes, setPlatformRoutes] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [mapReady, setMapReady] = useState(false);
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markersRef = useRef([]);
-  const cityCenterRef = useRef(null); // Coordenadas da cidade da praça selecionada
-  const hasUserInteractedRef = useRef(false);
+  const [expandedStatus, setExpandedStatus] = useState('PENDING');
+  const [selectedOrderMenu, setSelectedOrderMenu] = useState(null);
+  const [cityCenter, setCityCenter] = useState(null);
+
   const abortControllerRef = useRef(null);
-
-  useEffect(() => {
-    loadDashboard();
-    loadTracking();
-    loadPendingUsers();
-    loadOrders();
-    loadSquares();
-    loadAllDrivers();
-    loadTenants();
-    loadPlatformRoutes();
-    return () => {
-      // Cancela requests pendentes ao desmontar
-      if (abortControllerRef.current) abortControllerRef.current.abort();
-    };
-  }, []);
-
-  // Atualiza establishments quando tracking muda
-  useEffect(() => {
-    if (tracking && tracking.establishments) {
-      setAllEstablishments(tracking.establishments);
-    }
-  }, [tracking]);
-
-  // Recarrega tracking, dashboard e pedidos quando muda a praça
-  // Cancela requests anteriores para evitar thundering herd
-  useEffect(() => {
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
-    loadTracking();
-    loadDashboard();
-    loadOrders();
-    loadPendingUsers();
-    loadAllDrivers();
-  }, [selectedSquare]);
-
-  // Supabase Realtime: receber GPS do entregador em tempo real (WebSocket)
-  useEffect(() => {
-    let cleanup = null;
-    const tenantId = user?.tenant_id;
-    import('@/lib/realtime').then((rt) => {
-      if (!rt.isRealtimeAvailable()) return;
-      cleanup = rt.subscribeGPS(tenantId, (gpsData) => {
-        // Atualizar posição do marcador no mapa imediatamente
-        const L = window.L;
-        const map = mapInstanceRef.current;
-        if (!L || !map) return;
-        const existing = markersRef.current.find(m => m._gpsDriverId === gpsData.driver_id);
-        if (existing) {
-          existing.setLatLng([gpsData.lat, gpsData.lng]);
-        }
-      });
-    }).catch(() => {});
-    return () => { if (cleanup) cleanup(); };
-  }, [user?.tenant_id]);
-
-  // Auto-refresh tracking e pedidos (backup do Realtime + dados novos)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadTracking();
-      loadOrders();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [selectedSquare]);
-
-  // Geocodificar cidade da praça quando muda
-  useEffect(() => {
-    if (!selectedSquare?.city) {
-      cityCenterRef.current = null;
-      return;
-    }
-
-    const cityName = selectedSquare.city;
-    const state = selectedSquare.state || 'RS';
-    const cacheKey = `${cityName.toLowerCase()}-${state.toLowerCase()}`;
-
-    // Cache simples para evitar requisições repetidas
-    if (!geocodeCityCache.current[cacheKey]) {
-      geocodeCityCache.current[cacheKey] = geocodeCity(cityName, state);
-    }
-
-    geocodeCityCache.current[cacheKey].then(coords => {
-      cityCenterRef.current = coords;
-      // Se o mapa já existe, centraliza na cidade
-      if (mapInstanceRef.current && coords) {
-        mapInstanceRef.current.setView([coords.lat, coords.lng], 13);
-      }
-    });
-  }, [selectedSquare]);
-
-  // Cache de geocodificação de cidades
   const geocodeCityCache = useRef({});
 
-  // Geocodifica nome da cidade usando Nominatim (gratuito)
-  const geocodeCity = async (city, state) => {
-    try {
-      const query = `${city}, ${state}, Brasil`;
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=br`,
-        { headers: { 'User-Agent': 'muvlog-portal/1.0' } }
-      );
-      const data = await response.json();
-      if (data && data.length > 0) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      }
-      return null;
-    } catch (err) {
-      console.warn('Erro ao geocodificar cidade:', err);
-      return null;
-    }
-  };
-
+  // ── Data loaders ───────────────────────────────────────────────────────────
   const loadDashboard = async () => {
     try {
       setLoading(true);
@@ -212,7 +89,6 @@ const AdminDashboardPage = () => {
       const response = await api.get('/api/platform/tenants');
       setTenants(response.data.tenants || []);
     } catch (err) {
-      // Normal admin may not have access to platform endpoints
       console.log('Tenants not available');
     }
   };
@@ -238,7 +114,6 @@ const AdminDashboardPage = () => {
 
   const loadAllDrivers = async () => {
     try {
-      // Carrega apenas entregadores online (com pedidos ativos ou não)
       const data = await adminService.getDrivers(1, 100, '', 'online');
       setAllDrivers(data.drivers || []);
     } catch (err) {
@@ -255,17 +130,7 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const loadAllEstablishments = async () => {
-    try {
-      // Usa establishments do tracking (que já têm pedidos ativos)
-      if (tracking && tracking.establishments) {
-        setAllEstablishments(tracking.establishments);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar estabelecimentos:', err);
-    }
-  };
-
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleAssignDriver = async (driverId) => {
     if (!orderToAssign) return;
     try {
@@ -287,6 +152,16 @@ const AdminDashboardPage = () => {
     setOrderToAssign(order);
     setShowAssignModal(true);
     loadOnlineDrivers();
+  };
+
+  const handleChangeStatus = async (orderId, newStatus) => {
+    try {
+      await orderService.updateOrderStatus(orderId, newStatus);
+      setSelectedOrderMenu(null);
+      loadOrders();
+    } catch (err) {
+      showToast('Erro ao alterar status', 'error');
+    }
   };
 
   const handleApprove = async (userId, assignedSquareId = null, tenantId = null) => {
@@ -313,223 +188,14 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Initialize map using callback ref
-  const mapCallbackRef = useCallback((node) => {
-    // Cleanup old map when ref is detached (key prop changes)
-    if (!node) {
-      if (mapInstanceRef.current) {
-        try {
-          mapInstanceRef.current.remove();
-        } catch (e) {}
-        mapInstanceRef.current = null;
-        markersRef.current = [];
-      }
-      return;
-    }
-    
-    mapRef.current = node;
-
-    const initMap = () => {
-      if (!node || !window.L) return;
-      
-      // Cleanup any existing map
-      if (mapInstanceRef.current) {
-        try {
-          mapInstanceRef.current.remove();
-        } catch (e) {}
-        mapInstanceRef.current = null;
-        markersRef.current = [];
-      }
-      
-      // Resetar flag de interação ao recriar o mapa (permite fitBounds automático)
-      hasUserInteractedRef.current = false;
-
-      try {
-        const L = window.L;
-        // Centro inicial: cidade da praça selecionada ou fallback
-        const initialCenter = cityCenterRef.current
-          ? [cityCenterRef.current.lat, cityCenterRef.current.lng]
-          : [-29.72, -50.00];
-        const initialZoom = cityCenterRef.current ? 13 : 12;
-        const map = L.map(node, {
-          zoomControl: true,
-          scrollWheelZoom: true
-        }).setView(initialCenter, initialZoom);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap'
-        }).addTo(map);
-        
-        mapInstanceRef.current = map;
-        // Detectar interação do usuário para parar auto-centralizar
-        map.on('zoomstart', () => { hasUserInteractedRef.current = true; });
-        map.on('dragstart', () => { hasUserInteractedRef.current = true; });
-        setMapReady(true);
-      } catch (e) {
-        console.error('Erro ao inicializar mapa:', e);
-      }
-    };
-
-    if (window.L) {
-      setTimeout(initMap, 150);
-    } else {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => setTimeout(initMap, 150);
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  // Update markers
-  useEffect(() => {
-    if (!mapInstanceRef.current || !window.L || !tracking) return;
-
-    const L = window.L;
-    const map = mapInstanceRef.current;
-
-    markersRef.current.forEach(marker => map.removeLayer(marker));
-    markersRef.current = [];
-
-    const allPoints = [];
-
-    // Drivers
-    if (tracking.drivers) {
-      tracking.drivers.forEach(driver => {
-        if (driver.latitude && driver.longitude) {
-          const color = driver.current_order ? '#2563eb' : '#22c55e';
-          const icon = L.divIcon({
-            html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-            </div>`,
-            className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-          });
-
-          const marker = L.marker([driver.latitude, driver.longitude], { icon })
-            .addTo(map)
-            .bindPopup(`<b>${escapeHtml(driver.name)}</b><br>${escapeHtml(driver.vehicle_type)}<br>${driver.current_order ? 'Em entrega' : 'Livre'}`);
-          marker._gpsDriverId = driver.driver_id;
-          markersRef.current.push(marker);
-          allPoints.push([driver.latitude, driver.longitude]);
-        }
-      });
-    }
-
-    // Establishments
-    if (tracking.establishments) {
-      tracking.establishments.forEach(est => {
-        if (est.latitude && est.longitude) {
-          const icon = L.divIcon({
-            html: `<div style="background:#f59e0b;width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/></svg>
-            </div>`,
-            className: '',
-            iconSize: [28, 28],
-            iconAnchor: [14, 14]
-          });
-
-          // Construir HTML dos pedidos do estabelecimento
-          let ordersHtml = '';
-          if (est.orders && est.orders.length > 0) {
-            ordersHtml = '<div style="margin-top:8px;max-height:200px;overflow-y:auto;">';
-            est.orders.forEach(o => {
-              const statusCfg = ORDER_STATUS[o.status];
-              const color = statusCfg?.color || '#64748b';
-              const label = statusCfg?.label || o.status;
-              ordersHtml += `<div style="padding:4px 6px;margin:2px 0;background:#f8fafc;border-radius:4px;font-size:11px;border-left:3px solid ${color}">`;
-              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${escapeHtml(o.order_number)}</b><span style="color:${color}">${escapeHtml(label)}</span></div>`;
-              ordersHtml += `<div style="color:#64748b;">${escapeHtml(o.customer_name) || 'Cliente'}</div>`;
-              if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${escapeHtml(o.driver_name)}</div>`;
-              ordersHtml += `<div style="color:#64748b;">R$ ${(o.total_amount || 0).toFixed(2)}</div>`;
-              ordersHtml += '</div>';
-            });
-            ordersHtml += '</div>';
-          }
-
-          const popupContent = `
-            <div style="min-width:200px;">
-              <b style="font-size:13px;">${escapeHtml(est.name)}</b>
-              <div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(est.address)}</div>
-              <div style="font-size:11px;color:#475569;margin-top:4px;font-weight:600;">Pedidos ativos: ${est.active_orders}</div>
-              ${ordersHtml}
-            </div>
-          `;
-
-          const marker = L.marker([est.latitude, est.longitude], { icon })
-            .addTo(map)
-            .bindPopup(popupContent);
-          markersRef.current.push(marker);
-          allPoints.push([est.latitude, est.longitude]);
-        }
-      });
-    }
-
-    // Delivery addresses
-    if (tracking.deliveries) {
-      tracking.deliveries.forEach(del => {
-        if (del.latitude && del.longitude) {
-          const color = del.status === 'PICKED_UP' ? '#22c55e' : '#64748b';
-          const icon = L.divIcon({
-            html: `<div style="background:${color};width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.2)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-            </div>`,
-            className: '',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
-          });
-
-          const marker = L.marker([del.latitude, del.longitude], { icon })
-            .addTo(map)
-            .bindPopup(`<b>#${escapeHtml(del.order_number)}</b><br>${escapeHtml(del.customer_name)}<br>${escapeHtml(del.street)}`);
-          markersRef.current.push(marker);
-          allPoints.push([del.latitude, del.longitude]);
-        }
-      });
-    }
-
-    if (allPoints.length > 0) {
-      try {
-        // Só centraliza automaticamente se o usuário NÃO interagiu com o mapa
-        if (!hasUserInteractedRef.current) {
-          const group = L.featureGroup(markersRef.current);
-          map.fitBounds(group.getBounds().pad(0.1));
-        }
-      } catch (e) {
-        console.warn('Erro ao ajustar bounds do mapa:', e);
-        if (!hasUserInteractedRef.current) {
-          if (cityCenterRef.current) {
-            map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
-          } else {
-            map.setView([-29.72, -50.00], 12);
-          }
-        }
-      }
-    } else if (!hasUserInteractedRef.current) {
-      // Sem pontos e sem interação: centro da cidade da praça ou coordenadas padrão
-      if (cityCenterRef.current) {
-        map.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
-      } else {
-        map.setView([-29.72, -50.00], 12);
-      }
-    }
-  }, [tracking]);
-
-  // Filter orders by status - mostra todos os pedidos com este status
-  const getOrdersByStatus = (status) => {
-    return orders.filter(o => o.status === status);
+  const handleCenterMap = (lat, lng) => {
+    window.__adminMapCenter?.(lat, lng);
+    setSelectedOrderMenu(null);
   };
 
-  // Calcula tempo restante para pedidos agendados
   const getTimeRemaining = (scheduledAt) => {
     if (!scheduledAt) return null;
     const now = new Date();
-    // Garante que o datetime seja interpretado como UTC
     const scheduledStr = scheduledAt.endsWith('Z') ? scheduledAt : scheduledAt + 'Z';
     const scheduled = new Date(scheduledStr);
     const diffMs = scheduled - now;
@@ -542,15 +208,80 @@ const AdminDashboardPage = () => {
     return `${diffHours}h ${remainingMins}min`;
   };
 
-  const filteredOrders = orders.filter(o => {
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      return o.order_number?.toLowerCase().includes(search) ||
-             o.customer?.name?.toLowerCase().includes(search);
+  const geocodeCity = async (city, state) => {
+    try {
+      const query = `${city}, ${state}, Brasil`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=br`,
+        { headers: { 'User-Agent': 'muvlog-portal/1.0' } }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      }
+      return null;
+    } catch (err) {
+      console.warn('Erro ao geocodificar cidade:', err);
+      return null;
     }
-    return true;
-  });
+  };
 
+  // ── Effects ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    loadDashboard();
+    loadTracking();
+    loadPendingUsers();
+    loadOrders();
+    loadSquares();
+    loadAllDrivers();
+    loadTenants();
+    loadPlatformRoutes();
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (tracking && tracking.establishments) {
+      setAllEstablishments(tracking.establishments);
+    }
+  }, [tracking]);
+
+  useEffect(() => {
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    loadTracking();
+    loadDashboard();
+    loadOrders();
+    loadPendingUsers();
+    loadAllDrivers();
+  }, [selectedSquare]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadTracking();
+      loadOrders();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [selectedSquare]);
+
+  useEffect(() => {
+    if (!selectedSquare?.city) {
+      setCityCenter(null);
+      return;
+    }
+    const cityName = selectedSquare.city;
+    const state = selectedSquare.state || 'RS';
+    const cacheKey = `${cityName.toLowerCase()}-${state.toLowerCase()}`;
+    if (!geocodeCityCache.current[cacheKey]) {
+      geocodeCityCache.current[cacheKey] = geocodeCity(cityName, state);
+    }
+    geocodeCityCache.current[cacheKey].then(coords => {
+      setCityCenter(coords);
+    });
+  }, [selectedSquare]);
+
+  // ── Loading / Error ────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -569,915 +300,64 @@ const AdminDashboardPage = () => {
     );
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9', position: 'relative' }}>
-      {/* Botão toggle sidebar (mobile) */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        style={{
-          position: 'absolute', top: '0.5rem', left: sidebarOpen ? '280px' : '0.5rem', zIndex: 1001,
-          background: 'white', border: '1px solid #e2e8f0', borderRadius: '0.375rem',
-          padding: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)', transition: 'left 0.2s'
-        }}
-      >
-        {sidebarOpen ? <X size={16} /> : <Filter size={16} />}
-      </button>
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        pendingUsers={pendingUsers}
+        platformRoutes={platformRoutes}
+        orders={orders}
+        allDrivers={allDrivers}
+        allEstablishments={allEstablishments}
+        squares={squares}
+        selectedSquare={selectedSquare}
+        onSelectSquare={setSelectedSquare}
+        tenants={tenants}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onOpenAssign={openAssignModal}
+        onCenterMap={handleCenterMap}
+        getTimeRemaining={getTimeRemaining}
+        onChangeStatus={handleChangeStatus}
+        onNavigate={navigate}
+        onOpenSettings={() => setShowSettings(true)}
+        expandedStatus={expandedStatus}
+        setExpandedStatus={setExpandedStatus}
+        selectedOrderMenu={selectedOrderMenu}
+        setSelectedOrderMenu={setSelectedOrderMenu}
+      />
 
-      {/* Sidebar Esquerda */}
-      <div className="admin-sidebar" style={{
-        width: sidebarOpen ? '320px' : '0px', background: 'white', borderRight: '1px solid #e2e8f0',
-        overflow: sidebarOpen ? 'auto' : 'hidden', flexShrink: 0, transition: 'width 0.2s',
-        minWidth: sidebarOpen ? '320px' : '0px'
-      }}>
-        {/* Filtros */}
-        <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <Filter size={16} style={{ color: '#64748b' }} />
-            <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>Filtros</span>
-          </div>
-          
-          <div style={{ marginBottom: '0.75rem' }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-              <input
-                type="text"
-                placeholder="Buscar por ID, cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem',
-                  border: '1px solid #e2e8f0', borderRadius: '0.375rem',
-                  fontSize: '0.8125rem', outline: 'none'
-                }}
-              />
-            </div>
-          </div>
-        </div>
+      <MapSection
+        tracking={tracking}
+        lastUpdated={lastUpdated}
+        selectedSquare={selectedSquare}
+        squares={squares}
+        onSelectSquare={setSelectedSquare}
+        cityCenter={cityCenter}
+      />
 
-        {/* Abas Status */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', alignItems: 'center', overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none' }}>
-          <button
-            onClick={() => setActiveTab('status')}
-            style={{
-              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
-              fontWeight: 600, whiteSpace: 'nowrap',
-              color: activeTab === 'status' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'status' ? '2px solid #2563eb' : '2px solid transparent',
-              cursor: 'pointer', fontSize: '0.75rem'
-            }}
-          >
-            Status
-          </button>
-          <button
-            onClick={() => setActiveTab('drivers')}
-            style={{
-              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
-              fontWeight: 600, whiteSpace: 'nowrap',
-              color: activeTab === 'drivers' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'drivers' ? '2px solid #2563eb' : '2px solid transparent',
-              cursor: 'pointer', fontSize: '0.75rem'
-            }}
-          >
-            Entreg.
-          </button>
-          <button
-            onClick={() => setActiveTab('establishments')}
-            style={{
-              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
-              fontWeight: 600, whiteSpace: 'nowrap',
-              color: activeTab === 'establishments' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'establishments' ? '2px solid #2563eb' : '2px solid transparent',
-              cursor: 'pointer', fontSize: '0.75rem'
-            }}
-          >
-            Estab.
-          </button>
-          <button
-            onClick={() => setActiveTab('empresas')}
-            style={{
-              padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
-              fontWeight: 600, whiteSpace: 'nowrap',
-              color: activeTab === 'empresas' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'empresas' ? '2px solid #2563eb' : '2px solid transparent',
-              cursor: 'pointer', fontSize: '0.75rem'
-            }}
-          >
-            Praças
-          </button>
-          {pendingUsers.length > 0 && (
-            <button
-              onClick={() => setActiveTab('pending')}
-              style={{
-                padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
-                fontWeight: 600, whiteSpace: 'nowrap',
-                color: activeTab === 'pending' ? '#2563eb' : '#64748b',
-                borderBottom: activeTab === 'pending' ? '2px solid #2563eb' : '2px solid transparent',
-                cursor: 'pointer', fontSize: '0.75rem',
-                display: 'flex', alignItems: 'center', gap: '0.25rem'
-              }}
-            >
-              Pendentes
-              <span style={{
-                background: '#ef4444', color: 'white', borderRadius: '9999px',
-                padding: '0 0.375rem', fontSize: '0.75rem', fontWeight: 700,
-                minWidth: '1.25rem', textAlign: 'center'
-              }}>
-                {pendingUsers.length}
-              </span>
-            </button>
-          )}
-          {platformRoutes.length > 0 && (
-            <button
-              onClick={() => setActiveTab('routes')}
-              style={{
-                padding: '0.5rem 0.75rem', border: 'none', background: 'transparent',
-                fontWeight: 600, whiteSpace: 'nowrap',
-                color: activeTab === 'routes' ? '#2563eb' : '#64748b',
-                borderBottom: activeTab === 'routes' ? '2px solid #2563eb' : '2px solid transparent',
-                cursor: 'pointer', fontSize: '0.75rem',
-                display: 'flex', alignItems: 'center', gap: '0.25rem'
-              }}
-            >
-              Rotas
-              <span style={{
-                background: '#2563eb', color: 'white', borderRadius: '9999px',
-                padding: '0 0.375rem', fontSize: '0.75rem', fontWeight: 700,
-                minWidth: '1.25rem', textAlign: 'center'
-              }}>
-                {platformRoutes.length}
-              </span>
-            </button>
-          )}
-          <Tooltip text="Configurações da sidebar" position="bottom">
-            <button
-              onClick={() => {
-                console.log('Settings clicked, showSettings:', showSettings);
-                setShowSettings(true);
-              }}
-              style={{
-                padding: '0.5rem', border: 'none', background: 'transparent',
-                cursor: 'pointer', color: '#64748b', fontSize: '1.25rem'
-              }}
-              title="Configurações"
-            >
-              ⚙️
-            </button>
-          </Tooltip>
-        </div>
-
-        {/* Lista de Status */}
-        {activeTab === 'status' && (
-          <div style={{ padding: '0.5rem' }}>
-            {Object.entries(ORDER_STATUS).filter(([status]) => !['PREPARING', 'READY'].includes(status)).map(([status, config]) => {
-              const count = getOrdersByStatus(status).length;
-              const isExpanded = expandedStatus === status;
-              
-              return (
-                <div key={status} style={{ marginBottom: '0.25rem' }}>
-                  <button
-                    onClick={() => setExpandedStatus(isExpanded ? null : status)}
-                    style={{
-                      width: '100%', display: 'flex', justifyContent: 'space-between',
-                      alignItems: 'center', padding: '0.75rem', border: 'none',
-                      background: isExpanded ? '#f8fafc' : 'transparent',
-                      borderRadius: '0.375rem', cursor: 'pointer',
-                      transition: 'background 0.15s'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1rem' }}>{config.icon}</span>
-                      <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>
-                        Pedidos {config.label}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{
-                        padding: '0.125rem 0.5rem', borderRadius: '9999px',
-                        background: config.bg, color: config.color,
-                        fontSize: '0.75rem', fontWeight: 600
-                      }}>
-                        {count}
-                      </span>
-                      <ChevronDown
-                        size={14}
-                        style={{
-                          color: '#64748b',
-                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                          transition: 'transform 0.2s'
-                        }}
-                      />
-                    </div>
-                  </button>
-                  
-                  {isExpanded && count > 0 && (
-                    <div style={{ padding: '0.25rem 0.5rem' }}>
-                      {getOrdersByStatus(status).slice(0, 5).map(order => (
-                          <div
-                            key={order.id}
-                            style={{
-                              padding: '0.5rem', borderRadius: '0.25rem',
-                              background: 'white', marginBottom: '0.25rem',
-                              fontSize: '0.75rem',
-                              border: '1px solid #f1f5f9',
-                              position: 'relative'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{utils.formatCurrency(order.total_amount)}</span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedOrderMenu(selectedOrderMenu === order.id ? null : order.id);
-                                  }}
-                                  style={{
-                                    padding: '0.125rem 0.25rem', border: 'none', background: 'transparent',
-                                    cursor: 'pointer', color: '#64748b', fontSize: '0.875rem', lineHeight: 1
-                                  }}
-                                >
-                                  ⋮
-                                </button>
-                              </div>
-                            </div>
-                            <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.75rem' }}>
-                              {order.customer?.name || 'Cliente'}
-                            </div>
-                            {/* Countdown para pedidos agendados */}
-                            {order.status === 'SCHEDULED' && order.scheduled_at && (
-                              <div style={{ 
-                                marginTop: '0.25rem', padding: '0.25rem 0.375rem', 
-                                background: '#e0e7ff', borderRadius: '0.25rem',
-                                fontSize: '0.75rem', color: '#4338ca', fontWeight: 500,
-                                display: 'flex', alignItems: 'center', gap: '0.25rem'
-                              }}>
-                                ⏰ Lança em {getTimeRemaining(order.scheduled_at)}
-                              </div>
-                            )}
-
-                            {/* Menu do pedido */}
-                            {selectedOrderMenu === order.id && (
-                              <div style={{
-                                position: 'absolute', right: 0, top: '100%', zIndex: 50,
-                                background: 'white', borderRadius: '0.5rem',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                border: '1px solid #e2e8f0', width: '220px',
-                                padding: '0.5rem'
-                              }}>
-                                {/* Detalhes do pedido */}
-                                <div style={{ padding: '0.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '0.25rem' }}>
-                                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>Detalhes</p>
-                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Rest: {order.restaurant?.name}</p>
-                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Cliente: {order.customer?.name}</p>
-                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Frete: {utils.formatCurrency(order.delivery_fee)}</p>
-                                  <p style={{ fontSize: '0.75rem', color: '#1e293b' }}>Total: {utils.formatCurrency(order.total_amount)}</p>
-                                </div>
-
-                                {/* Atribuir Entregador */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openAssignModal(order);
-                                  }}
-                                  style={{
-                                    width: '100%', padding: '0.5rem 0.5rem',
-                                    border: 'none', background: '#eff6ff',
-                                    borderRadius: '0.375rem', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                    fontSize: '0.75rem', color: '#2563eb', fontWeight: 600,
-                                    marginBottom: '0.25rem'
-                                  }}
-                                  onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
-                                  onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
-                                >
-                                  <Users size={14} /> Atribuir Entregador
-                                </button>
-
-                                {/* Opções de status */}
-                                <p style={{ fontSize: '0.75rem', color: '#64748b', padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}>Alterar Status</p>
-                                {['SCHEDULED', 'PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED', 'CANCELLED'].map(s => {
-                                  if (s === order.status) return null;
-                                  const cfg = ORDER_STATUS[s];
-                                  return (
-                                    <button
-                                      key={s}
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        try {
-                                          await orderService.updateOrderStatus(order.id, s);
-                                          setSelectedOrderMenu(null);
-                                          loadOrders();
-                                        } catch (err) {
-                                          showToast('Erro ao alterar status', 'error');
-                                        }
-                                      }}
-                                      style={{
-                                        width: '100%', padding: '0.375rem 0.5rem',
-                                        border: 'none', background: 'transparent',
-                                        borderRadius: '0.25rem', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: '0.375rem',
-                                        fontSize: '0.75rem', color: '#1e293b',
-                                        textAlign: 'left'
-                                      }}
-                                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                      <span style={{ fontSize: '0.75rem' }}>{cfg.icon}</span>
-                                      {cfg.label}
-                                    </button>
-                                  );
-                                })}
-
-                                {/* Ver no mapa */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Centraliza no ENDERECO DE ENTREGA (prioridade)
-                                    const delLat = order.delivery_address?.latitude;
-                                    const delLng = order.delivery_address?.longitude;
-                                    if (delLat && delLng) {
-                                      mapInstanceRef.current?.setView([delLat, delLng], 15);
-                                    }
-                                    setSelectedOrderMenu(null);
-                                  }}
-                                  style={{
-                                    width: '100%', padding: '0.375rem 0.5rem',
-                                    border: 'none', background: 'transparent',
-                                    borderRadius: '0.25rem', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '0.375rem',
-                                    fontSize: '0.75rem', color: '#2563eb',
-                                    borderTop: '1px solid #f1f5f9', marginTop: '0.25rem', paddingTop: '0.5rem'
-                                  }}
-                                >
-                                  <MapPin size={12} /> Ver Entrega no Mapa
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      {count > 5 && (
-                        <div style={{ textAlign: 'center', padding: '0.25rem', color: '#2563eb', fontSize: '0.75rem', cursor: 'pointer' }}
-                          onClick={() => navigate(`/admin/orders?status=${status}`)}>
-                          Ver todos ({count})
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Lista de Entregadores */}
-        {activeTab === 'drivers' && (
-          <div style={{ padding: '0.5rem' }}>
-            {allDrivers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.75rem' }}>
-                Nenhum entregador encontrado
-              </div>
-            ) : (
-              allDrivers.map(driver => (
-                <div
-                  key={driver.id}
-                  style={{
-                    padding: '0.5rem', borderRadius: '0.375rem',
-                    background: 'white', marginBottom: '0.25rem',
-                    fontSize: '0.75rem', border: '1px solid #f1f5f9'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <span style={{ fontSize: '0.75rem' }}>{driver.is_online ? '🟢' : '⚪'}</span>
-                      <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.75rem' }}>
-                        {driver.user?.first_name} {driver.user?.last_name}
-                      </span>
-                    </div>
-                    <span style={{
-                      padding: '0.125rem 0.375rem', borderRadius: '9999px',
-                      background: driver.is_online ? '#dcfce7' : '#f1f5f9',
-                      color: driver.is_online ? '#166534' : '#64748b',
-                      fontSize: '0.75rem', fontWeight: 500
-                    }}>
-                      {driver.is_online ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
-                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.75rem' }}>
-                    {driver.vehicle_type} • {driver.total_deliveries || 0} entregas
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Lista de Estabelecimentos */}
-        {activeTab === 'establishments' && (
-          <div style={{ padding: '0.5rem' }}>
-            {allEstablishments.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.75rem' }}>
-                Nenhum estabelecimento com pedidos ativos
-              </div>
-            ) : (
-              allEstablishments.map(est => (
-                <div
-                  key={est.restaurant_id || est.id}
-                  style={{
-                    padding: '0.5rem', borderRadius: '0.375rem',
-                    background: 'white', marginBottom: '0.25rem',
-                    fontSize: '0.75rem', border: '1px solid #f1f5f9'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                      <Store size={12} style={{ color: '#f59e0b' }} />
-                      <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.75rem' }}>{est.name}</span>
-                    </div>
-                    <span style={{
-                      padding: '0.125rem 0.375rem', borderRadius: '9999px',
-                      background: '#fee2e2', color: '#dc2626',
-                      fontSize: '0.75rem', fontWeight: 600
-                    }}>
-                      {est.active_orders || 0} pedidos
-                    </span>
-                  </div>
-                  <div style={{ color: '#64748b', marginTop: '0.125rem', fontSize: '0.75rem' }}>
-                    {est.address || 'Sem endereço'}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Lista de Empresas */}
-        {activeTab === 'empresas' && (
-          <div style={{ padding: '0.5rem' }}>
-            <div style={{ padding: '0.5rem', marginBottom: '0.5rem' }}>
-              <a
-                href="/admin/squares"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                  padding: '0.5rem', borderRadius: '0.375rem',
-                  background: '#2563eb', color: 'white',
-                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none'
-                }}
-              >
-                <Plus size={14} /> Gerenciar Praças
-              </a>
-            </div>
-            {squares.map(sq => (
-              <div
-                key={sq.id}
-                onClick={() => setSelectedSquare(selectedSquare?.id === sq.id ? null : sq)}
-                style={{
-                  padding: '0.75rem', borderRadius: '0.375rem',
-                  background: selectedSquare?.id === sq.id ? '#eff6ff' : 'transparent',
-                  cursor: 'pointer', marginBottom: '0.25rem',
-                  border: selectedSquare?.id === sq.id ? '1px solid #bfdbfe' : '1px solid transparent'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Store size={14} style={{ color: '#64748b' }} />
-                  <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>{sq.name}</span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  {sq.city}/{sq.state}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Lista de Pendentes */}
-        {activeTab === 'pending' && (
-          <div style={{ padding: '0.5rem' }}>
-            {pendingUsers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1rem', color: '#64748b', fontSize: '0.75rem' }}>
-                Nenhum cadastro pendente
-              </div>
-            ) : (
-              pendingUsers.map(user => (
-                <div
-                  key={user.id}
-                  style={{
-                    padding: '0.75rem', borderRadius: '0.375rem',
-                    background: 'white', marginBottom: '0.5rem',
-                    border: '1px solid #e2e8f0'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <div>
-                      <div style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>
-                        {user.first_name} {user.last_name}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        {user.email}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        {user.phone || 'Sem telefone'}
-                      </div>
-                    </div>
-                    <span style={{
-                      padding: '0.125rem 0.5rem', borderRadius: '9999px',
-                      background: user.user_type === 'DRIVER' ? '#dbeafe' : '#fef3c7',
-                      color: user.user_type === 'DRIVER' ? '#2563eb' : '#d97706',
-                      fontSize: '0.75rem', fontWeight: 600
-                    }}>
-                      {user.user_type === 'DRIVER' ? 'Entregador' : 'Estabelecimento'}
-                    </span>
-                  </div>
-                  {/* Seletor de tenant (apenas para super admin com tenants disponiveis) */}
-                  {tenants.length > 0 && !user.tenant_id && (
-                    <div style={{ marginBottom: '0.5rem' }}>
-                      <select
-                        id={`tenant-${user.id}`}
-                        style={{
-                          width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
-                          border: '1px solid #e2e8f0', fontSize: '0.75rem',
-                          outline: 'none', background: 'white'
-                        }}
-                      >
-                        <option value="">Selecionar organizacao...</option>
-                        {tenants.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  {/* Seletor de praca */}
-                  {squares.length > 0 && (
-                    <div style={{ marginBottom: '0.5rem' }}>
-                      <select
-                        id={`square-${user.id}`}
-                        style={{
-                          width: '100%', padding: '0.375rem', borderRadius: '0.375rem',
-                          border: '1px solid #e2e8f0', fontSize: '0.75rem',
-                          outline: 'none', background: 'white'
-                        }}
-                        defaultValue={selectedSquare?.id || ''}
-                      >
-                        <option value="">Selecionar praca...</option>
-                        {squares.map(sq => (
-                          <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => {
-                        const tenantSelect = document.getElementById(`tenant-${user.id}`);
-                        const squareSelect = document.getElementById(`square-${user.id}`);
-                        const tenantId = tenantSelect ? parseInt(tenantSelect.value) || null : null;
-                        const squareId = squareSelect ? parseInt(squareSelect.value) || null : null;
-                        handleApprove(user.id, squareId, tenantId);
-                      }}
-                      style={{
-                        flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
-                        border: 'none', background: '#16a34a', color: 'white',
-                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
-                      }}
-                    >
-                      Aprovar
-                    </button>
-                    <button
-                      onClick={() => handleReject(user.id)}
-                      style={{
-                        flex: 1, padding: '0.375rem', borderRadius: '0.375rem',
-                        border: '1px solid #e2e8f0', background: 'white', color: '#dc2626',
-                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
-                      }}
-                    >
-                      Rejeitar
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Lista de Rotas da Plataforma */}
-        {activeTab === 'routes' && (
-          <div style={{ padding: '0.5rem' }}>
-            <div style={{ padding: '0.5rem', marginBottom: '0.5rem' }}>
-              <a
-                href="/admin/platform-routes"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                  padding: '0.5rem', borderRadius: '0.375rem',
-                  background: '#2563eb', color: 'white',
-                  fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none'
-                }}
-              >
-                <Route size={14} /> Gerenciar Rotas
-              </a>
-            </div>
-            {platformRoutes.map(route => (
-              <div
-                key={route.id}
-                onClick={() => navigate('/admin/platform-routes')}
-                style={{
-                  padding: '0.75rem', borderRadius: '0.375rem',
-                  background: 'transparent', cursor: 'pointer', marginBottom: '0.25rem',
-                  border: '1px solid transparent'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Bike size={14} style={{ color: route.status === 'PENDING' ? '#f59e0b' : '#2563eb' }} />
-                    <span style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem' }}>Rota #{route.id}</span>
-                  </div>
-                  <span style={{
-                    padding: '0.125rem 0.5rem', borderRadius: '9999px',
-                    fontSize: '0.75rem', fontWeight: 600,
-                    background: route.status === 'PENDING' ? '#fef3c7' : '#dbeafe',
-                    color: route.status === 'PENDING' ? '#92400e' : '#1d4ed8'
-                  }}>
-                    {route.status === 'PENDING' ? 'Aguardando' : 'Em Rota'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  {route.driver_name || 'Sem entregador'} • {route.stops_count} paradas
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Conteudo Principal - Mapa */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Header do Mapa */}
-        <div style={{ padding: '0.75rem 1rem', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <MapPin size={18} style={{ color: '#2563eb' }} />
-            <span style={{ fontWeight: 600, color: '#1e293b' }}>Mapa em Tempo Real</span>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>
-              {tracking?.drivers?.length || 0} entregadores | {tracking?.establishments?.length || 0} estabelecimentos
-            </span>
-            {lastUpdated && (
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.5rem' }}>
-                Atualizado: {lastUpdated.toLocaleTimeString('pt-BR')}
-              </span>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <select
-              value={selectedSquare?.id || ''}
-              onChange={(e) => {
-                const sq = squares.find(s => s.id === parseInt(e.target.value));
-                setSelectedSquare(sq || null);
-              }}
-              style={{ padding: '0.375rem 0.75rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.8125rem', outline: 'none' }}
-            >
-              <option value="">Todas as Praças</option>
-              {squares.map(sq => (
-                <option key={sq.id} value={sq.id}>{sq.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Mapa */}
-        <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
-          <div key={`map-${selectedSquare?.id || 'all'}`} ref={mapCallbackRef} style={{ width: '100%', height: '100%' }} />
-          
-          {/* Botão Centralizar dentro do mapa */}
-          <button
-            onClick={() => {
-              if (tracking && mapInstanceRef.current) {
-                hasUserInteractedRef.current = false; // Permite centralizar novamente
-                const allPoints = [];
-                if (tracking.drivers) {
-                  tracking.drivers.forEach(d => {
-                    if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
-                  });
-                }
-                if (tracking.establishments) {
-                  tracking.establishments.forEach(e => {
-                    if (e.latitude && e.longitude) allPoints.push([e.latitude, e.longitude]);
-                  });
-                }
-                if (tracking.deliveries) {
-                  tracking.deliveries.forEach(d => {
-                    if (d.latitude && d.longitude) allPoints.push([d.latitude, d.longitude]);
-                  });
-                }
-                if (allPoints.length > 0) {
-                  const group = L.featureGroup([]);
-                  allPoints.forEach(p => group.addLayer(L.marker(p)));
-                  mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
-                } else if (cityCenterRef.current) {
-                  // Sem markers: centraliza na cidade da praça
-                  mapInstanceRef.current.setView([cityCenterRef.current.lat, cityCenterRef.current.lng], 13);
-                }
-              }
-            }}
-            style={{
-              position: 'absolute', top: '1rem', right: '1rem',
-              padding: '0.5rem 0.75rem', border: '1px solid #e2e8f0',
-              borderRadius: '0.375rem', background: 'white', cursor: 'pointer',
-              fontSize: '0.8125rem', color: '#64748b',
-              display: 'flex', alignItems: 'center', gap: '0.375rem',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.15)', zIndex: 1000
-            }}
-          >
-            <Navigation size={14} /> Centralizar Mapa
-          </button>
-          
-          {/* Legenda */}
-          <div style={{
-            position: 'absolute', bottom: '1rem', left: '1rem',
-            background: 'white', borderRadius: '0.5rem', padding: '0.75rem',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)', zIndex: 1000
-          }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>Legenda</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#2563eb' }} />
-                <span>Entregador em entrega</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e' }} />
-                <span>Entregador livre</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f59e0b' }} />
-                <span>Estabelecimento</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#22c55e' }} />
-                <span>Local de entrega</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: '0.75rem 1rem', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
-            <span>© 2026 muv.log — Controle de Entregadores</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
-            <Link to="/support" style={{ color: '#64748b', textDecoration: 'none' }}>Suporte</Link>
-            <Link to="/terms" style={{ color: '#64748b', textDecoration: 'none' }}>Termos</Link>
-            <Link to="/privacy" style={{ color: '#64748b', textDecoration: 'none' }}>Privacidade</Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal de Configurações */}
       {showSettings && (
-        <>
-          <div 
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999 }}
-            onClick={() => setShowSettings(false)}
-          />
-          <div role="dialog" aria-modal="true" aria-label="Configurações da Sidebar" style={{ 
-            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '400px', 
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 100000 
-          }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Configurações da Sidebar</h2>
-              <button onClick={() => setShowSettings(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                  Intervalo de Tempo (minutos)
-                </label>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                  Mostra pedidos criados nos últimos X minutos
-                </p>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {[15, 30, 60, 120, 240].map(min => (
-                    <button
-                      key={min}
-                      onClick={() => setTimeInterval(min)}
-                      style={{
-                        padding: '0.5rem 0.75rem', borderRadius: '0.375rem',
-                        border: timeInterval === min ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                        background: timeInterval === min ? '#eff6ff' : 'white',
-                        color: timeInterval === min ? '#2563eb' : '#64748b',
-                        fontSize: '0.8125rem', fontWeight: timeInterval === min ? 600 : 400,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {min}min
-                    </button>
-                  ))}
-                </div>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
-                  Atual: {timeInterval} minutos ({timeInterval >= 60 ? `${Math.floor(timeInterval/60)}h` : `${timeInterval}min`})
-                </p>
-              </div>
-              <button
-                onClick={() => setShowSettings(false)}
-                style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                  border: 'none', background: '#2563eb', color: 'white',
-                  fontSize: '0.9375rem', fontWeight: 600, cursor: 'pointer'
-                }}
-              >
-                Salvar
-              </button>
-            </div>
-          </div>
-        </>
+        <SettingsModal
+          timeInterval={timeInterval}
+          onSelectInterval={setTimeInterval}
+          onClose={() => setShowSettings(false)}
+        />
       )}
 
-      {/* Modal Atribuir Entregador */}
-      {showAssignModal && orderToAssign && (
-        <>
-          <div 
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999 }}
-            onClick={() => { setShowAssignModal(false); setOrderToAssign(null); }}
-          />
-          <div role="dialog" aria-modal="true" aria-label="Atribuir Entregador" style={{ 
-            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '450px', 
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', zIndex: 100000 
-          }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Atribuir Entregador</h2>
-              <button onClick={() => { setShowAssignModal(false); setOrderToAssign(null); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
-              <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Pedido</p>
-              <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b' }}>#{orderToAssign.order_number}</p>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                {orderToAssign.restaurant?.name} → {orderToAssign.customer?.name}
-              </p>
-            </div>
-            <div style={{ padding: '1rem', maxHeight: '350px', overflowY: 'auto' }}>
-              {onlineDrivers.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-                  <Users size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-                  <p style={{ fontSize: '0.875rem' }}>Nenhum entregador online</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {onlineDrivers.map(driver => (
-                    <button
-                      key={driver.id}
-                      onClick={() => handleAssignDriver(driver.id)}
-                      disabled={assignLoading}
-                      style={{
-                        width: '100%', padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0', borderRadius: '0.5rem',
-                        background: 'white', cursor: assignLoading ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        textAlign: 'left', transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={e => { if (!assignLoading) e.currentTarget.style.borderColor = '#2563eb'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
-                    >
-                      <div style={{
-                        width: '36px', height: '36px', borderRadius: '50%',
-                        background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'white', fontSize: '0.875rem', fontWeight: 600, flexShrink: 0
-                      }}>
-                        {driver.user?.first_name?.[0]}{driver.user?.last_name?.[0]}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b' }}>
-                          {driver.user?.first_name} {driver.user?.last_name}
-                        </p>
-                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          {driver.vehicle_type === 'MOTORCYCLE' ? '🏍️ Moto' : driver.vehicle_type === 'CAR' ? '🚗 Carro' : '🚲 Bike'}
-                          {driver.current_order ? ' • Em entrega' : ' • Livre'}
-                        </p>
-                      </div>
-                      <Users size={16} style={{ color: '#64748b' }} />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #f1f5f9' }}>
-              <button
-                onClick={() => { setShowAssignModal(false); setOrderToAssign(null); }}
-                style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                  border: '1px solid #e2e8f0', background: 'white', color: '#64748b',
-                  fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer'
-                }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </>
+      {showAssignModal && (
+        <AssignDriverModal
+          orderToAssign={orderToAssign}
+          onlineDrivers={onlineDrivers}
+          assignLoading={assignLoading}
+          onAssign={handleAssignDriver}
+          onClose={() => { setShowAssignModal(false); setOrderToAssign(null); }}
+        />
       )}
 
       <style>{`
