@@ -84,6 +84,11 @@ app.register_blueprint(order_bp, url_prefix='/api/orders')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 
+# Finance routes (extraído de admin.py)
+from src.routes.admin_finance import admin_finance_bp
+
+app.register_blueprint(admin_finance_bp, url_prefix='/api/admin')
+
 from src.routes.user import user_bp
 
 app.register_blueprint(user_bp, url_prefix='/api/user')
