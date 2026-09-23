@@ -1,20 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-  DollarSign, Settings, TrendingUp, Users, CheckCircle,
-  AlertCircle, RefreshCw, Download, Filter, ChevronDown,
-  Wallet, CreditCard, ArrowDownRight, BarChart3
-} from 'lucide-react';
+import { RefreshCw, Wallet, Settings, BarChart3 } from 'lucide-react';
 import api from '@/lib/api';
-
-const PAYMENT_TYPES = {
-  PER_DELIVERY: { label: 'Por Entrega', description: 'Valor fixo por entrega', icon: '📦' },
-  PER_KM: { label: 'Por Km', description: 'Valor por km rodado', icon: '🛣️' },
-  PERCENTAGE: { label: 'Percentual', description: '% do frete cobrado', icon: '📊' },
-  DAILY: { label: 'Diária', description: 'Valor fixo por dia', icon: '📅' },
-  FIXED: { label: 'Fixo', description: 'Valor fixo combinado', icon: '💰' },
-  FIXED_PLUS_DELIVERY: { label: 'Fixo + Entrega', description: 'Valor fixo + por entrega', icon: '📦💰' },
-  FIXED_UP_TO_PLUS_DELIVERY: { label: 'Fixo (até X) + Extra', description: 'Fixo até N entregas + extra', icon: '📦📊' }
-};
+import TabBtn from './own-driver-financial/TabBtn';
+import FinancialStats from './own-driver-financial/FinancialStats';
+import PaymentHistory from './own-driver-financial/PaymentHistory';
+import PaymentConfigForm from './own-driver-financial/PaymentConfigForm';
+import ComparisonView from './own-driver-financial/ComparisonView';
 
 const OwnDriverFinancialPage = () => {
   const [activeTab, setActiveTab] = useState('earnings');
@@ -115,7 +106,6 @@ const OwnDriverFinancialPage = () => {
 
   const handleSaveConfig = async () => {
     try {
-      // Enviar apenas o valor relevante para o tipo selecionado
       const payload = { payment_type: configForm.payment_type };
       if (configForm.payment_type === 'PER_KM') {
         payload.km_value = configForm.km_value;
@@ -169,9 +159,6 @@ const OwnDriverFinancialPage = () => {
     }
   };
 
-  const formatCurrency = (value) => `R$ ${(value || 0).toFixed(2)}`;
-  const formatDate = (date) => date ? new Date(date).toLocaleDateString('pt-BR') : '-';
-
   if (loading) {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -200,12 +187,12 @@ const OwnDriverFinancialPage = () => {
       {/* Alerts */}
       {error && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
-          <AlertCircle size={16} /> {error}
+          {error}
         </div>
       )}
       {success && (
         <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
-          <CheckCircle size={16} /> {success}
+          {success}
         </div>
       )}
 
@@ -225,418 +212,40 @@ const OwnDriverFinancialPage = () => {
       {/* Tab: Ganhos */}
       {activeTab === 'earnings' && (
         <div>
-          {/* Cards de Resumo */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-            <StatCard
-              label="Total Ganhos"
-              value={formatCurrency(summary?.total_earning)}
-              icon={<DollarSign size={20} />}
-              color="#059669"
-            />
-            <StatCard
-              label="Total Pago"
-              value={formatCurrency(summary?.total_paid)}
-              icon={<CheckCircle size={20} />}
-              color="#2563eb"
-            />
-            <StatCard
-              label="Pendente"
-              value={formatCurrency(summary?.total_pending)}
-              icon={<AlertCircle size={20} />}
-              color="#f59e0b"
-            />
-            <StatCard
-              label="Entregas"
-              value={summary?.count || 0}
-              icon={<TrendingUp size={20} />}
-              color="#8b5cf6"
-            />
-          </div>
-
-          {/* Filtros */}
-          <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem', marginBottom: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <select value={period} onChange={e => setPeriod(e.target.value)} style={selectStyle}>
-              <option value="week">Última Semana</option>
-              <option value="month">Último Mês</option>
-              <option value="all">Todos</option>
-            </select>
-            <select value={driverFilter} onChange={e => setDriverFilter(e.target.value)} style={selectStyle}>
-              <option value="">Todos Entregadores</option>
-              {drivers.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-            <select value={paidFilter} onChange={e => setPaidFilter(e.target.value)} style={selectStyle}>
-              <option value="">Todos Status</option>
-              <option value="false">Pendentes</option>
-              <option value="true">Pagos</option>
-            </select>
-          </div>
-
-          {/* Lista de Ganhos */}
-          <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  <th style={thStyle}>Pedido</th>
-                  <th style={thStyle}>Data</th>
-                  <th style={thStyle}>Entregador</th>
-                  <th style={thStyle}>Frete</th>
-                  <th style={thStyle}>Ganho</th>
-                  <th style={thStyle}>Tipo</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Ação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {earnings.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
-                      Nenhum ganho registrado
-                    </td>
-                  </tr>
-                ) : (
-                  earnings.map(earning => (
-                    <tr key={earning.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={tdStyle}>#{earning.order_number}</td>
-                      <td style={tdStyle}>
-                        {earning.created_at ? new Date(earning.created_at).toLocaleDateString('pt-BR') : '-'}
-                        <br />
-                        <span style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>
-                          {earning.created_at ? new Date(earning.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>{earning.driver_name}</td>
-                      <td style={tdStyle}>{formatCurrency(earning.delivery_fee)}</td>
-                      <td style={{ ...tdStyle, fontWeight: 600, color: '#059669' }}>
-                        {formatCurrency(earning.driver_earning)}
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', background: '#dbeafe', color: '#1d4ed8' }}>
-                          {PAYMENT_TYPES[earning.payment_type]?.label || earning.payment_type}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        {earning.is_paid ? (
-                          <span style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem' }}>
-                            <CheckCircle size={14} /> Pago
-                          </span>
-                        ) : (
-                          <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem' }}>
-                            <AlertCircle size={14} /> Pendente
-                          </span>
-                        )}
-                      </td>
-                      <td style={tdStyle}>
-                        {!earning.is_paid && (
-                          <button
-                            onClick={() => handlePayEarning(earning.id)}
-                            style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#059669', color: 'white', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500 }}
-                          >
-                            Pagar
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Botão Pagar Todos */}
-          {driverFilter && summary?.total_pending > 0 && (
-            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => handlePayAll(driverFilter)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', border: 'none', background: '#059669', color: 'white', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
-              >
-                <CreditCard size={16} /> Pagar Todos ({formatCurrency(summary.total_pending)})
-              </button>
-            </div>
-          )}
+          <FinancialStats summary={summary} />
+          <PaymentHistory
+            earnings={earnings}
+            summary={summary}
+            drivers={drivers}
+            driverFilter={driverFilter}
+            paidFilter={paidFilter}
+            period={period}
+            onPeriodChange={setPeriod}
+            onDriverFilterChange={setDriverFilter}
+            onPaidFilterChange={setPaidFilter}
+            onPayEarning={handlePayEarning}
+            onPayAll={handlePayAll}
+          />
         </div>
       )}
 
       {/* Tab: Configuração */}
       {activeTab === 'config' && (
-        <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
-            Configuração de Pagamento
-          </h2>
-          
-          <div style={{ marginBottom: '1.5rem' }}>
-            <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.5rem' }}>
-              Defina como seus entregadores próprios serão pagos por cada entrega.
-            </p>
-          </div>
-
-          {/* Tipos de Pagamento */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            {Object.entries(PAYMENT_TYPES).map(([key, type]) => (
-              <div
-                key={key}
-                onClick={() => setConfigForm({ ...configForm, payment_type: key })}
-                style={{
-                  padding: '1rem',
-                  borderRadius: '0.5rem',
-                  border: `2px solid ${configForm.payment_type === key ? '#2563eb' : '#e2e8f0'}`,
-                  background: configForm.payment_type === key ? '#eff6ff' : 'white',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s'
-                }}
-              >
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{type.icon}</div>
-                <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>{type.label}</p>
-                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{type.description}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Valores */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-            {(configForm.payment_type === 'PER_DELIVERY' || configForm.payment_type === 'DAILY' || configForm.payment_type === 'FIXED' || configForm.payment_type === 'FIXED_PLUS_DELIVERY' || configForm.payment_type === 'FIXED_UP_TO_PLUS_DELIVERY') && (
-              <div>
-                <label style={labelStyle}>Valor Fixo (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={configForm.fixed_value}
-                  onChange={e => setConfigForm({ ...configForm, fixed_value: parseFloat(e.target.value) })}
-                  style={inputStyle}
-                />
-              </div>
-            )}
-            {configForm.payment_type === 'PER_KM' && (
-              <div>
-                <label style={labelStyle}>Valor por Km (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={configForm.km_value}
-                  onChange={e => setConfigForm({ ...configForm, km_value: parseFloat(e.target.value) })}
-                  style={inputStyle}
-                />
-              </div>
-            )}
-            {configForm.payment_type === 'PERCENTAGE' && (
-              <div>
-                <label style={labelStyle}>Percentual (%)</label>
-                <input
-                  type="number"
-                  step="1"
-                  value={configForm.percentage}
-                  onChange={e => setConfigForm({ ...configForm, percentage: parseFloat(e.target.value) })}
-                  style={inputStyle}
-                />
-              </div>
-            )}
-            {(configForm.payment_type === 'FIXED_PLUS_DELIVERY' || configForm.payment_type === 'FIXED_UP_TO_PLUS_DELIVERY') && (
-              <div>
-                <label style={labelStyle}>Valor por Entrega Extra (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={configForm.delivery_value}
-                  onChange={e => setConfigForm({ ...configForm, delivery_value: parseFloat(e.target.value) })}
-                  style={inputStyle}
-                />
-              </div>
-            )}
-            {configForm.payment_type === 'FIXED_UP_TO_PLUS_DELIVERY' && (
-              <div>
-                <label style={labelStyle}>Máx. Entregas Incluídas</label>
-                <input
-                  type="number"
-                  step="1"
-                  value={configForm.max_deliveries}
-                  onChange={e => setConfigForm({ ...configForm, max_deliveries: parseInt(e.target.value) })}
-                  style={inputStyle}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Botão Salvar */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={handleSaveConfig}
-              style={{ padding: '0.75rem 2rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 600 }}
-            >
-              Salvar Configuração
-            </button>
-          </div>
-        </div>
+        <PaymentConfigForm
+          configForm={configForm}
+          onConfigFormChange={setConfigForm}
+          onSave={handleSaveConfig}
+        />
       )}
 
       {/* Tab: Comparativo */}
       {activeTab === 'comparison' && comparison && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            {/* Entregadores Próprios */}
-            <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Users size={20} style={{ color: '#2563eb' }} />
-                </div>
-                <div>
-                  <h3 style={{ fontWeight: 700, color: '#1e293b' }}>Entregadores Próprios</h3>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Sua equipe</p>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Entregas</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{comparison.own_drivers.deliveries}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Custo Total</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#059669' }}>{formatCurrency(comparison.own_drivers.total_earning)}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Custo/Entrega</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>{formatCurrency(comparison.own_drivers.avg_cost_per_delivery)}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Frete Total</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>{formatCurrency(comparison.own_drivers.total_delivery_fee)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Plataforma */}
-            <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.5rem', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <TrendingUp size={20} style={{ color: '#16a34a' }} />
-                </div>
-                <div>
-                  <h3 style={{ fontWeight: 700, color: '#1e293b' }}>Plataforma MUV</h3>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Entregadores da rede</p>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Entregas</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>{comparison.platform.deliveries}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Custo Total</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f59e0b' }}>{formatCurrency(comparison.platform.total_delivery_fee)}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Custo/Entrega</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>{formatCurrency(comparison.platform.avg_cost_per_delivery)}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Frete Total</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>{formatCurrency(comparison.platform.total_delivery_fee)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Economia */}
-          <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: '0.75rem', padding: '1.5rem', color: 'white' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ArrowDownRight size={24} />
-              </div>
-              <div>
-                <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>Economia estimada no período</p>
-                <p style={{ fontSize: '2rem', fontWeight: 700 }}>{formatCurrency(comparison.savings.estimated_savings)}</p>
-                <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>
-                  {(comparison.savings.savings_percentage || 0).toFixed(1)}% de economia em relação à plataforma
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ComparisonView comparison={comparison} />
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-};
-
-// Componentes auxiliares
-const TabBtn = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.5rem 1rem',
-      borderRadius: '0.5rem',
-      border: 'none',
-      background: active ? '#2563eb' : 'transparent',
-      color: active ? 'white' : '#64748b',
-      cursor: 'pointer',
-      fontSize: '0.875rem',
-      fontWeight: active ? 600 : 500,
-      transition: 'all 0.15s'
-    }}
-  >
-    {children}
-  </button>
-);
-
-const StatCard = ({ label, value, icon, color }) => (
-  <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', padding: '1rem' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{label}</span>
-      <div style={{ width: '2rem', height: '2rem', borderRadius: '0.375rem', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color }}>{icon}</span>
-      </div>
-    </div>
-    <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>{value}</p>
-  </div>
-);
-
-const selectStyle = {
-  padding: '0.5rem 0.75rem',
-  borderRadius: '0.5rem',
-  border: '1.5px solid #e2e8f0',
-  fontSize: '0.8125rem',
-  outline: 'none',
-  background: 'white',
-  color: '#1e293b',
-  minWidth: '150px'
-};
-
-const inputStyle = {
-  width: '100%',
-  padding: '0.625rem 0.875rem',
-  borderRadius: '0.5rem',
-  border: '1.5px solid #e2e8f0',
-  fontSize: '0.875rem',
-  outline: 'none',
-  boxSizing: 'border-box'
-};
-
-const labelStyle = {
-  display: 'block',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  color: '#475569',
-  marginBottom: '0.375rem'
-};
-
-const thStyle = {
-  padding: '0.75rem 1rem',
-  textAlign: 'left',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  color: '#64748b',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em'
-};
-
-const tdStyle = {
-  padding: '0.75rem 1rem',
-  fontSize: '0.8125rem',
-  color: '#1e293b'
 };
 
 export default OwnDriverFinancialPage;
