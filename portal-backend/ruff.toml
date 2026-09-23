@@ -1,0 +1,37 @@
+# Ruff configuration for Portal Entregador Backend
+# Docs: https://docs.astral.sh/ruff/
+
+# Max characters per line
+line-length = 120
+
+[lint]
+# Rules to enable
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+]
+
+# Rules to ignore globally
+ignore = [
+    "E501",   # line too long (handled by line-length setting)
+    "E402",   # module-import-not-at-top-of-file (intentional in Flask app)
+    "SIM102", # collapsible-if (readability preference)
+    "SIM108", # if-else-block-instead-of-if-exp (readability preference)
+    "E701",   # multiple-statements-on-one-line-colon (style preference)
+]
+
+[lint.per-file-ignores]
+# Allow print statements in scripts
+"scripts/**/*.py" = ["E501", "T201"]
+
+[lint.isort]
+known-first-party = ["src"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

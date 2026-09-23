@@ -3,9 +3,10 @@ Servico de geocodificacao multi-provider.
 Ordem: Google Maps (se configurado) -> Photon -> Nominatim -> Fallback centro da cidade.
 Servico de roteirizacao usando OSRM para distancia real.
 """
-import requests
 import logging
 import os
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -40,23 +41,23 @@ def geocode_with_google(address, city_hint=None):
     if not api_key:
         logger.info("[GOOGLE] API key não configurada, pulando")
         return None
-    
+
     import re
-    
+
     # Limpa o endereco
     clean = address.replace(' - ', ', ').replace('  ', ' ').strip()
     clean = re.sub(r',?\s*\d{5}-?\d{3}\s*$', '', clean).strip()
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
-    
+
     # Monta endereço completo
     full_address = clean
     if city_hint and city_hint.lower() not in clean.lower():
         full_address = f"{clean}, {city_hint}, RS, Brasil"
     elif 'brasil' not in full_address.lower():
         full_address = f"{full_address}, Brasil"
-    
+
     logger.info(f"[GOOGLE] Buscando: '{full_address}'")
-    
+
     try:
         url = "https://maps.googleapis.com/maps/api/geocode/json"
         params = {
@@ -66,27 +67,27 @@ def geocode_with_google(address, city_hint=None):
             'region': 'br',
             'components': 'country:BR'
         }
-        
+
         response = requests.get(url, params=params, timeout=10)
         data = response.json()
-        
+
         if data.get('status') == 'OK' and data.get('results'):
             result = data['results'][0]
             location = result['geometry']['location']
             lat = location['lat']
             lng = location['lng']
-            
+
             # Verificar qualidade do resultado
             location_type = result['geometry'].get('location_type', '')
             partial_match = result.get('partial_match', False)
-            
+
             # ROOFTOP = endereço exato, RANGE_INTERPOLATED = aproximado
             is_precise = location_type in ['ROOFTOP', 'RANGE_INTERPOLATED'] and not partial_match
-            
+
             display_name = result.get('formatted_address', full_address)
-            
+
             logger.info(f"[GOOGLE] OK: '{full_address}' => {lat}, {lng} (tipo: {location_type}, preciso: {is_precise})")
-            
+
             return {
                 'latitude': float(lat),
                 'longitude': float(lng),
@@ -100,7 +101,7 @@ def geocode_with_google(address, city_hint=None):
             error_message = data.get('error_message', '')
             logger.warning(f"[GOOGLE] Sem resultados: status={status}, erro={error_message}")
             return None
-            
+
     except Exception as e:
         logger.error(f"[GOOGLE] Erro: {e}")
         return None
@@ -109,11 +110,11 @@ def geocode_with_google(address, city_hint=None):
 def get_route_distance(lat1, lng1, lat2, lng2):
     """
     Calcula a distancia real de direção entre dois pontos usando OSRM.
-    
+
     Args:
         lat1, lng1: Coordenadas de origem
         lat2, lng2: Coordenadas de destino
-    
+
     Returns:
         dict: {'distance_km': float, 'duration_min': float, 'geometry': list} ou None
     """
@@ -124,21 +125,21 @@ def get_route_distance(lat1, lng1, lat2, lng2):
             'overview': 'false',
             'geometries': 'geojson'
         }
-        
+
         response = requests.get(url, params=params, timeout=10)
         data = response.json()
-        
+
         if data.get('code') == 'Ok' and data.get('routes'):
             route = data['routes'][0]
             distance_km = route['distance'] / 1000  # metros para km
             duration_min = route['duration'] / 60  # segundos para minutos
-            
+
             return {
                 'distance_km': round(distance_km, 2),
                 'duration_min': round(duration_min, 1),
                 'geometry': route.get('geometry', {}).get('coordinates', [])
             }
-        
+
         return None
     except Exception as e:
         logger.error(f"Erro ao calcular rota OSRM: {e}")
@@ -148,7 +149,7 @@ def get_route_distance(lat1, lng1, lat2, lng2):
 def get_route_distance_with_fallback(lat1, lng1, lat2, lng2):
     """
     Calcula distancia real com fallback para Haversine.
-    
+
     Returns:
         dict: {'distance_km': float, 'duration_min': float, 'source': str}
     """
@@ -157,19 +158,19 @@ def get_route_distance_with_fallback(lat1, lng1, lat2, lng2):
     if route:
         route['source'] = 'osrm'
         return route
-    
+
     # Fallback: Haversine
-    from math import radians, sin, cos, sqrt, atan2
-    
+    from math import atan2, cos, radians, sin, sqrt
+
     R = 6371  # Raio da Terra em km
     lat1_r, lat2_r = radians(lat1), radians(lat2)
     dlat = radians(lat2 - lat1)
     dlng = radians(lng2 - lng1)
-    
+
     a = sin(dlat/2)**2 + cos(lat1_r) * cos(lat2_r) * sin(dlng/2)**2
     c = 2 * atan2(sqrt(a), sqrt(1-a))
     distance_km = R * c
-    
+
     return {
         'distance_km': round(distance_km, 2),
         'duration_min': round(distance_km / 30 * 60, 1),  # Estimativa: 30km/h média
@@ -225,23 +226,23 @@ def geocode_with_photon(address, city_hint=None):
     Tenta geocodificar usando Photon (baseado em OSM, melhor busca).
     """
     import re
-    
+
     if not address:
         logger.warning("[PHOTON] Endereco vazio")
         return None
-    
+
     # Limpa o endereco
     clean = address.replace(' - ', ', ').replace('  ', ' ').strip()
     clean = re.sub(r',?\s*\d{5}-?\d{3}\s*$', '', clean).strip()
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
-    
+
     # Monta query para Photon
     query = clean
     if city_hint:
         query = f"{clean}, {city_hint}"
-    
+
     logger.info(f"[PHOTON] Buscando: '{query}' (original: '{address}')")
-    
+
     try:
         url = "https://photon.komoot.io/api/"
         params = {
@@ -252,17 +253,17 @@ def geocode_with_photon(address, city_hint=None):
             'User-Agent': 'muv.log/1.0 (sistema de delivery - contato@muvlog.com.br)',
             'Accept': 'application/json'
         }
-        
+
         response = requests.get(url, params=params, headers=headers, timeout=10)
         logger.info(f"[PHOTON] Status: {response.status_code}")
-        
+
         if response.status_code != 200:
             logger.error(f"[PHOTON] Erro HTTP {response.status_code}: {response.text[:200]}")
             return None
-        
+
         logger.info(f"[PHOTON] Resposta recebida, tamanho: {len(response.text)} bytes")
         data = response.json()
-        
+
         if data.get('features') and len(data['features']) > 0:
             # Filtrar resultados pelo Brasil
             for feature in data['features']:
@@ -271,16 +272,16 @@ def geocode_with_photon(address, city_hint=None):
                 if 'brasil' in country or 'brazil' in country:
                     coords = feature['geometry']['coordinates']
                     lng, lat = coords[0], coords[1]
-                    
+
                     # Verificar se tem cidade no resultado
                     city = props.get('city', '').lower()
                     district = props.get('district', '')
                     street = props.get('street', '')
                     name = props.get('name', '')
-                    
+
                     display_parts = [street or name, district, city, 'Brasil']
                     display_name = ', '.join(p for p in display_parts if p)
-                    
+
                     logger.info(f"Photon OK: '{query}' => {lat}, {lng} ({display_name})")
                     return {
                         'latitude': float(lat),
@@ -288,10 +289,10 @@ def geocode_with_photon(address, city_hint=None):
                         'display_name': display_name,
                         'source': 'photon'
                     }
-        
+
         logger.info(f"Photon sem resultados para: '{query}'")
         return None
-        
+
     except Exception as e:
         logger.error(f"Erro no Photon para '{query}': {e}")
         return None
@@ -301,11 +302,11 @@ def geocode_address(address, city_hint=None):
     """
     Converte um endereco em coordenadas geograficas.
     Ordem: Google Maps (se configurado) -> Photon -> Nominatim -> Fallback.
-    
+
     Args:
         address: Endereco completo (ex: "Rua Principal 100, Porto Alegre, RS")
         city_hint: Nome da cidade para melhorar a busca (opcional)
-    
+
     Returns:
         dict: {'latitude': float, 'longitude': float, 'display_name': str} ou None
     """
@@ -325,35 +326,35 @@ def geocode_address(address, city_hint=None):
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
 
     logger.info(f"[GEOCODE] Iniciando busca para: '{address}' (city_hint: {city_hint})")
-    
+
     # 1. TENTAR GOOGLE MAPS PRIMEIRO (mais preciso)
     google_result = geocode_with_google(address, city_hint)
     if google_result:
         logger.info(f"[GEOCODE] Google encontrou: {google_result['latitude']}, {google_result['longitude']}")
         return google_result
-    
+
     # 2. TENTAR PHOTON (melhor que Nominatim para endereços brasileiros)
     logger.info("[GEOCODE] Google não configurado ou falhou, tentando Photon...")
     photon_result = geocode_with_photon(address, city_hint)
     if photon_result:
         logger.info(f"[GEOCODE] Photon encontrou: {photon_result['latitude']}, {photon_result['longitude']}")
         return photon_result
-    
+
     logger.info("[GEOCODE] Photon falhou, tentando Nominatim...")
 
     # Lista de formatacoes para tentar (ordem importa)
     formats = []
-    
+
     # Se tem city_hint, usa ele primeiro (mais específico)
     if city_hint:
         formats.append(f"{clean}, {city_hint}, RS, Brasil")
         formats.append(f"{clean}, {city_hint}, Brasil")
         formats.append(f"{clean}, {city_hint}, Rio Grande do Sul, Brasil")
-    
+
     # Formato original limpo
     formats.append(clean)
     formats.append(clean + ', Brasil')
-    
+
     # Tenta extrair cidade do endereço se não tem city_hint
     if not city_hint:
         # Tenta encontrar cidade no endereço (padrão: "endereço, cidade - UF")
@@ -377,11 +378,11 @@ def geocode_address(address, city_hint=None):
 
             response = requests.get(url, params=params, headers=headers, timeout=10)
             logger.info(f"[NOMINATIM] Status: {response.status_code}, Tamanho: {len(response.text)} bytes")
-            
+
             if response.status_code != 200:
                 logger.error(f"[NOMINATIM] Erro HTTP {response.status_code}: {response.text[:200]}")
                 continue
-            
+
             data = response.json()
 
             if data and len(data) > 0:
@@ -406,7 +407,7 @@ def geocode_address(address, city_hint=None):
         city_match = re.search(r',\s*([^-]+?)\s*-\s*[A-Z]{2}', clean)
         if city_match:
             city_for_fallback = city_match.group(1).strip()
-    
+
     if city_for_fallback:
         city_key = city_for_fallback.lower().strip()
         if city_key in CITY_COORDS:
@@ -418,7 +419,7 @@ def geocode_address(address, city_hint=None):
                 'display_name': f'{city_for_fallback} (aproximado - ajuste no mapa)',
                 'is_approximate': True
             }
-    
+
     logger.warning(f"Geocodificacao falhou para: '{address}' (sem fallback)")
     return None
 

@@ -148,35 +148,49 @@
 #
 # ============================================================
 
-from flask import Blueprint, jsonify, request
-
-from flask_jwt_extended import jwt_required, get_jwt_identity
-
 import logging
 
-
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 logger = logging.getLogger(__name__)
 
 
 
-from src.models.portal_models import (
-
-    User, Driver, Order, Restaurant, Customer, Address, Payment, Delivery,
-
-    Notification, NotificationType, Tenant, PricingTable, DynamicPricing, Invoice,
-
-    PlatformCredential, DriverRestaurant, EstablishmentDriver, OwnDriverEarning, OwnDriverRoute, UserType, UserStatus, VehicleType, OrderStatus, PaymentMethod, PaymentStatus, db
-
-)
-
-from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
-
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, and_, or_
+from sqlalchemy import and_, func, or_
 
-
+from src.models.portal_models import (
+    Address,
+    Customer,
+    Delivery,
+    Driver,
+    DriverRestaurant,
+    DynamicPricing,
+    EstablishmentDriver,
+    Invoice,
+    Notification,
+    NotificationType,
+    Order,
+    OrderStatus,
+    OwnDriverEarning,
+    OwnDriverRoute,
+    Payment,
+    PaymentMethod,
+    PaymentStatus,
+    PlatformCredential,
+    PricingTable,
+    Restaurant,
+    SystemConfig,
+    Tenant,
+    User,
+    UserStatus,
+    UserType,
+    VehicleType,
+    db,
+)
+from src.utils.tenant import get_current_tenant_id, get_current_user
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -189,6 +203,8 @@ def get_square_filter():
 
 
 
+
+import contextlib
 
 from src.utils.restaurant import find_restaurant_by_name
 
@@ -207,9 +223,9 @@ def soft_delete_user(user_id, admin_id=None):
 
 def get_deleted_users_query(tenant_id=None, user_type=None, days=None):
     """Retorna query de usuários excluídos com filtros"""
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timedelta, timezone
     query = User.query.filter(User.deleted_at.isnot(None))
-    
+
     if tenant_id:
         query = query.filter(User.tenant_id == tenant_id)
     if user_type:
@@ -217,7 +233,7 @@ def get_deleted_users_query(tenant_id=None, user_type=None, days=None):
     if days:
         cutoff = datetime.now(timezone.utc) - timedelta(days=int(days))
         query = query.filter(User.deleted_at <= cutoff)
-    
+
     return query.order_by(User.deleted_at.desc())
 
 
@@ -335,7 +351,7 @@ def get_pending_users():
 
         tenant_id = get_current_tenant_id()
 
-        
+
 
         # Mostrar usuarios do mesmo tenant OU sem tenant (cadastros publicos)
         if tenant_id:
@@ -346,7 +362,7 @@ def get_pending_users():
         else:
             query = User.query.filter_by(status=UserStatus.INACTIVE)
 
-        
+
 
         pending = query.all()
 
@@ -419,7 +435,7 @@ def approve_user(user_id):
 
         # Determinar tenant_id: usar do request ou do admin atual
         tenant_id = data.get('tenant_id') or get_current_tenant_id()
-        
+
         # Atribuir tenant se usuario nao tiver
         if tenant_id and not user.tenant_id:
             user.tenant_id = tenant_id
@@ -572,13 +588,10 @@ def get_all_users():
 
         if user_type:
 
-            try:
+            with contextlib.suppress(ValueError):
 
                 query = query.filter_by(user_type=UserType(user_type))
 
-            except ValueError:
-
-                pass
 
 
 
@@ -818,7 +831,7 @@ def update_user(user_id):
                     if not driver:
                         driver = Driver(
                             user_id=user.id,
-                            vehicle_type=VehicleType.MOTORCYCLE,
+                            vehicle_type=VehicleType.MOTORCYCLE,  # noqa: F823 — imported at module level
                             tenant_id=user.tenant_id
                         )
                         db.session.add(driver)
@@ -1031,7 +1044,7 @@ def delete_user(user_id):
 
         # Soft delete - marcar como excluído, manter dados
         success = soft_delete_user(user_id, current_user_id)
-        
+
         if success:
             return jsonify({'message': 'Usuário movido para a lixeira'}), 200
         else:
@@ -1294,7 +1307,7 @@ def get_dashboard():
 
         ).limit(5).all()
 
-        
+
 
         return jsonify({
 
@@ -1330,7 +1343,7 @@ def get_dashboard():
 
         }), 200
 
-        
+
 
     except Exception as e:
 
@@ -1435,13 +1448,10 @@ def admin_update_order(order_id):
 
         if data.get('payment_method'):
 
-            try:
+            with contextlib.suppress(ValueError):
 
                 order.payment_method = PaymentMethod(data['payment_method'])
 
-            except ValueError:
-
-                pass
 
         if data.get('special_instructions') is not None:
 
@@ -1634,8 +1644,8 @@ def get_drivers():
         query = Driver.query.join(User)
 
         # Excluir entregadores convertidos para próprio
-        query = query.filter(Driver.converted_to_own == False)
-        
+        query = query.filter(not Driver.converted_to_own)
+
         # Filtrar usuários excluídos (soft delete)
         query = query.filter(User.deleted_at.is_(None))
 
@@ -1670,11 +1680,11 @@ def get_drivers():
 
         if status_filter == 'online':
 
-            query = query.filter(Driver.is_online == True)
+            query = query.filter(Driver.is_online)
 
         elif status_filter == 'offline':
 
-            query = query.filter(Driver.is_online == False)
+            query = query.filter(not Driver.is_online)
 
 
 
@@ -1684,7 +1694,7 @@ def get_drivers():
 
         )
 
-        
+
 
         drivers_data = []
 
@@ -1694,7 +1704,7 @@ def get_drivers():
 
             driver_dict['user'] = driver.user.to_dict()
 
-            
+
 
             # Estatísticas do entregador
 
@@ -1704,13 +1714,13 @@ def get_drivers():
 
             ).scalar() or 0
 
-            
+
 
             driver_dict['total_earnings'] = float(total_earnings)
 
             drivers_data.append(driver_dict)
 
-        
+
 
         return jsonify({
 
@@ -1726,7 +1736,7 @@ def get_drivers():
 
         }), 200
 
-        
+
 
     except Exception as e:
 
@@ -1752,13 +1762,13 @@ def get_driver_details(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+
 
         driver_dict = driver.to_dict()
 
         driver_dict['user'] = driver.user.to_dict()
 
-        
+
 
         # Estatísticas detalhadas
 
@@ -1768,7 +1778,7 @@ def get_driver_details(driver_id):
 
         ).scalar() or 0
 
-        
+
 
         avg_rating = db.session.query(func.avg(Delivery.customer_rating)).filter_by(
 
@@ -1776,7 +1786,7 @@ def get_driver_details(driver_id):
 
         ).scalar() or 5.0
 
-        
+
 
         # Entregas dos últimos 30 dias
 
@@ -1792,7 +1802,7 @@ def get_driver_details(driver_id):
 
         ).count()
 
-        
+
 
         driver_dict['statistics'] = {
 
@@ -1804,11 +1814,11 @@ def get_driver_details(driver_id):
 
         }
 
-        
+
 
         return jsonify(driver_dict), 200
 
-        
+
 
     except Exception as e:
 
@@ -2142,16 +2152,16 @@ def convert_driver_to_own(driver_id):
 
         # Verificar se já existe EstablishmentDriver para este usuário/restaurante
         driver_name = f"{user.first_name} {user.last_name}"
-        
+
         # Desativar registros anteriores em OUTROS restaurantes (evitar duplicatas)
         old_records = EstablishmentDriver.query.filter(
             EstablishmentDriver.name == driver_name,
             EstablishmentDriver.restaurant_id != restaurant.id,
-            EstablishmentDriver.is_active == True
+            EstablishmentDriver.is_active
         ).all()
         for old in old_records:
             old.is_active = False
-        
+
         existing_od = EstablishmentDriver.query.filter_by(
             restaurant_id=restaurant.id, name=driver_name
         ).first()
@@ -2268,7 +2278,7 @@ def update_driver_status(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+
 
         # Verificar tenant
 
@@ -2278,23 +2288,23 @@ def update_driver_status(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+
 
         data = request.get_json()
 
         new_status = data.get('status')
 
-        
+
 
         if new_status not in ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'ONLINE', 'OFFLINE']:
 
             return jsonify({'error': 'Status inválido'}), 400
 
-        
+
 
         from src.models.portal_models import UserStatus
 
-        
+
 
         # Se for ONLINE/OFFLINE, altera o status online do entregador
 
@@ -2330,7 +2340,7 @@ def update_driver_status(driver_id):
 
                 driver.updated_at = datetime.now(timezone.utc)
 
-        
+
 
         # Atualizar tenant_id se fornecido
 
@@ -2340,11 +2350,11 @@ def update_driver_status(driver_id):
 
             driver.user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -2354,7 +2364,7 @@ def update_driver_status(driver_id):
 
         }), 200
 
-        
+
 
     except Exception as e:
 
@@ -2460,7 +2470,7 @@ def get_all_orders():
 
         )
 
-        
+
 
         orders_data = []
 
@@ -2474,7 +2484,7 @@ def get_all_orders():
 
             order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
 
-            
+
 
             if order.driver:
 
@@ -2500,7 +2510,7 @@ def get_all_orders():
 
             orders_data.append(order_dict)
 
-        
+
 
         return jsonify({
 
@@ -2516,7 +2526,7 @@ def get_all_orders():
 
         }), 200
 
-        
+
 
     except Exception as e:
 
@@ -2542,19 +2552,19 @@ def assign_order_to_driver(order_id):
 
             return jsonify({'error': 'Pedido não encontrado'}), 404
 
-        
+
 
         if order.status not in [OrderStatus.SCHEDULED, OrderStatus.PENDING, OrderStatus.PREPARING]:
 
             return jsonify({'error': 'Pedido não está agendado, pendente ou em preparação'}), 400
 
-        
+
 
         data = request.get_json()
 
         driver_id = data.get('driver_id')
 
-        
+
 
         driver = Driver.query.get(driver_id)
 
@@ -2562,7 +2572,7 @@ def assign_order_to_driver(order_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+
 
         # Atribui o pedido (permite offline para atribuição manual)
 
@@ -2572,7 +2582,7 @@ def assign_order_to_driver(order_id):
 
         order.updated_at = datetime.now(timezone.utc)
 
-        
+
 
         # Limpa tags de oferta/rejeição anteriores
 
@@ -2582,7 +2592,7 @@ def assign_order_to_driver(order_id):
 
             order.special_instructions = re.sub(r'\|?(?:OFFERED_TO|REJECTED_BY|TIMEOUT_BY)_\d+(?:_\d+)?', '', order.special_instructions).strip('|')
 
-        
+
 
         # Cria registro de entrega
 
@@ -2602,7 +2612,7 @@ def assign_order_to_driver(order_id):
 
         )
 
-        
+
 
         # Calcula ganhos (% configurável)
 
@@ -2632,11 +2642,11 @@ def assign_order_to_driver(order_id):
 
         delivery.driver_earnings = base_earning
 
-        
+
 
         db.session.add(delivery)
 
-        
+
 
         # Notifica o entregador no app
 
@@ -2662,11 +2672,11 @@ def assign_order_to_driver(order_id):
 
             pass
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -2676,7 +2686,7 @@ def assign_order_to_driver(order_id):
 
         }), 200
 
-        
+
 
     except Exception as e:
 
@@ -2702,7 +2712,7 @@ def get_earnings_report():
 
         date_to = request.args.get('date_to')
 
-        
+
 
         query = db.session.query(
 
@@ -2714,19 +2724,19 @@ def get_earnings_report():
 
         ).filter(Payment.status == PaymentStatus.PROCESSED)
 
-        
+
 
         if date_from:
 
             query = query.filter(Payment.created_at >= datetime.strptime(date_from, '%Y-%m-%d'))
 
-        
+
 
         if date_to:
 
             query = query.filter(Payment.created_at <= datetime.strptime(date_to, '%Y-%m-%d'))
 
-        
+
 
         results = query.group_by(func.date(Payment.created_at)).order_by(
 
@@ -2734,7 +2744,7 @@ def get_earnings_report():
 
         ).all()
 
-        
+
 
         report_data = [
 
@@ -2752,7 +2762,7 @@ def get_earnings_report():
 
         ]
 
-        
+
 
         # Total geral
 
@@ -2760,7 +2770,7 @@ def get_earnings_report():
 
         total_payments = sum(item['payment_count'] for item in report_data)
 
-        
+
 
         return jsonify({
 
@@ -2778,7 +2788,7 @@ def get_earnings_report():
 
         }), 200
 
-        
+
 
     except Exception as e:
 
@@ -3161,7 +3171,7 @@ def get_finance_by_establishment():
 
         ))
 
-        
+
 
         # Filtrar por tenant
 
@@ -3169,7 +3179,7 @@ def get_finance_by_establishment():
 
             query = query.filter(Restaurant.tenant_id == tenant_id)
 
-        
+
 
         establishments = query.group_by(Restaurant.id, Restaurant.name, Restaurant.phone).order_by(
 
@@ -3235,7 +3245,7 @@ def get_live_tracking():
 
         driver_query = Driver.query.filter(
 
-            Driver.is_online == True,
+            Driver.is_online,
 
             Driver.current_latitude.isnot(None),
 
@@ -3253,7 +3263,7 @@ def get_live_tracking():
 
         online_drivers = driver_query.join(User).all()
 
-        
+
 
         tracking_data = []
 
@@ -3277,7 +3287,7 @@ def get_live_tracking():
 
             ).first()
 
-            
+
 
             driver_data = {
 
@@ -3299,17 +3309,17 @@ def get_live_tracking():
 
             }
 
-            
+
 
             tracking_data.append(driver_data)
 
-        
+
 
         # Entregadores próprios online
 
         own_driver_query = EstablishmentDriver.query.join(Restaurant).filter(
-            EstablishmentDriver.is_online == True,
-            EstablishmentDriver.is_active == True,
+            EstablishmentDriver.is_online,
+            EstablishmentDriver.is_active,
             EstablishmentDriver.current_latitude.isnot(None),
             EstablishmentDriver.current_longitude.isnot(None)
         )
@@ -3325,7 +3335,7 @@ def get_live_tracking():
         for est_driver in online_own_drivers:
             current_order = Order.query.filter(
                 Order.establishment_driver_id == est_driver.id,
-                Order.assigned_to_own_driver == True,
+                Order.assigned_to_own_driver,
                 Order.status.in_([
                     OrderStatus.ACCEPTED,
                     OrderStatus.PREPARING,
@@ -3349,7 +3359,7 @@ def get_live_tracking():
 
             tracking_data.append(own_driver_data)
 
-        
+
 
         # Pedidos ativos (filtrados por tenant)
 
@@ -3381,13 +3391,13 @@ def get_live_tracking():
 
         active_orders = order_query.all()
 
-        
+
 
         restaurant_ids_with_active = set()
 
         delivery_ids_added = set()
 
-        
+
 
         for order in active_orders:
 
@@ -3425,7 +3435,7 @@ def get_live_tracking():
 
                         ).all()
 
-                        
+
 
                         est_data = {
 
@@ -3467,7 +3477,7 @@ def get_live_tracking():
 
                     tracking_data.append(est_data)
 
-            
+
 
             # Locais de entrega
 
@@ -3477,35 +3487,33 @@ def get_live_tracking():
 
                 delivery_addr = Address.query.get(order.delivery_address_id)
 
-                if delivery_addr:
+                if delivery_addr and delivery_addr.latitude and delivery_addr.longitude:
 
-                    if delivery_addr.latitude and delivery_addr.longitude:
+                    del_data = {
 
-                        del_data = {
+                        'type': 'delivery',
 
-                            'type': 'delivery',
+                        'order_id': order.id,
 
-                            'order_id': order.id,
+                        'order_number': order.order_number,
 
-                            'order_number': order.order_number,
+                        'latitude': float(delivery_addr.latitude),
 
-                            'latitude': float(delivery_addr.latitude),
+                        'longitude': float(delivery_addr.longitude),
 
-                            'longitude': float(delivery_addr.longitude),
+                        'street': delivery_addr.street,
 
-                            'street': delivery_addr.street,
+                        'neighborhood': delivery_addr.neighborhood,
 
-                            'neighborhood': delivery_addr.neighborhood,
+                        'customer_name': order.customer.name if order.customer else '',
 
-                            'customer_name': order.customer.name if order.customer else '',
+                        'status': order.status.value
 
-                            'status': order.status.value
+                    }
 
-                        }
+                    tracking_data.append(del_data)
 
-                        tracking_data.append(del_data)
 
-        
 
         # Limpar estado pendente (endpoint é GET/read-only)
 
@@ -3523,7 +3531,7 @@ def get_live_tracking():
 
         }), 200
 
-        
+
 
     except Exception as e:
 
@@ -4311,7 +4319,7 @@ def delete_establishment(establishment_id):
 
                 return jsonify({'error': 'Estabelecimento tem pedidos vinculados. Use ?force=true para excluir mesmo assim'}), 400
 
-            
+
 
             # Exclusão forçada: deletar pedidos e entregas vinculados
 
@@ -4442,7 +4450,7 @@ def report_orders_by_date():
 
         )
 
-        
+
 
         if tenant_id:
 
@@ -4452,7 +4460,7 @@ def report_orders_by_date():
 
             query = query.filter(Order.square_id == square_id)
 
-        
+
 
         results = query.group_by(func.date(Order.created_at)).order_by(
 
@@ -4544,7 +4552,7 @@ def report_drivers_performance():
 
         )
 
-        
+
 
         if tenant_id:
 
@@ -4554,7 +4562,7 @@ def report_drivers_performance():
 
             query = query.filter(Driver.square_id == square_id)
 
-        
+
 
         drivers = query.group_by(Driver.id, User.first_name, User.last_name).order_by(
 
@@ -4644,7 +4652,7 @@ def report_establishments_ranking():
 
         ))
 
-        
+
 
         # Filtrar por tenant
 
@@ -4656,7 +4664,7 @@ def report_establishments_ranking():
 
             query = query.filter(Restaurant.square_id == square_id)
 
-        
+
 
         results = query.group_by(Restaurant.id, Restaurant.name).order_by(
 
@@ -4808,7 +4816,7 @@ def report_financial_summary():
 
         total_orders = orders_query.count()
 
-        
+
 
         delivered_query = Order.query.filter(
 
@@ -4914,7 +4922,7 @@ def report_cancellations():
 
             cancel_query = cancel_query.filter(Order.square_id == square_id)
 
-        
+
 
         daily_cancellations = cancel_query.group_by(func.date(Order.updated_at)).order_by(
 
@@ -4926,7 +4934,7 @@ def report_cancellations():
 
         total_cancellations = sum(c.count for c in daily_cancellations)
 
-        
+
 
         orders_query = Order.query.filter(Order.created_at >= start_date)
 
@@ -4940,7 +4948,7 @@ def report_cancellations():
 
         total_orders = orders_query.count()
 
-        
+
 
         cancel_rate = round(total_cancellations / total_orders * 100, 1) if total_orders > 0 else 0
 
@@ -5024,7 +5032,7 @@ def report_ratings():
 
             ratings_query = ratings_query.filter(Driver.square_id == square_id)
 
-        
+
 
         ratings = ratings_query.group_by(Driver.id, User.first_name, User.last_name).order_by(
 
@@ -5058,7 +5066,7 @@ def report_ratings():
 
             dist_query = dist_query.join(Driver, Delivery.driver_id == Driver.id).filter(Driver.square_id == square_id)
 
-        
+
 
         dist = dist_query.group_by(Delivery.customer_rating).all()
 
@@ -5146,7 +5154,7 @@ def report_peak_hours():
 
             hourly_query = hourly_query.filter(Order.square_id == square_id)
 
-        
+
 
         hourly = hourly_query.group_by(func.extract('hour', Order.created_at)).order_by(
 
@@ -5178,7 +5186,7 @@ def report_peak_hours():
 
             daily_query = daily_query.filter(Order.square_id == square_id)
 
-        
+
 
         daily = daily_query.group_by(func.extract('dow', Order.created_at)).order_by(
 
@@ -5262,7 +5270,7 @@ def report_deliveries_by_driver():
 
         )).outerjoin(Delivery, Delivery.order_id == Order.id)
 
-        
+
 
         if tenant_id:
 
@@ -5272,7 +5280,7 @@ def report_deliveries_by_driver():
 
             query = query.filter(Driver.square_id == square_id)
 
-        
+
 
         drivers = query.group_by(
 
@@ -5346,7 +5354,7 @@ def get_settings():
 
         tenant_id = get_current_tenant_id()
 
-        
+
 
         query = SystemConfig.query
 
@@ -5362,7 +5370,7 @@ def get_settings():
 
             query = query.filter(SystemConfig.tenant_id.is_(None))
 
-        
+
 
         configs = query.all()
 
@@ -5492,7 +5500,7 @@ def get_tenant_settings():
 
         return jsonify({'tenant': tenant.to_dict()}), 200
 
-    except Exception as e:
+    except Exception:
 
         # Se tabela tenants não existir, retornar dados padrão
 
@@ -6271,7 +6279,6 @@ def upload_tenant_logo():
 
 
         import base64
-
         import os
 
 
@@ -6822,7 +6829,7 @@ def get_driver_payments():
         tenant_id = get_current_tenant_id()
         square_id = get_square_filter()
 
-        
+
 
         query = db.session.query(
 
@@ -6844,7 +6851,7 @@ def get_driver_payments():
 
         )
 
-        
+
 
         # Filtrar por tenant
 
@@ -6856,7 +6863,7 @@ def get_driver_payments():
         if square_id:
             query = query.filter(Driver.square_id == square_id)
 
-        
+
 
         drivers = query.group_by(Driver.id, User.first_name, User.last_name, User.email).all()
 
@@ -7018,15 +7025,12 @@ def generate_invoice(restaurant_id):
 
     try:
 
-        from src.models.portal_models import SystemConfig
+        import base64
+        import io
 
         import qrcode
 
-        import io
-
-        import base64
-
-        from fpdf import FPDF
+        from src.models.portal_models import SystemConfig
 
 
 
@@ -7257,9 +7261,9 @@ def list_withdrawals():
         tenant_id = get_current_tenant_id()
         square_id = get_square_filter()
 
-        
 
-        from src.models.portal_models import PaymentType, PaymentStatus
+
+        from src.models.portal_models import PaymentStatus, PaymentType
 
         query = Payment.query.filter_by(
 
@@ -7269,7 +7273,7 @@ def list_withdrawals():
 
         ).join(Driver).join(User)
 
-        
+
 
         if tenant_id:
 
@@ -7279,11 +7283,11 @@ def list_withdrawals():
         if square_id:
             query = query.filter(Driver.square_id == square_id)
 
-        
+
 
         withdrawals = query.order_by(Payment.created_at.desc()).all()
 
-        
+
 
         result = []
 
@@ -7311,7 +7315,7 @@ def list_withdrawals():
 
             })
 
-        
+
 
         return jsonify({'withdrawals': result}), 200
 
@@ -7337,7 +7341,7 @@ def process_withdrawal(withdrawal_id):
 
         from decimal import Decimal
 
-        
+
 
         withdrawal = Payment.query.get(withdrawal_id)
 
@@ -7345,25 +7349,25 @@ def process_withdrawal(withdrawal_id):
 
             return jsonify({'error': 'Solicitação não encontrada'}), 404
 
-        
+
 
         if withdrawal.status != PaymentStatus.PENDING:
 
             return jsonify({'error': 'Solicitação já processada'}), 400
 
-        
+
 
         data = request.get_json()
 
         action = data.get('action')  # 'approve' or 'reject'
 
-        
+
 
         if action not in ['approve', 'reject']:
 
             return jsonify({'error': 'Ação inválida'}), 400
 
-        
+
 
         driver = Driver.query.get(withdrawal.driver_id)
 
@@ -7371,11 +7375,11 @@ def process_withdrawal(withdrawal_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+
 
         amount = abs(float(withdrawal.amount))
 
-        
+
 
         if action == 'approve':
 
@@ -7395,13 +7399,13 @@ def process_withdrawal(withdrawal_id):
 
             driver.balance = Decimal(str(float(driver.balance or 0))) + Decimal(str(amount))
 
-        
+
 
         driver.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()
 
-        
+
 
         return jsonify({'message': f'Saque {"aprovado" if action == "approve" else "rejeitado"} com sucesso'}), 200
 
@@ -7662,7 +7666,7 @@ def pay_invoice(invoice_id):
 
         from decimal import Decimal
 
-        
+
 
         invoice = Invoice.query.get(invoice_id)
 
@@ -7670,13 +7674,13 @@ def pay_invoice(invoice_id):
 
             return jsonify({'error': 'Fatura não encontrada'}), 404
 
-        
+
 
         if invoice.status != 'PENDING':
 
             return jsonify({'error': 'Fatura já processada'}), 400
 
-        
+
 
         # Buscar entregas da semana para este restaurante
 
@@ -7694,7 +7698,7 @@ def pay_invoice(invoice_id):
 
         ).all()
 
-        
+
 
         # Desbloquear saldo de cada entregador
 
@@ -7718,7 +7722,7 @@ def pay_invoice(invoice_id):
 
                     drivers_unlocked[driver.id] = drivers_unlocked.get(driver.id, 0) + float(earnings)
 
-        
+
 
         # Marcar fatura como paga
 
@@ -7728,11 +7732,11 @@ def pay_invoice(invoice_id):
 
         invoice.updated_at = datetime.now(timezone.utc)
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -7771,15 +7775,15 @@ def get_deleted_users():
         tenant_id = get_current_tenant_id()
         user_type = request.args.get('user_type')
         days = request.args.get('days', type=int)
-        
+
         query = get_deleted_users_query(
             tenant_id=tenant_id,
             user_type=user_type,
             days=days
         )
-        
+
         users = query.all()
-        
+
         # Buscar nome de quem excluiu
         users_data = []
         for user in users:
@@ -7789,19 +7793,19 @@ def get_deleted_users():
                 user_dict['deleted_by_name'] = f"{deleter.first_name} {deleter.last_name}" if deleter else 'Desconhecido'
             else:
                 user_dict['deleted_by_name'] = 'Sistema'
-            
+
             # Calcular dias desde exclusão
             if user.deleted_at:
                 from datetime import datetime, timezone
                 delta = datetime.now(timezone.utc) - user.deleted_at
                 user_dict['days_deleted'] = delta.days
-            
+
             users_data.append(user_dict)
-        
+
         # Buscar configuração de retenção
         retention_config = SystemConfig.query.filter_by(config_key='retention_days').first()
         retention_days = int(retention_config.config_value) if retention_config else 90
-        
+
         return jsonify({
             'users': users_data,
             'total': len(users_data),
@@ -7809,7 +7813,7 @@ def get_deleted_users():
                 'retention_days': retention_days
             }
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -7823,25 +7827,25 @@ def restore_user(user_id):
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
-        
+
         if not user.deleted_at:
             return jsonify({'error': 'Usuário não está excluído'}), 400
-        
+
         # Verificar tenant
         tenant_id = get_current_tenant_id()
         if tenant_id and user.tenant_id != tenant_id:
             return jsonify({'error': 'Usuário não encontrado'}), 404
-        
+
         # Restaurar
         user.deleted_at = None
         user.deleted_by = None
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Usuário restaurado com sucesso',
             'user': user.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -7856,22 +7860,22 @@ def delete_user_permanent(user_id):
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
-        
+
         # Verificar tenant
         tenant_id = get_current_tenant_id()
         if tenant_id and user.tenant_id != tenant_id:
             return jsonify({'error': 'Usuário não encontrado'}), 404
-        
+
         # Só permite excluir permanentemente se já estiver na lixeira
         if not user.deleted_at:
             return jsonify({'error': 'Usuário deve estar na lixeira antes de ser excluído permanentemente'}), 400
-        
+
         # Excluir permanentemente
         db.session.delete(user)
         db.session.commit()
-        
+
         return jsonify({'message': 'Usuário excluído permanentemente'}), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -7885,13 +7889,13 @@ def cleanup_deleted_users():
     try:
         data = request.get_json()
         user_ids = data.get('user_ids', [])
-        
+
         if not user_ids:
             return jsonify({'error': 'Nenhum usuário selecionado'}), 400
-        
+
         # Verificar tenant
         tenant_id = get_current_tenant_id()
-        
+
         deleted_count = 0
         for user_id in user_ids:
             user = User.query.get(user_id)
@@ -7901,14 +7905,14 @@ def cleanup_deleted_users():
                     continue
                 db.session.delete(user)
                 deleted_count += 1
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'{deleted_count} usuário(s) excluído(s) permanentemente',
             'deleted_count': deleted_count
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -7922,9 +7926,9 @@ def get_retention_config():
     try:
         config = SystemConfig.query.filter_by(config_key='retention_days').first()
         days = int(config.config_value) if config else 90
-        
+
         return jsonify({'retention_days': days}), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -7937,21 +7941,21 @@ def update_retention_config():
     try:
         data = request.get_json()
         days = data.get('retention_days', 90)
-        
+
         if days not in [30, 60, 90]:
             return jsonify({'error': 'Valor inválido. Use 30, 60 ou 90'}), 400
-        
+
         config = SystemConfig.query.filter_by(config_key='retention_days').first()
         if config:
             config.config_value = str(days)
         else:
             config = SystemConfig(config_key='retention_days', config_value=str(days))
             db.session.add(config)
-        
+
         db.session.commit()
-        
+
         return jsonify({'message': f'Retenção configurada para {days} dias'}), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -8059,9 +8063,9 @@ def test_asaas_connection():
 
     """Testa a conexão com o Asaas"""
 
-    from src.services.asaas_service import is_configured, get_base_url, get_headers
-
     import requests as req
+
+    from src.services.asaas_service import get_base_url, get_headers, is_configured
 
 
 
@@ -8103,7 +8107,6 @@ def generate_auto_invoices():
 
     """
 
-    from src.services.asaas_service import create_charge, is_configured
 
 
 
@@ -8123,7 +8126,7 @@ def generate_auto_invoices():
 
 
 
-        restaurants = Restaurant.query.filter(Restaurant.is_active == True).all()
+        restaurants = Restaurant.query.filter(Restaurant.is_active).all()
 
         if tenant_id:
 
@@ -8261,7 +8264,7 @@ def create_invoice_charge(invoice_id):
 
     """Cria cobrança no Asaas para uma fatura específica"""
 
-    from src.services.asaas_service import create_charge, is_configured, create_customer
+    from src.services.asaas_service import create_charge, create_customer, is_configured
 
 
 
@@ -8539,7 +8542,7 @@ def process_withdrawal_auto(withdrawal_id):
 
     """Processa saque automaticamente via Asaas PIX"""
 
-    from src.services.asaas_service import transfer_pix, is_configured, detect_pix_key_type
+    from src.services.asaas_service import detect_pix_key_type, is_configured, transfer_pix
 
 
 
@@ -8661,7 +8664,7 @@ def list_platform_credentials():
 
         restaurant_id = request.args.get('restaurant_id')
 
-        
+
 
         query = PlatformCredential.query.join(Restaurant)
 
@@ -8673,7 +8676,7 @@ def list_platform_credentials():
 
             query = query.filter(PlatformCredential.restaurant_id == int(restaurant_id))
 
-        
+
 
         credentials = query.all()
 
@@ -8705,13 +8708,13 @@ def create_platform_credential():
 
             return jsonify({'error': 'Estabelecimento e plataforma são obrigatórios'}), 400
 
-        
+
 
         restaurant_id = data['restaurant_id']
 
         platform = data['platform'].upper()
 
-        
+
 
         # Verificar se já existe credencial para este restaurante/plataforma
 
@@ -8723,7 +8726,7 @@ def create_platform_credential():
 
         ).first()
 
-        
+
 
         if existing:
 
@@ -8823,7 +8826,7 @@ def delete_platform_credential(cred_id):
 
             return jsonify({'error': 'Credencial não encontrada'}), 404
 
-        
+
 
         db.session.delete(cred)
 
@@ -8859,23 +8862,23 @@ def test_platform_credential(cred_id):
 
             return jsonify({'error': 'Credencial não encontrada'}), 404
 
-        
+
 
         if cred.platform == 'IFOOD':
 
             from src.services.ifood_service import authenticate
 
-            
+
 
             if not cred.client_id or not cred.client_secret:
 
                 return jsonify({'success': False, 'error': 'Client ID e Client Secret são obrigatórios'}), 400
 
-            
+
 
             result = authenticate(cred.client_id, cred.client_secret)
 
-            
+
 
             if result.get('success'):
 
@@ -8893,7 +8896,7 @@ def test_platform_credential(cred_id):
 
                 db.session.commit()
 
-                
+
 
                 return jsonify({
 
@@ -8917,7 +8920,7 @@ def test_platform_credential(cred_id):
 
             return jsonify({'success': False, 'error': f'Plataforma {cred.platform} não suportada para teste'}), 400
 
-            
+
 
     except Exception as e:
 
@@ -8953,7 +8956,7 @@ def list_driver_assignments():
 
         driver_id = request.args.get('driver_id')
 
-        
+
 
         query = DriverRestaurant.query
 
@@ -8969,7 +8972,7 @@ def list_driver_assignments():
 
             query = query.filter(DriverRestaurant.driver_id == int(driver_id))
 
-        
+
 
         assignments = query.all()
 
@@ -9001,13 +9004,13 @@ def create_driver_assignment():
 
             return jsonify({'error': 'Entregador e estabelecimento são obrigatórios'}), 400
 
-        
+
 
         driver_id = data['driver_id']
 
         restaurant_id = data['restaurant_id']
 
-        
+
 
         # Verificar se já existe
 
@@ -9019,13 +9022,13 @@ def create_driver_assignment():
 
         ).first()
 
-        
+
 
         if existing:
 
             return jsonify({'error': 'Vinculação já existe'}), 400
 
-        
+
 
         assignment = DriverRestaurant(
 
@@ -9041,7 +9044,7 @@ def create_driver_assignment():
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -9079,13 +9082,13 @@ def delete_driver_assignment(assignment_id):
 
             return jsonify({'error': 'Vinculação não encontrada'}), 404
 
-        
+
 
         db.session.delete(assignment)
 
         db.session.commit()
 
-        
+
 
         return jsonify({'message': 'Vinculação removida com sucesso'}), 200
 
@@ -9117,7 +9120,7 @@ def toggle_driver_priority(assignment_id):
 
             return jsonify({'error': 'Vinculação não encontrada'}), 404
 
-        
+
 
         data = request.get_json()
 
@@ -9125,7 +9128,7 @@ def toggle_driver_priority(assignment_id):
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -9189,7 +9192,7 @@ def list_establishment_drivers():
 
         ).all()
 
-        
+
 
         return jsonify({'drivers': [d.to_dict() for d in drivers]}), 200
 
@@ -9206,24 +9209,22 @@ def get_establishment_orders():
     try:
         restaurant_id = request.args.get('restaurant_id')
         status_filter = request.args.get('status', '')
-        
+
         if not restaurant_id:
             return jsonify({'error': 'restaurant_id é obrigatório'}), 400
-        
+
         query = Order.query.filter_by(restaurant_id=int(restaurant_id))
-        
+
         # Filtrar por status se fornecido
         if status_filter:
             statuses = [s.strip().upper() for s in status_filter.split(',')]
             status_enums = []
             for s in statuses:
-                try:
+                with contextlib.suppress(KeyError):
                     status_enums.append(OrderStatus[s])
-                except KeyError:
-                    pass
             if status_enums:
                 query = query.filter(Order.status.in_(status_enums))
-        
+
         # Excluir pedidos que já estão em rotas ativas (CREATED, PENDING, ACTIVE)
         # Incluir pedidos sem rota (NULL) OU com rota não ativa
         active_route_ids = db.session.query(OwnDriverRoute.id).filter(
@@ -9235,9 +9236,9 @@ def get_establishment_orders():
                 ~Order.own_driver_route_id.in_(active_route_ids)
             )
         )
-        
+
         orders = query.order_by(Order.created_at.desc()).limit(100).all()
-        
+
         # Carregar relacionamentos
         result = []
         for order in orders:
@@ -9269,12 +9270,12 @@ def get_establishment_orders():
                         'phone': driver.user.phone if driver.user else None
                     }
             result.append(order_dict)
-        
+
         return jsonify({
             'orders': result,
             'total': len(result)
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao listar pedidos do estabelecimento: {e}")
         return jsonify({'error': str(e)}), 500
@@ -9330,7 +9331,7 @@ def create_establishment_driver():
 
         db.session.add(driver)
 
-        
+
 
         # Marcar estabelecimento como tendo entregadores próprios
 
@@ -9340,11 +9341,11 @@ def create_establishment_driver():
 
             restaurant.has_own_drivers = True
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -9428,11 +9429,11 @@ def update_establishment_driver(driver_id):
 
             driver.is_active = data['is_active']
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -9484,7 +9485,7 @@ def delete_establishment_driver(driver_id):
 
         db.session.commit()
 
-        
+
 
         return jsonify({'message': 'Entregador removido'}), 200
 
@@ -9516,13 +9517,13 @@ def toggle_establishment_driver_online(driver_id):
 
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
-        
+
 
         data = request.get_json() or {}
 
         driver.is_online = data.get('is_online', not driver.is_online)
 
-        
+
 
         if 'latitude' in data:
 
@@ -9532,11 +9533,11 @@ def toggle_establishment_driver_online(driver_id):
 
             driver.current_longitude = data['longitude']
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -9642,7 +9643,7 @@ def get_payment_config():
 
         user = User.query.get(user_id)
 
-        
+
 
         # Buscar restaurante
 
@@ -9662,13 +9663,13 @@ def get_payment_config():
 
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
 
-        
+
 
         if not restaurant:
 
             return jsonify({'error': 'Restaurante não encontrado'}), 404
 
-        
+
 
         return jsonify({
 
@@ -9710,7 +9711,7 @@ def update_payment_config():
 
         user = User.query.get(user_id)
 
-        
+
 
         # Buscar restaurante
 
@@ -9732,13 +9733,13 @@ def update_payment_config():
 
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
 
-        
+
 
         if not restaurant:
 
             return jsonify({'error': 'Restaurante não encontrado'}), 404
 
-        
+
 
         data = request.get_json()
 
@@ -9766,11 +9767,11 @@ def update_payment_config():
 
             restaurant.own_driver_max_deliveries = data['max_deliveries']
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -9824,7 +9825,7 @@ def get_own_driver_earnings():
 
         user = User.query.get(user_id)
 
-        
+
 
         # Buscar restaurante
 
@@ -9844,13 +9845,13 @@ def get_own_driver_earnings():
 
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
 
-        
+
 
         if not restaurant:
 
             return jsonify({'error': 'Restaurante não encontrado'}), 404
 
-        
+
 
         # Parâmetros de filtro
 
@@ -9860,11 +9861,11 @@ def get_own_driver_earnings():
 
         is_paid = request.args.get('is_paid')
 
-        
+
 
         query = OwnDriverEarning.query.filter_by(restaurant_id=restaurant.id)
 
-        
+
 
         # Filtro por período
 
@@ -9884,7 +9885,7 @@ def get_own_driver_earnings():
 
             query = query.filter(OwnDriverEarning.created_at >= month_ago)
 
-        
+
 
         # Filtro por entregador
 
@@ -9892,7 +9893,7 @@ def get_own_driver_earnings():
 
             query = query.filter_by(establishment_driver_id=int(driver_id))
 
-        
+
 
         # Filtro por status de pagamento
 
@@ -9900,11 +9901,11 @@ def get_own_driver_earnings():
 
             query = query.filter_by(is_paid=is_paid.lower() == 'true')
 
-        
+
 
         earnings = query.order_by(OwnDriverEarning.created_at.desc()).all()
 
-        
+
 
         # Calcular totais
 
@@ -9916,7 +9917,7 @@ def get_own_driver_earnings():
 
         total_pending = total_earning - total_paid
 
-        
+
 
         return jsonify({
 
@@ -9964,7 +9965,7 @@ def mark_earning_paid(earning_id):
 
             return jsonify({'error': 'Ganho não encontrado'}), 404
 
-        
+
 
         data = request.get_json() or {}
 
@@ -9974,11 +9975,11 @@ def mark_earning_paid(earning_id):
 
         earning.payment_method = data.get('payment_method', 'PIX')
 
-        
+
 
         db.session.commit()
 
-        
+
 
         return jsonify({
 
@@ -10018,13 +10019,13 @@ def pay_all_earnings():
 
             return jsonify({'error': 'ID do entregador é obrigatório'}), 400
 
-        
+
 
         user_id = int(get_jwt_identity())
 
         user = User.query.get(user_id)
 
-        
+
 
         # Buscar restaurante
 
@@ -10044,13 +10045,13 @@ def pay_all_earnings():
 
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
 
-        
+
 
         if not restaurant:
 
             return jsonify({'error': 'Restaurante não encontrado'}), 404
 
-        
+
 
         # Buscar ganhos pendentes
 
@@ -10064,7 +10065,7 @@ def pay_all_earnings():
 
         ).all()
 
-        
+
 
         for earning in pending_earnings:
 
@@ -10074,15 +10075,15 @@ def pay_all_earnings():
 
             earning.payment_method = data.get('payment_method', 'PIX')
 
-        
+
 
         db.session.commit()
 
-        
+
 
         total_paid = sum(float(e.driver_earning) for e in pending_earnings)
 
-        
+
 
         return jsonify({
 
@@ -10120,7 +10121,7 @@ def get_cost_comparison():
 
         user = User.query.get(user_id)
 
-        
+
 
         # Buscar restaurante
 
@@ -10140,13 +10141,13 @@ def get_cost_comparison():
 
             restaurant = Restaurant.query.get(restaurant_id) if restaurant_id else None
 
-        
+
 
         if not restaurant:
 
             return jsonify({'error': 'Restaurante não encontrado'}), 404
 
-        
+
 
         # Parâmetros
 
@@ -10154,7 +10155,7 @@ def get_cost_comparison():
 
         from datetime import timedelta
 
-        
+
 
         if period == 'week':
 
@@ -10164,7 +10165,7 @@ def get_cost_comparison():
 
             start_date = datetime.now(timezone.utc) - timedelta(days=30)
 
-        
+
 
         # Entregas próprias
 
@@ -10172,7 +10173,7 @@ def get_cost_comparison():
 
             Order.restaurant_id == restaurant.id,
 
-            Order.assigned_to_own_driver == True,
+            Order.assigned_to_own_driver,
 
             Order.status == OrderStatus.DELIVERED,
 
@@ -10180,7 +10181,7 @@ def get_cost_comparison():
 
         ).all()
 
-        
+
 
         # Entregas da plataforma
 
@@ -10188,9 +10189,9 @@ def get_cost_comparison():
 
             Order.restaurant_id == restaurant.id,
 
-            Order.assigned_to_own_driver == False,
+            not Order.assigned_to_own_driver,
 
-            Order.called_platform == True,
+            Order.called_platform,
 
             Order.status == OrderStatus.DELIVERED,
 
@@ -10198,7 +10199,7 @@ def get_cost_comparison():
 
         ).all()
 
-        
+
 
         # Cálculos
 
@@ -10206,7 +10207,7 @@ def get_cost_comparison():
 
         own_total_fee = sum(float(o.delivery_fee or 0) for o in own_orders)
 
-        own_total_earning = sum(float(e.driver_earning) for e in 
+        own_total_earning = sum(float(e.driver_earning) for e in
 
             OwnDriverEarning.query.filter(
 
@@ -10216,13 +10217,13 @@ def get_cost_comparison():
 
             ).all())
 
-        
+
 
         platform_count = len(platform_orders)
 
         platform_total_fee = sum(float(o.delivery_fee or 0) for o in platform_orders)
 
-        
+
 
         # Economia (se tivesse usado plataforma para as próprias)
 
@@ -10232,7 +10233,7 @@ def get_cost_comparison():
 
         savings = estimated_platform_cost - own_total_earning if estimated_platform_cost > 0 else 0
 
-        
+
 
         return jsonify({
 
@@ -10418,7 +10419,7 @@ def get_own_driver_metrics():
 
             # Avaliações
 
-            ratings = Delivery.customer_rating.join(Order).filter(
+            Delivery.customer_rating.join(Order).filter(
 
                 Order.establishment_driver_id == driver.id,
 
@@ -10536,29 +10537,29 @@ def cleanup_clients_drivers():
         db.session.execute(db.text("DELETE FROM platform_credentials"))
         db.session.execute(db.text("DELETE FROM establishment_drivers"))
         db.session.execute(db.text("DELETE FROM invoices"))
-        
+
         # 2. Orders (referencia restaurants, customers, addresses)
         db.session.execute(db.text("DELETE FROM orders"))
-        
+
         # 3. Addresses (referencia customers)
         db.session.execute(db.text("DELETE FROM addresses"))
-        
+
         # 4. Customers e Drivers (referenciam users)
         db.session.execute(db.text("DELETE FROM customers"))
         db.session.execute(db.text("DELETE FROM drivers"))
-        
+
         # 5. Users que nao sao admins
         result = db.session.execute(db.text("DELETE FROM users WHERE user_type != 'ADMIN'"))
         deleted_count = result.rowcount
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Limpeza concluida com sucesso',
             'users_deleted': deleted_count,
             'note': 'Todos os CLIENTs e DRIVERs foram removidos. Apenas ADMINs permanecem.'
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -10933,6 +10934,7 @@ def export_orders_csv():
     try:
         import csv
         import io
+
         from flask import make_response
 
         start_date = request.args.get('start_date')
@@ -10996,6 +10998,7 @@ def export_drivers_csv():
     try:
         import csv
         import io
+
         from flask import make_response
 
         query = Driver.query.join(User)
@@ -11060,7 +11063,7 @@ def import_orders_csv():
         content = file.read().decode('utf-8-sig')
         reader = csv.DictReader(io.StringIO(content))
 
-        user = get_current_user()
+        get_current_user()
         tenant_id = get_current_tenant_id()
 
         created = 0

@@ -3,16 +3,23 @@ Endpoints de relatórios financeiros para entregadores próprios.
 Agrupamento por frequência de pagamento e quitação por período.
 Cobrança de assinatura para estabelecimentos com entregadores próprios.
 """
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+import logging
+from datetime import datetime, timedelta, timezone
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+
 from src.models.portal_models import (
-    db, EstablishmentDriver, OwnDriverEarning, Restaurant,
-    User, UserType, Customer, EstablishmentSubscription, SubscriptionInvoice
+    Customer,
+    EstablishmentDriver,
+    EstablishmentSubscription,
+    OwnDriverEarning,
+    Restaurant,
+    SubscriptionInvoice,
+    UserType,
+    db,
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import func
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +62,13 @@ def get_payment_reports():
     try:
         user = get_current_user()
         tenant_id = get_current_tenant_id()
-        
+
         # Filtros
         restaurant_id = request.args.get('restaurant_id', type=int)
         driver_id = request.args.get('driver_id', type=int)
         frequency = request.args.get('frequency')  # DAILY, WEEKLY, MONTHLY, ON_DEMAND
         period = request.args.get('period', 'month')  # week, month, all
-        
+
         # Determinar escopo baseado no tipo de usuário
         restaurant_ids = None
         if user.user_type == UserType.CLIENT:
@@ -83,23 +90,22 @@ def get_payment_reports():
             else:
                 # Super admin: ver todos
                 restaurant_ids = [r.id for r in Restaurant.query.all()]
-        
+
         # Buscar entregadores
         query = EstablishmentDriver.query
         if restaurant_id:
             query = query.filter_by(restaurant_id=restaurant_id)
-        elif user.user_type == UserType.ADMIN and not restaurant_id:
-            if tenant_id:
-                query = query.filter(EstablishmentDriver.restaurant_id.in_(restaurant_ids))
-        
+        elif user.user_type == UserType.ADMIN and not restaurant_id and tenant_id:
+            query = query.filter(EstablishmentDriver.restaurant_id.in_(restaurant_ids))
+
         if driver_id:
             query = query.filter_by(id=driver_id)
-        
+
         if frequency:
             query = query.filter_by(payment_frequency=frequency)
-        
+
         drivers = query.all()
-        
+
         # Período de busca
         now = datetime.now(timezone.utc)
         if period == 'week':
@@ -108,27 +114,27 @@ def get_payment_reports():
             start_date = now - timedelta(days=30)
         else:
             start_date = now - timedelta(days=365)
-        
+
         # Gerar relatório por entregador
         reports = []
         for driver in drivers:
             freq = driver.payment_frequency or 'WEEKLY'
-            
+
             # Buscar ganhos no período
             earnings = OwnDriverEarning.query.filter(
                 OwnDriverEarning.establishment_driver_id == driver.id,
                 OwnDriverEarning.created_at >= start_date
             ).order_by(OwnDriverEarning.created_at).all()
-            
+
             if not earnings:
                 continue
-            
+
             # Agrupar por período
             periods = {}
             for earning in earnings:
                 period_start = get_period_start(earning.created_at, freq)
                 period_key = period_start.isoformat()
-                
+
                 if period_key not in periods:
                     periods[period_key] = {
                         'period_start': period_start.isoformat(),
@@ -139,7 +145,7 @@ def get_payment_reports():
                         'earnings': [],
                         'is_paid': True  # Assume pago até encontrar um não pago
                     }
-                
+
                 periods[period_key]['total_earning'] += float(earning.driver_earning or 0)
                 if earning.is_paid:
                     periods[period_key]['total_paid'] += float(earning.driver_earning or 0)
@@ -155,12 +161,12 @@ def get_payment_reports():
                     'is_paid': earning.is_paid,
                     'created_at': earning.created_at.isoformat()
                 })
-            
+
             # Calcular totais
             total_earning = sum(p['total_earning'] for p in periods.values())
             total_paid = sum(p['total_paid'] for p in periods.values())
             total_pending = total_earning - total_paid
-            
+
             reports.append({
                 'driver_id': driver.id,
                 'driver_name': driver.name,
@@ -173,10 +179,10 @@ def get_payment_reports():
                 'total_pending': total_pending,
                 'periods': list(periods.values())
             })
-        
+
         # Ordenar por nome do entregador
         reports.sort(key=lambda x: x['driver_name'])
-        
+
         return jsonify({
             'reports': reports,
             'summary': {
@@ -186,7 +192,7 @@ def get_payment_reports():
                 'total_pending': sum(r['total_pending'] for r in reports)
             }
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao gerar relatório: {e}")
         return jsonify({'error': str(e)}), 500
@@ -205,31 +211,31 @@ def pay_period():
         driver_id = data.get('driver_id')
         period_start = data.get('period_start')
         payment_method = data.get('payment_method', 'PIX')
-        
+
         if not driver_id or not period_start:
             return jsonify({'error': 'Entregador e período são obrigatórios'}), 400
-        
+
         # Buscar entregador
         driver = EstablishmentDriver.query.get(driver_id)
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
-        
+
         # Determinar frequência e período
         freq = driver.payment_frequency or 'WEEKLY'
         start = datetime.fromisoformat(period_start)
         end = get_period_end(start, freq)
-        
+
         # Buscar ganhos não pagos no período
         earnings = OwnDriverEarning.query.filter(
             OwnDriverEarning.establishment_driver_id == driver_id,
             OwnDriverEarning.created_at >= start,
             OwnDriverEarning.created_at <= end,
-            OwnDriverEarning.is_paid == False
+            not OwnDriverEarning.is_paid
         ).all()
-        
+
         if not earnings:
             return jsonify({'message': 'Nenhum ganho pendente neste período'}), 200
-        
+
         # Marcar como pagos
         total_paid = 0
         for earning in earnings:
@@ -237,15 +243,15 @@ def pay_period():
             earning.paid_at = datetime.now(timezone.utc)
             earning.payment_method = payment_method
             total_paid += float(earning.driver_earning or 0)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'{len(earnings)} pagamento(s) quitado(s)',
             'total_paid': total_paid,
             'payment_method': payment_method
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao pagar período: {e}")
@@ -264,19 +270,19 @@ def pay_all():
         data = request.get_json()
         driver_id = data.get('driver_id')
         payment_method = data.get('payment_method', 'PIX')
-        
+
         if not driver_id:
             return jsonify({'error': 'Entregador é obrigatório'}), 400
-        
+
         # Buscar ganhos não pagos
         earnings = OwnDriverEarning.query.filter(
             OwnDriverEarning.establishment_driver_id == driver_id,
-            OwnDriverEarning.is_paid == False
+            not OwnDriverEarning.is_paid
         ).all()
-        
+
         if not earnings:
             return jsonify({'message': 'Nenhum ganho pendente'}), 200
-        
+
         # Marcar como pagos
         total_paid = 0
         for earning in earnings:
@@ -284,15 +290,15 @@ def pay_all():
             earning.paid_at = datetime.now(timezone.utc)
             earning.payment_method = payment_method
             total_paid += float(earning.driver_earning or 0)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'{len(earnings)} pagamento(s) quitado(s)',
             'total_paid': total_paid,
             'payment_method': payment_method
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao pagar todos: {e}")
@@ -305,7 +311,7 @@ def get_establishment_subscription():
     """Obtém informações de assinatura/cobrança do estabelecimento"""
     try:
         user = get_current_user()
-        
+
         if user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
@@ -320,18 +326,18 @@ def get_establishment_subscription():
             restaurant = Restaurant.query.get(restaurant_id)
             if not restaurant:
                 return jsonify({'error': 'Restaurante não encontrado'}), 404
-        
+
         # Contar entregadores próprios
         own_drivers_count = EstablishmentDriver.query.filter_by(
             restaurant_id=restaurant.id,
             is_active=True
         ).count()
-        
+
         # Calcular valor da assinatura (exemplo: R$50/mês por entregador próprio)
         # Isso pode ser configurável por tenant/pracinha
         base_price_per_driver = 50.00
         monthly_total = own_drivers_count * base_price_per_driver
-        
+
         return jsonify({
             'restaurant_id': restaurant.id,
             'restaurant_name': restaurant.name,
@@ -342,7 +348,7 @@ def get_establishment_subscription():
             'subscription_type': restaurant.subscription_type or 'NONE',
             'subscription_expires_at': restaurant.subscription_expires_at.isoformat() if restaurant.subscription_expires_at else None
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao buscar assinatura: {e}")
         return jsonify({'error': str(e)}), 500
@@ -357,9 +363,9 @@ def get_subscriptions():
     try:
         user = get_current_user()
         tenant_id = get_current_tenant_id()
-        
+
         query = EstablishmentSubscription.query
-        
+
         if user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
             if customer:
@@ -368,13 +374,13 @@ def get_subscriptions():
                     query = query.filter_by(restaurant_id=restaurant.id)
         elif user.user_type == UserType.ADMIN and tenant_id:
             query = query.filter_by(tenant_id=tenant_id)
-        
+
         subscriptions = query.order_by(EstablishmentSubscription.created_at.desc()).all()
-        
+
         return jsonify({
             'subscriptions': [s.to_dict() for s in subscriptions]
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao listar assinaturas: {e}")
         return jsonify({'error': str(e)}), 500
@@ -390,24 +396,24 @@ def create_subscription():
         billing_cycle = data.get('billing_cycle', 'WEEKLY')
         price_per_driver = data.get('price_per_driver', 50.00)
         fixed_price = data.get('fixed_price', 0)
-        
+
         if not restaurant_id:
             return jsonify({'error': 'restaurant_id é obrigatório'}), 400
-        
+
         # Verificar se já existe assinatura
         existing = EstablishmentSubscription.query.filter_by(
             restaurant_id=restaurant_id,
             is_active=True
         ).first()
-        
+
         if existing:
             return jsonify({'error': 'Estabelecimento já possui assinatura ativa'}), 400
-        
+
         # Buscar restaurante
         restaurant = Restaurant.query.get(restaurant_id)
         if not restaurant:
             return jsonify({'error': 'Restaurante não encontrado'}), 404
-        
+
         # Calcular próxima data de cobrança
         now = datetime.now(timezone.utc)
         if billing_cycle == 'WEEKLY':
@@ -417,7 +423,7 @@ def create_subscription():
                 next_billing = now.replace(year=now.year + 1, month=1, day=1)
             else:
                 next_billing = now.replace(month=now.month + 1, day=1)
-        
+
         # Criar assinatura
         subscription = EstablishmentSubscription(
             restaurant_id=restaurant_id,
@@ -429,18 +435,18 @@ def create_subscription():
             next_billing_at=next_billing
         )
         db.session.add(subscription)
-        
+
         # Atualizar restaurante
         restaurant.subscription_type = 'ACTIVE'
         restaurant.subscription_expires_at = next_billing
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Assinatura criada com sucesso',
             'subscription': subscription.to_dict()
         }), 201
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao criar assinatura: {e}")
@@ -455,9 +461,9 @@ def update_subscription(subscription_id):
         subscription = EstablishmentSubscription.query.get(subscription_id)
         if not subscription:
             return jsonify({'error': 'Assinatura não encontrada'}), 404
-        
+
         data = request.get_json()
-        
+
         if 'billing_cycle' in data:
             subscription.billing_cycle = data['billing_cycle']
         if 'price_per_driver' in data:
@@ -466,14 +472,14 @@ def update_subscription(subscription_id):
             subscription.fixed_price = data['fixed_price']
         if 'is_active' in data:
             subscription.is_active = data['is_active']
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Assinatura atualizada',
             'subscription': subscription.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao atualizar assinatura: {e}")
@@ -488,37 +494,31 @@ def generate_invoice(subscription_id):
         subscription = EstablishmentSubscription.query.get(subscription_id)
         if not subscription:
             return jsonify({'error': 'Assinatura não encontrada'}), 404
-        
+
         # Contar entregadores ativos no período
         now = datetime.now(timezone.utc)
-        if subscription.billing_cycle == 'WEEKLY':
-            period_start = now - timedelta(days=7)
-        else:
-            period_start = now - timedelta(days=30)
-        
+        period_start = now - timedelta(days=7) if subscription.billing_cycle == 'WEEKLY' else now - timedelta(days=30)
+
         drivers_count = EstablishmentDriver.query.filter(
             EstablishmentDriver.restaurant_id == subscription.restaurant_id,
-            EstablishmentDriver.is_active == True
+            EstablishmentDriver.is_active
         ).count()
-        
+
         if drivers_count == 0 and not subscription.fixed_price:
             return jsonify({'error': 'Nenhum entregador ativo encontrado e sem preço fixo'}), 400
-        
+
         # Calcular valor: (preço por entregador * quantidade) + preço fixo
         drivers_total = drivers_count * float(subscription.price_per_driver or 0)
         fixed_total = float(subscription.fixed_price or 0)
         total_amount = drivers_total + fixed_total
-        
+
         # Gerar número da fatura
         invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription_id).count()
         invoice_number = f"SUB-{subscription.restaurant_id:04d}-{invoice_count + 1:04d}"
-        
+
         # Calcular data de vencimento
-        if subscription.billing_cycle == 'WEEKLY':
-            due_date = now + timedelta(days=7)
-        else:
-            due_date = now + timedelta(days=30)
-        
+        due_date = now + timedelta(days=7) if subscription.billing_cycle == 'WEEKLY' else now + timedelta(days=30)
+
         # Criar fatura
         invoice = SubscriptionInvoice(
             subscription_id=subscription_id,
@@ -534,14 +534,14 @@ def generate_invoice(subscription_id):
         )
         db.session.add(invoice)
         db.session.flush()  # Para obter o ID da fatura
-        
+
         # Integração Asaas: criar cobrança automaticamente
         asaas_result = None
-        from src.services.asaas_service import is_configured, create_customer, create_charge
-        
+        from src.services.asaas_service import create_charge, create_customer, is_configured
+
         if is_configured():
             restaurant = Restaurant.query.get(subscription.restaurant_id)
-            
+
             # Criar cliente no Asaas se não tiver
             if not restaurant.asaas_customer_id:
                 customer_result = create_customer(
@@ -554,7 +554,7 @@ def generate_invoice(subscription_id):
                     restaurant.asaas_customer_id = customer_result.get('customer_id')
                 else:
                     logger.warning(f"Erro ao criar cliente Asaas: {customer_result.get('error')}")
-            
+
             # Criar cobrança no Asaas
             if restaurant.asaas_customer_id:
                 description = f"Assinatura muv.log - {restaurant.name} - {invoice_number}"
@@ -562,7 +562,7 @@ def generate_invoice(subscription_id):
                     description += f" ({drivers_count} entregador(es) x R${subscription.price_per_driver})"
                 if fixed_total > 0:
                     description += f" + taxa fixa R${fixed_total}"
-                
+
                 charge_result = create_charge(
                     customer_id=restaurant.asaas_customer_id,
                     value=total_amount,
@@ -571,7 +571,7 @@ def generate_invoice(subscription_id):
                     description=description,
                     external_reference=f"subscription_invoice_{invoice.id}"
                 )
-                
+
                 if charge_result.get('success'):
                     invoice.asaas_invoice_id = charge_result.get('payment_id')
                     invoice.payment_url = charge_result.get('invoice_url')
@@ -583,11 +583,11 @@ def generate_invoice(subscription_id):
                     logger.info(f"Cobrança Asaas criada para fatura {invoice_number}: {charge_result.get('payment_id')}")
                 else:
                     logger.warning(f"Erro ao criar cobrança Asaas: {charge_result.get('error')}")
-        
+
         # Atualizar assinatura
         subscription.last_billed_at = now
         subscription.total_billed = float(subscription.total_billed or 0) + total_amount
-        
+
         if subscription.billing_cycle == 'WEEKLY':
             subscription.next_billing_at = now + timedelta(days=7)
         else:
@@ -595,18 +595,18 @@ def generate_invoice(subscription_id):
                 subscription.next_billing_at = now.replace(year=now.year + 1, month=1, day=1)
             else:
                 subscription.next_billing_at = now.replace(month=now.month + 1, day=1)
-        
+
         db.session.commit()
-        
+
         response_data = {
             'message': f'Fatura {invoice_number} gerada com sucesso',
             'invoice': invoice.to_dict()
         }
         if asaas_result:
             response_data['asaas'] = asaas_result
-        
+
         return jsonify(response_data), 201
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao gerar fatura: {e}")
@@ -620,9 +620,9 @@ def get_invoices():
     try:
         user = get_current_user()
         tenant_id = get_current_tenant_id()
-        
+
         query = SubscriptionInvoice.query
-        
+
         if user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
             if customer:
@@ -632,18 +632,18 @@ def get_invoices():
         elif user.user_type == UserType.ADMIN and tenant_id:
             restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
             query = query.filter(SubscriptionInvoice.restaurant_id.in_(restaurant_ids))
-        
+
         # Filtros
         status = request.args.get('status')
         if status:
             query = query.filter_by(status=status)
-        
+
         invoices = query.order_by(SubscriptionInvoice.created_at.desc()).all()
-        
+
         return jsonify({
             'invoices': [i.to_dict() for i in invoices]
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao listar faturas: {e}")
         return jsonify({'error': str(e)}), 500
@@ -657,26 +657,26 @@ def pay_invoice(invoice_id):
         invoice = SubscriptionInvoice.query.get(invoice_id)
         if not invoice:
             return jsonify({'error': 'Fatura não encontrada'}), 404
-        
+
         data = request.get_json() or {}
         payment_method = data.get('payment_method', 'PIX')
-        
+
         invoice.status = 'PAID'
         invoice.paid_at = datetime.now(timezone.utc)
         invoice.payment_method = payment_method
-        
+
         # Atualizar assinatura
         subscription = EstablishmentSubscription.query.get(invoice.subscription_id)
         if subscription:
             subscription.total_paid = float(subscription.total_paid or 0) + float(invoice.total_amount)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Fatura quitada com sucesso',
             'invoice': invoice.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao pagar fatura: {e}")
@@ -691,50 +691,47 @@ def generate_all_invoices():
         user = get_current_user()
         if user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Apenas administradores podem gerar faturas em lote'}), 403
-        
+
         now = datetime.now(timezone.utc)
-        
+
         # Buscar assinaturas com cobrança pendente
         subscriptions = EstablishmentSubscription.query.filter(
-            EstablishmentSubscription.is_active == True,
+            EstablishmentSubscription.is_active,
             EstablishmentSubscription.next_billing_at <= now
         ).all()
-        
-        from src.services.asaas_service import is_configured, create_customer, create_charge
-        
+
+        from src.services.asaas_service import create_charge, create_customer, is_configured
+
         generated = []
         for subscription in subscriptions:
             # Contar entregadores
             drivers_count = EstablishmentDriver.query.filter(
                 EstablishmentDriver.restaurant_id == subscription.restaurant_id,
-                EstablishmentDriver.is_active == True
+                EstablishmentDriver.is_active
             ).count()
-            
+
             # Pular se não tem entregadores E não tem preço fixo
             if drivers_count == 0 and not subscription.fixed_price:
                 continue
-            
+
             # Calcular período
             if subscription.billing_cycle == 'WEEKLY':
                 period_start = now - timedelta(days=7)
             else:
                 period_start = now - timedelta(days=30)
-            
+
             # Calcular valor: (preço por entregador * quantidade) + preço fixo
             drivers_total = drivers_count * float(subscription.price_per_driver or 0)
             fixed_total = float(subscription.fixed_price or 0)
             total_amount = drivers_total + fixed_total
-            
+
             # Gerar número da fatura
             invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription.id).count()
             invoice_number = f"SUB-{subscription.restaurant_id:04d}-{invoice_count + 1:04d}"
-            
+
             # Calcular vencimento
-            if subscription.billing_cycle == 'WEEKLY':
-                due_date = now + timedelta(days=7)
-            else:
-                due_date = now + timedelta(days=30)
-            
+            due_date = now + timedelta(days=7) if subscription.billing_cycle == 'WEEKLY' else now + timedelta(days=30)
+
             # Criar fatura
             invoice = SubscriptionInvoice(
                 subscription_id=subscription.id,
@@ -750,11 +747,11 @@ def generate_all_invoices():
             )
             db.session.add(invoice)
             db.session.flush()
-            
+
             # Integração Asaas
             if is_configured():
                 restaurant = Restaurant.query.get(subscription.restaurant_id)
-                
+
                 if not restaurant.asaas_customer_id:
                     customer_result = create_customer(
                         name=restaurant.name,
@@ -764,7 +761,7 @@ def generate_all_invoices():
                     )
                     if customer_result.get('success'):
                         restaurant.asaas_customer_id = customer_result.get('customer_id')
-                
+
                 if restaurant.asaas_customer_id:
                     description = f"Assinatura muv.log - {restaurant.name} - {invoice_number}"
                     charge_result = create_charge(
@@ -778,11 +775,11 @@ def generate_all_invoices():
                     if charge_result.get('success'):
                         invoice.asaas_invoice_id = charge_result.get('payment_id')
                         invoice.payment_url = charge_result.get('invoice_url')
-            
+
             # Atualizar assinatura
             subscription.last_billed_at = now
             subscription.total_billed = float(subscription.total_billed or 0) + total_amount
-            
+
             if subscription.billing_cycle == 'WEEKLY':
                 subscription.next_billing_at = now + timedelta(days=7)
             else:
@@ -790,16 +787,16 @@ def generate_all_invoices():
                     subscription.next_billing_at = now.replace(year=now.year + 1, month=1, day=1)
                 else:
                     subscription.next_billing_at = now.replace(month=now.month + 1, day=1)
-            
+
             generated.append(invoice_number)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'{len(generated)} fatura(s) gerada(s)',
             'invoices': generated
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao gerar faturas em lote: {e}")
@@ -815,10 +812,10 @@ def get_own_driver_withdrawals():
     try:
         user = get_current_user()
         tenant_id = get_current_tenant_id()
-        
+
         # Buscar entregadores com ganhos pendentes
         query = EstablishmentDriver.query
-        
+
         if user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
             if customer:
@@ -828,26 +825,26 @@ def get_own_driver_withdrawals():
         elif user.user_type == UserType.ADMIN and tenant_id:
             restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
             query = query.filter(EstablishmentDriver.restaurant_id.in_(restaurant_ids))
-        
+
         drivers = query.all()
-        
+
         result = []
         for driver in drivers:
             # Calcular ganhos pendentes
             pending_earnings = OwnDriverEarning.query.filter(
                 OwnDriverEarning.establishment_driver_id == driver.id,
-                OwnDriverEarning.is_paid == False
+                not OwnDriverEarning.is_paid
             ).all()
-            
+
             pending_amount = sum(float(e.driver_earning or 0) for e in pending_earnings)
-            
+
             # Calcular total já pago
             paid_earnings = OwnDriverEarning.query.filter(
                 OwnDriverEarning.establishment_driver_id == driver.id,
-                OwnDriverEarning.is_paid == True
+                OwnDriverEarning.is_paid
             ).all()
             paid_amount = sum(float(e.driver_earning or 0) for e in paid_earnings)
-            
+
             if pending_amount > 0 or paid_amount > 0:
                 result.append({
                     'driver_id': driver.id,
@@ -861,10 +858,10 @@ def get_own_driver_withdrawals():
                     'pending_count': len(pending_earnings),
                     'payment_frequency': driver.payment_frequency or 'WEEKLY'
                 })
-        
+
         # Ordenar por valor pendente (maior primeiro)
         result.sort(key=lambda x: x['pending_amount'], reverse=True)
-        
+
         return jsonify({
             'drivers': result,
             'summary': {
@@ -873,7 +870,7 @@ def get_own_driver_withdrawals():
                 'drivers_with_pending': len([d for d in result if d['pending_amount'] > 0])
             }
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao listar saques: {e}")
         return jsonify({'error': str(e)}), 500
@@ -891,33 +888,33 @@ def process_own_driver_withdrawal():
         data = request.get_json()
         driver_id = data.get('driver_id')
         payment_method = data.get('payment_method', 'PIX')
-        
+
         if not driver_id:
             return jsonify({'error': 'driver_id é obrigatório'}), 400
-        
+
         # Buscar entregador
         driver = EstablishmentDriver.query.get(driver_id)
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
-        
+
         # Verificar PIX
         if not driver.pix_key:
             return jsonify({'error': 'Entregador não possui chave PIX cadastrada'}), 400
-        
+
         # Buscar ganhos pendentes
         pending_earnings = OwnDriverEarning.query.filter(
             OwnDriverEarning.establishment_driver_id == driver_id,
-            OwnDriverEarning.is_paid == False
+            not OwnDriverEarning.is_paid
         ).all()
-        
+
         if not pending_earnings:
             return jsonify({'error': 'Nenhum ganho pendente'}), 400
-        
+
         total_amount = sum(float(e.driver_earning or 0) for e in pending_earnings)
-        
+
         # Processar via Asaas se configurado
-        from src.services.asaas_service import is_configured, transfer_pix, detect_pix_key_type
-        
+        from src.services.asaas_service import detect_pix_key_type, is_configured, transfer_pix
+
         transfer_result = None
         if is_configured() and payment_method == 'PIX':
             pix_key_type = detect_pix_key_type(driver.pix_key)
@@ -929,20 +926,20 @@ def process_own_driver_withdrawal():
                 pix_key_type=pix_key_type,
                 description=f"Saque muv.log - {driver.name}"
             )
-            
+
             if not transfer_result.get('success'):
                 return jsonify({
                     'error': f'Erro ao processar PIX: {transfer_result.get("error")}'
                 }), 400
-        
+
         # Marcar ganhos como pagos
         for earning in pending_earnings:
             earning.is_paid = True
             earning.paid_at = datetime.now(timezone.utc)
             earning.payment_method = payment_method
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'Saque de R$ {total_amount:.2f} processado com sucesso',
             'amount': total_amount,
@@ -951,7 +948,7 @@ def process_own_driver_withdrawal():
             'payment_method': payment_method,
             'transfer_id': transfer_result.get('transfer_id') if transfer_result else None
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao processar saque: {e}")
@@ -966,27 +963,27 @@ def check_invoice_due_dates():
     """Verifica faturas próximas do vencimento e vencidas, cria notificações"""
     try:
         from src.models.portal_models import Notification, NotificationType, User, UserType
-        
+
         user = get_current_user()
         if user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Apenas administradores'}), 403
-        
+
         now = datetime.now(timezone.utc)
-        tomorrow = now + timedelta(days=1)
+        now + timedelta(days=1)
         three_days = now + timedelta(days=3)
-        
+
         notifications_created = 0
-        
+
         # 1. Faturas vencidas (status PENDING e due_date < agora)
         overdue_invoices = SubscriptionInvoice.query.filter(
             SubscriptionInvoice.status == 'PENDING',
             SubscriptionInvoice.due_date < now
         ).all()
-        
+
         for invoice in overdue_invoices:
             # Atualizar status para OVERDUE
             invoice.status = 'OVERDUE'
-            
+
             # Buscar admin do restaurante
             restaurant = Restaurant.query.get(invoice.restaurant_id)
             if restaurant and restaurant.tenant_id:
@@ -994,7 +991,7 @@ def check_invoice_due_dates():
                     tenant_id=restaurant.tenant_id,
                     user_type=UserType.ADMIN
                 ).first()
-                
+
                 if admin:
                     # Verificar se já existe notificação recente
                     existing = Notification.query.filter_by(
@@ -1002,7 +999,7 @@ def check_invoice_due_dates():
                         related_id=invoice.id,
                         type=NotificationType.INVOICE_OVERDUE
                     ).first()
-                    
+
                     if not existing:
                         notification = Notification(
                             user_id=admin.id,
@@ -1013,14 +1010,14 @@ def check_invoice_due_dates():
                         )
                         db.session.add(notification)
                         notifications_created += 1
-        
+
         # 2. Faturas vencendo em 3 dias
         upcoming_invoices = SubscriptionInvoice.query.filter(
             SubscriptionInvoice.status == 'PENDING',
             SubscriptionInvoice.due_date >= now,
             SubscriptionInvoice.due_date <= three_days
         ).all()
-        
+
         for invoice in upcoming_invoices:
             restaurant = Restaurant.query.get(invoice.restaurant_id)
             if restaurant and restaurant.tenant_id:
@@ -1028,7 +1025,7 @@ def check_invoice_due_dates():
                     tenant_id=restaurant.tenant_id,
                     user_type=UserType.ADMIN
                 ).first()
-                
+
                 if admin:
                     # Verificar se já existe notificação recente
                     existing = Notification.query.filter_by(
@@ -1036,7 +1033,7 @@ def check_invoice_due_dates():
                         related_id=invoice.id,
                         type=NotificationType.INVOICE_REMINDER
                     ).first()
-                    
+
                     if not existing:
                         days_until = (invoice.due_date - now).days
                         notification = Notification(
@@ -1048,7 +1045,7 @@ def check_invoice_due_dates():
                         )
                         db.session.add(notification)
                         notifications_created += 1
-        
+
         # 3. Notificar estabelecimentos sobre suas faturas
         for invoice in upcoming_invoices + overdue_invoices:
             restaurant = Restaurant.query.get(invoice.restaurant_id)
@@ -1057,13 +1054,13 @@ def check_invoice_due_dates():
                 customer = Customer.query.filter_by(restaurant_id=restaurant.id).first()
                 if customer and customer.user_id:
                     notif_type = NotificationType.INVOICE_OVERDUE if invoice.status == 'OVERDUE' else NotificationType.INVOICE_REMINDER
-                    
+
                     existing = Notification.query.filter_by(
                         user_id=customer.user_id,
                         related_id=invoice.id,
                         type=notif_type
                     ).first()
-                    
+
                     if not existing:
                         if invoice.status == 'OVERDUE':
                             title = 'Fatura Vencida'
@@ -1072,7 +1069,7 @@ def check_invoice_due_dates():
                             days_until = (invoice.due_date - now).days
                             title = 'Fatura Vencendo'
                             msg = f'Sua fatura {invoice.invoice_number} vence em {days_until} dia(s). Valor: R$ {float(invoice.total_amount):.2f}'
-                        
+
                         notification = Notification(
                             user_id=customer.user_id,
                             title=title,
@@ -1082,16 +1079,16 @@ def check_invoice_due_dates():
                         )
                         db.session.add(notification)
                         notifications_created += 1
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'{notifications_created} notificação(ões) criada(s)',
             'overdue_count': len(overdue_invoices),
             'upcoming_count': len(upcoming_invoices),
             'notifications_created': notifications_created
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao verificar vencimentos: {e}")
@@ -1105,11 +1102,11 @@ def get_overdue_report():
     try:
         user = get_current_user()
         tenant_id = get_current_tenant_id()
-        
+
         query = SubscriptionInvoice.query.filter(
             SubscriptionInvoice.status.in_(['PENDING', 'OVERDUE'])
         )
-        
+
         # Filtrar por tenant se admin
         if user.user_type == UserType.ADMIN and tenant_id:
             restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
@@ -1120,20 +1117,20 @@ def get_overdue_report():
                 restaurant = Restaurant.query.filter_by(name=customer.name).first()
                 if restaurant:
                     query = query.filter_by(restaurant_id=restaurant.id)
-        
+
         # Filtrar apenas vencidas
         now = datetime.now(timezone.utc)
         overdue = query.filter(SubscriptionInvoice.due_date < now).order_by(
             SubscriptionInvoice.due_date.asc()
         ).all()
-        
+
         # Agrupar por restaurante
         by_restaurant = {}
         for invoice in overdue:
             restaurant = Restaurant.query.get(invoice.restaurant_id)
             if not restaurant:
                 continue
-            
+
             if restaurant.id not in by_restaurant:
                 by_restaurant[restaurant.id] = {
                     'restaurant_id': restaurant.id,
@@ -1142,16 +1139,16 @@ def get_overdue_report():
                     'total_overdue': 0,
                     'oldest_due': None
                 }
-            
+
             by_restaurant[restaurant.id]['invoices'].append(invoice.to_dict())
             by_restaurant[restaurant.id]['total_overdue'] += float(invoice.total_amount or 0)
-            
+
             if not by_restaurant[restaurant.id]['oldest_due'] or invoice.due_date < datetime.fromisoformat(by_restaurant[restaurant.id]['oldest_due']):
                 by_restaurant[restaurant.id]['oldest_due'] = invoice.due_date.isoformat()
-        
+
         result = list(by_restaurant.values())
         result.sort(key=lambda x: x['total_overdue'], reverse=True)
-        
+
         return jsonify({
             'overdue_restaurants': result,
             'summary': {
@@ -1160,7 +1157,7 @@ def get_overdue_report():
                 'invoices_count': len(overdue)
             }
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao gerar relatório de inadimplência: {e}")
         return jsonify({'error': str(e)}), 500

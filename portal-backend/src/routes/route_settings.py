@@ -1,12 +1,13 @@
 """
 Endpoints para configurações de roteirização.
 """
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
-from src.models.portal_models import db, RouteSettings
-from src.utils.tenant import get_current_user, get_current_tenant_id
-from src.models.portal_models import UserType
 import logging
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+
+from src.models.portal_models import RouteSettings, UserType, db
+from src.utils.tenant import get_current_tenant_id, get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def get_settings():
             return jsonify({'error': 'Sem permissão'}), 403
 
         tenant_id = get_current_tenant_id()
-        
+
         # Buscar configurações do tenant ou criar padrão
         settings = RouteSettings.query.filter_by(tenant_id=tenant_id).first()
         if not settings:

@@ -3,9 +3,11 @@ Utilitários para isolamento de dados por tenant.
 Fornece funções para obter o tenant atual e filtrar consultas.
 """
 from functools import wraps
-from flask import jsonify, g
+
+from flask import g, jsonify
 from flask_jwt_extended import get_jwt_identity
-from src.models.portal_models import User, Tenant, db
+
+from src.models.portal_models import Tenant, User, db
 
 
 def get_current_user():

@@ -4,21 +4,21 @@ Fornece schemas simples para validar dados de entrada.
 Não depende de bibliotecas externas.
 """
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class ValidationError(Exception):
     """Erro de validação de entrada"""
-    def __init__(self, errors: List[str]):
+    def __init__(self, errors: list[str]):
         self.errors = errors
         super().__init__(', '.join(errors))
 
 
 class Schema:
     """Schema simples de validação"""
-    
-    def __init__(self, fields: Dict[str, Dict[str, Any]]):
-        """
+
+    def __init__(self, fields: dict[str, dict[str, Any]]):
+        r"""
         Args:
             fields: dicionário com definição dos campos
                 {
@@ -36,30 +36,30 @@ class Schema:
                 }
         """
         self.fields = fields
-    
-    def validate(self, data: Dict[str, Any]) -> Tuple[Dict[str, Any], List[str]]:
+
+    def validate(self, data: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
         """Valida os dados contra o schema.
-        
+
         Returns:
             tuple: (dados_validados, lista_de_erros)
         """
         errors = []
         validated = {}
-        
+
         for field_name, rules in self.fields.items():
             value = data.get(field_name)
-            
+
             # Campo obrigatório
             if rules.get('required') and (value is None or value == ''):
                 errors.append(f"Campo '{field_name}' é obrigatório")
                 continue
-            
+
             # Valor padrão
             if value is None or value == '':
                 if 'default' in rules:
                     validated[field_name] = rules['default']
                 continue
-            
+
             # Validação de tipo
             expected_type = rules.get('type')
             if expected_type and not isinstance(value, expected_type):
@@ -70,58 +70,58 @@ class Schema:
                     except (ValueError, TypeError):
                         errors.append(f"Campo '{field_name}' deve ser do tipo {expected_type.__name__}")
                         continue
-                elif expected_type == str:
+                elif expected_type is str:
                     value = str(value)
                 else:
                     errors.append(f"Campo '{field_name}' deve ser do tipo {expected_type.__name__}")
                     continue
-            
+
             # Validação de strings
             if isinstance(value, str):
                 # Sanitização básica
                 value = value.strip()
-                
+
                 if 'min_length' in rules and len(value) < rules['min_length']:
                     errors.append(f"Campo '{field_name}' deve ter pelo menos {rules['min_length']} caracteres")
                     continue
-                
+
                 if 'max_length' in rules and len(value) > rules['max_length']:
                     value = value[:rules['max_length']]
-                
+
                 if 'pattern' in rules and not re.match(rules['pattern'], value):
                     errors.append(f"Campo '{field_name}' tem formato inválido")
                     continue
-            
+
             # Validação de números
             if isinstance(value, (int, float)):
                 if 'min' in rules and value < rules['min']:
                     errors.append(f"Campo '{field_name}' deve ser maior ou igual a {rules['min']}")
                     continue
-                
+
                 if 'max' in rules and value > rules['max']:
                     errors.append(f"Campo '{field_name}' deve ser menor ou igual a {rules['max']}")
                     continue
-            
+
             # Validação de valores permitidos
             if 'allowed' in rules and value not in rules['allowed']:
                 errors.append(f"Campo '{field_name}' deve ser um dos: {', '.join(str(v) for v in rules['allowed'])}")
                 continue
-            
+
             validated[field_name] = value
-        
+
         return validated, errors
 
 
-def validate_request(schema: Schema, data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_request(schema: Schema, data: dict[str, Any]) -> dict[str, Any]:
     """Valida dados de requisição e lança ValidationError se inválido.
-    
+
     Args:
         schema: Schema de validação
         dados: Dados da requisição
-    
+
     Returns:
         Dados validados e sanitizados
-    
+
     Raises:
         ValidationError: Se os dados forem inválidos
     """

@@ -2,10 +2,11 @@
 Serviço de integração com a API do Asaas.
 Gerencia cobranças, clientes e transferências PIX.
 """
-import os
-import requests
 import logging
+import os
 from datetime import datetime, timedelta
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +59,14 @@ def is_configured():
 def create_customer(name, cpf_cnpj, email=None, phone=None, address=None):
     """
     Cria um cliente no Asaas.
-    
+
     Args:
         name: Nome do cliente
         cpf_cnpj: CPF ou CNPJ
         email: Email (opcional)
         phone: Telefone (opcional)
         address: Dict com endereço (opcional)
-    
+
     Returns:
         dict com o id do cliente no Asaas ou erro
     """
@@ -141,7 +142,7 @@ def get_customer(customer_id):
 def create_charge(customer_id, value, billing_type='PIX', due_date=None, description=None, external_reference=None):
     """
     Cria uma cobrança no Asaas.
-    
+
     Args:
         customer_id: ID do cliente no Asaas
         value: Valor da cobrança
@@ -149,7 +150,7 @@ def create_charge(customer_id, value, billing_type='PIX', due_date=None, descrip
         due_date: Data de vencimento (default: amanhã)
         description: Descrição da cobrança
         external_reference: Referência externa (order_id, invoice_id, etc.)
-    
+
     Returns:
         dict com dados da cobrança ou erro
     """
@@ -240,13 +241,13 @@ def get_payment_pix_qr_code(payment_id):
 def transfer_pix(value, pix_key, pix_key_type='CPF', description=None):
     """
     Realiza uma transferência PIX via Asaas.
-    
+
     Args:
         value: Valor da transferência
         pix_key: Chave PIX (CPF, CNPJ, email, telefone ou aleatória)
         pix_key_type: Tipo da chave (CPF, CNPJ, EMAIL, PHONE, EVP)
         description: Descrição da transferência
-    
+
     Returns:
         dict com resultado da transferência
     """
@@ -330,7 +331,7 @@ def detect_pix_key_type(pix_key):
     """Detecta o tipo de chave PIX automaticamente"""
     import re
     pix_key = pix_key.strip()
-    
+
     # CPF (11 dígitos)
     if re.match(r'^\d{11}$', pix_key.replace('.', '').replace('-', '')):
         return 'CPF'
@@ -346,5 +347,5 @@ def detect_pix_key_type(pix_key):
     # Chave aleatória (EVP - UUID)
     if re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', pix_key, re.I):
         return 'EVP'
-    
+
     return None  # Tipo desconhecido

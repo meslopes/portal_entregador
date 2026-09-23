@@ -1,27 +1,30 @@
 import os
 import sys
+
 # DON'T CHANGE: Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # Force redeploy: 2026-07-25
 
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
-from src.models.portal_models import db
+from flask_jwt_extended import JWTManager, jwt_required
+
 from src.config import config
+from src.models.portal_models import db
+from src.routes.admin import admin_bp
 
 # Importar blueprints
 from src.routes.auth import auth_bp
 from src.routes.driver import driver_bp
 from src.routes.order import order_bp
-from src.routes.admin import admin_bp
+
 
 def create_app(config_name=None):
-    
+
     """Factory function para criar a aplicação Flask"""
     if config_name is None:
         config_name = os.getenv('FLASK_ENV', 'development')
-    
+
 
     app = Flask(__name__)
 
@@ -39,16 +42,16 @@ def create_app(config_name=None):
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
     jwt = JWTManager(app)
-    
+
     # Registrar blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(driver_bp, url_prefix='/api/driver')
     app.register_blueprint(order_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    
+
     from src.routes.webhooks import webhook_bp
     app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
-    
+
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
 
@@ -1183,20 +1186,20 @@ def create_app(config_name=None):
             'message': 'Portal API is running',
             'environment': config_name
         })
-    
+
     # Handler para erros JWT
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
         return jsonify({'error': 'Token expirado'}), 401
-    
+
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
         return jsonify({'error': 'Token inválido'}), 401
-    
+
     @jwt.unauthorized_loader
     def missing_token_callback(error):
         return jsonify({'error': 'Token de acesso necessário'}), 401
-    
+
     # Servir arquivos de upload (prova de entrega) - autenticação obrigatória
     @app.route('/uploads/proofs/<path:filename>')
     @jwt_required()
@@ -1205,7 +1208,7 @@ def create_app(config_name=None):
         if os.path.exists(os.path.join(uploads_dir, filename)):
             return send_from_directory(uploads_dir, filename)
         return jsonify({'error': 'Arquivo não encontrado'}), 404
-    
+
     return app
 
 # Criar aplicação

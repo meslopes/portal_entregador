@@ -1,19 +1,31 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from src.models.portal_models import (
-    Order, Restaurant, Customer, Address, Driver, EstablishmentDriver, OwnDriverEarning, User, UserType,
-    OrderStatus, PaymentMethod, Delivery, Notification, NotificationType, db
-)
-from src.utils.tenant import get_current_user, get_current_tenant_id, filter_by_tenant, add_tenant_to_data
-from src.utils.geo import haversine_distance
-from sqlalchemy import func
-from datetime import datetime, timedelta, date, timezone
-import uuid
-import os
-import base64
-import re
-import random
 import logging
+import random
+import re
+import uuid
+from datetime import date, datetime, timedelta, timezone
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy import func
+
+from src.models.portal_models import (
+    Address,
+    Customer,
+    Delivery,
+    Driver,
+    EstablishmentDriver,
+    Notification,
+    NotificationType,
+    Order,
+    OrderStatus,
+    PaymentMethod,
+    Restaurant,
+    User,
+    UserType,
+    db,
+)
+from src.utils.geo import haversine_distance
+from src.utils.tenant import get_current_tenant_id
 
 logger = logging.getLogger(__name__)
 
@@ -39,23 +51,23 @@ def send_platform_callback(order, new_status):
     """Envia callback para plataforma externa quando status do pedido muda"""
     if not order.platform_source or not order.external_id:
         return
-    
+
     try:
         if order.platform_source == 'IFOOD':
-            from src.services.ifood_service import update_status as ifood_update_status
             from src.models.portal_models import PlatformCredential
-            
+            from src.services.ifood_service import update_status as ifood_update_status
+
             ifood_status = INTERNAL_TO_IFOOD_MAP.get(new_status)
             if not ifood_status:
                 return
-            
+
             # Buscar credenciais do restaurante
             cred = PlatformCredential.query.filter_by(
                 restaurant_id=order.restaurant_id,
                 platform='IFOOD',
                 is_active=True
             ).first()
-            
+
             if cred and cred.access_token:
                 result = ifood_update_status(cred.access_token, order.external_id, ifood_status)
                 if not result.get('success'):
@@ -83,8 +95,8 @@ def find_nearest_own_driver(order, exclude_driver_id=None):
 
     online_drivers = EstablishmentDriver.query.filter(
         EstablishmentDriver.restaurant_id == restaurant.id,
-        EstablishmentDriver.is_online == True,
-        EstablishmentDriver.is_active == True
+        EstablishmentDriver.is_online,
+        EstablishmentDriver.is_active
     ).all()
 
     # Excluir entregador que rejeitou
@@ -120,11 +132,11 @@ def process_scheduled_orders():
             Order.status == OrderStatus.SCHEDULED,
             Order.scheduled_at <= now
         ).all()
-        
+
         for order in scheduled_orders:
             order.status = OrderStatus.PENDING
             order.updated_at = now
-            
+
             # Calcula distância e ganhos
             km_total = 0
             driver_pct = get_driver_percentage(order)
@@ -136,7 +148,7 @@ def process_scheduled_orders():
                     order.delivery_address.latitude, order.delivery_address.longitude
                 )
                 driver_earnings = delivery_fee * driver_pct + (km_total * 0.5)
-            
+
             order_info = {
                 'order_number': order.order_number,
                 'restaurant': order.restaurant.name if order.restaurant else 'N/A',
@@ -148,18 +160,18 @@ def process_scheduled_orders():
                 'distance_km': km_total,
                 'driver_earnings': driver_earnings
             }
-            
+
             # === FLUXO PRÓPRIO: Entregadores próprios recebem pedidos via rotas ===
             # NÃO oferece automaticamente - estabelecimento cria rotas manualmente
             # O pedido fica como PENDING para o estabelecimento distribuir
-            
+
             # Verificar se o restaurante tem entregadores próprios
             restaurant = order.restaurant
             if restaurant and restaurant.has_own_drivers:
                 logger.info(f"[OWN-DRIVER] Pedido {order.order_number} - restaurante tem entregadores próprios, aguardando rota do estabelecimento")
                 # Não faz nada - o estabelecimento vai criar rotas manualmente
                 continue  # Próximo pedido
-            
+
             # === FALLBACK: Sem entregadores próprios online, distribui para plataforma ===
             if order.distribution_method == 'broadcast':
                 # Broadcast: notifica TODOS os drivers online
@@ -195,10 +207,10 @@ def process_scheduled_orders():
                             )
                     except Exception:
                         pass
-        
+
         if scheduled_orders:
             db.session.commit()
-            
+
     except Exception as e:
         logger.error(f"Erro ao processar pedidos agendados: {e}")
         db.session.rollback()
@@ -208,28 +220,28 @@ def process_expired_offers():
     """Processa ofertas expiradas - ciclo automático de atribuição de pedidos"""
     try:
         from src.models.portal_models import SystemConfig
-        
+
         # Busca configuração de timeout (default 60 segundos)
         timeout_config = SystemConfig.query.filter_by(config_key='driver_offer_timeout_seconds').first()
         timeout_seconds = int(timeout_config.config_value) if timeout_config else 60
-        
+
         # Busca TODOS os pedidos PENDING sem driver (não apenas os com oferta)
         pending_orders = Order.query.filter(
             Order.status == OrderStatus.PENDING,
             Order.driver_id.is_(None)
         ).all()
-        
+
         now = datetime.now(timezone.utc)
         now_ts = int(now.timestamp())
-        
+
         logger.debug(f"[PROCESS_EXPIRED] Checking {len(pending_orders)} pending orders, timeout={timeout_seconds}s")
-        
+
         for order in pending_orders:
             si = order.special_instructions or ''
-            
+
             # Extrai timestamp da oferta (formato: OFFERED_TO_{driver_id}_{timestamp})
             offer_match = re.search(r'OFFERED_TO_(\d+)(?:_(\d+))?', si)
-            
+
             # Se não tem oferta, precisa oferecer a alguém
             if not offer_match:
                 logger.debug(f"[PROCESS_EXPIRED] Order #{order.order_number} has no offer, finding driver")
@@ -239,7 +251,7 @@ def process_expired_offers():
                     offer_ts = int(now.timestamp())
                     offer_tag = f"OFFERED_TO_{next_driver.id}_{offer_ts}"
                     order.special_instructions = f"{si}|{offer_tag}" if si else offer_tag
-                    
+
                     # Notifica no app
                     try:
                         notification = Notification(
@@ -252,37 +264,37 @@ def process_expired_offers():
                         db.session.add(notification)
                     except Exception:
                         pass
-                    
+
                     logger.info(f"[PROCESS_EXPIRED] Order #{order.order_number} offered to {next_driver.user.first_name}")
                 continue
-            
+
             expired_driver_id = int(offer_match.group(1))
             offer_ts = int(offer_match.group(2)) if offer_match.group(2) else None
-            
+
             # Se não tem timestamp, usa updated_at como fallback
             if offer_ts is None:
                 if order.updated_at:
                     offer_ts = int(order.updated_at.timestamp())
                 else:
                     continue
-            
+
             elapsed = now_ts - offer_ts
-            
+
             logger.info(f"[PROCESS_EXPIRED] Order #{order.order_number}: offered to driver {expired_driver_id}, elapsed={elapsed}s, timeout={timeout_seconds}s")
-            
+
             if elapsed >= timeout_seconds:
                 logger.info(f"[PROCESS_EXPIRED] Order #{order.order_number}: TIMEOUT! elapsed={elapsed}s >= {timeout_seconds}s")
                 # Oferta expirou - marca como timeout e move para próximo
                 offer_match = re.search(r'OFFERED_TO_(\d+)', order.special_instructions or '')
                 if offer_match:
                     expired_driver_id = int(offer_match.group(1))
-                    
+
                     # Adiciona TIMEOUT como recusa para ranking
                     timeout_tag = f"TIMEOUT_BY_{expired_driver_id}"
                     current_si = order.special_instructions or ''
                     if timeout_tag not in current_si:
                         order.special_instructions = f"{current_si}|{timeout_tag}" if current_si else timeout_tag
-                    
+
                     # Coleta todos os IDs que já recusaram/timeout
                     rejected_ids = []
                     if order.special_instructions:
@@ -292,15 +304,15 @@ def process_expired_offers():
                             rid = int(match.group(1))
                             if rid not in rejected_ids:
                                 rejected_ids.append(rid)
-                    
+
                     # Remove ofertas antigas
                     si = order.special_instructions or ''
                     si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', si).strip('|')
                     order.special_instructions = si
-                    
+
                     # Busca próximo entregador
                     next_driver = find_nearest_available_driver(order, exclude_driver_ids=rejected_ids)
-                    
+
                     if next_driver:
                         # Oferece ao próximo
                         offer_ts = int(datetime.now(timezone.utc).timestamp())
@@ -309,7 +321,7 @@ def process_expired_offers():
                         # Remove ofertas antigas antes de adicionar nova
                         current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
                         order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
-                        
+
                         # Notifica no app
                         try:
                             notification = Notification(
@@ -322,7 +334,7 @@ def process_expired_offers():
                             db.session.add(notification)
                         except Exception:
                             pass
-                        
+
                         # WhatsApp
                         try:
                             from src.services.whatsapp import whatsapp_service
@@ -337,7 +349,7 @@ def process_expired_offers():
                                         order.delivery_address.latitude, order.delivery_address.longitude
                                     )
                                     driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
-                                
+
                                 whatsapp_service.send_new_order_to_driver(
                                     next_driver.user.phone,
                                     {
@@ -354,16 +366,16 @@ def process_expired_offers():
                                 )
                         except Exception:
                             pass
-                        
+
                         # Conta falhas para notificação admin
                         rejection_count = len(re.findall(r'REJECTED_BY_(\d+)', order.special_instructions or ''))
                         timeout_count = len(re.findall(r'TIMEOUT_BY_(\d+)', order.special_instructions or ''))
                         total_failures = rejection_count + timeout_count
-                        
+
                         # Notifica admin se muitas falhas (mesmo com próximo entregador disponível)
                         if total_failures >= 2:
                             _notify_admin_pending_order(order, total_failures, now)
-                        
+
                         logger.info(f"[AUTO] Pedido #{order.order_number} oferecido a {next_driver.user.first_name} (tentativa {total_failures + 1})")
                     else:
                         # Nenhum entregador disponível - notifica admin
@@ -371,12 +383,12 @@ def process_expired_offers():
                         timeout_count = len(re.findall(r'TIMEOUT_BY_(\d+)', order.special_instructions or ''))
                         total_failures = rejection_count + timeout_count
                         _notify_admin_pending_order(order, total_failures, now)
-                    
+
                     # Reseta timestamp para nova oferta
                     order.updated_at = now
-        
+
         db.session.commit()
-        
+
     except Exception as e:
         logger.error(f"Erro ao processar ofertas expiradas: {e}")
         db.session.rollback()
@@ -391,20 +403,20 @@ def _notify_admin_pending_order(order, failure_count, now):
             last_notify_ts = int(last_notify_match.group(1))
             if (int(now.timestamp()) - last_notify_ts) < 120:
                 return
-        
+
         # Marca notificação
         si = order.special_instructions or ''
         si = re.sub(r'\|?ADMIN_NOTIFIED_AT_\d+', '', si).strip('|')
         si = f"{si}|ADMIN_NOTIFIED_AT_{int(now.timestamp())}" if si else f"ADMIN_NOTIFIED_AT_{int(now.timestamp())}"
         order.special_instructions = si
-        
+
         # Notifica admin no app
         from src.models.portal_models import User, UserType
         admin_users = User.query.filter_by(
             user_type=UserType.ADMIN,
             tenant_id=order.tenant_id
         ).all()
-        
+
         for admin in admin_users:
             try:
                 notification = Notification(
@@ -417,9 +429,9 @@ def _notify_admin_pending_order(order, failure_count, now):
                 db.session.add(notification)
             except Exception:
                 pass
-        
+
         logger.info(f"[ADMIN NOTIFY] Pedido #{order.order_number} - {failure_count} falhas, admin notificado")
-        
+
     except Exception as e:
         logger.error(f"Erro ao notificar admin: {e}")
 
@@ -428,17 +440,17 @@ def notify_all_drivers(order, order_info):
     """Notifica todos os drivers online sobre um novo pedido (broadcast)"""
     try:
         from src.services.whatsapp import whatsapp_service
-        
+
         # Busca todos os drivers online do tenant
         query = Driver.query.filter(
-            Driver.is_online == True,
+            Driver.is_online,
             Driver.current_latitude.isnot(None)
         )
         if order.tenant_id:
             query = query.filter(Driver.tenant_id == order.tenant_id)
-        
+
         online_drivers = query.join(User).all()
-        
+
         for driver in online_drivers:
             try:
                 if whatsapp_service.is_configured() and driver.user.phone:
@@ -456,16 +468,16 @@ def find_next_in_queue(order):
     try:
         # Busca drivers online do tenant
         query = Driver.query.filter(
-            Driver.is_online == True,
+            Driver.is_online,
             Driver.current_latitude.isnot(None)
         )
         if order.tenant_id:
             query = query.filter(Driver.tenant_id == order.tenant_id)
-        
+
         # Filtra por capacidade (não excedeu max_concurrent_orders)
         all_drivers = query.join(User).all()
         available_drivers = []
-        
+
         for driver in all_drivers:
             # Conta pedidos ativos
             active_orders = Order.query.filter(
@@ -477,7 +489,7 @@ def find_next_in_queue(order):
                     OrderStatus.PICKED_UP
                 ])
             ).count()
-            
+
             max_concurrent = driver.max_concurrent_orders or 3
             if active_orders < max_concurrent:
                 # Verificar se entregador está vinculado a este estabelecimento
@@ -490,7 +502,7 @@ def find_next_in_queue(order):
                         is_priority=True
                     ).first()
                     is_priority = priority is not None
-                
+
                 available_drivers.append({
                     'driver': driver,
                     'queue_position': driver.queue_position or 0,
@@ -498,19 +510,19 @@ def find_next_in_queue(order):
                     'total_orders_today': driver.total_orders_today or 0,
                     'is_priority': is_priority
                 })
-        
+
         if not available_drivers:
             return None
-        
+
         # Ordena: prioridade primeiro, depois queue_position, depois last_order_at
         available_drivers.sort(key=lambda x: (
             not x['is_priority'],  # True primeiro (prioridade)
             x['queue_position'],
             x['last_order_at'] or datetime.min
         ))
-        
+
         return available_drivers[0]['driver']
-        
+
     except Exception as e:
         logger.error(f"Erro na fila ordenada: {e}")
         return None
@@ -534,7 +546,7 @@ def update_driver_queue(driver, action):
             ).scalar() or 0
             driver.queue_position = max_position + 2  # Penalização: vai 2 posições atrás
             driver.last_order_at = datetime.now(timezone.utc)
-        
+
         db.session.commit()
     except Exception as e:
         db.session.rollback()
@@ -584,12 +596,12 @@ def get_available_orders():
         # Usa LIKE com % para匹配 OFFERED_TO_{id} ou OFFERED_TO_{id}_{timestamp}
         offer_pattern = f"OFFERED_TO_{driver.id}"
         query = query.filter(
-            (Order.distribution_method != 'nearest') | 
+            (Order.distribution_method != 'nearest') |
             (Order.special_instructions.like(f'%{offer_pattern}%'))
         )
 
         available_orders = query.join(Restaurant).all()
-        
+
         orders_data = []
         for order in available_orders:
             # Calcula distância aproximada do entregador ao restaurante
@@ -599,11 +611,11 @@ def get_available_orders():
                     driver.current_latitude, driver.current_longitude,
                     order.restaurant.latitude, order.restaurant.longitude
                 )
-                
+
                 # Só mostra pedidos dentro de um raio de 200km
                 if distance_to_restaurant > 200:
                     continue
-            
+
             order_dict = order.to_dict()
             order_dict['restaurant'] = order.restaurant.to_dict()
             order_dict['customer'] = order.customer.to_dict() if order.customer else None
@@ -627,17 +639,17 @@ def get_available_orders():
             driver_earnings = float(order.delivery_fee or 0) * driver_pct
             order_dict['estimated_driver_earnings'] = round(driver_earnings, 2)
             order_dict['driver_percentage'] = round(driver_pct * 100, 0)
-            
+
             orders_data.append(order_dict)
-        
+
         # Ordena por proximidade
         orders_data.sort(key=lambda x: x.get('distance_to_restaurant_km', 999))
-        
+
         return jsonify({
             'orders': orders_data,
             'count': len(orders_data)
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -666,7 +678,7 @@ def accept_order(order_id):
         driver = user.driver
         if not driver or not driver.is_online:
             return jsonify({'error': 'Entregador deve estar online'}), 400
-        
+
         # Verificar se entregador está bloqueado
         if driver.is_blocked:
             if driver.blocked_until and driver.blocked_until > datetime.now(timezone.utc):
@@ -677,35 +689,35 @@ def accept_order(order_id):
                 driver.is_blocked = False
                 driver.blocked_until = None
                 driver.rejection_count = 0
-        
+
         # ACEITE ATÔMICO: UPDATE condicional que só funciona se o pedido ainda estiver disponível
         now = datetime.now(timezone.utc)
         result = db.session.execute(
             db.text("""
-                UPDATE orders 
-                SET driver_id = :driver_id, 
-                    status = 'ACCEPTED', 
+                UPDATE orders
+                SET driver_id = :driver_id,
+                    status = 'ACCEPTED',
                     updated_at = :now
-                WHERE id = :order_id 
-                  AND status = 'PENDING' 
+                WHERE id = :order_id
+                  AND status = 'PENDING'
                   AND driver_id IS NULL
             """),
             {'driver_id': driver.id, 'now': now, 'order_id': order_id}
         )
-        
+
         # Se nenhuma linha foi afetada, o pedido não está mais disponível
         if result.rowcount == 0:
             db.session.rollback()
             return jsonify({'error': 'Pedido não está mais disponível (já foi aceito por outro entregador)'}), 409
-        
+
         # Recarregar o pedido atualizado
         order = db.session.get(Order, order_id)
-        
+
         # Resetar contagem de rejeições ao aceitar pedido
         driver.rejection_count = 0
         driver.is_blocked = False
         driver.blocked_until = None
-        
+
         # Cria registro de entrega
         delivery = Delivery(
             order_id=order.id,
@@ -715,7 +727,7 @@ def accept_order(order_id):
             delivery_latitude=order.delivery_address.latitude if order.delivery_address else None,
             delivery_longitude=order.delivery_address.longitude if order.delivery_address else None
         )
-        
+
         # Calcula ganhos estimados do entregador (% configurável + bônus por distância)
         driver_pct = 0.70  # fallback
         if order.restaurant and order.restaurant.pricing_table_id:
@@ -739,7 +751,7 @@ def accept_order(order_id):
             delivery.driver_earnings = base_earning + (distance * 0.5)
         else:
             delivery.driver_earnings = base_earning
-        
+
         db.session.add(delivery)
 
         # Cria notificação para o cliente (usa user_id do customer, não o customer_id)
@@ -759,21 +771,21 @@ def accept_order(order_id):
             update_driver_queue(driver, 'accept')
 
         db.session.commit()
-        
+
         # Callback para plataforma externa (iFood, etc.)
         send_platform_callback(order, 'ACCEPTED')
-        
+
         order_dict = order.to_dict()
         order_dict['restaurant'] = order.restaurant.to_dict()
         order_dict['customer'] = order.customer.to_dict() if order.customer else None
         order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
         order_dict['delivery'] = delivery.to_dict()
-        
+
         return jsonify({
             'message': 'Pedido aceito com sucesso',
             'order': order_dict
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -785,7 +797,7 @@ def reject_order(order_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
@@ -816,21 +828,21 @@ def reject_order(order_id):
                 order.special_instructions = reject_log
 
         # Aplicar penalidade por rejeição
-        from src.models.portal_models import DriverPenalty, SystemConfig
+        from src.models.portal_models import DriverPenalty
         driver.rejection_count = (driver.rejection_count or 0) + 1
-        
+
         # Buscar limite de rejeições configurável (padrão: 3)
         max_rejections_config = SystemConfig.query.filter_by(config_key='max_rejections_before_block').first()
         max_rejections = int(max_rejections_config.config_value) if max_rejections_config else 3
-        
+
         if driver.rejection_count >= max_rejections:
             # Bloquear entregador temporariamente (padrão: 30 minutos)
             block_minutes_config = SystemConfig.query.filter_by(config_key='block_duration_minutes').first()
             block_minutes = int(block_minutes_config.config_value) if block_minutes_config else 30
-            
+
             driver.is_blocked = True
             driver.blocked_until = datetime.now(timezone.utc) + timedelta(minutes=block_minutes)
-            
+
             # Registrar penalidade
             penalty = DriverPenalty(
                 driver_id=driver.id,
@@ -858,7 +870,7 @@ def reject_order(order_id):
 
         # Busca proximo entregador (excluindo todos que recusaram)
         next_driver = find_nearest_available_driver(order, exclude_driver_ids=rejected_ids)
-        
+
         # Se nenhum entregador disponível, limpa rejeições e tenta novamente
         if not next_driver and len(rejected_ids) > 1:
             # Notifica admin antes de reciclar
@@ -867,11 +879,11 @@ def reject_order(order_id):
             total_failures = rejection_count + timeout_count
             if total_failures >= 2:
                 _notify_admin_pending_order(order, total_failures, datetime.now(timezone.utc))
-            
+
             # Limpa rejeições e recomeça ciclo
             order.special_instructions = re.sub(r'\|?(REJECTED_BY|TIMEOUT_BY)_\d+', '', order.special_instructions or '').strip('|')
             next_driver = find_nearest_available_driver(order)
-        
+
         if next_driver:
             # Atualiza oferta para o próximo entregador (via special_instructions)
             offer_ts = int(datetime.now(timezone.utc).timestamp())
@@ -880,7 +892,7 @@ def reject_order(order_id):
             # Remove ofertas antigas antes de adicionar nova
             current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
             order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
-            
+
             # Notifica o proximo entregador no app
             try:
                 notification = Notification(
@@ -893,7 +905,7 @@ def reject_order(order_id):
                 db.session.add(notification)
             except Exception:
                 pass
-            
+
             # Envia WhatsApp se configurado
             try:
                 from src.services.whatsapp import whatsapp_service
@@ -926,11 +938,11 @@ def reject_order(order_id):
                     )
             except Exception:
                 pass
-            
+
             # Atualiza posição na fila (se modo fila)
             if order.distribution_method == 'queue':
                 update_driver_queue(driver, 'reject')
-            
+
             db.session.commit()
             return jsonify({
                 'message': 'Pedido recusado. Enviado para o próximo entregador.',
@@ -959,7 +971,7 @@ def reject_order(order_id):
                     'notify_admin': False,
                     'time_remaining': int(timeout_seconds - time_elapsed)
                 }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -968,15 +980,15 @@ def notify_admin_no_drivers(order):
     """Notifica admin quando timeout atingido (nenhum entregador aceita)"""
     try:
         from src.models.portal_models import SystemConfig
-        
+
         # Conta quantas vezes o pedido foi recusado
         reject_count = 0
         if order.special_instructions:
             reject_count = order.special_instructions.count('REJECTED_BY_')
-        
+
         # Calcula tempo desde criacao do pedido
         time_elapsed = (datetime.now(timezone.utc) - order.created_at).total_seconds()
-        
+
         # Busca timeout configuravel
         timeout_config = SystemConfig.query.filter_by(config_key='order_timeout_seconds').first()
         timeout_seconds = int(timeout_config.config_value) if timeout_config else 120
@@ -1014,7 +1026,7 @@ def notify_admin_no_drivers(order):
                 related_id=order.id
             )
             db.session.add(notification)
-        
+
         db.session.commit()
     except Exception as e:
         logger.error(f"Erro ao notificar admin: {e}")
@@ -1026,24 +1038,24 @@ def update_order_status(order_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
-        
+
         is_admin = user.user_type == UserType.ADMIN
         is_client = user.user_type == UserType.CLIENT
         driver = None
-        
+
         if not is_admin and not is_client:
             if user.user_type != UserType.DRIVER:
                 return jsonify({'error': 'Usuário não autorizado'}), 403
             driver = user.driver
-        
+
         order = Order.query.get(order_id)
-        
+
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
-        
+
         # Verificar permissão
         if is_admin:
             from src.utils.tenant import get_current_tenant_id
@@ -1062,21 +1074,21 @@ def update_order_status(order_id):
         else:
             if order.driver_id != driver.id:
                 return jsonify({'error': 'Pedido não pertence a este entregador'}), 403
-        
+
         data = request.get_json()
         new_status = data.get('status')
-        
+
         if not new_status:
             return jsonify({'error': 'Status é obrigatório'}), 400
-        
+
         try:
             new_status_enum = OrderStatus(new_status)
         except ValueError:
             return jsonify({'error': 'Status inválido'}), 400
-        
+
         # Validar transição usando máquina de estados central
         from src.utils.order_state_machine import can_transition, get_user_role
-        
+
         user_role = get_user_role(user)
         # Entregadores próprios têm papel próprio
         if user.user_type == UserType.DRIVER:
@@ -1084,16 +1096,16 @@ def update_order_status(order_id):
             own_driver = EstablishmentDriver.query.filter_by(phone=user.phone).first()
             if own_driver:
                 user_role = 'own_driver'
-        
+
         can_change, error_msg = can_transition(order.status, new_status_enum, user_role)
         if not can_change:
             return jsonify({'error': error_msg}), 400
-        
+
         # Validação de raio GPS para coleta e entrega
         if new_status_enum in [OrderStatus.PICKED_UP, OrderStatus.DELIVERED]:
             driver_lat = data.get('latitude')
             driver_lng = data.get('longitude')
-            
+
             if driver_lat and driver_lng:
                 # Determinar local alvo (restaurante para coleta, endereço entrega para entrega)
                 if new_status_enum == OrderStatus.PICKED_UP:
@@ -1104,26 +1116,26 @@ def update_order_status(order_id):
                     target_lat = float(order.delivery_address.latitude) if order.delivery_address else None
                     target_lng = float(order.delivery_address.longitude) if order.delivery_address else None
                     location_name = 'endereço de entrega'
-                
+
                 if target_lat and target_lng:
                     distance = haversine_distance(
                         float(driver_lat), float(driver_lng),
                         target_lat, target_lng
                     )
                     distance_meters = distance * 1000
-                    
+
                     # Raio configurável (padrão 500 metros)
                     from src.models.portal_models import SystemConfig
                     radius_config = SystemConfig.query.filter_by(config_key='gps_radius_meters').first()
                     max_radius = int(radius_config.config_value) if radius_config else 500
-                    
+
                     if distance_meters > max_radius:
                         return jsonify({
                             'error': f'Você está a {distance_meters:.0f}m do {location_name}. O máximo permitido é {max_radius}m.',
                             'distance_meters': round(distance_meters),
                             'max_radius': max_radius
                         }), 400
-        
+
         # Validação de código anti-fraude
         if new_status_enum == OrderStatus.PICKED_UP and order.pickup_code:
             provided_code = data.get('pickup_code')
@@ -1131,7 +1143,7 @@ def update_order_status(order_id):
                 return jsonify({'error': 'Código de coleta é obrigatório', 'code_required': 'pickup_code'}), 400
             if provided_code != order.pickup_code:
                 return jsonify({'error': 'Código de coleta inválido'}), 400
-        
+
         if new_status_enum == OrderStatus.DELIVERED and order.delivery_code:
             provided_code = data.get('delivery_code')
             if not provided_code:
@@ -1142,7 +1154,7 @@ def update_order_status(order_id):
         # Atualiza o status
         order.status = new_status_enum
         order.updated_at = datetime.now(timezone.utc)
-        
+
         # Registra timestamps específicos
         if new_status_enum == OrderStatus.ACCEPTED:
             order.accepted_at = datetime.now(timezone.utc)
@@ -1155,10 +1167,10 @@ def update_order_status(order_id):
             order.picked_up_at = datetime.now(timezone.utc)
         elif new_status_enum == OrderStatus.DELIVERED:
             order.delivery_time = datetime.now(timezone.utc)
-            
+
             # Marcar parada como concluída na rota (se aplicável)
             if order.own_driver_route_id:
-                from src.models.portal_models import OwnDriverStop, OwnDriverRoute
+                from src.models.portal_models import OwnDriverRoute, OwnDriverStop
                 stop = OwnDriverStop.query.filter_by(
                     route_id=order.own_driver_route_id,
                     order_id=order.id
@@ -1173,7 +1185,7 @@ def update_order_status(order_id):
                         if all_completed:
                             route.status = 'COMPLETED'
                             route.completed_at = datetime.now(timezone.utc)
-            
+
             # Lógica específica do entregador (só quando entregador muda status)
             if driver:
                 driver.total_deliveries = (driver.total_deliveries or 0) + 1
@@ -1196,10 +1208,10 @@ def update_order_status(order_id):
                             order.delivery.proof_of_delivery_url = proof_url
                     except Exception as e:
                         logger.error(f"Erro ao salvar prova de entrega: {e}")
-                
+
                 # Cria pagamento para o entregador
                 if order.delivery:
-                    from src.models.portal_models import Payment, PaymentType, PaymentStatus
+                    from src.models.portal_models import Payment, PaymentStatus, PaymentType
                     payment = Payment(
                         driver_id=driver.id,
                         amount=order.delivery.driver_earnings,
@@ -1209,7 +1221,7 @@ def update_order_status(order_id):
                         status=PaymentStatus.PENDING
                     )
                     db.session.add(payment)
-                    
+
                     # Creditar na carteira do entregador (vai para saldo bloqueado)
                     from decimal import Decimal
                     driver.locked_balance = (driver.locked_balance or Decimal('0')) + Decimal(str(order.delivery.driver_earnings))
@@ -1265,9 +1277,8 @@ def update_order_status(order_id):
                 order.driver_id = None
             if order.delivery:
                 # Salva ganhos anteriores para remover depois
-                old_earnings = order.delivery.driver_earnings
                 db.session.delete(order.delivery)
-            
+
             # Notifica entregador mais proximo para relancar
             try:
                 new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
@@ -1290,7 +1301,7 @@ def update_order_status(order_id):
                 order.driver_id = None
             if order.delivery:
                 db.session.delete(order.delivery)
-            
+
             # Notifica entregador mais proximo
             try:
                 new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
@@ -1335,10 +1346,10 @@ def update_order_status(order_id):
                 pass
 
         db.session.commit()
-        
+
         # Callback para plataforma externa (iFood, etc.)
         send_platform_callback(order, new_status_enum.value)
-        
+
         # Envia notificacao WhatsApp (se configurado)
         try:
             from src.services.whatsapp import whatsapp_service
@@ -1353,7 +1364,7 @@ def update_order_status(order_id):
             'message': 'Status atualizado com sucesso',
             'order': order.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1366,14 +1377,14 @@ def edit_order(order_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
-        
+
         order = Order.query.get(order_id)
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
-        
+
         # Verificar permissão: admin ou dono do estabelecimento
         if user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
@@ -1382,25 +1393,23 @@ def edit_order(order_id):
                 return jsonify({'error': 'Sem permissão para editar este pedido'}), 403
         elif user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Sem permissão para editar pedidos'}), 403
-        
+
         # Só permite editar pedidos que ainda não foram coletados
         editable_statuses = [OrderStatus.SCHEDULED, OrderStatus.PENDING, OrderStatus.OFFERED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]
         if order.status not in editable_statuses:
             return jsonify({'error': f'Não é possível editar pedido com status {order.status.value}'}), 400
-        
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
-        
+
         # Campos editáveis
-        if 'customer_name' in data:
-            if order.customer:
-                order.customer.name = data['customer_name']
-        
-        if 'customer_phone' in data:
-            if order.customer:
-                order.customer.phone = data['customer_phone']
-        
+        if 'customer_name' in data and order.customer:
+            order.customer.name = data['customer_name']
+
+        if 'customer_phone' in data and order.customer:
+            order.customer.phone = data['customer_phone']
+
         if 'delivery_address' in data or 'delivery_number' in data or 'delivery_neighborhood' in data:
             if order.delivery_address:
                 if 'delivery_address' in data:
@@ -1416,7 +1425,7 @@ def edit_order(order_id):
                     order.delivery_address.state = data['delivery_state']
                 if 'delivery_zip_code' in data:
                     order.delivery_address.zip_code = data['delivery_zip_code']
-                
+
                 # Re-geocodificar se endereço mudou
                 if 'delivery_address' in data:
                     try:
@@ -1428,22 +1437,22 @@ def edit_order(order_id):
                             order.delivery_address.longitude = geo['longitude']
                     except Exception as e:
                         logger.warning(f"Falha ao re-geocodificar: {e}")
-        
+
         if 'special_instructions' in data:
             order.special_instructions = data['special_instructions']
-        
+
         if 'delivery_fee' in data:
             order.delivery_fee = float(data['delivery_fee'])
             order.total_amount = float(order.subtotal or 0) + float(data['delivery_fee'])
-        
+
         order.updated_at = datetime.now(timezone.utc)
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Pedido atualizado com sucesso',
             'order': order.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1473,10 +1482,10 @@ def cancel_order(order_id):
             from src.models.portal_models import SystemConfig
             allow_config = SystemConfig.query.filter_by(config_key='allow_establishment_cancel').first()
             allow_cancel = allow_config.config_value if allow_config else 'true'
-            
+
             if allow_cancel != 'true':
                 return jsonify({'error': 'Cancelamento não permitido pelo administrador'}), 403
-            
+
             customer_profile = Customer.query.filter_by(user_id=user.id).first()
             if not customer_profile:
                 return jsonify({'error': 'Perfil não encontrado'}), 404
@@ -1566,38 +1575,38 @@ def get_current_order():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
-        
+
         # Busca pedido em andamento
         current_order = Order.query.filter(
             Order.driver_id == driver.id,
             Order.status.in_([
-                OrderStatus.ACCEPTED, 
-                OrderStatus.PREPARING, 
-                OrderStatus.READY, 
+                OrderStatus.ACCEPTED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY,
                 OrderStatus.PICKED_UP
             ])
         ).first()
-        
+
         if not current_order:
             return jsonify({'message': 'Nenhum pedido em andamento'}), 200
-        
+
         order_dict = current_order.to_dict()
         order_dict['restaurant'] = current_order.restaurant.to_dict() if current_order.restaurant else None
         order_dict['customer'] = current_order.customer.to_dict() if current_order.customer else None
         order_dict['delivery_address'] = current_order.delivery_address.to_dict() if current_order.delivery_address else None
-        
+
         if current_order.delivery:
             order_dict['delivery'] = current_order.delivery.to_dict()
-        
+
         return jsonify({
             'order': order_dict
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1609,23 +1618,23 @@ def get_active_orders():
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
-        
+
         # Busca todos os pedidos ativos
         active_orders = Order.query.filter(
             Order.driver_id == driver.id,
             Order.status.in_([
-                OrderStatus.ACCEPTED, 
-                OrderStatus.PREPARING, 
-                OrderStatus.READY, 
+                OrderStatus.ACCEPTED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY,
                 OrderStatus.PICKED_UP
             ])
         ).order_by(Order.created_at.desc()).all()
-        
+
         orders_data = []
         for order in active_orders:
             order_dict = order.to_dict()
@@ -1635,12 +1644,12 @@ def get_active_orders():
             if order.delivery:
                 order_dict['delivery'] = order.delivery.to_dict()
             orders_data.append(order_dict)
-        
+
         return jsonify({
             'orders': orders_data,
             'count': len(orders_data)
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1655,15 +1664,15 @@ def test_geocode():
             data = request.get_json()
             address = data.get('address', '')
             city = data.get('city', '')
-        
+
         from src.services.geocoding import geocode_address, geocode_with_photon
-        
+
         # Testar Photon diretamente
         photon_result = geocode_with_photon(address, city)
-        
+
         # Testar geocode_address completo
         full_result = geocode_address(address, city)
-        
+
         return jsonify({
             'input': {'address': address, 'city': city},
             'photon_result': photon_result,
@@ -1712,7 +1721,7 @@ def estimate_fee():
             square = Square.query.get(restaurant.square_id)
             if square:
                 city_hint = square.city
-        
+
         # Se não tem city_hint do restaurante, usar cidade do endereço
         if not city_hint:
             city_hint = data.get('delivery_city')
@@ -1720,7 +1729,7 @@ def estimate_fee():
         # Permitir coordenadas manuais (quando usuário ajusta pino no mapa)
         manual_lat = data.get('latitude')
         manual_lng = data.get('longitude')
-        
+
         if manual_lat and manual_lng:
             # Usuário forneceu coordenadas do pino no mapa
             del_lat = float(manual_lat)
@@ -1737,7 +1746,7 @@ def estimate_fee():
         distance_km = 0
         duration_min = 0
         distance_source = 'none'
-        
+
         if del_lat and del_lng and restaurant.latitude and restaurant.longitude:
             route_info = get_route_distance_with_fallback(
                 float(restaurant.latitude), float(restaurant.longitude),
@@ -1822,11 +1831,11 @@ def estimate_fee():
             'latitude': del_lat,
             'longitude': del_lng
         }
-        
+
         if is_approximate:
             response_data['needs_pin_adjustment'] = True
             response_data['warning'] = 'Endereço não encontrado com precisão. Ajuste o pino no mapa para o local exato da entrega.'
-        
+
         return jsonify(response_data), 200
 
     except Exception as e:
@@ -1916,7 +1925,7 @@ def create_order():
                 restaurant = Restaurant.query.get(data['restaurant_id'])
             elif data.get('restaurant_name'):
                 restaurant = Restaurant.query.filter_by(name=data['restaurant_name']).first()
-            
+
             if not restaurant:
                 return jsonify({'error': 'Estabelecimento não encontrado. Envie restaurant_id ou restaurant_name.'}), 400
 
@@ -1948,7 +1957,7 @@ def create_order():
                 square = Square.query.get(restaurant.square_id)
                 if square:
                     city_hint = square.city
-            
+
             del_address_full = f"{data['delivery_address']}, {data.get('delivery_neighborhood', '')}, {data.get('delivery_city', '')}, {data.get('delivery_state', 'RS')}"
             from src.services.geocoding import geocode_address
             geo_del = geocode_address(del_address_full, city_hint=city_hint)
@@ -1979,7 +1988,7 @@ def create_order():
         # Usar frete calculado pelo frontend (que usa OSRM para distância real)
         # O frontend já calculou com a distância real via rota
         delivery_fee = float(data.get('delivery_fee', 0))
-        
+
         # Se o frontend não enviou frete, calcular com haversine como fallback
         if delivery_fee <= 0:
             if restaurant.pricing_table_id:
@@ -1988,7 +1997,7 @@ def create_order():
                 if pt and pt.price_per_km:
                     price_per_km = float(pt.price_per_km)
                     min_km = float(pt.min_distance_km or 4.0)
-                    
+
                     km_total = min_km
                     if address.latitude and address.longitude and restaurant.latitude and restaurant.longitude:
                         km_total = haversine_distance(
@@ -1996,9 +2005,9 @@ def create_order():
                             float(address.latitude), float(address.longitude)
                         )
                         km_total = max(km_total, min_km)
-                    
+
                     delivery_fee = round(km_total * price_per_km, 2)
-                    
+
                     if pt.min_delivery_fee:
                         delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
                     if pt.max_delivery_fee:
@@ -2033,11 +2042,11 @@ def create_order():
 
         # Gerar tracking_token único e códigos anti-fraude
         tracking_token = str(uuid.uuid4())
-        
+
         # Gerar codigos apenas se o estabelecimento usar confirmacao por codigo
         pickup_confirmation = restaurant.pickup_confirmation_type or 'code'
         delivery_confirmation = restaurant.delivery_confirmation_type or 'code'
-        
+
         pickup_code = str(random.randint(100000, 999999)) if pickup_confirmation in ['code', 'code_and_photo'] else None
         delivery_code = str(random.randint(100000, 999999)) if delivery_confirmation in ['code', 'code_and_photo'] else None
 
@@ -2079,7 +2088,7 @@ def create_order():
 
         # Pedido agendado - não notifica entregador ainda
         # Será convertido para PENDING automaticamente quando scheduled_at chegar
-        
+
         db.session.commit()
 
         # Envia notificacao WhatsApp ao cliente (se configurado)
@@ -2109,11 +2118,11 @@ def call_platform_drivers(order_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         order = Order.query.get(order_id)
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
-        
+
         # Verificar se o usuário é o dono do estabelecimento
         if user.user_type == UserType.CLIENT:
             customer = Customer.query.filter_by(user_id=user.id).first()
@@ -2121,14 +2130,14 @@ def call_platform_drivers(order_id):
                 return jsonify({'error': 'Não autorizado'}), 403
         elif user.user_type != UserType.ADMIN:
             return jsonify({'error': 'Não autorizado'}), 403
-        
+
         # Marcar que chamou a plataforma
         order.called_platform = True
         order.distribution_method = 'nearest'  # Usar distribuição padrão da plataforma
-        
+
         # Buscar próximo entregador da plataforma
         next_driver = find_nearest_available_driver(order)
-        
+
         if next_driver:
             # Notificar entregador
             try:
@@ -2142,7 +2151,7 @@ def call_platform_drivers(order_id):
                 db.session.add(notification)
             except Exception:
                 pass
-            
+
             # Envia WhatsApp se configurado
             try:
                 from src.services.whatsapp import whatsapp_service
@@ -2157,7 +2166,7 @@ def call_platform_drivers(order_id):
                             order.delivery_address.latitude, order.delivery_address.longitude
                         )
                         driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
-                    
+
                     whatsapp_service.send_new_order_to_driver(
                         next_driver.user.phone,
                         {
@@ -2174,7 +2183,7 @@ def call_platform_drivers(order_id):
                     )
             except Exception:
                 pass
-            
+
             db.session.commit()
             return jsonify({
                 'message': f'Pedido enviado para {next_driver.user.first_name}',
@@ -2186,7 +2195,7 @@ def call_platform_drivers(order_id):
                 'message': 'Nenhum entregador da plataforma disponível no momento',
                 'notify_admin': True
             }), 200
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -2198,22 +2207,22 @@ def assign_own_driver(order_id):
     """Atribui pedido a entregador próprio do estabelecimento"""
     try:
         user_id = int(get_jwt_identity())
-        user = User.query.get(user_id)
-        
+        User.query.get(user_id)
+
         order = Order.query.get(order_id)
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
-        
+
         data = request.get_json()
         establishment_driver_id = data.get('establishment_driver_id')
         if not establishment_driver_id:
             return jsonify({'error': 'ID do entregador é obrigatório'}), 400
-        
+
         from src.models.portal_models import EstablishmentDriver
         est_driver = EstablishmentDriver.query.get(establishment_driver_id)
         if not est_driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
-        
+
         # Remover pedido da rota anterior (se existir)
         if order.own_driver_route_id:
             from src.models.portal_models import OwnDriverRoute, OwnDriverStop
@@ -2221,17 +2230,17 @@ def assign_own_driver(order_id):
             if old_route:
                 # Remover parada da rota antiga
                 old_stop = OwnDriverStop.query.filter_by(
-                    route_id=old_route.id, 
+                    route_id=old_route.id,
                     order_id=order.id
                 ).first()
                 if old_stop:
                     db.session.delete(old_stop)
-                
+
                 # Se a rota antiga fica sem paradas, excluí-la
                 remaining_stops = OwnDriverStop.query.filter_by(route_id=old_route.id).count()
                 if remaining_stops <= 1:  # <=1 porque ainda não deletamos o stop acima
                     db.session.delete(old_route)
-            
+
             order.own_driver_route_id = None
 
         # Atribuir pedido ao entregador próprio
@@ -2240,7 +2249,7 @@ def assign_own_driver(order_id):
         order.status = OrderStatus.ACCEPTED
         order.accepted_at = datetime.now(timezone.utc)
         order.updated_at = datetime.now(timezone.utc)
-        
+
         # Criar registro de entrega
         delivery = Delivery(
             order_id=order.id,
@@ -2251,21 +2260,21 @@ def assign_own_driver(order_id):
             delivery_longitude=order.delivery_address.longitude if order.delivery_address else None
         )
         db.session.add(delivery)
-        
+
         # Calcular ganho do entregador baseado na configuração do restaurante
         restaurant = order.restaurant
         distance_km = 0
-        if (order.delivery_address and order.delivery_address.latitude and 
+        if (order.delivery_address and order.delivery_address.latitude and
             restaurant and restaurant.latitude):
             distance_km = haversine_distance(
                 float(restaurant.latitude), float(restaurant.longitude),
                 float(order.delivery_address.latitude), float(order.delivery_address.longitude)
             )
-        
+
         # Calcular ganho baseado no tipo de pagamento
         payment_type = restaurant.own_driver_payment_type if restaurant else 'PER_DELIVERY'
         delivery_fee = float(order.delivery_fee or 0)
-        
+
         if not restaurant:
             driver_earning = 5.00  # Fallback
         elif payment_type == 'PER_DELIVERY':
@@ -2278,7 +2287,7 @@ def assign_own_driver(order_id):
             driver_earning = float(restaurant.own_driver_fixed_value or 50.00)
         else:  # FIXED
             driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
-        
+
         # Criar registro de ganho
         from src.models.portal_models import OwnDriverEarning
         earning = OwnDriverEarning(
@@ -2291,11 +2300,11 @@ def assign_own_driver(order_id):
             distance_km=distance_km
         )
         db.session.add(earning)
-        
+
         # NÃO criar rota automaticamente - estabelecimento cria rotas manualmente
-        
+
         db.session.commit()
-        
+
         # Envia WhatsApp para o entregador próprio
         try:
             from src.services.whatsapp import whatsapp_service
@@ -2313,12 +2322,12 @@ def assign_own_driver(order_id):
                 )
         except Exception:
             pass  # Não falha a atribuição se WhatsApp falhar
-        
+
         return jsonify({
             'message': f'Pedido atribuído a {est_driver.name}',
             'order': order.to_dict()
         }), 200
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -2331,24 +2340,23 @@ def get_order_details(order_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         order = Order.query.get(order_id)
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
-        
+
         # Verifica permissão
-        if user.user_type == UserType.DRIVER:
-            if not user.driver or order.driver_id != user.driver.id:
-                return jsonify({'error': 'Acesso negado'}), 403
-        
+        if user.user_type == UserType.DRIVER and (not user.driver or order.driver_id != user.driver.id):
+            return jsonify({'error': 'Acesso negado'}), 403
+
         order_dict = order.to_dict()
         order_dict['restaurant'] = order.restaurant.to_dict() if order.restaurant else None
         order_dict['customer'] = order.customer.to_dict() if order.customer else None
         order_dict['delivery_address'] = order.delivery_address.to_dict() if order.delivery_address else None
-        
+
         if order.delivery:
             order_dict['delivery'] = order.delivery.to_dict()
-        
+
         if order.driver:
             order_dict['driver'] = {
                 'id': order.driver.id,
@@ -2358,9 +2366,9 @@ def get_order_details(order_id):
                 'vehicle_plate': order.driver.vehicle_plate,
                 'rating': float(order.driver.rating)
             }
-        
+
         return jsonify(order_dict), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -2372,7 +2380,7 @@ def track_order(tracking_token):
         order = Order.query.filter_by(tracking_token=tracking_token).first()
         if not order:
             return jsonify({'error': 'Pedido não encontrado'}), 404
-        
+
         # Dados básicos do pedido (sem informações sensíveis)
         tracking_data = {
             'order_number': order.order_number,
@@ -2381,7 +2389,7 @@ def track_order(tracking_token):
             'restaurant_name': order.restaurant.name if order.restaurant else 'N/A',
             'neighborhood': order.delivery_address.neighborhood if order.delivery_address else 'N/A',
         }
-        
+
         # Status timeline
         status_timeline = []
         if order.created_at:
@@ -2398,9 +2406,9 @@ def track_order(tracking_token):
             status_timeline.append({'status': 'PICKED_UP', 'time': order.pickup_time.isoformat() if order.pickup_time else order.updated_at.isoformat(), 'label': 'Coletado'})
         if order.status == OrderStatus.DELIVERED:
             status_timeline.append({'status': 'DELIVERED', 'time': order.delivery_time.isoformat() if order.delivery_time else order.updated_at.isoformat(), 'label': 'Entregue'})
-        
+
         tracking_data['timeline'] = status_timeline
-        
+
         # Localização do entregador (se disponível e pedido foi aceito)
         if order.driver and order.driver.current_latitude and order.driver.current_longitude:
             if order.status in [OrderStatus.PICKED_UP, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]:
@@ -2415,17 +2423,17 @@ def track_order(tracking_token):
                     'name': driver_name,
                     'vehicle_type': order.driver.vehicle_type.value if order.driver.vehicle_type else None
                 }
-        
+
         # Endereço de entrega (sem coordenadas exatas por privacidade)
         if order.delivery_address:
             tracking_data['delivery_neighborhood'] = order.delivery_address.neighborhood
-        
+
         # Estimativa de tempo (se disponível)
         if order.estimated_delivery_time:
             tracking_data['estimated_delivery_time'] = order.estimated_delivery_time.isoformat()
-        
+
         return jsonify(tracking_data), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -2660,7 +2668,7 @@ def get_my_tracking():
                 OrderStatus.READY,
                 OrderStatus.PICKED_UP
             ]),
-            Order.assigned_to_own_driver == True,
+            Order.assigned_to_own_driver,
             Order.establishment_driver_id.isnot(None)
         ).all()
 
@@ -2674,8 +2682,8 @@ def get_my_tracking():
         from src.models.portal_models import EstablishmentDriver
         all_own_drivers = EstablishmentDriver.query.filter(
             EstablishmentDriver.restaurant_id == restaurant.id,
-            EstablishmentDriver.is_online == True,
-            EstablishmentDriver.is_active == True,
+            EstablishmentDriver.is_online,
+            EstablishmentDriver.is_active,
             EstablishmentDriver.current_latitude.isnot(None),
             EstablishmentDriver.current_longitude.isnot(None)
         ).all()
@@ -3080,7 +3088,7 @@ def notify_admin_low_rating(driver, rating, feedback, order):
 def find_nearest_available_driver(order, exclude_driver_ids=None):
     """
     Busca o entregador mais proximo que esteja disponivel.
-    
+
     Logica:
     1. Busca todos os entregadores online
     2. Filtra por: distancia maxima e pedidos ativos < max_concurrent_orders
@@ -3101,7 +3109,7 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         # Coordenadas do restaurante
         if not order.restaurant:
             return None
-        
+
         rest_lat = float(order.restaurant.latitude) if order.restaurant.latitude else None
         rest_lng = float(order.restaurant.longitude) if order.restaurant.longitude else None
 
@@ -3110,10 +3118,10 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
 
         # Busca entregadores online (filtrados por tenant do pedido)
         driver_query = Driver.query.filter(
-            Driver.is_online == True,
+            Driver.is_online,
             Driver.current_latitude.isnot(None),
             Driver.current_longitude.isnot(None),
-            Driver.is_blocked == False  # Excluir bloqueados
+            not Driver.is_blocked  # Excluir bloqueados
         )
         if order.tenant_id:
             driver_query = driver_query.filter(Driver.tenant_id == order.tenant_id)

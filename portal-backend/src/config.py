@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+
 from dotenv import load_dotenv
 
 # Carrega variáveis de ambiente baseado no ambiente
@@ -14,11 +15,11 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)  # Token expira em 24 horas
-    
+
     # Configurações do banco de dados
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///src/database/app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
+
     # Configurações de CORS
     CORS_ORIGINS = [
         "http://muv.log.br",
@@ -35,10 +36,10 @@ class Config:
         "https://portal-entregador-gamma.vercel.app",
         "https://portal-entregador.vercel.app",
     ]
-    
+
     # Configurações de logging
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG')
-    
+
     # Configurações do WhatsApp Cloud API
     WHATSAPP_TOKEN = os.getenv('WHATSAPP_TOKEN', '')
     WHATSAPP_PHONE_NUMBER_ID = os.getenv('WHATSAPP_PHONE_NUMBER_ID', '')
@@ -59,19 +60,19 @@ class ProductionConfig(Config):
     """Configuração para produção"""
     DEBUG = False
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'WARNING')  # WARNING em produção, não DEBUG
-    
+
     # Força HTTPS em produção
     PREFERRED_URL_SCHEME = 'https'
-    
+
     # Configurações de segurança
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    
+
     # Banco de dados PostgreSQL obrigatório em produção
     if not os.getenv('DATABASE_URL') or 'sqlite' in os.getenv('DATABASE_URL', ''):
         raise ValueError("DATABASE_URL deve ser configurado com PostgreSQL para produção")
-    
+
     # Configurações de conexão para evitar SSL stale connections (Cloud Run)
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,          # Testa conexão antes de usar
@@ -80,13 +81,13 @@ class ProductionConfig(Config):
         'pool_size': 5,                 # Tamanho do pool
         'max_overflow': 10,             # Conexões extras permitidas
     }
-    
+
     # Validar secret keys em produção
     if os.getenv('SECRET_KEY') and os.getenv('SECRET_KEY') != 'dev-secret-key-change-in-production':
         SECRET_KEY = os.getenv('SECRET_KEY')
     else:
         SECRET_KEY = Config.SECRET_KEY  # Usa fallback se não configurado (já configurado no Cloud Run)
-    
+
     if os.getenv('JWT_SECRET_KEY') and os.getenv('JWT_SECRET_KEY') != 'jwt-secret-key-change-in-production':
         JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
     else:

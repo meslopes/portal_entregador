@@ -1,9 +1,21 @@
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from src.models.portal_models import Driver, User, UserType, Order, OrderStatus, Payment, PaymentStatus, PaymentType, PaymentMethod, db
-from src.utils.geo import haversine_distance
 from datetime import datetime, timedelta, timezone
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import func
+
+from src.models.portal_models import (
+    Driver,
+    Order,
+    OrderStatus,
+    Payment,
+    PaymentMethod,
+    PaymentStatus,
+    User,
+    UserType,
+    db,
+)
+from src.utils.geo import haversine_distance
 
 driver_bp = Blueprint('driver', __name__)
 
@@ -12,7 +24,7 @@ def _check_driver_conversion(user_id):
     """Verifica se o entregador foi convertido para próprio.
     Retorna None se OK, ou uma tupla (jsonify, status_code) se foi convertido.
     """
-    from src.models.portal_models import Driver, User, UserType
+    from src.models.portal_models import User, UserType
     user = User.query.get(user_id)
     if not user or user.user_type != UserType.DRIVER:
         return None  # Não é entregador, deixa o fluxo normal tratar
@@ -35,7 +47,7 @@ def toggle_online_status():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
@@ -51,25 +63,25 @@ def toggle_online_status():
 
         data = request.get_json() or {}
         is_online = data.get('is_online', not driver.is_online)
-        
+
         driver.is_online = is_online
         driver.updated_at = datetime.now(timezone.utc)
-        
+
         # Se está ficando online, atualiza a localização
         if is_online and 'latitude' in data and 'longitude' in data:
             driver.current_latitude = data['latitude']
             driver.current_longitude = data['longitude']
             driver.last_location_update = datetime.now(timezone.utc)
-        
+
         db.session.commit()
-        
+
         # Retornar dados básicos sem chamar to_dict() pra evitar crash
         return jsonify({
             'message': f'Status alterado para {"online" if is_online else "offline"}',
             'is_online': driver.is_online,
             'driver_id': driver.id
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -84,7 +96,7 @@ def update_location():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
@@ -102,34 +114,34 @@ def update_location():
 
         if 'latitude' not in data or 'longitude' not in data:
             return jsonify({'error': 'Latitude e longitude são obrigatórias'}), 400
-        
+
         # Validar se são números válidos
         try:
             lat = float(data['latitude'])
             lng = float(data['longitude'])
         except (ValueError, TypeError):
             return jsonify({'error': 'Latitude e longitude devem ser números válidos'}), 400
-        
+
         # Validar range
         if not (-90 <= lat <= 90):
             return jsonify({'error': 'Latitude deve estar entre -90 e 90'}), 400
         if not (-180 <= lng <= 180):
             return jsonify({'error': 'Longitude deve estar entre -180 e 180'}), 400
-        
+
         driver.current_latitude = lat
         driver.current_longitude = lng
         driver.last_location_update = datetime.now(timezone.utc)
         driver.updated_at = datetime.now(timezone.utc)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Localização atualizada com sucesso',
             'latitude': float(driver.current_latitude),
             'longitude': float(driver.current_longitude),
             'last_update': driver.last_location_update.isoformat()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -144,32 +156,32 @@ def get_driver_stats():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         # Estatísticas básicas
-        from src.models.portal_models import Delivery, Payment, OrderStatus
-        
+        from src.models.portal_models import Delivery, Payment
+
         # Total de entregas
         total_deliveries = driver.total_deliveries
-        
+
         # Ganhos totais (todos os pagamentos, independente do status)
         total_earnings = db.session.query(func.sum(Payment.amount)).filter(
             Payment.driver_id == driver.id
         ).scalar() or 0
-        
+
         # Ganhos do dia atual
         today = datetime.now(timezone.utc).date()
         today_earnings = db.session.query(func.sum(Payment.amount)).filter(
             Payment.driver_id == driver.id,
             func.date(Payment.created_at) == today
         ).scalar() or 0
-        
+
         # Ganhos da semana
         from datetime import timedelta
         week_start = today - timedelta(days=today.weekday())
@@ -177,10 +189,10 @@ def get_driver_stats():
             Payment.driver_id == driver.id,
             func.date(Payment.created_at) >= week_start
         ).scalar() or 0
-        
+
         # Avaliação média
         avg_rating = db.session.query(func.avg(Delivery.customer_rating)).filter_by(driver_id=driver.id).scalar() or 5.0
-        
+
         return jsonify({
             'total_deliveries': total_deliveries,
             'total_earnings': float(total_earnings),
@@ -189,7 +201,7 @@ def get_driver_stats():
             'average_rating': float(avg_rating),
             'current_rating': float(driver.rating)
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -203,35 +215,35 @@ def get_earnings_history():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         # Parâmetros de paginação
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
-        
+
         # Filtros opcionais
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
-        
+
         from src.models.portal_models import Payment
-        
+
         query = Payment.query.filter_by(driver_id=driver.id)
-        
+
         if start_date:
             query = query.filter(Payment.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
         if end_date:
             query = query.filter(Payment.created_at <= datetime.strptime(end_date, '%Y-%m-%d'))
-        
+
         payments = query.order_by(Payment.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
-        
+
         return jsonify({
             'payments': [payment.to_dict() for payment in payments.items],
             'total': payments.total,
@@ -239,7 +251,7 @@ def get_earnings_history():
             'current_page': page,
             'per_page': per_page
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -253,26 +265,26 @@ def get_delivery_history():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         # Parâmetros de paginação
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
-        
+
         from src.models.portal_models import Order, OrderStatus
-        
+
         orders = Order.query.filter_by(driver_id=driver.id).filter(
             Order.status.in_([OrderStatus.DELIVERED, OrderStatus.CANCELLED])
         ).order_by(Order.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
-        
+
         orders_data = []
         for order in orders.items:
             order_dict = order.to_dict()
@@ -291,9 +303,9 @@ def get_delivery_history():
                 order_dict['delivery_address'] = order.delivery_address.to_dict()
             if order.delivery:
                 order_dict['delivery'] = order.delivery.to_dict()
-            
+
             orders_data.append(order_dict)
-        
+
         return jsonify({
             'orders': orders_data,
             'total': orders.total,
@@ -301,7 +313,7 @@ def get_delivery_history():
             'current_page': page,
             'per_page': per_page
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -310,8 +322,8 @@ def get_delivery_history():
 def get_nearby_drivers():
     """Obtém entregadores próximos (para uso administrativo)"""
     try:
-        from src.utils.tenant import get_current_user
         from src.models.portal_models import UserType
+        from src.utils.tenant import get_current_user
         user = get_current_user()
         if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
             return jsonify({'error': 'Sem permissão'}), 403
@@ -319,14 +331,14 @@ def get_nearby_drivers():
         latitude = request.args.get('latitude', type=float)
         longitude = request.args.get('longitude', type=float)
         radius_km = request.args.get('radius', 10, type=float)
-        
+
         if not latitude or not longitude:
             return jsonify({'error': 'Latitude e longitude são obrigatórias'}), 400
-        
+
         # Fórmula de Haversine para calcular distância
         # Simplificada para demonstração - em produção usar PostGIS ou similar
         query = Driver.query.filter(
-            Driver.is_online == True,
+            Driver.is_online,
             Driver.current_latitude.isnot(None),
             Driver.current_longitude.isnot(None)
         )
@@ -334,7 +346,7 @@ def get_nearby_drivers():
         if not user.is_super_admin and user.tenant_id:
             query = query.filter(Driver.tenant_id == user.tenant_id)
         drivers = query.all()
-        
+
         nearby_drivers = []
         for driver in drivers:
             # Calcula distância usando Haversine
@@ -342,21 +354,21 @@ def get_nearby_drivers():
                 latitude, longitude,
                 driver.current_latitude, driver.current_longitude
             )
-            
+
             if distance <= radius_km:
                 driver_data = driver.to_dict()
                 driver_data['distance_km'] = round(distance, 2)
                 driver_data['user'] = driver.user.to_dict()
                 nearby_drivers.append(driver_data)
-        
+
         # Ordena por distância
         nearby_drivers.sort(key=lambda x: x['distance_km'])
-        
+
         return jsonify({
             'drivers': nearby_drivers,
             'count': len(nearby_drivers)
         }), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -399,11 +411,11 @@ def get_ranking():
             Payment.status == PaymentStatus.PROCESSED,
             Payment.created_at >= thirty_days_ago
         ))
-        
+
         # Filtrar por tenant do entregador
         if user.driver and user.driver.tenant_id:
             ranking_query = ranking_query.filter(Driver.tenant_id == user.driver.tenant_id)
-        
+
         ranking = ranking_query.group_by(
             Driver.id, User.first_name, User.last_name,
             Driver.rating, Driver.total_deliveries
@@ -534,19 +546,19 @@ def get_wallet():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         # Buscar transações recentes
         recent_payments = Payment.query.filter_by(
             driver_id=driver.id
         ).order_by(Payment.created_at.desc()).limit(10).all()
-        
+
         return jsonify({
             'balance': float(driver.balance or 0),
             'locked_balance': float(driver.locked_balance or 0),
@@ -574,25 +586,24 @@ def request_withdrawal():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         data = request.get_json()
         try:
             amount = float(data.get('amount', 0))
         except (ValueError, TypeError):
             return jsonify({'error': 'Valor deve ser um número'}), 400
-        
+
         if amount <= 0:
             return jsonify({'error': 'Valor inválido'}), 400
 
         # Saque atômico: debita somente se saldo suficiente (previne race condition)
-        from decimal import Decimal
         result = db.session.execute(
             db.text("UPDATE drivers SET balance = balance - :amount, locked_balance = locked_balance + :amount, updated_at = NOW() WHERE id = :id AND balance >= :amount"),
             {'amount': amount, 'id': driver.id}
@@ -634,24 +645,24 @@ def update_pix_key():
         if conv:
             return conv
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
-        
+
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Perfil de entregador não encontrado'}), 404
-        
+
         data = request.get_json()
         pix_key = data.get('pix_key', '').strip()
-        
+
         if not pix_key:
             return jsonify({'error': 'Chave PIX é obrigatória'}), 400
-        
+
         driver.pix_key = pix_key
         driver.updated_at = datetime.now(timezone.utc)
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Chave PIX atualizada',
             'pix_key': pix_key

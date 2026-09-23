@@ -2,9 +2,10 @@
 Utilitário para upload de arquivos no Supabase Storage.
 Usado para fotos de prova de entrega.
 """
-import os
 import base64
 import logging
+import os
+
 import requests
 
 logger = logging.getLogger(__name__)
@@ -62,11 +63,11 @@ def create_bucket_if_needed():
 def upload_proof(base64_data, order_id):
     """
     Faz upload de uma foto de prova de entrega para o Supabase Storage.
-    
+
     Args:
         base64_data: string base64 da imagem (pode ter prefixo data:image/...)
         order_id: ID do pedido (usado no nome do arquivo)
-    
+
     Returns:
         URL pública da foto ou None em caso de erro
     """

@@ -2,16 +2,25 @@
 Endpoints para rotas de entregadores da plataforma.
 Permite criar, gerenciar e concluir rotas com múltiplos pedidos.
 """
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from src.models.portal_models import (
-    db, Order, OrderStatus, Driver, Restaurant,
-    PlatformDriverRoute, PlatformDriverStop, User, UserType, UserStatus
-)
-from src.utils.tenant import get_current_user, get_current_tenant_id
-from src.utils.geo import haversine_distance
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+from src.models.portal_models import (
+    Driver,
+    Order,
+    OrderStatus,
+    PlatformDriverRoute,
+    PlatformDriverStop,
+    User,
+    UserStatus,
+    UserType,
+    db,
+)
+from src.utils.geo import haversine_distance
+from src.utils.tenant import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -25,33 +34,31 @@ def optimize_platform_route_order(stops, driver_pos=None):
     """
     if not stops:
         return []
-    
+
     if len(stops) <= 2:
         for i, stop in enumerate(stops):
             stop['stop_order'] = i + 1
         return stops
-    
+
     # Algoritmo direção-aware
     optimized = []
     remaining = list(stops)
     current_pos = driver_pos or (stops[0]['latitude'], stops[0]['longitude'])
     picked_up_orders = set()
-    
+
     while remaining:
         # Filtrar paradas válidas
         valid_stops = []
         for stop in remaining:
-            if stop['stop_type'] == 'PICKUP':
+            if stop['stop_type'] == 'PICKUP' or stop['stop_type'] == 'DELIVERY' and stop['order_id'] in picked_up_orders:
                 valid_stops.append(stop)
-            elif stop['stop_type'] == 'DELIVERY' and stop['order_id'] in picked_up_orders:
-                valid_stops.append(stop)
-        
+
         if not valid_stops:
             valid_stops = [s for s in remaining if s['stop_type'] == 'PICKUP']
-        
+
         if not valid_stops:
             break
-        
+
         # Calcular centroid das paradas restantes
         valid_with_coords = [s for s in valid_stops if s.get('latitude') and s.get('longitude')]
         if valid_with_coords:
@@ -59,11 +66,11 @@ def optimize_platform_route_order(stops, driver_pos=None):
             centroid_lng = sum(s['longitude'] for s in valid_with_coords) / len(valid_with_coords)
         else:
             centroid_lat, centroid_lng = current_pos
-        
+
         # Encontrar melhor parada
         best_stop = None
         best_score = float('inf')
-        
+
         for stop in valid_stops:
             if not stop['latitude'] or not stop['longitude'] or not current_pos[0] or not current_pos[1]:
                 score = 0
@@ -72,39 +79,39 @@ def optimize_platform_route_order(stops, driver_pos=None):
                     current_pos[0], current_pos[1],
                     stop['latitude'], stop['longitude']
                 )
-                
+
                 # Calcular direção
                 to_stop = (stop['latitude'] - current_pos[0], stop['longitude'] - current_pos[1])
                 to_centroid = (centroid_lat - current_pos[0], centroid_lng - current_pos[1])
-                
+
                 dot_product = to_stop[0] * to_centroid[0] + to_stop[1] * to_centroid[1]
                 mag_stop = (to_stop[0]**2 + to_stop[1]**2)**0.5
                 mag_centroid = (to_centroid[0]**2 + to_centroid[1]**2)**0.5
-                
+
                 if mag_stop > 0 and mag_centroid > 0:
                     direction_similarity = dot_product / (mag_stop * mag_centroid)
                 else:
                     direction_similarity = 0
-                
+
                 direction_factor = 2 - max(0, direction_similarity)
                 score = distance * direction_factor
-            
+
             if score < best_score:
                 best_score = score
                 best_stop = stop
-        
+
         if best_stop:
             optimized.append(best_stop)
             remaining.remove(best_stop)
             current_pos = (best_stop['latitude'], best_stop['longitude'])
-            
+
             if best_stop['stop_type'] == 'PICKUP':
                 picked_up_orders.add(best_stop['order_id'])
-    
+
     # Atribuir ordem
     for i, stop in enumerate(optimized):
         stop['stop_order'] = i + 1
-    
+
     return optimized
 
 
@@ -123,7 +130,7 @@ def create_platform_route():
 
         driver_id = data.get('driver_id')
         order_ids = data.get('order_ids', [])
-        
+
         if not driver_id or not order_ids:
             return jsonify({'error': 'Entregador e pedidos são obrigatórios'}), 400
 
@@ -131,10 +138,10 @@ def create_platform_route():
         driver = Driver.query.get(driver_id)
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
-        
+
         if not driver.user or driver.user.status != UserStatus.ACTIVE:
             return jsonify({'error': 'Entregador está inativo'}), 400
-        
+
         if not driver.is_online:
             return jsonify({'error': 'Entregador está offline'}), 400
 
@@ -142,7 +149,7 @@ def create_platform_route():
         orders = Order.query.filter(Order.id.in_(order_ids)).all()
         if len(orders) != len(order_ids):
             return jsonify({'error': 'Alguns pedidos não foram encontrados'}), 400
-        
+
         # Verificar limite de pedidos
         from src.models.portal_models import RouteSettings
         settings = RouteSettings.query.first()
@@ -156,11 +163,11 @@ def create_platform_route():
                 existing_route = PlatformDriverRoute.query.get(order.platform_route_id)
                 if existing_route and existing_route.status in ['PENDING', 'ACTIVE']:
                     return jsonify({'error': f'Pedido {order.order_number} já está na rota #{existing_route.id}'}), 400
-            
+
             # Verificar se pedido tem dados de entrega
             if not order.delivery_address or not order.delivery_address.latitude:
                 return jsonify({'error': f'Pedido {order.order_number} não tem endereço de entrega com coordenadas'}), 400
-        
+
         # Limpar platform_route_id de pedidos de rotas concluídas/canceladas
         for order in orders:
             if order.platform_route_id:
@@ -189,7 +196,7 @@ def create_platform_route():
                     'address': order.restaurant.address,
                     'restaurant_id': order.restaurant_id
                 })
-            
+
             # Delivery no cliente
             if order.delivery_address and order.delivery_address.latitude:
                 stops_data.append({
@@ -205,7 +212,7 @@ def create_platform_route():
         driver_pos = None
         if driver.current_latitude and driver.current_longitude:
             driver_pos = (float(driver.current_latitude), float(driver.current_longitude))
-        
+
         optimized_stops = optimize_platform_route_order(stops_data, driver_pos)
 
         # Criar paradas no banco
@@ -249,7 +256,7 @@ def get_driver_active_routes():
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
@@ -276,14 +283,14 @@ def accept_route(route_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
         driver = user.driver
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
-        
+
         if not driver.user or driver.user.status != UserStatus.ACTIVE:
             return jsonify({'error': 'Entregador está inativo'}), 400
 
@@ -327,7 +334,7 @@ def reject_route(route_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
@@ -375,7 +382,7 @@ def complete_stop(route_id):
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user or user.user_type != UserType.DRIVER:
             return jsonify({'error': 'Usuário não é um entregador'}), 403
 
@@ -392,7 +399,7 @@ def complete_stop(route_id):
 
         data = request.get_json()
         stop_id = data.get('stop_id')
-        
+
         if not stop_id:
             return jsonify({'error': 'ID da parada é obrigatório'}), 400
 
@@ -413,7 +420,7 @@ def complete_stop(route_id):
 
         # Verificar se todas as paradas foram concluídas
         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
-        
+
         if all_completed:
             route.status = 'COMPLETED'
             route.completed_at = datetime.now(timezone.utc)

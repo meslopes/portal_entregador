@@ -1,18 +1,26 @@
-# -*- coding: utf-8 -*-
 """
 MuvScore - Sistema de Gamificação e Ranking para Entregadores
 
 Gerencia pontuação, níveis e ranking semanal.
 """
 
-from datetime import datetime, date, timedelta, time as dt_time, timezone
-from src.models.portal_models import (
-    db, Driver, DriverPointsLog, DriverWeeklyScore,
-    Order, Delivery, SystemConfig, SpecialDay, PeakHour
-)
-from sqlalchemy import func
-import logging
 import json
+import logging
+from datetime import date, datetime, timedelta, timezone
+
+from sqlalchemy import func
+
+from src.models.portal_models import (
+    Delivery,
+    DriverPointsLog,
+    DriverWeeklyScore,
+    Order,
+    OrderStatus,
+    PeakHour,
+    SpecialDay,
+    SystemConfig,
+    db,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +192,7 @@ def award_delivery_points(driver, order):
     # Verificar horário de pico
     peak = PeakHour.query.filter(
         PeakHour.tenant_id == driver.tenant_id,
-        PeakHour.is_active == True,
+        PeakHour.is_active,
         PeakHour.start_time <= current_time,
         PeakHour.end_time >= current_time
     ).first()
@@ -339,7 +347,7 @@ def check_and_award_streak(driver):
 
 def calculate_acceptance_rate(driver, days=7):
     """Calcula a taxa de aceite do entregador nos últimos N dias"""
-    from src.models.portal_models import Order, OrderStatus
+    from src.models.portal_models import OrderStatus
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Pedidos ofertados (via driver_assignments ou offers)
@@ -364,7 +372,7 @@ def calculate_acceptance_rate(driver, days=7):
 
 def calculate_completion_rate(driver, days=7):
     """Calcula a taxa de conclusão (entregas / pedidos aceitos) nos últimos N dias"""
-    from src.models.portal_models import Order, OrderStatus
+    from src.models.portal_models import OrderStatus
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
     total_accepted = Order.query.filter(
@@ -414,7 +422,6 @@ def calculate_weekly_pool(tenant_id, week_start=None):
     week_end = week_start + timedelta(days=6)
 
     # Buscar total de fretes da semana
-    from src.models.portal_models import Delivery, Order
     total_fees = db.session.query(func.sum(Delivery.delivery_fee)).join(
         Order, Delivery.order_id == Order.id
     ).filter(

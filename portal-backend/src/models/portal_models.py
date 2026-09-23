@@ -1,7 +1,8 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
-from werkzeug.security import generate_password_hash, check_password_hash
 from enum import Enum
+
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
 
@@ -142,11 +143,11 @@ class User(db.Model):
     status = db.Column(db.Enum(UserStatus), default=UserStatus.ACTIVE)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
-    
+
     # Soft delete
     deleted_at = db.Column(db.DateTime, nullable=True)
     deleted_by = db.Column(db.Integer, nullable=True)  # ID do admin que excluiu
-    
+
     # Relacionamentos
     driver = db.relationship('Driver', backref='user', uselist=False, cascade='all, delete-orphan')
     notifications = db.relationship('Notification', backref='user', cascade='all, delete-orphan')
@@ -179,7 +180,7 @@ class User(db.Model):
 
 class Driver(db.Model):
     __tablename__ = 'drivers'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -214,7 +215,7 @@ class Driver(db.Model):
     pix_key = db.Column(db.String(100))  # Chave PIX para saques
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
-    
+
     # Relacionamentos
     orders = db.relationship('Order', backref='driver')
     deliveries = db.relationship('Delivery', backref='driver')
@@ -447,7 +448,7 @@ class OwnDriverEarning(db.Model):
 
 class Restaurant(db.Model):
     __tablename__ = 'restaurants'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     name = db.Column(db.String(200), nullable=False)
@@ -493,7 +494,7 @@ class Restaurant(db.Model):
     delivery_confirmation_type = db.Column(db.String(20), default='code')  # code, photo, none
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
-    
+
     # Relacionamentos
     orders = db.relationship('Order', backref='restaurant')
 
@@ -569,7 +570,7 @@ class Customer(db.Model):
 
 class Address(db.Model):
     __tablename__ = 'addresses'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
     street = db.Column(db.String(300), nullable=False)
@@ -583,7 +584,7 @@ class Address(db.Model):
     is_default = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
-    
+
     # Relacionamentos
     orders = db.relationship('Order', backref='delivery_address')
 
@@ -606,7 +607,7 @@ class Address(db.Model):
 
 class Order(db.Model):
     __tablename__ = 'orders'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)  # Praça do pedido
@@ -651,7 +652,7 @@ class Order(db.Model):
     called_platform = db.Column(db.Boolean, default=False)  # Se chamou entregadores da plataforma
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
-    
+
     # Relacionamentos
     delivery = db.relationship('Delivery', backref='order', uselist=False, cascade='all, delete-orphan')
     establishment_driver = db.relationship('EstablishmentDriver', foreign_keys=[establishment_driver_id], lazy='select')
@@ -704,7 +705,7 @@ class Order(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
-        
+
         # Incluir informações do entregador próprio se atribuído
         if self.establishment_driver:
             result['own_driver'] = {
@@ -714,7 +715,7 @@ class Order(db.Model):
                 'vehicle_type': self.establishment_driver.vehicle_type,
                 'vehicle_plate': self.establishment_driver.vehicle_plate
             }
-        
+
         return result
 
 
@@ -755,7 +756,7 @@ class DeliveryRoute(db.Model):
 
 class Delivery(db.Model):
     __tablename__ = 'deliveries'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=True)  # Nullable para entregadores próprios
@@ -799,7 +800,7 @@ class Delivery(db.Model):
 
 class Payment(db.Model):
     __tablename__ = 'payments'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
@@ -829,7 +830,7 @@ class Payment(db.Model):
 
 class Notification(db.Model):
     __tablename__ = 'notifications'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
@@ -853,7 +854,7 @@ class Notification(db.Model):
 
 class SystemConfig(db.Model):
     __tablename__ = 'system_configs'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
     config_key = db.Column(db.String(100), nullable=False)
@@ -1262,22 +1263,22 @@ class RouteSettings(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
-    
+
     # Auto-roteirização
     auto_routing_enabled = db.Column(db.Boolean, default=True)
     auto_routing_interval_min = db.Column(db.Integer, default=5)  # minutos
-    
+
     # Limites
     max_orders_auto = db.Column(db.Integer, default=6)  # máximo para auto
     max_orders_manual = db.Column(db.Integer, default=10)  # máximo para manual
     max_distance_km = db.Column(db.Numeric(5, 2), default=10.0)  # distância máxima entre pedidos
-    
+
     # Algoritmo
     direction_weight = db.Column(db.Numeric(3, 2), default=0.70)  # peso da direção (0-1)
     distance_weight = db.Column(db.Numeric(3, 2), default=0.30)  # peso da distância (0-1)
     min_time_savings_min = db.Column(db.Integer, default=10)  # mínimo de minutos economizados
     min_clusterization = db.Column(db.Numeric(3, 2), default=0.70)  # proximidade mínima (0-1)
-    
+
     # Status de pedidos para roteirização
     include_scheduled = db.Column(db.Boolean, default=False)  # incluir agendados
     scheduled_advance_min = db.Column(db.Integer, default=30)  # minutos antes do horário agendado para incluir
@@ -1285,11 +1286,11 @@ class RouteSettings(db.Model):
     include_accepted = db.Column(db.Boolean, default=True)  # incluir aceitos
     include_preparing = db.Column(db.Boolean, default=True)  # incluir em preparo
     include_ready = db.Column(db.Boolean, default=True)  # incluir prontos
-    
+
     # Notificações
     notify_admin_auto_route = db.Column(db.Boolean, default=True)
     notify_driver_auto_route = db.Column(db.Boolean, default=True)
-    
+
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -1326,22 +1327,22 @@ class EstablishmentSubscription(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
-    
+
     # Configuração da assinatura
     billing_cycle = db.Column(db.String(20), default='WEEKLY')  # WEEKLY, MONTHLY
     price_per_driver = db.Column(db.Numeric(10, 2), default=50.00)  # Preço por entregador por ciclo
     fixed_price = db.Column(db.Numeric(10, 2), default=0)  # Preço fixo por estabelecimento (opcional)
     is_active = db.Column(db.Boolean, default=True)
-    
+
     # Controle de cobrança
     last_billed_at = db.Column(db.DateTime)
     next_billing_at = db.Column(db.DateTime)
     total_billed = db.Column(db.Numeric(10, 2), default=0)
     total_paid = db.Column(db.Numeric(10, 2), default=0)
-    
+
     # Integração pagamento
     asaas_subscription_id = db.Column(db.String(100))
-    
+
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -1377,27 +1378,27 @@ class SubscriptionInvoice(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     subscription_id = db.Column(db.Integer, db.ForeignKey('establishment_subscriptions.id'), nullable=False)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
-    
+
     # Dados da fatura
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
     period_start = db.Column(db.DateTime, nullable=False)
     period_end = db.Column(db.DateTime, nullable=False)
-    
+
     # Valores
     drivers_count = db.Column(db.Integer, default=0)  # Quantidade de entregadores no período
     price_per_driver = db.Column(db.Numeric(10, 2))
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
-    
+
     # Status
     status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, OVERDUE, CANCELLED
     due_date = db.Column(db.DateTime)
     paid_at = db.Column(db.DateTime)
     payment_method = db.Column(db.String(20))
-    
+
     # Integração pagamento
     asaas_invoice_id = db.Column(db.String(100))
     payment_url = db.Column(db.String(500))
-    
+
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 

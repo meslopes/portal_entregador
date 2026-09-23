@@ -5,6 +5,7 @@ Tokens persistidos no banco de dados.
 """
 import logging
 import os
+
 import requests
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 def register_token(user_id, token, platform='web'):
     """Registra um token FCM para um usuário no banco de dados."""
     from src.models.portal_models import PushToken, db
-    
+
     existing = PushToken.query.filter_by(token=token).first()
     if existing:
         existing.user_id = user_id
@@ -22,7 +23,7 @@ def register_token(user_id, token, platform='web'):
     else:
         pt = PushToken(user_id=user_id, token=token, platform=platform)
         db.session.add(pt)
-    
+
     try:
         db.session.commit()
         logger.info(f"[Push] Token FCM registrado para user {user_id}")

@@ -3,7 +3,6 @@ Serviço Open Delivery - Padrão aberto de comunicação entre plataformas de de
 Permite receber pedidos de qualquer plataforma compatível (iFood, Rappi, etc.)
 """
 import logging
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ OPEN_DELIVERY_STATUS_MAP = {
 def parse_open_delivery_order(data):
     """
     Converte um pedido no formato Open Delivery para o formato interno.
-    
+
     Formato Open Delivery:
     {
         "id": "uuid",
@@ -48,7 +47,7 @@ def parse_open_delivery_order(data):
         payments = data.get('payments', [])
         address = data.get('deliveryAddress', {})
         coordinates = address.get('coordinates', {})
-        
+
         # Mapear pagamento
         payment_type = payments[0].get('type', 'CASH') if payments else 'CASH'
         payment_map = {
@@ -56,11 +55,11 @@ def parse_open_delivery_order(data):
             'PIX': 'PIX', 'MEAL_VOUCHER': 'CARD', 'FOOD_VOUCHER': 'CARD'
         }
         payment_method = payment_map.get(payment_type, 'CASH')
-        
+
         # Extrair telefone
         phone_data = customer.get('phone', {})
         phone = phone_data.get('number', '') if isinstance(phone_data, dict) else str(phone_data)
-        
+
         return {
             'external_id': order_id,
             'order_number': f"OD-{order_number}",
@@ -94,7 +93,7 @@ def parse_open_delivery_order(data):
 def detect_platform(data):
     """
     Detecta qual plataforma enviou o pedido baseado no formato dos dados.
-    
+
     Returns:
         str: 'IFOOD', 'OPEN_DELIVERY', ou 'UNKNOWN'
     """

@@ -1,11 +1,25 @@
 
+import contextlib
 import logging
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from werkzeug.security import check_password_hash, generate_password_hash
-from flask import request, jsonify
-from src.models.portal_models import db, User, Driver, Customer, Restaurant, Tenant, UserType, UserStatus, VehicleType
-from flask import Blueprint
 from datetime import datetime, timezone
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from src.models.portal_models import (
+    Customer,
+    Driver,
+    Notification,
+    NotificationType,
+    Restaurant,
+    Tenant,
+    User,
+    UserStatus,
+    UserType,
+    VehicleType,
+    db,
+)
 from src.utils.rate_limit import login_limit as login_rate_limit
 
 logger = logging.getLogger(__name__)
@@ -18,6 +32,7 @@ def _generate_confirmation_token(user_id):
     import hashlib
     import hmac as hmac_mod
     import os
+
     from flask import current_app
     secret = os.environ.get('JWT_SECRET_KEY') or current_app.config.get('SECRET_KEY', 'fallback-dev-only')
     sig = hmac_mod.new(
@@ -113,7 +128,7 @@ def check_email():
     email = request.args.get('email', '').strip().lower()
     if not email or '@' not in email:
         return jsonify({'available': True}), 200
-    
+
     exists = User.query.filter(User.email.ilike(email)).first()
     return jsonify({'available': not bool(exists)}), 200
 
@@ -142,10 +157,10 @@ def register_push_token_auth():
 @auth_bp.route('/register', methods=['POST'])
 def register():
     try:
-        from src.utils.validation import validate_request, REGISTER_DRIVER_SCHEMA, ValidationError
-        
+        from src.utils.validation import REGISTER_DRIVER_SCHEMA, ValidationError, validate_request
+
         data = request.get_json() or {}
-        
+
         # Validar entrada
         try:
             data = validate_request(REGISTER_DRIVER_SCHEMA, data)
@@ -207,10 +222,8 @@ def register():
 
         if data.get('birth_date'):
             from datetime import datetime as dt
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 user.birth_date = dt.strptime(data['birth_date'], '%Y-%m-%d').date()
-            except (ValueError, TypeError):
-                pass
 
         db.session.add(user)
         db.session.flush()
@@ -243,10 +256,8 @@ def register():
 
         if data.get('license_expiry_date'):
             from datetime import datetime as dt
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 driver.license_expiry_date = dt.strptime(data['license_expiry_date'], '%Y-%m-%d').date()
-            except (ValueError, TypeError):
-                pass
 
         db.session.add(driver)
         db.session.commit()
@@ -492,16 +503,16 @@ def confirm_email():
 @login_rate_limit
 def login():
     try:
-        from src.utils.validation import validate_request, LOGIN_SCHEMA, ValidationError
-        
+        from src.utils.validation import LOGIN_SCHEMA, ValidationError, validate_request
+
         data = request.get_json() or {}
-        
+
         # Validar entrada
         try:
             data = validate_request(LOGIN_SCHEMA, data)
         except ValidationError as e:
             return jsonify({'error': '; '.join(e.errors)}), 400
-        
+
         email = data['email']
         password = data['password']
         tenant_slug = data.get('tenant_slug')  # Opcional: identificar tenant
@@ -679,10 +690,11 @@ def protected():
 def enable_2fa():
     """Gera um secret TOTP e retorna como QR code (base64) para o admin escanear."""
     try:
+        import base64
+        import io
+
         import pyotp
         import qrcode
-        import io
-        import base64
 
         user_id = int(get_jwt_identity())
         user = db.session.get(User, user_id)

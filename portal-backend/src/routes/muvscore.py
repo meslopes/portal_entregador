@@ -1,18 +1,15 @@
-# -*- coding: utf-8 -*-
 """
 MuvScore API - Endpoints de gamificação e ranking
 """
 
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime
-from src.models.portal_models import (
-    db, User, Driver, DriverWeeklyScore
-)
-from src.utils.muvscore import (
-    get_driver_current_score, get_weekly_ranking, get_driver_points_history
-)
 import logging
+from datetime import datetime
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+from src.models.portal_models import User, db
+from src.utils.muvscore import get_driver_current_score, get_driver_points_history, get_weekly_ranking
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +34,6 @@ def get_my_score():
         score = get_driver_current_score(driver)
 
         # Buscar posição no ranking
-        from src.models.portal_models import DriverWeeklyScore
         from src.utils.muvscore import get_levels
         levels = get_levels()
         level_info = levels.get(score.get('level', 'bronze'), levels.get('bronze', {}))
@@ -173,7 +169,6 @@ def get_my_rates():
 def admin_ranking():
     """Ranking completo para o admin (todos os entregadores)"""
     try:
-        from src.routes.admin import admin_required
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
 
@@ -395,8 +390,9 @@ def process_weekly_pool():
         result = distribute_weekly_rewards(user.tenant_id)
 
         # Creditar valores na carteira dos entregadores
-        from src.models.portal_models import Driver
         from decimal import Decimal
+
+        from src.models.portal_models import Driver
 
         credited = 0
         for reward in result.get('rewards', []):

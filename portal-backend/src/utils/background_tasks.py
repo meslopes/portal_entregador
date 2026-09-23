@@ -3,10 +3,10 @@ Background task processor for expired offers and scheduled orders.
 Runs in daemon threads, executing periodically.
 Uses file-based locking to prevent duplicate execution across instances.
 """
-import threading
-import time
 import logging
 import os
+import threading
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def acquire_lock(lock_name):
     os.makedirs(LOCK_DIR, exist_ok=True)
     lock_path = os.path.join(LOCK_DIR, f'{lock_name}.lock')
     try:
-        lock_file = open(lock_path, 'w')
+        lock_file = open(lock_path, 'w')  # noqa: SIM115 — lock file must stay open
         if HAS_FCNTL:
             fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
         else:
@@ -36,7 +36,7 @@ def acquire_lock(lock_name):
         lock_file.write(str(os.getpid()))
         lock_file.flush()
         return lock_file
-    except (IOError, OSError):
+    except OSError:
         return None
 
 
@@ -56,7 +56,7 @@ def release_lock(lock_file):
 
 def start_background_tasks(app):
     """Start background processing tasks using daemon threads with locking."""
-    
+
     def run_expired_offers():
         """Process expired offers every 30 seconds."""
         # Aguardar30s antes de iniciar para garantir que o banco está pronto
@@ -81,7 +81,7 @@ def start_background_tasks(app):
             else:
                 logger.debug("[BG_TASK] expired_offers lock held by another process, skipping")
             time.sleep(30)
-    
+
     def run_scheduled_orders():
         """Process scheduled orders every 60 seconds."""
         logger.info("[BG_TASK] Scheduled orders processor waiting 45s for DB readiness...")
@@ -104,7 +104,7 @@ def start_background_tasks(app):
             else:
                 logger.debug("[BG_TASK] scheduled_orders lock held by another process, skipping")
             time.sleep(60)
-    
+
     def run_auto_routing():
         """Run auto-routing analysis every 5 minutes."""
         logger.info("[BG_TASK] Auto-routing processor waiting 60s for DB readiness...")
@@ -115,12 +115,12 @@ def start_background_tasks(app):
             if lock:
                 try:
                     with app.app_context():
-                        from src.services.auto_routing import run_auto_routing
                         from src.models.portal_models import RouteSettings
-                        
+                        from src.services.auto_routing import run_auto_routing
+
                         # Get all tenants with auto-routing enabled
                         settings_list = RouteSettings.query.filter_by(auto_routing_enabled=True).all()
-                        
+
                         for settings in settings_list:
                             result = run_auto_routing(settings.tenant_id)
                             if result['status'] == 'created':
@@ -134,7 +134,7 @@ def start_background_tasks(app):
                     release_lock(lock)
             else:
                 logger.debug("[BG_TASK] auto_routing lock held by another process, skipping")
-            
+
             # Wait for configured interval (default 5 minutes)
             try:
                 with app.app_context():
@@ -143,9 +143,9 @@ def start_background_tasks(app):
                     interval = (settings.auto_routing_interval_min if settings else 5) * 60
             except Exception:
                 interval = 300
-            
+
             time.sleep(interval)
-    
+
     # Daemon threads die when main process exits
     t1 = threading.Thread(target=run_expired_offers, daemon=True, name="bg-expired-offers")
     t2 = threading.Thread(target=run_scheduled_orders, daemon=True, name="bg-scheduled-orders")
@@ -153,5 +153,5 @@ def start_background_tasks(app):
     t1.start()
     t2.start()
     t3.start()
-    
+
     logger.info("[BG_TASK] Background task threads started (with file-based locking)")

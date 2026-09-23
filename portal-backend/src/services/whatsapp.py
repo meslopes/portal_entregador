@@ -2,9 +2,8 @@
 Servico de integracao com WhatsApp Business API.
 Envia notificacoes de pedidos, atualizacoes de status e mensagens.
 """
+
 import requests
-import json
-from datetime import datetime
 
 
 class WhatsAppService:
@@ -18,11 +17,11 @@ class WhatsAppService:
     def _get_config(self):
         """Busca configuracao do WhatsApp do SystemConfig"""
         from src.models.portal_models import SystemConfig
-        
+
         if not self.api_token:
             config = SystemConfig.query.filter_by(config_key='whatsapp_api_token').first()
             self.api_token = config.config_value if config else None
-        
+
         if not self.phone_number_id:
             config = SystemConfig.query.filter_by(config_key='whatsapp_phone').first()
             self.phone_number_id = config.config_value if config else None
@@ -74,7 +73,7 @@ class WhatsAppService:
         }
 
         message = messages.get(status, f"Atualização do pedido #{order_number}: {status}")
-        
+
         if details:
             message += f"\n\n{details}"
 
@@ -130,7 +129,7 @@ class WhatsAppService:
         )
         if proof_url:
             message += f"\n\nFoto da entrega: {proof_url}"
-        
+
         return self.send_message(phone, message)
 
 

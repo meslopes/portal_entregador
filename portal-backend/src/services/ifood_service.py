@@ -6,10 +6,11 @@ Suporta dois ambientes:
 - Sandbox: https://sandbox-api.ifood.com.br (testes)
 - Produção: https://merchant-api.ifood.com.br (real)
 """
-import os
-import requests
 import logging
+import os
 from datetime import datetime, timedelta, timezone
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ def get_environment_info():
 def authenticate(client_id, client_secret):
     """
     Autentica com o iFood usando OAuth 2.0 (Client Credentials).
-    
+
     Returns:
         dict com access_token, expires_in, ou erro
     """
@@ -80,7 +81,7 @@ def authenticate(client_id, client_secret):
             timeout=30
         )
         data = response.json()
-        
+
         if response.status_code == 200:
             logger.info("Autenticação iFood bem-sucedida")
             return {
@@ -112,7 +113,7 @@ def refresh_access_token(refresh_token, client_id, client_secret):
             timeout=30
         )
         data = response.json()
-        
+
         if response.status_code == 200:
             return {
                 'success': True,
@@ -128,7 +129,7 @@ def refresh_access_token(refresh_token, client_id, client_secret):
 def confirm_order(access_token, order_id):
     """
     Confirma um pedido no iFood (aceite pelo estabelecimento).
-    
+
     Endpoint: PATCH /order/v1.0/{orderId}/confirm
     """
     try:
@@ -138,7 +139,7 @@ def confirm_order(access_token, order_id):
             headers=get_auth_headers(access_token),
             timeout=30
         )
-        
+
         if response.status_code in [200, 202, 204]:
             logger.info(f"Pedido iFood {order_id} confirmado")
             return {'success': True}
@@ -154,7 +155,7 @@ def confirm_order(access_token, order_id):
 def cancel_order(access_token, order_id, reason_code='OTHER', reason_description='Cancelado pelo estabelecimento'):
     """
     Cancela um pedido no iFood.
-    
+
     Endpoint: PATCH /order/v1.0/{orderId}/cancel
     """
     try:
@@ -171,7 +172,7 @@ def cancel_order(access_token, order_id, reason_code='OTHER', reason_description
             json=payload,
             timeout=30
         )
-        
+
         if response.status_code in [200, 202, 204]:
             logger.info(f"Pedido iFood {order_id} cancelado")
             return {'success': True}
@@ -187,9 +188,9 @@ def cancel_order(access_token, order_id, reason_code='OTHER', reason_description
 def update_status(access_token, order_id, status):
     """
     Atualiza o status de um pedido no iFood.
-    
+
     Status válidos: DISPATCHED, DELIVERED
-    
+
     Endpoint: PATCH /order/v1.0/{orderId}/status/{status}
     """
     try:
@@ -199,7 +200,7 @@ def update_status(access_token, order_id, status):
             headers=get_auth_headers(access_token),
             timeout=30
         )
-        
+
         if response.status_code in [200, 202, 204]:
             logger.info(f"Status do pedido iFood {order_id} atualizado para {status}")
             return {'success': True}
@@ -215,7 +216,7 @@ def update_status(access_token, order_id, status):
 def get_order_details(access_token, order_id):
     """
     Busca detalhes de um pedido no iFood.
-    
+
     Endpoint: GET /order/v1.0/{orderId}
     """
     try:
@@ -225,7 +226,7 @@ def get_order_details(access_token, order_id):
             headers=get_auth_headers(access_token),
             timeout=30
         )
-        
+
         if response.status_code == 200:
             return {'success': True, 'data': response.json()}
         return {'success': False, 'error': f'Erro HTTP {response.status_code}'}
@@ -236,7 +237,7 @@ def get_order_details(access_token, order_id):
 def parse_ifood_order(ifood_data):
     """
     Converte um pedido do formato iFood (Open Delivery) para o formato interno.
-    
+
     Formato iFood real:
     {
         "id": "uuid",
@@ -261,7 +262,7 @@ def parse_ifood_order(ifood_data):
         payments = ifood_data.get('payments', [])
         address = ifood_data.get('deliveryAddress', {})
         coordinates = address.get('coordinates', {})
-        
+
         # Mapear método de pagamento
         payment_type = payments[0].get('type', 'CASH') if payments else 'CASH'
         payment_map = {
@@ -273,11 +274,11 @@ def parse_ifood_order(ifood_data):
             'FOOD_VOUCHER': 'CARD'
         }
         payment_method = payment_map.get(payment_type, 'CASH')
-        
+
         # Extrair telefone
         phone_data = customer.get('phone', {})
         phone = phone_data.get('number', '') if isinstance(phone_data, dict) else str(phone_data)
-        
+
         return {
             'external_id': order_id,
             'order_number': f"IFOOD-{order_number}",
@@ -346,28 +347,28 @@ IFOOD_SANDBOX_MERCHANT = {
 def generate_sandbox_order(order_number=None):
     """
     Gera um pedido de teste no formato real do iFood sandbox.
-    
+
     Baseado no formato Open Delivery que o iFood envia via webhook.
     Usa a loja de teste configurada no portal de desenvolvedores.
-    
+
     Args:
         order_number: número do pedido (auto-gerado se None)
-    
+
     Returns:
         dict no formato do iFood Open Delivery
     """
-    import uuid
     import random
-    
+    import uuid
+
     if order_number is None:
         order_number = f"{random.randint(100000, 999999)}"
-    
+
     order_id = str(uuid.uuid4())
-    
+
     # Coordenadas de Canoas/RS (região de teste)
     lat = -29.9150 + random.uniform(-0.01, 0.01)
     lng = -51.1780 + random.uniform(-0.01, 0.01)
-    
+
     # Itens de teste variados
     test_items = [
         [
@@ -386,18 +387,18 @@ def generate_sandbox_order(order_number=None):
             {'name': 'Leite Condensado', 'quantity': 1, 'unitPrice': 3.00, 'externalCode': 'AC004'},
         ],
     ]
-    
+
     items = random.choice(test_items)
     subtotal = sum(i['unitPrice'] * i['quantity'] for i in items)
     delivery_fee = round(random.uniform(5.00, 15.00), 2)
     total = subtotal + delivery_fee
-    
+
     # Nomes de clientes de teste
     customer_names = [
-        'Mauro Lopes', 'Ana Silva', 'Carlos Oliveira', 
+        'Mauro Lopes', 'Ana Silva', 'Carlos Oliveira',
         'Maria Santos', 'Pedro Souza', 'Julia Costa'
     ]
-    
+
     # Endereços de teste em Canoas/RS
     test_addresses = [
         {'street': 'Rua das Flores, 123', 'neighborhood': 'Centro', 'city': 'Canoas', 'state': 'RS'},
@@ -405,10 +406,10 @@ def generate_sandbox_order(order_number=None):
         {'street': 'Rua Marechal Deodoro, 789', 'neighborhood': 'Centro', 'city': 'Canoas', 'state': 'RS'},
         {'street': 'Rua Sinimbu, 321', 'neighborhood': 'Harmonia', 'city': 'Canoas', 'state': 'RS'},
     ]
-    
+
     address = random.choice(test_addresses)
     customer_name = random.choice(customer_names)
-    
+
     # Formato real do iFood Open Delivery
     return {
         'id': order_id,

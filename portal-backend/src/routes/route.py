@@ -2,19 +2,30 @@
 Endpoints de roteirização para entregadores próprios e da plataforma.
 Permite criar rotas com múltiplos pedidos e otimizar a ordem de entrega.
 """
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+import logging
+from datetime import datetime, timezone
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
 from src.models.portal_models import (
-    db, Order, OrderStatus, EstablishmentDriver, Restaurant, Driver,
-    OwnDriverRoute, OwnDriverStop, OwnDriverEarning,
-    PlatformDriverRoute, PlatformDriverStop,
-    User, UserType
+    Driver,
+    EstablishmentDriver,
+    Order,
+    OrderStatus,
+    OwnDriverEarning,
+    OwnDriverRoute,
+    OwnDriverStop,
+    PlatformDriverRoute,
+    PlatformDriverStop,
+    Restaurant,
+    User,
+    UserType,
+    db,
 )
 from src.routes.own_driver import own_driver_required
-from src.utils.tenant import get_current_tenant_id, get_current_user
 from src.utils.geo import haversine_distance
-from datetime import datetime, timezone
-import logging
+from src.utils.tenant import get_current_tenant_id, get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +36,7 @@ def optimize_stop_order(stops):
     """
     Otimiza a ordem das paradas usando algoritmo do vizinho mais próximo.
     Retorna a lista de paradas reordenadas.
-    
+
     Lógica:
     1. Todas as coletas primeiro (no restaurante)
     2. Entregas ordenadas por proximidade (vizinho mais próximo)
@@ -34,40 +45,39 @@ def optimize_stop_order(stops):
         for i, stop in enumerate(stops):
             stop['stop_order'] = i + 1
         return stops
-    
+
     # Separar pickups e deliveries
     pickups = [s for s in stops if s['stop_type'] == 'PICKUP']
     deliveries = [s for s in stops if s['stop_type'] == 'DELIVERY']
-    
+
     if len(deliveries) <= 1:
         # Se tem 0 ou 1 entrega, não precisa otimizar
         optimized = pickups + deliveries
         for i, stop in enumerate(optimized):
             stop['stop_order'] = i + 1
         return optimized
-    
+
     # Otimizar ordem das entregas usando vizinho mais próximo
     # Começar do restaurante (último pickup ou primeiro ponto)
     start_lat = pickups[0]['latitude'] if pickups else None
     start_lng = pickups[0]['longitude'] if pickups else None
-    
+
     # Se não tem coordenadas do restaurante, usar primeira entrega como ponto de partida
-    if not start_lat or not start_lng:
-        if deliveries:
-            start_lat = deliveries[0]['latitude']
-            start_lng = deliveries[0]['longitude']
-    
+    if (not start_lat or not start_lng) and deliveries:
+        start_lat = deliveries[0]['latitude']
+        start_lng = deliveries[0]['longitude']
+
     # Algoritmo do vizinho mais próximo
     optimized_deliveries = []
     remaining = list(deliveries)
     current_lat = start_lat
     current_lng = start_lng
-    
+
     while remaining:
         # Encontrar a entrega mais próxima do ponto atual
         nearest_idx = 0
         nearest_dist = float('inf')
-        
+
         for i, stop in enumerate(remaining):
             if stop['latitude'] and stop['longitude'] and current_lat and current_lng:
                 dist = haversine_distance(
@@ -76,24 +86,24 @@ def optimize_stop_order(stops):
                 )
             else:
                 dist = 0  # Se não tem coordenadas, manter ordem original
-            
+
             if dist < nearest_dist:
                 nearest_dist = dist
                 nearest_idx = i
-        
+
         # Adicionar a mais próxima à lista otimizada
         nearest_stop = remaining.pop(nearest_idx)
         optimized_deliveries.append(nearest_stop)
         current_lat = nearest_stop['latitude']
         current_lng = nearest_stop['longitude']
-    
+
     # Combinar: pickups primeiro, depois deliveries otimizadas
     optimized = pickups + optimized_deliveries
-    
+
     # Reatribuir ordem
     for i, stop in enumerate(optimized):
         stop['stop_order'] = i + 1
-    
+
     return optimized
 
 
@@ -102,7 +112,7 @@ def auto_create_or_update_route(establishment_driver_id, restaurant_id):
     DESABILITADO - Rotas agora são criadas manualmente pelo estabelecimento.
     Mantido para compatibilidade mas não faz nada.
     """
-    logger.info(f"[ROUTE-AUTO] Criação automática desabilitada - rotas são manuais")
+    logger.info("[ROUTE-AUTO] Criação automática desabilitada - rotas são manuais")
     return None
 
 
@@ -110,11 +120,11 @@ def _update_route_stats(route):
     """Atualiza distância e tempo estimado da rota"""
     try:
         from src.services.geocoding import get_route_distance_with_fallback
-        
+
         stops = sorted(route.stops, key=lambda s: s.stop_order)
         total_distance = 0
         total_duration = 0
-        
+
         for i in range(len(stops) - 1):
             if stops[i].latitude and stops[i].longitude and stops[i+1].latitude and stops[i+1].longitude:
                 route_info = get_route_distance_with_fallback(
@@ -123,10 +133,10 @@ def _update_route_stats(route):
                 )
                 total_distance += route_info['distance_km']
                 total_duration += route_info['duration_min']
-        
+
         route.total_distance_km = round(total_distance, 2)
         route.total_duration_min = round(total_duration, 1)
-        
+
     except Exception as e:
         logger.error(f"[ROUTE-AUTO] Erro ao calcular stats da rota: {e}")
 
@@ -145,7 +155,7 @@ def create_route():
             return jsonify({'error': 'Dados não fornecidos'}), 400
 
         order_ids = data.get('order_ids', [])
-        
+
         if not order_ids:
             return jsonify({'error': 'Pedidos são obrigatórios'}), 400
 
@@ -201,7 +211,7 @@ def create_route():
 
         # Otimizar ordem das paradas
         optimized_stops = optimize_stop_order(stops_data)
-        
+
         # Atualizar ordem no banco
         for i, stop_data in enumerate(optimized_stops):
             stop = OwnDriverStop.query.filter_by(
@@ -239,7 +249,7 @@ def assign_driver_to_route(route_id):
 
         data = request.get_json()
         driver_id = data.get('driver_id')
-        
+
         if not driver_id:
             return jsonify({'error': 'ID do entregador é obrigatório'}), 400
 
@@ -254,29 +264,29 @@ def assign_driver_to_route(route_id):
         # Atribuir entregador à rota
         route.establishment_driver_id = driver_id
         route.status = 'PENDING'  # Aguardando entregador aceitar
-        
+
         # Atribuir entregador a todos os pedidos da rota e calcular ganhos
         restaurant = Restaurant.query.get(route.restaurant_id)
-        
+
         for stop in route.stops:
             order = Order.query.get(stop.order_id)
             if order:
                 order.assigned_to_own_driver = True
                 order.establishment_driver_id = driver_id
                 order.own_driver_route_id = route.id
-                
+
                 # Calcular ganho do entregador para este pedido
                 if restaurant:
                     payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
                     delivery_fee = float(order.delivery_fee or 0)
                     distance_km = 0
-                    
+
                     if order.delivery_address and order.delivery_address.latitude and restaurant.latitude:
                         distance_km = haversine_distance(
                             float(restaurant.latitude), float(restaurant.longitude),
                             float(order.delivery_address.latitude), float(order.delivery_address.longitude)
                         )
-                    
+
                     # Calcular valor baseado no tipo de pagamento
                     if payment_type == 'PER_DELIVERY':
                         driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
@@ -296,13 +306,10 @@ def assign_driver_to_route(route_id):
                             OwnDriverEarning.establishment_driver_id == driver_id,
                             OwnDriverEarning.created_at >= today_start
                         ).count()
-                        if deliveries_today >= max_deliveries:
-                            driver_earning = delivery_value
-                        else:
-                            driver_earning = 0
+                        driver_earning = delivery_value if deliveries_today >= max_deliveries else 0
                     else:
                         driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
-                    
+
                     # Criar registro de ganho
                     earning = OwnDriverEarning(
                         restaurant_id=restaurant.id,
@@ -314,14 +321,14 @@ def assign_driver_to_route(route_id):
                         distance_km=distance_km
                     )
                     db.session.add(earning)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'Entregador {driver.name} atribuído à rota',
             'route': route.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao atribuir entregador à rota: {e}")
@@ -339,7 +346,7 @@ def add_orders_to_route(route_id):
 
         data = request.get_json()
         order_ids = data.get('order_ids', [])
-        
+
         if not order_ids:
             return jsonify({'error': 'Pedidos são obrigatórios'}), 400
 
@@ -356,7 +363,7 @@ def add_orders_to_route(route_id):
         for order in orders:
             if order.restaurant_id != route.restaurant_id:
                 return jsonify({'error': f'Pedido {order.order_number} não é do mesmo restaurante da rota'}), 400
-            
+
             # Verificar se já está em outra rota ativa
             if order.own_driver_route_id and order.own_driver_route_id != route_id:
                 existing_route = OwnDriverRoute.query.get(order.own_driver_route_id)
@@ -373,13 +380,13 @@ def add_orders_to_route(route_id):
                 'longitude': float(stop.longitude) if stop.longitude else None,
                 'address': stop.address
             })
-        
+
         for order in orders:
             # Verificar se já está na rota
             existing = OwnDriverStop.query.filter_by(route_id=route_id, order_id=order.id).first()
             if existing:
                 continue
-            
+
             if order.delivery_address:
                 delivery_stop = OwnDriverStop(
                     route_id=route.id,
@@ -398,28 +405,28 @@ def add_orders_to_route(route_id):
                     'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
                     'address': order.delivery_address.street
                 })
-                
+
                 # Vincular pedido à rota
                 order.own_driver_route_id = route.id
-                
+
                 # Se a rota já tem entregador, atribuir e calcular ganhos
                 if route.establishment_driver_id:
                     order.assigned_to_own_driver = True
                     order.establishment_driver_id = route.establishment_driver_id
-                    
+
                     restaurant = Restaurant.query.get(route.restaurant_id)
                     if restaurant:
                         # Calcular ganho (mesmo cálculo acima)
                         payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
                         delivery_fee = float(order.delivery_fee or 0)
                         distance_km = 0
-                        
+
                         if order.delivery_address and order.delivery_address.latitude and restaurant.latitude:
                             distance_km = haversine_distance(
                                 float(restaurant.latitude), float(restaurant.longitude),
                                 float(order.delivery_address.latitude), float(order.delivery_address.longitude)
                             )
-                        
+
                         if payment_type == 'PER_DELIVERY':
                             driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
                         elif payment_type == 'PER_KM':
@@ -428,7 +435,7 @@ def add_orders_to_route(route_id):
                             driver_earning = delivery_fee * (float(restaurant.own_driver_percentage or 70.0) / 100)
                         else:
                             driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
-                        
+
                         earning = OwnDriverEarning(
                             restaurant_id=restaurant.id,
                             establishment_driver_id=route.establishment_driver_id,
@@ -442,7 +449,7 @@ def add_orders_to_route(route_id):
 
         # Re-otimizar paradas
         optimized_stops = optimize_stop_order(stops_data)
-        
+
         for i, stop_data in enumerate(optimized_stops):
             stop = OwnDriverStop.query.filter_by(
                 route_id=route.id,
@@ -450,17 +457,17 @@ def add_orders_to_route(route_id):
             ).first()
             if stop:
                 stop.stop_order = i + 1
-        
+
         # Atualizar distância e tempo
         _update_route_stats(route)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': f'{len(orders)} pedido(s) adicionado(s) à rota',
             'route': route.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao adicionar pedidos à rota: {e}")
@@ -497,7 +504,7 @@ def delete_route(route_id):
         # Excluir paradas e rota
         for stop in route.stops:
             db.session.delete(stop)
-        
+
         db.session.delete(route)
         db.session.commit()
 
@@ -564,7 +571,7 @@ def remove_order_from_route(route_id):
         db.session.commit()
 
         return jsonify({
-            'message': f'Pedido removido da rota',
+            'message': 'Pedido removido da rota',
             'route': route.to_dict() if remaining_stops else None
         }), 200
 
@@ -741,7 +748,7 @@ def activate_route(route_id):
             })
 
         optimized_stops = optimize_stop_order(stops_data)
-        
+
         for stop_data in optimized_stops:
             if 'stop_id' in stop_data:
                 stop = OwnDriverStop.query.get(stop_data['stop_id'])
@@ -758,7 +765,7 @@ def activate_route(route_id):
         db.session.commit()
 
         return jsonify({
-            'message': f'Rota ativada',
+            'message': 'Rota ativada',
             'route': route.to_dict()
         }), 200
 
@@ -773,28 +780,28 @@ def accept_route(route_id):
     """Entregador aceita uma rota"""
     try:
         from src.routes.own_driver import get_own_driver_from_token
-        
+
         own_driver = get_own_driver_from_token()
         if not own_driver:
             return jsonify({'error': 'Autenticação necessária'}), 401
-        
+
         route = OwnDriverRoute.query.get(route_id)
         if not route:
             return jsonify({'error': 'Rota não encontrada'}), 404
-        
+
         # Verificar se a rota tem entregador atribuído
         if not route.establishment_driver_id:
             return jsonify({'error': 'Esta rota ainda não tem entregador atribuído'}), 400
-        
+
         if route.establishment_driver_id != own_driver.id:
             return jsonify({'error': 'Esta rota não foi atribuída a você'}), 403
-        
+
         if route.status != 'PENDING':
             return jsonify({'error': 'Rota já foi aceita ou rejeitada'}), 400
-        
+
         route.status = 'ACTIVE'
         route.started_at = datetime.now(timezone.utc)
-        
+
         # Re-otimizar paradas
         stops_data = []
         for stop in route.stops:
@@ -806,29 +813,29 @@ def accept_route(route_id):
                 'longitude': float(stop.longitude) if stop.longitude else None,
                 'address': stop.address
             })
-        
+
         optimized_stops = optimize_stop_order(stops_data)
-        
+
         for stop_data in optimized_stops:
             if 'stop_id' in stop_data:
                 stop = OwnDriverStop.query.get(stop_data['stop_id'])
                 if stop:
                     stop.stop_order = stop_data['stop_order']
-        
+
         # Atualizar status dos pedidos
         for stop in route.stops:
             order = Order.query.get(stop.order_id)
             if order and order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
                 order.status = OrderStatus.ACCEPTED
                 order.accepted_at = datetime.now(timezone.utc)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Rota aceita com sucesso',
             'route': route.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao aceitar rota {route_id}: {e}", exc_info=True)
@@ -840,38 +847,38 @@ def reject_route(route_id):
     """Entregador rejeita uma rota"""
     try:
         from src.routes.own_driver import get_own_driver_from_token
-        
+
         own_driver = get_own_driver_from_token()
         if not own_driver:
             return jsonify({'error': 'Autenticação necessária'}), 401
-        
+
         route = OwnDriverRoute.query.get(route_id)
         if not route:
             return jsonify({'error': 'Rota não encontrada'}), 404
-        
+
         if route.establishment_driver_id != own_driver.id:
             return jsonify({'error': 'Esta rota não foi atribuída a você'}), 403
-        
+
         if route.status != 'PENDING':
             return jsonify({'error': 'Rota já foi aceita ou rejeitada'}), 400
-        
+
         # Marcar rota como rejeitada
         route.status = 'REJECTED'
-        
+
         # Desvincular pedidos da rota
         for stop in route.stops:
             order = Order.query.get(stop.order_id)
             if order:
                 order.own_driver_route_id = None
                 # Não desvincular o entregador - estabelecimento pode reatribuir
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Rota rejeitada. O estabelecimento será notificado.',
             'route': route.to_dict()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao rejeitar rota: {e}")
@@ -883,13 +890,14 @@ def complete_stop(route_id):
     """Marca uma parada como concluída (aceita JWT regular ou own_driver_token)"""
     try:
         # Verificar autenticação - aceitar JWT regular ou own_driver_token
-        from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+        from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
+
         from src.routes.own_driver import get_own_driver_from_token
-        
+
         # Tentar JWT regular primeiro
         user = None
         own_driver = None
-        
+
         try:
             verify_jwt_in_request(optional=True)
             user_id = get_jwt_identity()
@@ -897,16 +905,16 @@ def complete_stop(route_id):
                 user = User.query.get(int(user_id))
         except Exception:
             pass
-        
+
         # Se não tem JWT regular, tentar own_driver_token
         if not user:
             own_driver = get_own_driver_from_token()
             if not own_driver:
                 return jsonify({'error': 'Autenticação necessária'}), 401
-        
+
         data = request.get_json()
         stop_id = data.get('stop_id')
-        
+
         if not stop_id:
             return jsonify({'error': 'ID da parada é obrigatório'}), 400
 
@@ -926,7 +934,7 @@ def complete_stop(route_id):
         # Verificar se todas as paradas foram concluídas
         route = OwnDriverRoute.query.get(route_id)
         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
-        
+
         if all_completed:
             route.status = 'COMPLETED'
             route.completed_at = datetime.now(timezone.utc)
@@ -966,7 +974,7 @@ def get_active_routes():
     try:
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        
+
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
@@ -1021,7 +1029,7 @@ def create_platform_route():
 
         driver_id = data.get('driver_id')
         order_ids = data.get('order_ids', [])
-        
+
         if not driver_id or not order_ids:
             return jsonify({'error': 'Entregador e pedidos são obrigatórios'}), 400
 
@@ -1107,7 +1115,7 @@ def create_platform_route():
 
         # Otimizar ordem das paradas
         optimized_stops = optimize_stop_order(stops)
-        
+
         # Atualizar ordem no banco
         for i, stop_data in enumerate(optimized_stops):
             stop = PlatformDriverStop.query.filter_by(
@@ -1146,7 +1154,7 @@ def complete_platform_stop(route_id):
     try:
         data = request.get_json()
         stop_id = data.get('stop_id')
-        
+
         if not stop_id:
             return jsonify({'error': 'ID da parada é obrigatório'}), 400
 
@@ -1160,7 +1168,7 @@ def complete_platform_stop(route_id):
         # Verificar se todas as paradas foram concluídas
         route = PlatformDriverRoute.query.get(route_id)
         all_completed = all(s.status == 'COMPLETED' for s in route.stops)
-        
+
         if all_completed:
             route.status = 'COMPLETED'
             route.completed_at = datetime.now(timezone.utc)
@@ -1185,16 +1193,16 @@ def get_active_platform_routes():
     try:
         user = get_current_user()
         tenant_id = get_current_tenant_id()
-        
+
         query = PlatformDriverRoute.query.filter(
             PlatformDriverRoute.status == 'ACTIVE'
         )
-        
+
         # Filtrar por tenant se admin
         if user.user_type == UserType.ADMIN and tenant_id:
             restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
             query = query.filter(PlatformDriverRoute.restaurant_id.in_(restaurant_ids))
-        
+
         routes = query.all()
 
         return jsonify({'routes': [r.to_dict() for r in routes]}), 200

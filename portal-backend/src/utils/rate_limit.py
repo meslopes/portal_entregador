@@ -3,6 +3,7 @@ Rate Limiting - Proteção contra abuso de endpoints
 Usar: from src.utils.rate_limit import limiter, login_limit
 """
 import os
+
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 

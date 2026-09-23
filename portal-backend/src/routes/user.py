@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from src.models.portal_models import User, Driver, Customer, Restaurant, db
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+from src.models.portal_models import Customer, User, db
 from src.utils.restaurant import find_restaurant_by_name
 
 user_bp = Blueprint('user', __name__)

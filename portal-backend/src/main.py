@@ -1,24 +1,24 @@
 import os
 import sys
+
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, send_from_directory
-from flask_jwt_extended import JWTManager, jwt_required
-from flask_cors import CORS
 from dotenv import load_dotenv
+from flask import Flask, send_from_directory
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager, jwt_required
 
 # Carrega variáveis de ambiente
 load_dotenv()
 
 # Importa modelos e rotas
 from src.models.portal_models import db
+from src.routes.admin import admin_bp
 from src.routes.auth import auth_bp
 from src.routes.driver import driver_bp
 from src.routes.order import order_bp
-from src.routes.admin import admin_bp
 from src.routes.webhooks import webhook_bp
-
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.url_map.strict_slashes = False
@@ -40,6 +40,7 @@ app.config['JWT_SECRET_KEY'] = jwt_secret_key or 'dev-jwt-secret-key-local-nao-u
 
 # Token JWT expira em 4 horas
 from datetime import timedelta
+
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=4)
 
 # Configuração do banco de dados
@@ -53,6 +54,7 @@ jwt = JWTManager(app)
 
 # Rate Limiting: protege contra abuso
 from src.utils.rate_limit import limiter
+
 limiter.init_app(app)
 
 # CORS: permissivo em desenvolvimento (testes em rede local), restritivo em produção
@@ -83,30 +85,39 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 
 from src.routes.user import user_bp
+
 app.register_blueprint(user_bp, url_prefix='/api/user')
 
 from src.routes.bonus import bonus_bp
+
 app.register_blueprint(bonus_bp, url_prefix='/api/bonus')
 
 from src.routes.muvscore import muvscore_bp
+
 app.register_blueprint(muvscore_bp, url_prefix='/api/muvscore')
 
 from src.routes.platform import platform_bp
+
 app.register_blueprint(platform_bp, url_prefix='/api/platform')
 
 from src.routes.own_driver import own_driver_bp
+
 app.register_blueprint(own_driver_bp)
 
 from src.routes.route_settings import route_settings_bp
+
 app.register_blueprint(route_settings_bp)
 
 from src.routes.platform_routes import platform_routes_bp
+
 app.register_blueprint(platform_routes_bp)
 
 from src.routes.route import route_bp
+
 app.register_blueprint(route_bp)
 
 from src.routes.finance import finance_bp
+
 app.register_blueprint(finance_bp)
 
 # Inicializa banco de dados
@@ -226,9 +237,9 @@ def health_check():
 @jwt_required()
 def serve_proof(filename):
     """Serve fotos de prova de entrega (autenticação obrigatória + verificação de ownership)"""
-    from flask import current_app
     from werkzeug.utils import safe_join
-    from src.utils.tenant import get_current_user, get_current_tenant_id
+
+    from src.utils.tenant import get_current_tenant_id, get_current_user
 
     # Proteção contra path traversal
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'proofs')
@@ -288,7 +299,6 @@ def fix_charset_encoding():
     """Corrige requisições com encoding inválido (ex: Latin-1 em vez de UTF-8).
     Converte o body para UTF-8 antes do Flask tentar decodificar o JSON."""
     from flask import request as req
-    from werkzeug.exceptions import BadRequest
     if req.content_type and 'application/json' in req.content_type:
         raw = req.get_data()
         if raw:

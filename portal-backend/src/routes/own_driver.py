@@ -1,14 +1,21 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
-from src.models.portal_models import (
-    db, EstablishmentDriver, Order, OrderStatus, Delivery,
-    OwnDriverEarning, Restaurant, Customer, User, UserType, UserStatus
-)
+import logging
+import os
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+
 import jwt
-import os
-import logging
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+from src.models.portal_models import (
+    EstablishmentDriver,
+    Order,
+    OrderStatus,
+    OwnDriverEarning,
+    User,
+    UserType,
+    db,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +95,7 @@ def login():
     # Otimização: filtrar por prefixo do telefone primeiro
     phone_prefix = phone_normalized[:6] if len(phone_normalized) >= 6 else phone_normalized
     all_drivers = EstablishmentDriver.query.filter(
-        EstablishmentDriver.is_active == True,
+        EstablishmentDriver.is_active,
         EstablishmentDriver.phone.like(f'%{phone_prefix}%')
     ).all()
     driver = None
@@ -246,7 +253,7 @@ def get_orders():
             db.joinedload(Order.restaurant)
         ).filter(
             Order.establishment_driver_id == driver.id,
-            Order.assigned_to_own_driver == True
+            Order.assigned_to_own_driver
         )
 
         if status == 'active':
@@ -297,7 +304,7 @@ def accept_order(order_id):
         if restaurant:
             payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
             delivery_fee = float(order.delivery_fee or 0)
-            
+
             # Calcular distância
             km_total = 0
             if order.delivery_address and restaurant.latitude and order.delivery_address.latitude:
@@ -306,7 +313,7 @@ def accept_order(order_id):
                     float(restaurant.latitude), float(restaurant.longitude),
                     float(order.delivery_address.latitude), float(order.delivery_address.longitude)
                 )
-            
+
             # Calcular ganhos baseado no tipo de pagamento
             earning_value = float(restaurant.own_driver_fixed_value or 5.00)
             if payment_type == 'PER_KM':
@@ -318,7 +325,7 @@ def accept_order(order_id):
             elif payment_type == 'FIXED_UP_TO_PLUS_DELIVERY':
                 from datetime import datetime as dt
                 today_start = dt.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-                
+
                 # Verificar se já recebeu o valor fixo hoje
                 fixed_already_paid = OwnDriverEarning.query.filter(
                     OwnDriverEarning.establishment_driver_id == driver.id,
@@ -326,13 +333,13 @@ def accept_order(order_id):
                     OwnDriverEarning.payment_type == 'FIXED_UP_TO_PLUS_DELIVERY',
                     OwnDriverEarning.driver_earning > 0
                 ).first()
-                
+
                 max_deliveries = restaurant.own_driver_max_deliveries or 10
                 deliveries_today = OwnDriverEarning.query.filter(
                     OwnDriverEarning.establishment_driver_id == driver.id,
                     OwnDriverEarning.created_at >= today_start
                 ).count()
-                
+
                 if not fixed_already_paid:
                     # Primeira entrega do dia: aplicar valor fixo
                     earning_value = float(restaurant.own_driver_fixed_value or 50.00)
@@ -453,8 +460,8 @@ def update_order_status(order_id):
             lng = data.get('longitude')
 
             if lat and lng:
-                from src.utils.geo import haversine_distance
                 from src.models.portal_models import SystemConfig
+                from src.utils.geo import haversine_distance
 
                 if new_status_enum == OrderStatus.PICKED_UP:
                     target_lat = float(order.restaurant.latitude) if order.restaurant else None
@@ -506,7 +513,7 @@ def update_order_status(order_id):
 
             # Marcar parada como concluída na rota (se aplicável)
             if order.own_driver_route_id:
-                from src.models.portal_models import OwnDriverStop, OwnDriverRoute
+                from src.models.portal_models import OwnDriverRoute, OwnDriverStop
                 stop = OwnDriverStop.query.filter_by(
                     route_id=order.own_driver_route_id,
                     order_id=order.id
@@ -570,7 +577,7 @@ def get_stats():
     # Pedidos no período
     orders = Order.query.filter(
         Order.establishment_driver_id == driver.id,
-        Order.assigned_to_own_driver == True,
+        Order.assigned_to_own_driver,
         Order.created_at >= start_date
     ).all()
 
@@ -661,33 +668,33 @@ def request_withdrawal():
     """Solicita saque dos ganhos pendentes"""
     try:
         driver = request.own_driver
-        data = request.get_json() or {}
-        
+        request.get_json() or {}
+
         # Calcular saldo pendente
         pending_earnings = OwnDriverEarning.query.filter(
             OwnDriverEarning.establishment_driver_id == driver.id,
-            OwnDriverEarning.is_paid == False
+            not OwnDriverEarning.is_paid
         ).all()
-        
+
         pending_amount = sum(float(e.driver_earning or 0) for e in pending_earnings)
-        
+
         if pending_amount <= 0:
             return jsonify({'error': 'Nenhum ganho pendente para saque'}), 400
-        
+
         # Verificar se tem PIX cadastrado
         if not driver.pix_key:
             return jsonify({'error': 'Cadastre sua chave PIX antes de solicitar saque'}), 400
-        
+
         # NÃO marcar como pago aqui - o pagamento é processado pelo admin/estabelecimento
         # Apenas retornar o valor pendente para o admin processar
-        
+
         return jsonify({
             'message': f'Solicitação de saque de R$ {pending_amount:.2f} registrada',
             'amount': pending_amount,
             'pix_key': driver.pix_key,
             'earnings_count': len(pending_earnings)
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao solicitar saque: {e}")
@@ -700,13 +707,13 @@ def get_withdrawal_history():
     """Histórico de saques do entregador próprio"""
     try:
         driver = request.own_driver
-        
+
         # Buscar ganhos que foram pagos (incluindo saques)
         earnings = OwnDriverEarning.query.filter(
             OwnDriverEarning.establishment_driver_id == driver.id,
-            OwnDriverEarning.is_paid == True
+            OwnDriverEarning.is_paid
         ).order_by(OwnDriverEarning.paid_at.desc()).limit(50).all()
-        
+
         # Agrupar por data de pagamento
         withdrawals = {}
         for earning in earnings:
@@ -721,12 +728,12 @@ def get_withdrawal_history():
                     }
                 withdrawals[date_key]['amount'] += float(earning.driver_earning or 0)
                 withdrawals[date_key]['count'] += 1
-        
+
         return jsonify({
             'withdrawals': list(withdrawals.values()),
             'pix_key': driver.pix_key
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Erro ao buscar histórico: {e}")
         return jsonify({'error': str(e)}), 500
@@ -739,21 +746,21 @@ def update_pix_key():
     try:
         driver = request.own_driver
         data = request.get_json() or {}
-        
+
         pix_key = data.get('pix_key', '').strip()
         if not pix_key:
             return jsonify({'error': 'Chave PIX é obrigatória'}), 400
-        
+
         driver.pix_key = pix_key
         driver.updated_at = datetime.now(timezone.utc)
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'message': 'Chave PIX atualizada',
             'pix_key': pix_key
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao atualizar PIX: {e}")
@@ -798,7 +805,7 @@ def _format_order_for_driver(order):
         if not delivery_addr and order.delivery_address_id:
             logger.info(f"[FORMAT] Buscando endereço manualmente para pedido {order.order_number}, address_id={order.delivery_address_id}")
             delivery_addr = Address.query.get(order.delivery_address_id)
-        
+
         if delivery_addr:
             result['delivery_address'] = {
                 'street': delivery_addr.street or 'N/A',

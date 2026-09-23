@@ -1,14 +1,21 @@
 """
 Rotas do sistema de bonus e ranking de entregadores.
 """
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from src.models.portal_models import (
-    db, User, Driver, Order, OrderStatus, DriverScore, DriverBonus,
-    DriverAchievement, DynamicPricing, Square, Delivery
-)
 from datetime import datetime, timedelta, timezone
+
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import func
+
+from src.models.portal_models import (
+    Driver,
+    DriverAchievement,
+    DriverBonus,
+    Order,
+    OrderStatus,
+    User,
+    db,
+)
 
 bonus_bp = Blueprint('bonus', __name__)
 
@@ -48,7 +55,7 @@ def get_ranking():
         # Busca entregadores com suas metricas
         from src.utils.tenant import get_current_tenant_id
         tenant_id = get_current_tenant_id()
-        
+
         drivers_query = Driver.query.join(User).filter(User.status == 'ACTIVE')
         if tenant_id:
             drivers_query = drivers_query.filter(Driver.tenant_id == tenant_id)
