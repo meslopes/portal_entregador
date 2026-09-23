@@ -7,7 +7,7 @@ import {
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import { STATUS_CONFIG } from './constants';
 import AssignDriverSection from './AssignDriverSection';
 
@@ -36,7 +36,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
     if (canAssign) {
       loadOwnDrivers();
     }
-  }, []);
+  }, [canAssign]);
 
   const loadOwnDrivers = async () => {
     try {

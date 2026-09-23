@@ -1,8 +1,6 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 
-export const tdStyle = { padding: '0.75rem 1rem', fontSize: '0.8125rem', borderBottom: '1px solid #f8fafc' };
-
 export const RankBadge = ({ rank }) => (
   <span style={{
     width: '1.5rem', height: '1.5rem', borderRadius: '50%',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, ArrowLeft, MapPin, Clock, CheckCircle, Bike, DollarSign, AlertCircle
@@ -20,9 +20,7 @@ const OwnDriverOrdersPage = () => {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => { loadOrders(); }, [filter]);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -36,7 +34,9 @@ const OwnDriverOrdersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>

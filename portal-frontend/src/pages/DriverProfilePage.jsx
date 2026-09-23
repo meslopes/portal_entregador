@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   User, Car, Key, ArrowLeft, AlertCircle, CheckCircle,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import api from '@/lib/api';
 import ProfileInfoCard from './driver-profile/ProfileInfoCard';
 import VehicleInfoCard from './driver-profile/VehicleInfoCard';

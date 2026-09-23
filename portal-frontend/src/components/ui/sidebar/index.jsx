@@ -1,6 +1,5 @@
 export {
   SidebarProvider,
-  useSidebar,
 } from "./sidebar-provider"
 
 export {
@@ -25,7 +24,6 @@ export {
 export {
   SidebarMenu,
   SidebarMenuItem,
-  sidebarMenuButtonVariants,
   SidebarMenuButton,
   SidebarMenuAction,
   SidebarMenuBadge,

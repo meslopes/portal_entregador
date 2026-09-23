@@ -1,6 +1,7 @@
 import React from 'react';
 import { Store } from 'lucide-react';
-import { SettingsCard, FormField, inputStyle } from './shared';
+import { SettingsCard, FormField } from './shared';
+import { inputStyle } from './shared.constants';
 
 const EstablishmentSettings = ({ config, onChange }) => (
   <SettingsCard title="Configurações dos Estabelecimentos" icon={<Store size={18} />}>

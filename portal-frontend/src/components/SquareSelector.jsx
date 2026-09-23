@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronDown, MapPin } from 'lucide-react';
-import { useSquare } from '@/contexts/SquareContext';
+import { useSquare } from '@/contexts/SquareContext.hooks';
 import api from '@/lib/api';
 
 const SquareSelector = () => {
@@ -8,11 +8,7 @@ const SquareSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadSquares();
-  }, []);
-
-  const loadSquares = async () => {
+  const loadSquares = useCallback(async () => {
     try {
       const response = await api.get('/api/admin/squares');
       const squaresData = response.data.squares || [];
@@ -27,7 +23,11 @@ const SquareSelector = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSquare, setSquares, setSelectedSquare]);
+
+  useEffect(() => {
+    loadSquares();
+  }, [loadSquares]);
 
   if (loading || squares.length === 0) {
     return null;

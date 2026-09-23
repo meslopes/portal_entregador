@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, CloudRain, TrendingUp, Calendar, XCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
-import { useSquare } from '@/contexts/SquareContext';
-import { showToast } from '@/components/Toast';
+import { useSquare } from '@/contexts/SquareContext.hooks';
+import { showToast } from '@/components/Toast.utils';
 import FeeTile from './DynamicPricingFeeTile';
 
 const AdminDynamicPricingPage = () => {
@@ -22,9 +22,7 @@ const AdminDynamicPricingPage = () => {
     cancellation_fee_active: false, cancellation_fee: '5.00'
   });
 
-  useEffect(() => { loadData(); }, [squareId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [configsRes, squaresRes] = await Promise.all([
@@ -38,7 +36,9 @@ const AdminDynamicPricingPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [squareId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const resetForm = () => {
     setForm({

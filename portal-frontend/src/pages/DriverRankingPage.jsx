@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Trophy, Medal, Star, Clock, TrendingUp, Award,
   ArrowLeft, RefreshCw, Target, Zap
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import api from '@/lib/api';
 
 const RANKING_COLORS = ['#f59e0b', '#64748b', '#cd7f32', '#64748b', '#64748b'];
@@ -25,11 +25,7 @@ const DriverRankingPage = () => {
   const [period, setPeriod] = useState('monthly');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [period]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [rankingRes, bonusesRes, achievementsRes] = await Promise.all([
@@ -50,7 +46,11 @@ const DriverRankingPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period, user?.driver?.id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const getLevel = (score) => {
     for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {

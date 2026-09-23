@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 
 const AdminSquaresPage = () => {
   const [squares, setSquares] = useState([]);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { DollarSign } from 'lucide-react';
-import { SettingsCard, FormField, inputStyle } from './shared';
+import { SettingsCard, FormField } from './shared';
+import { inputStyle } from './shared.constants';
 
 const PricingSettings = ({ config, onChange }) => (
   <SettingsCard title="Configurações de Preços" icon={<DollarSign size={18} />}>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bike } from 'lucide-react';
-import { SettingsCard, FormField, inputStyle } from './shared';
+import { SettingsCard, FormField } from './shared';
+import { inputStyle } from './shared.constants';
 
 const DeliverySettings = ({ config, onChange }) => (
   <SettingsCard title="Configurações de Entregas" icon={<Bike size={18} />}>

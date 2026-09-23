@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, AlertCircle, Copy } from 'lucide-react';
 import api, { adminService } from '@/lib/api';
-import { useSquare } from '@/contexts/SquareContext';
-import { showToast } from '@/components/Toast';
+import { useSquare } from '@/contexts/SquareContext.hooks';
+import { showToast } from '@/components/Toast.utils';
 import PendingDriversBanner from './admin-drivers/PendingDriversBanner';
 import DriversTable from './admin-drivers/DriversTable';
 import DriverCreateModal from './admin-drivers/DriverCreateModal';
@@ -45,9 +45,7 @@ const AdminDriversPage = () => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadDrivers(); loadSquares(); loadEstablishments(); loadPendingDrivers(); if (isSuperAdmin) loadTenants(); }, [page, statusFilter, squareId]);
-
-  const loadDrivers = async () => {
+  const loadDrivers = useCallback(async () => {
     try {
       setLoading(true);
       const response = await adminService.getDrivers(page, 20, search, statusFilter, squareId);
@@ -60,7 +58,11 @@ const AdminDriversPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, statusFilter, squareId]);
+
+  const loadEstablishments = useCallback(async () => { try { const data = await adminService.getEstablishments(1, 100, '', squareId); setEstablishments(data.establishments || []); } catch { /* intentionally empty */ } }, [squareId]);
+
+  useEffect(() => { loadDrivers(); loadSquares(); loadEstablishments(); loadPendingDrivers(); if (isSuperAdmin) loadTenants(); }, [page, statusFilter, squareId, isSuperAdmin, loadDrivers, loadEstablishments]);
 
   const loadPendingDrivers = async () => {
     try {
@@ -153,7 +155,6 @@ const AdminDriversPage = () => {
 
   const loadSquares = async () => { try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch { /* intentionally empty */ } };
   const loadTenants = async () => { try { const res = await api.get('/api/platform/tenants'); setTenants(res.data.tenants || []); } catch { /* intentionally empty */ } };
-  const loadEstablishments = async () => { try { const data = await adminService.getEstablishments(1, 100, '', squareId); setEstablishments(data.establishments || []); } catch { /* intentionally empty */ } };
 
   const handleConvertToOwn = async () => {
     const select = document.getElementById('convert-restaurant');

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { orderService } from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import { STATUS_MAP } from './driver-route-map/constants';
 import RouteMapView from './driver-route-map/RouteMapView';
 import RouteStopsList from './driver-route-map/RouteStopsList';
@@ -64,7 +64,7 @@ const DriverRouteMap = () => {
         mapInstanceRef.current.setView([coords.lat, coords.lng], 13);
       }
     });
-  }, [user?.driver?.square_city]);
+  }, [user?.driver?.square_city, user?.driver?.square_state, activeOrders.length]);
 
   useEffect(() => {
     loadActiveOrders();

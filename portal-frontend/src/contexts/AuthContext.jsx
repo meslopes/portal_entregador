@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useReducer, useEffect } from 'react';
 import api, { authService } from '@/lib/api';
 
 // Estado inicial
@@ -229,14 +229,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Hook para usar o contexto
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-  }
-  return context;
-};
-
 export default AuthContext;
-

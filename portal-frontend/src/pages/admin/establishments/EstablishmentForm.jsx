@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
-import { Modal, FormField, inputStyle, btnPrimary, btnSecondary } from './ui';
+import { showToast } from '@/components/Toast.utils';
+import { Modal, FormField } from './ui';
+import { inputStyle, btnPrimary, btnSecondary } from './ui.constants';
 import { parseAddressToFields } from './parseAddressToFields';
 
 const EMPTY_FORM = {

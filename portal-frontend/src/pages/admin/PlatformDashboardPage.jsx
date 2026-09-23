@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import {
   OverviewTab, TenantsTab, UsersTab, PendingTab, AdminsTab,
   PlatformHeader, TabNavigation, LoadingPage, DashboardModals
@@ -36,6 +36,22 @@ const PlatformDashboardPage = () => {
     loadPendingUsers();
   }, []);
 
+  const loadUsers = useCallback(async () => {
+    try {
+      setUsersLoading(true);
+      let url = '/api/platform/users';
+      if (selectedTenantFilter) {
+        url += `?tenant_id=${selectedTenantFilter}`;
+      }
+      const response = await api.get(url);
+      setUsers(response.data.users || []);
+    } catch (err) {
+      console.error('Erro ao carregar usuários:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [selectedTenantFilter]);
+
   useEffect(() => {
     if (activeTab === 'users') {
       loadUsers();
@@ -49,7 +65,7 @@ const PlatformDashboardPage = () => {
     if (activeTab === 'tenants') {
       loadTenants();
     }
-  }, [activeTab, selectedTenantFilter]);
+  }, [activeTab, selectedTenantFilter, loadUsers]);
 
   const loadDashboard = async () => {
     try {
@@ -68,22 +84,6 @@ const PlatformDashboardPage = () => {
       setTenants(response.data.tenants || []);
     } catch (err) {
       console.error('Erro ao carregar tenants:', err);
-    }
-  };
-
-  const loadUsers = async () => {
-    try {
-      setUsersLoading(true);
-      let url = '/api/platform/users';
-      if (selectedTenantFilter) {
-        url += `?tenant_id=${selectedTenantFilter}`;
-      }
-      const response = await api.get(url);
-      setUsers(response.data.users || []);
-    } catch (err) {
-      console.error('Erro ao carregar usuários:', err);
-    } finally {
-      setUsersLoading(false);
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Power, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
@@ -41,6 +41,71 @@ const OwnDriverDashboardPage = () => {
     };
   }, []);
 
+  const loadData = useCallback(async (isRefresh = false) => {
+    try {
+      if (!isRefresh) setLoading(true);
+      const token = localStorage.getItem('own_driver_token');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [statsRes, routesRes] = await Promise.all([
+        api.get('/api/own-driver/stats', { headers }),
+        api.get('/api/routes/own-driver/active', { headers })
+      ]);
+
+      setStats(statsRes.data.stats);
+      setDriver(statsRes.data.driver);
+      setIsOnline(statsRes.data.driver?.is_online || false);
+      
+      // Extrair pedidos das rotas ativas e contar pendentes
+      const routes = (routesRes.data.routes || []).filter(route => {
+        if (route.status === 'COMPLETED') return false;
+        if (route.stops && route.stops.length > 0) {
+          return !route.stops.every(s => s.status === 'COMPLETED');
+        }
+        return true;
+      });
+      const pending = routes.filter(r => r.status === 'PENDING').length;
+      setPendingRoutes(pending);
+      
+      const ordersFromRoutes = [];
+      routes.forEach(route => {
+        if (route.stops) {
+          route.stops.forEach(stop => {
+            // Ignorar paradas já concluídas
+            if (stop.status === 'COMPLETED') return;
+            if (stop.order_id && !ordersFromRoutes.find(o => o.id === stop.order_id)) {
+              ordersFromRoutes.push({
+                id: stop.order_id,
+                order_number: stop.order_number || `Pedido #${stop.order_id}`,
+                status: stop.order_status || (route.status === 'ACTIVE' ? 'ACCEPTED' : 'PENDING'),
+                delivery_address: { street: stop.address },
+                customer: { name: stop.customer_name, phone: stop.customer_phone },
+                delivery_fee: 0,
+                route_id: route.id,
+                route_name: route.name
+              });
+            }
+          });
+        }
+      });
+      setActiveOrders(ordersFromRoutes);
+
+      const storedRestaurant = localStorage.getItem('own_driver_restaurant');
+      if (storedRestaurant) {
+        try { setRestaurant(JSON.parse(storedRestaurant)); } catch { /* corrupted data */ }
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem('own_driver_token');
+        navigate('/own-driver/login');
+      } else {
+        setError('Erro ao carregar dados');
+      }
+    } finally {
+      if (!isRefresh) setLoading(false);
+    }
+  }, [navigate]);
+
   useEffect(() => {
     const token = localStorage.getItem('own_driver_token');
     if (!token) {
@@ -52,7 +117,7 @@ const OwnDriverDashboardPage = () => {
     // Auto-refresh a cada 20 segundos (sem flash de loading)
     const interval = setInterval(() => loadData(true), 20000);
     return () => clearInterval(interval);
-  }, []);
+  }, [navigate, loadData]);
 
   // Tocar som quando novas rotas pendentes aparecem
   useEffect(() => {
@@ -131,71 +196,6 @@ const OwnDriverDashboardPage = () => {
       clearInterval(interval);
     };
   }, [isOnline]);
-
-  const loadData = async (isRefresh = false) => {
-    try {
-      if (!isRefresh) setLoading(true);
-      const token = localStorage.getItem('own_driver_token');
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const [statsRes, routesRes] = await Promise.all([
-        api.get('/api/own-driver/stats', { headers }),
-        api.get('/api/routes/own-driver/active', { headers })
-      ]);
-
-      setStats(statsRes.data.stats);
-      setDriver(statsRes.data.driver);
-      setIsOnline(statsRes.data.driver?.is_online || false);
-      
-      // Extrair pedidos das rotas ativas e contar pendentes
-      const routes = (routesRes.data.routes || []).filter(route => {
-        if (route.status === 'COMPLETED') return false;
-        if (route.stops && route.stops.length > 0) {
-          return !route.stops.every(s => s.status === 'COMPLETED');
-        }
-        return true;
-      });
-      const pending = routes.filter(r => r.status === 'PENDING').length;
-      setPendingRoutes(pending);
-      
-      const ordersFromRoutes = [];
-      routes.forEach(route => {
-        if (route.stops) {
-          route.stops.forEach(stop => {
-            // Ignorar paradas já concluídas
-            if (stop.status === 'COMPLETED') return;
-            if (stop.order_id && !ordersFromRoutes.find(o => o.id === stop.order_id)) {
-              ordersFromRoutes.push({
-                id: stop.order_id,
-                order_number: stop.order_number || `Pedido #${stop.order_id}`,
-                status: stop.order_status || (route.status === 'ACTIVE' ? 'ACCEPTED' : 'PENDING'),
-                delivery_address: { street: stop.address },
-                customer: { name: stop.customer_name, phone: stop.customer_phone },
-                delivery_fee: 0,
-                route_id: route.id,
-                route_name: route.name
-              });
-            }
-          });
-        }
-      });
-      setActiveOrders(ordersFromRoutes);
-
-      const storedRestaurant = localStorage.getItem('own_driver_restaurant');
-      if (storedRestaurant) {
-        try { setRestaurant(JSON.parse(storedRestaurant)); } catch { /* corrupted data */ }
-      }
-    } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem('own_driver_token');
-        navigate('/own-driver/login');
-      } else {
-        setError('Erro ao carregar dados');
-      }
-    } finally {
-      if (!isRefresh) setLoading(false);
-    }
-  };
 
   const toggleOnline = async () => {
     try {

@@ -1,11 +1,6 @@
 import React from 'react';
 import { MapPin, Navigation } from 'lucide-react';
 
-const escapeHtml = (str) => {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-};
-
 const DriverMap = ({ location, currentOrder, getCurrentLocation }) => {
   if (!location) return null;
 
@@ -85,5 +80,4 @@ const DriverMap = ({ location, currentOrder, getCurrentLocation }) => {
   );
 };
 
-export { escapeHtml };
 export default DriverMap;

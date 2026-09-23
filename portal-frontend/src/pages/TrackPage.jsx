@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Package, CheckCircle, Clock, Bike, MapPin, Store, User } from 'lucide-react';
 import api from '@/lib/api';
@@ -20,14 +20,7 @@ const TrackPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadTracking();
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(loadTracking, 30000);
-    return () => clearInterval(interval);
-  }, [token]);
-
-  const loadTracking = async () => {
+  const loadTracking = useCallback(async () => {
     try {
       const response = await api.get(`/api/orders/track/${token}`);
       setTracking(response.data);
@@ -37,7 +30,14 @@ const TrackPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    loadTracking();
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(loadTracking, 30000);
+    return () => clearInterval(interval);
+  }, [loadTracking]);
 
   if (loading) {
     return (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { CreditCard } from 'lucide-react';
-import { SettingsCard, FormField, inputStyle } from './shared';
+import { SettingsCard, FormField } from './shared';
+import { inputStyle } from './shared.constants';
 
 const PaymentSettings = ({ config, onChange }) => (
   <SettingsCard title="Dados Bancários (para QR Code)" icon={<CreditCard size={18} />}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 import Tooltip from '@/components/Tooltip';
-import { showConfirm } from '@/components/ConfirmDialog';
+import { showConfirm } from '@/components/ConfirmDialog.utils';
 import PlatformRoutesList from './platform-routes/PlatformRoutesList';
 import PlatformRouteForm from './platform-routes/PlatformRouteForm';
 import MoveOrderModal from './platform-routes/MoveOrderModal';

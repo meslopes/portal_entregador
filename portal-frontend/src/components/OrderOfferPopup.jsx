@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Package, MapPin, DollarSign, Clock, CheckCircle, X, Navigation, Store } from 'lucide-react';
 import api from '@/lib/api';
 import { startSiren, stopSiren } from '@/lib/notify';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import { offlineDB, isOnline } from '@/lib/offline';
 
 const OrderOfferPopup = () => {
@@ -13,19 +13,7 @@ const OrderOfferPopup = () => {
   const timerRef = useRef(null);
   const pollRef = useRef(null);
 
-  useEffect(() => {
-    // Verificar ofertas a cada 5 segundos
-    checkForOffers();
-    pollRef.current = setInterval(checkForOffers, 5000);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (timerRef.current) clearInterval(timerRef.current);
-      stopSiren();
-    };
-  }, []);
-
-  const checkForOffers = async () => {
+  const checkForOffers = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -69,7 +57,19 @@ const OrderOfferPopup = () => {
     } catch {
       // Silencioso
     }
-  };
+  }, [isVisible]);
+
+  useEffect(() => {
+    // Verificar ofertas a cada 5 segundos
+    checkForOffers();
+    pollRef.current = setInterval(checkForOffers, 5000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+      stopSiren();
+    };
+  }, [checkForOffers]);
 
   const handleAccept = async () => {
     if (!offer || isAccepting) return;

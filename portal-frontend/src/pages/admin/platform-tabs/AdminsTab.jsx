@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Trash2, Plus } from 'lucide-react';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import TrashModal from '@/components/TrashModal';
 import AdminsTable from './AdminsTable';
 import AdminFormModal from './AdminFormModal';

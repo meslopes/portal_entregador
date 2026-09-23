@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, AlertCircle } from 'lucide-react';
-import { FormField, inputStyle, btnPrimary, btnSecondary } from './shared';
+import { FormField } from './shared';
+import { inputStyle, btnPrimary, btnSecondary } from './shared.constants';
 
 const DriverCreateModal = ({
   formData, formError, formLoading, isSuperAdmin,

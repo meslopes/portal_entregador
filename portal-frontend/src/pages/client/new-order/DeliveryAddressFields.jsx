@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
-import { Card, Label, inputStyle } from './shared';
+import { Card, Label } from './shared';
+import { inputStyle } from './shared.constants';
 import FeeCalculator from './FeeCalculator';
 
 const DeliveryAddressFields = ({ form, handleChange, feeCalculatorProps }) => (

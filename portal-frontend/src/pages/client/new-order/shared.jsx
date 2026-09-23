@@ -1,12 +1,5 @@
 import React from 'react';
 
-export const inputStyle = {
-  width: '100%', padding: '0.625rem 0.875rem',
-  borderRadius: '0.5rem', border: '1.5px solid #e2e8f0',
-  fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
-  fontFamily: 'inherit'
-};
-
 export const Card = ({ title, icon, children }) => (
   <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>

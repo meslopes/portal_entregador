@@ -9,7 +9,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { PanelLeftIcon } from "lucide-react"
-import { useSidebar, SIDEBAR_WIDTH_MOBILE } from "./sidebar-provider"
+import { useSidebar } from "./sidebar-context"
+import { SIDEBAR_WIDTH_MOBILE } from "./sidebar-constants"
 
 function Sidebar({
   side = "left",

@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from 'lucide-react';
-import { Card, Label, inputStyle } from './shared';
+import { Card, Label } from './shared';
+import { inputStyle } from './shared.constants';
 
 const CustomerFields = ({ form, handleChange }) => (
   <Card title="Dados do Cliente" icon={<User size={16} />}>

@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, AlertCircle
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import { orderService } from '@/lib/api';
 import { subscribeGPS, isRealtimeAvailable } from '@/lib/realtime';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import ClientStats from './client-dashboard/ClientStats';
 import ClientOrdersList from './client-dashboard/ClientOrdersList';
 import ClientMapSection from './client-dashboard/ClientMapSection';
@@ -36,11 +36,7 @@ const ClientDashboardPage = () => {
   const markersRef = useRef([]);
   const hasUserInteractedRef = useRef(false); // Se o usuário interagiu com o mapa
 
-  useEffect(() => {
-    loadData();
-  }, [page, filter]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [ordersData, statsData, trackingData] = await Promise.all([
@@ -60,7 +56,11 @@ const ClientDashboardPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, filter]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Refresh tracking a cada 10 segundos
   useEffect(() => {

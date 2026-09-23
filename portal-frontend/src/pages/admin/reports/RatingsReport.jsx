@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
-import { ReportTable, StarBadge, tdStyle } from './shared';
+import { ReportTable, StarBadge } from './shared';
+import { tdStyle } from './shared.constants';
 
 const RatingsReport = ({ data }) => (
   <div>

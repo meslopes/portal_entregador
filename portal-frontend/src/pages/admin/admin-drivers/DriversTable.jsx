@@ -1,9 +1,9 @@
 import React from 'react';
 import { Search, Bike, Eye, Edit, Trash2, Clock } from 'lucide-react';
 import { utils } from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import { adminService } from '@/lib/api';
-import { pagBtn } from './shared';
+import { pagBtn } from './shared.constants';
 
 const DriversTable = ({
   drivers, loading, search, statusFilter, page, totalPages,

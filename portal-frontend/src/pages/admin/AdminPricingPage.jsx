@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 
 const AdminPricingPage = () => {
   const [tables, setTables] = useState([]);

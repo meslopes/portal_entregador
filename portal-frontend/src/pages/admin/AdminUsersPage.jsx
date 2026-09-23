@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users, Search, Plus, Edit, Trash2, AlertCircle, X,
   Bike, Store, Shield, Mail, Phone, CheckCircle
 } from 'lucide-react';
 import api, { adminService } from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import TrashModal from '@/components/TrashModal';
-import { FormField, inputStyle, btnPrimary, btnSecondary, pagBtn } from './usersFormShared';
+import { FormField } from './usersFormShared';
+import { inputStyle, btnPrimary, btnSecondary, pagBtn } from './usersFormShared.constants';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
@@ -33,7 +34,22 @@ const AdminUsersPage = () => {
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  useEffect(() => { loadUsers(); loadTenants(); loadSquares(); }, [page, typeFilter]);
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getAllUsers(page, 20, typeFilter, search);
+      setUsers(data.users);
+      setTotalPages(data.pages);
+      setTotal(data.total);
+    } catch (err) {
+      setError('Erro ao carregar usuários');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, typeFilter, search]);
+
+  useEffect(() => { loadUsers(); loadTenants(); loadSquares(); }, [loadUsers]);
 
   const loadTenants = async () => {
     try {
@@ -50,21 +66,6 @@ const AdminUsersPage = () => {
       setSquares(res.data.squares || []);
     } catch (err) {
       console.error(err);
-    }
-  };
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const data = await adminService.getAllUsers(page, 20, typeFilter, search);
-      setUsers(data.users);
-      setTotalPages(data.pages);
-      setTotal(data.total);
-    } catch (err) {
-      setError('Erro ao carregar usuários');
-      console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 

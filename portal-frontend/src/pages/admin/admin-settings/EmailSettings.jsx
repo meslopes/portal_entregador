@@ -1,6 +1,7 @@
 import React from 'react';
 import { Mail } from 'lucide-react';
-import { SettingsCard, FormField, inputStyle } from './shared';
+import { SettingsCard, FormField } from './shared';
+import { inputStyle } from './shared.constants';
 
 const EmailSettings = ({ config, onChange }) => (
   <SettingsCard title="Configurações de E-mail (SendGrid)" icon={<Mail size={18} />}>

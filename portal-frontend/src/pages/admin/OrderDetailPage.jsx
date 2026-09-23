@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
 import api, { adminService, orderService, utils } from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import StatusActions from './order-detail/StatusActions';
 import OrderTimeline from './order-detail/OrderTimeline';
 import OrderInfoCards from './order-detail/OrderInfoCards';
@@ -35,14 +35,7 @@ const OrderDetailPage = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
-  useEffect(() => {
-    loadOrder();
-    loadDrivers();
-    const interval = setInterval(loadOrder, 10000);
-    return () => clearInterval(interval);
-  }, [orderId]);
-
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     try {
       const response = await orderService.getOrderDetails(orderId);
       setOrder(response.order || response);
@@ -53,7 +46,14 @@ const OrderDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    loadOrder();
+    loadDrivers();
+    const interval = setInterval(loadOrder, 10000);
+    return () => clearInterval(interval);
+  }, [loadOrder]);
 
   const loadDrivers = async () => {
     try {

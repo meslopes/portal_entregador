@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, Check, Package, DollarSign, AlertCircle, X, UserPlus } from 'lucide-react';
 import api from '@/lib/api';
 import playNotificationSound from '@/utils/playNotificationSound';
@@ -11,49 +11,30 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
 
   // Verificar se é admin
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = user?.user_type === 'ADMIN';
-
-  useEffect(() => {
-    loadNotifications();
-    if (isAdmin) loadPendingUsers();
-    // Poll a cada 30 segundos
-    const interval = setInterval(() => {
-      loadNotifications();
-      if (isAdmin) loadPendingUsers();
-    }, 30000);
-    return () => clearInterval(interval);
+  const isAdmin = useCallback(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user?.user_type === 'ADMIN';
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       const response = await api.get('/api/user/notifications');
       const newNotifications = response.data.notifications || [];
       const newUnread = response.data.unread_count || 0;
-      
+
       // Toca som se há novas notificações não lidas
       if (newUnread > unreadCount && unreadCount > 0) {
         playNotificationSound();
       }
-      
+
       setNotifications(newNotifications);
       setUnreadCount(newUnread);
     } catch {
       // Silently fail - not critical
     }
-  };
+  }, [unreadCount]);
 
-  const loadPendingUsers = async () => {
+  const loadPendingUsers = useCallback(async () => {
     try {
       const response = await api.get('/api/admin/pending-users');
       const users = response.data.users || [];
@@ -66,7 +47,28 @@ const NotificationBell = () => {
     } catch {
       // Silently fail
     }
-  };
+  }, [pendingCount]);
+
+  useEffect(() => {
+    loadNotifications();
+    if (isAdmin()) loadPendingUsers();
+    // Poll a cada 30 segundos
+    const interval = setInterval(() => {
+      loadNotifications();
+      if (isAdmin()) loadPendingUsers();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin, loadNotifications, loadPendingUsers]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const markAsRead = async (notificationId) => {
     try {

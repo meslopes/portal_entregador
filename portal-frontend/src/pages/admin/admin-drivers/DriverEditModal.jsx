@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { FormField, inputStyle, btnPrimary, btnSecondary } from './shared';
+import { FormField } from './shared';
+import { inputStyle, btnPrimary, btnSecondary } from './shared.constants';
 
 const DriverEditModal = ({
   editing, editData, formError, formLoading, isSuperAdmin,

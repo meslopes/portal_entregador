@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, RotateCcw, AlertCircle, CheckCircle, Loader2, X } from 'lucide-react';
 import { adminService } from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 
 const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
   const [deletedUsers, setDeletedUsers] = useState([]);
@@ -11,14 +11,7 @@ const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
   const [filterDays, setFilterDays] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadDeletedUsers();
-      loadRetentionConfig();
-    }
-  }, [isOpen, filterDays]);
-
-  const loadDeletedUsers = async () => {
+  const loadDeletedUsers = useCallback(async () => {
     try {
       setLoading(true);
       const data = await adminService.getDeletedUsers(filterDays || null, userType);
@@ -29,7 +22,14 @@ const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterDays, userType]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadDeletedUsers();
+      loadRetentionConfig();
+    }
+  }, [isOpen, filterDays, loadDeletedUsers]);
 
   const loadRetentionConfig = async () => {
     try {

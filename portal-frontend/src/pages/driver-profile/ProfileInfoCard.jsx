@@ -1,6 +1,7 @@
 import React from 'react';
 import { Save } from 'lucide-react';
-import { cardStyle, inputStyle, saveBtnStyle, FormField } from './shared';
+import { FormField } from './shared';
+import { cardStyle, inputStyle, saveBtnStyle } from './shared.constants';
 
 const gridStyle = {
   display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem',

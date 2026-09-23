@@ -1,15 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import api from '@/lib/api';
 
 const SquareContext = createContext();
-
-export const useSquare = () => {
-  const context = useContext(SquareContext);
-  if (!context) {
-    throw new Error('useSquare must be used within a SquareProvider');
-  }
-  return context;
-};
 
 export const SquareProvider = ({ children }) => {
   const [selectedSquare, setSelectedSquare] = useState(() => {

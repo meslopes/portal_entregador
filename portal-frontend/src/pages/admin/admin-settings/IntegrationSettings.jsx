@@ -1,6 +1,7 @@
 import React from 'react';
 import { Globe } from 'lucide-react';
-import { SettingsCard, FormField, inputStyle } from './shared';
+import { SettingsCard, FormField } from './shared';
+import { inputStyle } from './shared.constants';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
 

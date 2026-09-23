@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, ArrowLeft, Clock, CheckCircle, Package, Filter, AlertCircle,
@@ -19,9 +19,7 @@ const OwnDriverEarningsPage = () => {
   const [pixKey, setPixKey] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
 
-  useEffect(() => { loadEarnings(); }, [period]);
-
-  const loadEarnings = async () => {
+  const loadEarnings = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -41,7 +39,9 @@ const OwnDriverEarningsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period, navigate]);
+
+  useEffect(() => { loadEarnings(); }, [loadEarnings]);
 
   const handleWithdraw = async () => {
     if (!window.confirm('Solicitar saque de todos os ganhos pendentes?')) return;

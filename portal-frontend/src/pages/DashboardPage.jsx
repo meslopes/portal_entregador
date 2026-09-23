@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import { driverService, orderService } from '@/lib/api';
 import { startOrderMonitor, stopOrderMonitor } from '@/lib/notify';
 import DriverStats from '@/pages/driver-dashboard/DriverStats';
 import QuickActions from '@/pages/driver-dashboard/QuickActions';
-import DriverMap, { escapeHtml } from '@/pages/driver-dashboard/DriverMap';
+import DriverMap from '@/pages/driver-dashboard/DriverMap';
+import { escapeHtml } from '@/pages/driver-dashboard/DriverMap.utils';
 
 const DashboardPage = () => {
   const { user, updateUser } = useAuth();
@@ -94,7 +95,7 @@ const DashboardPage = () => {
   useEffect(() => {
     loadDashboardData();
     if (user?.driver?.is_online) getCurrentLocation().catch(() => {});
-  }, []);
+  }, [user?.driver?.is_online]);
 
   useEffect(() => { if (user?.driver) setIsOnline(user.driver.is_online); }, [user]);
 
@@ -234,17 +235,17 @@ const DashboardPage = () => {
     }
   };
 
-  const updateLocation = async () => {
+  const updateLocation = useCallback(async () => {
     if (!location) { getCurrentLocation(); return; }
     try { await driverService.updateLocation(location.latitude, location.longitude); }
     catch (error) { console.error(error); }
-  };
+  }, [location]);
 
   useEffect(() => {
     let interval;
     if (isOnline && location) interval = setInterval(updateLocation, 30000);
     return () => { if (interval) clearInterval(interval); };
-  }, [isOnline, location]);
+  }, [isOnline, location, updateLocation]);
 
   // Monitor de pedidos (sirene + notificacao)
   useEffect(() => {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Key } from 'lucide-react';
-import { cardStyle, saveBtnStyle, FormField, PasswordField } from './shared';
+import { FormField, PasswordField } from './shared';
+import { cardStyle, saveBtnStyle } from './shared.constants';
 
 const PasswordForm = ({
   passwordData, setPasswordData,

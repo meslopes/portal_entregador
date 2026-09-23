@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
 import ExportButton from './payment-reports/ExportButton';
@@ -35,11 +35,7 @@ const PaymentReportsPage = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    checkUserRole();
-  }, []);
-
-  const checkUserRole = async () => {
+  const checkUserRole = useCallback(async () => {
     try {
       const res = await api.get('/api/user/profile');
       const isAdminUser = res.data.user_type === 'ADMIN';
@@ -50,7 +46,11 @@ const PaymentReportsPage = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkUserRole();
+  }, [checkUserRole]);
 
   const loadRestaurants = async () => {
     try {
@@ -61,7 +61,7 @@ const PaymentReportsPage = () => {
     }
   };
 
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -78,9 +78,9 @@ const PaymentReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period, frequencyFilter, restaurantFilter]);
 
-  const loadWithdrawals = async () => {
+  const loadWithdrawals = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get('/api/finance/own-driver-withdrawals');
@@ -92,7 +92,7 @@ const PaymentReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleProcessWithdrawal = async (driverId) => {
     if (!window.confirm('Processar saque via PIX?')) return;
@@ -112,7 +112,7 @@ const PaymentReportsPage = () => {
   useEffect(() => {
     if (activeTab === 'reports') loadReports();
     if (activeTab === 'withdrawals') loadWithdrawals();
-  }, [activeTab, period, frequencyFilter, restaurantFilter]);
+  }, [activeTab, period, frequencyFilter, restaurantFilter, loadReports, loadWithdrawals]);
 
   const handlePayPeriod = async (driverId, periodStart, paymentMethod = 'PIX') => {
     try {

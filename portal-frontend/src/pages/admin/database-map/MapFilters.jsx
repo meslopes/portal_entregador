@@ -1,5 +1,5 @@
 import React from 'react';
-import { section, badge, actionBtn, card } from './DataSection';
+import { section, badge, actionBtn, card } from './DataSection.helpers';
 
 export const TenantsSection = ({ tenants, onToggleActive }) =>
   section(`Tenants (${tenants?.length || 0})`,

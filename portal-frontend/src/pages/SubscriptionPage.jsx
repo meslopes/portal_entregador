@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   AlertCircle, CheckCircle, Plus, RefreshCw,
 } from 'lucide-react';
@@ -27,12 +27,7 @@ const SubscriptionPage = () => {
     fixed_price: 0
   });
 
-  useEffect(() => {
-    checkUserRole();
-    loadData();
-  }, []);
-
-  const checkUserRole = async () => {
+  const checkUserRole = useCallback(async () => {
     try {
       const res = await api.get('/api/user/profile');
       setIsAdmin(res.data.user_type === 'ADMIN');
@@ -42,18 +37,9 @@ const SubscriptionPage = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, []);
 
-  const loadRestaurants = async () => {
-    try {
-      const res = await api.get('/api/admin/establishments');
-      setRestaurants(res.data.establishments || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [subsRes, invRes] = await Promise.all([
@@ -67,6 +53,20 @@ const SubscriptionPage = () => {
       setError('Erro ao carregar dados');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkUserRole();
+    loadData();
+  }, [checkUserRole, loadData]);
+
+  const loadRestaurants = async () => {
+    try {
+      const res = await api.get('/api/admin/establishments');
+      setRestaurants(res.data.establishments || []);
+    } catch (err) {
+      console.error(err);
     }
   };
 

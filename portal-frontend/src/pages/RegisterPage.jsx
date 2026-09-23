@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { User, Shield, Car } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import api, { API_BASE_URL } from '@/lib/api';
 import RegisterBranding from './register/RegisterBranding';
 import RegisterProgress from './register/RegisterProgress';
@@ -102,10 +102,10 @@ const RegisterPage = () => {
         detectNearestSquare(loadedSquares);
       })
       .catch(() => {});
-  }, []);
+  }, [searchParams, detectNearestSquare]);
 
   // Detectar praça mais próxima via GPS
-  const detectNearestSquare = async (loadedSquares) => {
+  const detectNearestSquare = useCallback(async (loadedSquares) => {
     if (!loadedSquares || loadedSquares.length === 0) return;
 
     // Se só tem1praça, selecionar automaticamente
@@ -157,7 +157,7 @@ const RegisterPage = () => {
       },
       { timeout: 10000, enableHighAccuracy: false }
     );
-  };
+  }, []);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));

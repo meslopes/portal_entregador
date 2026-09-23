@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { orderService } from '@/lib/api';
 import { offlineDB, isOnline } from '@/lib/offline';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import { STATUS_ACTIONS } from './constants';
 
 export function useDelivery() {
@@ -53,13 +53,7 @@ export function useDelivery() {
     }
   };
 
-  useEffect(() => {
-    isMounted.current = true;
-    loadCurrentOrder();
-    return () => { isMounted.current = false; };
-  }, []);
-
-  const loadCurrentOrder = async () => {
+  const loadCurrentOrder = useCallback(async () => {
     try {
       setIsLoading(true);
       let response;
@@ -88,7 +82,13 @@ export function useDelivery() {
     } finally {
       if (isMounted.current) setIsLoading(false);
     }
-  };
+  }, [orderId, navigate]);
+
+  useEffect(() => {
+    isMounted.current = true;
+    loadCurrentOrder();
+    return () => { isMounted.current = false; };
+  }, [loadCurrentOrder]);
 
   const confirmStatusUpdate = async (status, code) => {
     try {
@@ -175,8 +175,9 @@ export function useDelivery() {
 
   useEffect(() => {
     if (showCamera && !previewUrl) startCamera();
+    const videoEl = videoRef.current;
     return () => {
-      if (videoRef.current?.srcObject) videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+      if (videoEl?.srcObject) videoEl.srcObject.getTracks().forEach(t => t.stop());
     };
   }, [showCamera, previewUrl]);
 

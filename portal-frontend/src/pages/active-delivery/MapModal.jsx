@@ -25,7 +25,7 @@ const MapModal = ({ showMap, mapTarget, order, mapRef, onClose, onNavigate, onCa
         mapInstanceRef.current = null;
       }
     };
-  }, [showMap]);
+  }, [showMap, mapRef]);
 
   // Atualiza marcadores do mapa
   useEffect(() => {

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { adminService, orderService } from '@/lib/api';
 import api from '@/lib/api';
-import { useSquare } from '@/contexts/SquareContext';
-import { showToast } from '@/components/Toast';
+import { useSquare } from '@/contexts/SquareContext.hooks';
+import { showToast } from '@/components/Toast.utils';
 import { Sidebar, MapSection, AssignDriverModal, SettingsModal } from './dashboard-tabs';
 import { getTimeRemaining, geocodeCity } from './dashboardHelpers';
 
@@ -41,7 +41,7 @@ const AdminDashboardPage = () => {
   const geocodeCityCache = useRef({});
 
   // ── Data loaders ───────────────────────────────────────────────────────────
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -52,7 +52,26 @@ const AdminDashboardPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [squareId]);
+
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await adminService.getOrders(1, 20, '', squareId);
+      setOrders(data.orders || []);
+    } catch (err) {
+      console.error('Erro ao carregar pedidos:', err);
+    }
+  }, [squareId]);
+
+  const loadTracking = useCallback(async () => {
+    try {
+      const data = await adminService.getLiveTracking(squareId || null);
+      setTracking(data);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Erro ao carregar tracking:', err);
+    }
+  }, [squareId]);
 
   const loadPendingUsers = async () => {
     try {
@@ -60,15 +79,6 @@ const AdminDashboardPage = () => {
       setPendingUsers(data.users || []);
     } catch (err) {
       console.error('Erro ao carregar pendentes:', err);
-    }
-  };
-
-  const loadOrders = async () => {
-    try {
-      const data = await adminService.getOrders(1, 20, '', squareId);
-      setOrders(data.orders || []);
-    } catch (err) {
-      console.error('Erro ao carregar pedidos:', err);
     }
   };
 
@@ -87,16 +97,6 @@ const AdminDashboardPage = () => {
       setTenants(response.data.tenants || []);
     } catch {
       console.log('Tenants not available');
-    }
-  };
-
-  const loadTracking = async () => {
-    try {
-      const data = await adminService.getLiveTracking(squareId || null);
-      setTracking(data);
-      setLastUpdated(new Date());
-    } catch (err) {
-      console.error('Erro ao carregar tracking:', err);
     }
   };
 
@@ -203,7 +203,7 @@ const AdminDashboardPage = () => {
     return () => {
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, []);
+  }, [loadDashboard, loadTracking, loadOrders]);
 
   useEffect(() => {
     if (tracking && tracking.establishments) {
@@ -219,7 +219,7 @@ const AdminDashboardPage = () => {
     loadOrders();
     loadPendingUsers();
     loadAllDrivers();
-  }, [selectedSquare]);
+  }, [selectedSquare, loadDashboard, loadOrders, loadTracking]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -227,7 +227,7 @@ const AdminDashboardPage = () => {
       loadOrders();
     }, 15000);
     return () => clearInterval(interval);
-  }, [selectedSquare]);
+  }, [selectedSquare, loadOrders, loadTracking]);
 
   useEffect(() => {
     if (!selectedSquare?.city) {

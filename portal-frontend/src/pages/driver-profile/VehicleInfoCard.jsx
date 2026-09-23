@@ -1,6 +1,7 @@
 import React from 'react';
 import { Save } from 'lucide-react';
-import { cardStyle, inputStyle, saveBtnStyle, FormField } from './shared';
+import { FormField } from './shared';
+import { cardStyle, inputStyle, saveBtnStyle } from './shared.constants';
 
 const selectStyle = {
   ...inputStyle, background: 'white',

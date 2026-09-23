@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Clock, MapPin, CheckCircle, XCircle, AlertCircle,
   Package, Store, Calendar, DollarSign, ChevronLeft, ChevronRight, Search
@@ -13,11 +13,7 @@ const HistoryPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    loadHistory();
-  }, [page]);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -30,7 +26,11 @@ const HistoryPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const filteredOrders = useMemo(() => orders.filter(order => {
     if (!searchTerm) return true;

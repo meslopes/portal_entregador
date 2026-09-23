@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, Wallet, Settings, BarChart3 } from 'lucide-react';
 import api from '@/lib/api';
 import TabBtn from './own-driver-financial/TabBtn';
@@ -36,17 +36,15 @@ const OwnDriverFinancialPage = () => {
     max_deliveries: 10
   });
 
-  useEffect(() => { loadData(); }, [period, driverFilter, paidFilter]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
       await Promise.all([
         loadPaymentConfig(),
-        loadEarnings(),
+        loadEarningsRef.current(),
         loadDrivers(),
-        loadComparison()
+        loadComparisonRef.current()
       ]);
     } catch (err) {
       setError('Erro ao carregar dados');
@@ -54,7 +52,12 @@ const OwnDriverFinancialPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { loadData(); }, [period, driverFilter, paidFilter, loadData]);
+
+  const loadEarningsRef = useRef(null);
+  const loadComparisonRef = useRef(null);
 
   const loadPaymentConfig = async () => {
     try {
@@ -103,6 +106,9 @@ const OwnDriverFinancialPage = () => {
       console.error('Erro ao carregar comparativo:', err);
     }
   };
+
+  loadEarningsRef.current = loadEarnings;
+  loadComparisonRef.current = loadComparison;
 
   const handleSaveConfig = async () => {
     try {

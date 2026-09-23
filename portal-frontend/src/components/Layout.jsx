@@ -4,7 +4,7 @@ import {
   Home, Package, DollarSign, Clock, Settings,
   LayoutDashboard, Users, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Wallet, TrendingUp, Globe, AlertTriangle, Route, Bike
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import { driverService } from '@/lib/api';
 import { sendGPS as sendGPSBroadcast, isRealtimeAvailable } from '@/lib/realtime';
 import OrderOfferPopup from '@/components/OrderOfferPopup';

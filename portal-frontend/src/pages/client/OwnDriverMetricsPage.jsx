@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BarChart3, Users, Clock, DollarSign, Star, TrendingUp,
   Package, AlertCircle, Filter, Target
@@ -15,20 +15,22 @@ const OwnDriverMetricsPage = () => {
   const [period, setPeriod] = useState('month');
   const [driverFilter, setDriverFilter] = useState('');
 
-  useEffect(() => { loadData(); }, [period, driverFilter]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      await Promise.all([loadDrivers(), loadMetrics()]);
+      await Promise.all([loadDrivers(), loadMetricsRef.current()]);
     } catch (err) {
       setError('Erro ao carregar dados');
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { loadData(); }, [period, driverFilter, loadData]);
+
+  const loadMetricsRef = useRef(null);
 
   const loadDrivers = async () => {
     try {
@@ -54,6 +56,8 @@ const OwnDriverMetricsPage = () => {
       console.error('Erro ao carregar métricas:', err);
     }
   };
+
+  loadMetricsRef.current = loadMetrics;
 
   const getRatingColor = (rating) => {
     if (rating >= 4.5) return '#16a34a';

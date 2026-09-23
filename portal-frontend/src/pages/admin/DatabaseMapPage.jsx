@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api, { adminService } from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import HeaderToolbar from './database-map/HeaderToolbar';
 import EditUserModal from './database-map/EditUserModal';
 import { handleGeneratePDF as generatePdf } from './database-map/generatePdfReport';

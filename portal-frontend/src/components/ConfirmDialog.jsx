@@ -1,13 +1,6 @@
 import React from 'react';
 import { AlertCircle, X } from 'lucide-react';
-
-let confirmFn = null;
-
-export const showConfirm = (message, onConfirm, title = 'Confirmação') => {
-  if (confirmFn) {
-    confirmFn(message, onConfirm, title);
-  }
-};
+import { setConfirmFn } from './ConfirmDialog.utils';
 
 const ConfirmDialog = ({ message, onConfirm, onCancel, title }) => {
   return (
@@ -70,10 +63,10 @@ const ConfirmDialogContainer = () => {
   const [dialog, setDialog] = React.useState(null);
 
   React.useEffect(() => {
-    confirmFn = (message, onConfirm, title) => {
+    setConfirmFn((message, onConfirm, title) => {
       setDialog({ message, onConfirm, title });
-    };
-    return () => { confirmFn = null; };
+    });
+    return () => { setConfirmFn(null); };
   }, []);
 
   if (!dialog) return null;

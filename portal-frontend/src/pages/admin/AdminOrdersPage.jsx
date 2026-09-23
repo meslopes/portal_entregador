@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Package, AlertCircle, Store, User, MapPin, Clock,
   ChevronLeft, ChevronRight, Bike, Edit, Trash2, Eye
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
-import { useSquare } from '@/contexts/SquareContext';
+import { useSquare } from '@/contexts/SquareContext.hooks';
 import DateRangeFilter from '@/components/DateRangeFilter';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import { ORDER_STATUS } from '@/constants/status';
-import { showConfirm } from '@/components/ConfirmDialog';
+import { showConfirm } from '@/components/ConfirmDialog.utils';
 import StatusFilterBar from './admin-orders/StatusFilterBar';
 import EditOrderModal from './admin-orders/EditOrderModal';
 
@@ -36,9 +36,7 @@ const AdminOrdersPage = () => {
   const [editData, setEditData] = useState({});
   const [dateRange, setDateRange] = useState(null);
 
-  useEffect(() => { loadOrders(); }, [page, statusFilter, dateRange, squareId]);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
       const response = await adminService.getAllOrders(page, 20, statusFilter, dateRange?.startDate, dateRange?.endDate, squareId);
@@ -50,7 +48,9 @@ const AdminOrdersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, statusFilter, dateRange, squareId]);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
   const handleDeleteOrder = async (orderId) => {
     showConfirm('Excluir este pedido? Esta ação não pode ser desfeita.', async () => {

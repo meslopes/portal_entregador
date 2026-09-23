@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { orderService, utils } from '@/lib/api';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 
 import EditOrderModal from './order-detail/EditOrderModal';
 import OrderInfoSection from './order-detail/OrderInfoSection';

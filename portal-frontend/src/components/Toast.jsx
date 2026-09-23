@@ -1,14 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { setAddToastFn } from './Toast.utils';
 
 let toastId = 0;
-let addToastFn = null;
-
-export const showToast = (message, type = 'info', duration = 4000) => {
-  if (addToastFn) {
-    addToastFn(message, type, duration);
-  }
-};
 
 const ToastContainer = () => {
   const [toasts, setToasts] = useState([]);
@@ -22,8 +16,8 @@ const ToastContainer = () => {
   }, []);
 
   useEffect(() => {
-    addToastFn = addToast;
-    return () => { addToastFn = null; };
+    setAddToastFn(addToast);
+    return () => { setAddToastFn(null); };
   }, [addToast]);
 
   const removeToast = (id) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
@@ -25,11 +25,7 @@ const OwnDriverDeliveryPage = () => {
   const [nextStatus, setNextStatus] = useState('');
   const [proofPhoto, setProofPhoto] = useState(null);
 
-  useEffect(() => {
-    loadOrder();
-  }, [orderId]);
-
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('own_driver_token');
@@ -46,7 +42,11 @@ const OwnDriverDeliveryPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder]);
 
   const handleStatusUpdate = (status) => {
     setNextStatus(status);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Building2 } from 'lucide-react';
-import { SettingsCard, FormField, inputStyle } from './shared';
+import { SettingsCard, FormField } from './shared';
+import { inputStyle } from './shared.constants';
 
 const CompanySettings = ({ config, onChange }) => (
   <SettingsCard title="Dados da Empresa" icon={<Building2 size={18} />}>

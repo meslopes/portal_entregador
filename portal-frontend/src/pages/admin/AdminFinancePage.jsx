@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Package, Clock,
   AlertCircle, Store, Bike, ArrowUpRight, BarChart3,
   Percent, Wallet, ArrowDownRight, CreditCard
 } from 'lucide-react';
 import api, { adminService, utils } from '@/lib/api';
-import { useSquare } from '@/contexts/SquareContext';
+import { useSquare } from '@/contexts/SquareContext.hooks';
 import DateRangeFilter from '@/components/DateRangeFilter';
 
 const AdminFinancePage = () => {
@@ -19,10 +19,7 @@ const AdminFinancePage = () => {
   const [commission, setCommission] = useState(30); // % que o admin retém
   const [savingCommission, setSavingCommission] = useState(false);
 
-  useEffect(() => { loadData(); }, [squareId]);
-  useEffect(() => { loadData(); }, [dateRange]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -46,7 +43,9 @@ const AdminFinancePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [squareId, dateRange]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const saveCommission = async () => {
     try {

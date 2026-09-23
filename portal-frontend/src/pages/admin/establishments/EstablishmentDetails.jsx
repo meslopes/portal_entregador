@@ -2,8 +2,9 @@ import React from 'react';
 import { Store, X, MapPin, Phone, Mail, Edit, Bike, Users } from 'lucide-react';
 import { utils } from '@/lib/api';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
-import { Modal, btnSecondary, STATUS_CONFIG } from './ui';
+import { showToast } from '@/components/Toast.utils';
+import { Modal } from './ui';
+import { btnSecondary, STATUS_CONFIG } from './ui.constants';
 
 const EstablishmentDetails = ({
   details, onClose, onEdit, onToggleOwnDrivers

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 import Tooltip from '@/components/Tooltip';
-import { showConfirm } from '@/components/ConfirmDialog';
+import { showConfirm } from '@/components/ConfirmDialog.utils';
 import AvailableOrders from './establishment-routes/AvailableOrders';
 import RoutesList from './establishment-routes/RoutesList';
 import RouteForm from './establishment-routes/RouteForm';

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 import { Loader2, AlertCircle } from 'lucide-react';
 import PlatformHeader from './platform-tabs/PlatformHeader';
 import PlatformStats from './platform-tabs/PlatformStats';

@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   TrendingUp, Users, Store, DollarSign,
   AlertCircle, Star, Package, XCircle,
   Clock, Target
 } from 'lucide-react';
 import { adminService, utils } from '@/lib/api';
-import { useSquare } from '@/contexts/SquareContext';
+import { useSquare } from '@/contexts/SquareContext.hooks';
 import DateRangeFilter from '@/components/DateRangeFilter';
 import {
-  ReportCard, MiniReport, ReportTable, tdStyle, RankBadge, StarBadge
+  ReportCard, MiniReport, ReportTable, RankBadge, StarBadge
 } from './reports/shared';
+import { tdStyle } from './reports/shared.constants';
 import PeakHoursReport from './reports/PeakHoursReport';
 import RatingsReport from './reports/RatingsReport';
 
@@ -29,10 +30,7 @@ const AdminReportsPage = () => {
   const [dateRange, setDateRange] = useState(null);
   const [deliveriesByDriver, setDeliveriesByDriver] = useState([]);
 
-  useEffect(() => { loadAll(); }, [period, squareId]);
-  useEffect(() => { if (dateRange) loadAll(); }, [dateRange]);
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     try {
       setLoading(true);
       const [fin, orders, drivers, estabs, canc, rats, peaks, deliv] = await Promise.all([
@@ -59,7 +57,10 @@ const AdminReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period, squareId]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => { if (dateRange) loadAll(); }, [dateRange, loadAll]);
 
   const tabs = [
     { key: 'financial', label: 'Financeiro', icon: DollarSign },

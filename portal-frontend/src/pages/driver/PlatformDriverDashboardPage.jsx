@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, DollarSign, MapPin, Bike,
@@ -30,9 +30,7 @@ const PlatformDriverDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [_error, setError] = useState('');
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async (isRefresh = false) => {
+  const loadData = useCallback(async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
       const token = localStorage.getItem('token');
@@ -56,7 +54,9 @@ const PlatformDriverDashboardPage = () => {
     } finally {
       if (!isRefresh) setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const acceptRoute = async (routeId) => {
     try {

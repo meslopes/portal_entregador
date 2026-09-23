@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Copy, AlertCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
-import { useSquare } from '@/contexts/SquareContext';
-import { showToast } from '@/components/Toast';
+import { useSquare } from '@/contexts/SquareContext.hooks';
+import { showToast } from '@/components/Toast.utils';
 import EstablishmentStats from './establishments/EstablishmentStats';
 import PendingApprovals from './establishments/PendingApprovals';
 import EstablishmentsList from './establishments/EstablishmentsList';
@@ -30,12 +30,27 @@ const AdminEstablishmentsPage = () => {
   const [editing, setEditing] = useState(null);
   const [showDetails, setShowDetails] = useState(null);
 
+  const loadEstablishments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getEstablishments(page, 20, search, squareId);
+      setEstablishments(data.establishments);
+      setTotalPages(data.pages);
+      setTotal(data.total);
+    } catch (err) {
+      setError('Erro ao carregar estabelecimentos');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, squareId]);
+
   useEffect(() => {
     loadEstablishments();
     loadSquares();
     loadPendingEstablishments();
     if (isSuperAdmin) loadTenants();
-  }, [page, search, squareId]);
+  }, [page, search, squareId, isSuperAdmin, loadEstablishments]);
 
   const loadSquares = async () => {
     try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch { /* intentionally empty */ }
@@ -50,21 +65,6 @@ const AdminEstablishmentsPage = () => {
       const res = await api.get('/api/admin/pending-users');
       setPendingEstablishments((res.data.users || []).filter(u => u.user_type === 'CLIENT'));
     } catch { /* intentionally empty */ }
-  };
-
-  const loadEstablishments = async () => {
-    try {
-      setLoading(true);
-      const data = await adminService.getEstablishments(page, 20, search, squareId);
-      setEstablishments(data.establishments);
-      setTotalPages(data.pages);
-      setTotal(data.total);
-    } catch (err) {
-      setError('Erro ao carregar estabelecimentos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleApprove = async (userId) => {

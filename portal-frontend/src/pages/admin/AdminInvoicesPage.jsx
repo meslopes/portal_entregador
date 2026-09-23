@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, RefreshCw, CheckCircle, AlertCircle, QrCode, ExternalLink, Bell } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -15,16 +15,7 @@ const AdminInvoicesPage = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState('');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
 
-  useEffect(() => { loadInvoices(); loadRestaurants(); }, [filter]);
-
-  const loadRestaurants = async () => {
-    try {
-      const response = await api.get('/api/admin/establishments');
-      setRestaurants(response.data.establishments || response.data || []);
-    } catch { /* silent */ }
-  };
-
-  const loadInvoices = async () => {
+  const loadInvoices = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -36,6 +27,15 @@ const AdminInvoicesPage = () => {
     } finally {
       setLoading(false);
     }
+  }, [filter]);
+
+  useEffect(() => { loadInvoices(); loadRestaurants(); }, [loadInvoices]);
+
+  const loadRestaurants = async () => {
+    try {
+      const response = await api.get('/api/admin/establishments');
+      setRestaurants(response.data.establishments || response.data || []);
+    } catch { /* silent */ }
   };
 
   const handleGenerate = async (period, restaurantId) => {

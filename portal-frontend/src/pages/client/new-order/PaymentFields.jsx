@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShoppingCart, Info } from 'lucide-react';
-import { Card, Label, PayBtn, inputStyle } from './shared';
+import { Card, Label, PayBtn } from './shared';
+import { inputStyle } from './shared.constants';
 
 const PaymentFields = ({ form, setForm, handleChange }) => (
   <Card title="Pagamento do Cliente" icon={<ShoppingCart size={16} />}>

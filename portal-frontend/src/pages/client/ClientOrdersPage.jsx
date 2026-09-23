@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { orderService } from '@/lib/api';
 import OrderFilters from './client-orders/OrderFilters';
@@ -15,9 +15,7 @@ const ClientOrdersPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  useEffect(() => { loadOrders(); }, [page, filter]);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
       const data = await orderService.getMyOrders(page, 15, filter);
@@ -29,7 +27,9 @@ const ClientOrdersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, filter]);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
   const openDetails = async (orderId) => {
     try {

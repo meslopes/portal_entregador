@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, Plus, Trash2, CheckCircle, AlertCircle, RefreshCw, ExternalLink, Shield } from 'lucide-react';
 import api from '@/lib/api';
-import { showToast } from '@/components/Toast';
+import { showToast } from '@/components/Toast.utils';
 
 const AdminIntegrationsPage = () => {
   const [credentials, setCredentials] = useState([]);

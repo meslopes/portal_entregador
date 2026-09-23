@@ -70,7 +70,7 @@ export default function MapSection({
       script.onload = () => setTimeout(initMap, 150);
       document.head.appendChild(script);
     }
-  }, []);
+  }, [cityCenter]);
 
   // ── Recenter on city change ────────────────────────────────────────────────
   useEffect(() => {
