@@ -7,3 +7,7 @@ export { default as TenantDetailModal } from './TenantDetailModal';
 export { default as CreateTenantModal } from './CreateTenantModal';
 export { default as EditTenantModal } from './EditTenantModal';
 export { default as UserEditModal } from './UserEditModal';
+export { default as PlatformHeader } from './PlatformHeader';
+export { default as TabNavigation } from './TabNavigation';
+export { default as LoadingPage } from './LoadingPage';
+export { default as DashboardModals } from './DashboardModals';

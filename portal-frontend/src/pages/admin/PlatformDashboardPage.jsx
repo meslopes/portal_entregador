@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Building2, Users, Loader2, RefreshCw,
-  BarChart3, Shield
-} from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast';
 import {
   OverviewTab, TenantsTab, UsersTab, PendingTab, AdminsTab,
-  TenantDetailModal, CreateTenantModal, EditTenantModal, UserEditModal
+  PlatformHeader, TabNavigation, LoadingPage, DashboardModals
 } from './platform-tabs';
 
 const PlatformDashboardPage = () => {
@@ -281,78 +277,20 @@ const PlatformDashboardPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: '#6366f1' }} />
-      </div>
-    );
-  }
+  const handleRefresh = () => {
+    loadDashboard();
+    loadTenants();
+    loadPendingUsers();
+    loadUsers();
+    setRefreshKey(k => k + 1);
+  };
+
+  if (loading) return <LoadingPage />;
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
-            Painel da Plataforma
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-            Gerencie todos os tenants e monitore o sistema
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <a
-            href="/admin/database-map"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.5rem 1rem', borderRadius: '0.5rem',
-              border: '1px solid #e2e8f0', background: 'white',
-              cursor: 'pointer', fontSize: '0.875rem', color: '#64748b',
-              textDecoration: 'none'
-            }}
-          >
-            🗺️ Mapa do Banco
-          </a>
-          <button
-            onClick={() => { loadDashboard(); loadTenants(); loadPendingUsers(); loadUsers(); setRefreshKey(k => k + 1); }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.5rem 1rem', borderRadius: '0.5rem',
-              border: '1px solid #e2e8f0', background: 'white',
-              cursor: 'pointer', fontSize: '0.875rem', color: '#64748b'
-            }}
-          >
-            <RefreshCw size={16} /> Atualizar
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem', overflowX: 'auto', flexWrap: 'nowrap' }}>
-        {[
-          { key: 'overview', label: 'Visão Geral', icon: BarChart3 },
-          { key: 'tenants', label: 'Tenants', icon: Building2 },
-          { key: 'users', label: 'Usuários', icon: Users },
-          { key: 'admins', label: 'Admins', icon: Shield },
-          { key: 'pending', label: 'Pendentes', icon: Users }
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.5rem 1rem', borderRadius: '0.5rem',
-              border: 'none', background: activeTab === tab.key ? '#eff6ff' : 'transparent',
-              color: activeTab === tab.key ? '#2563eb' : '#64748b',
-              cursor: 'pointer', fontSize: '0.875rem', fontWeight: activeTab === tab.key ? 600 : 400
-            }}
-          >
-            <tab.icon size={16} /> {tab.label}
-          </button>
-        ))}
-      </div>
-
+      <PlatformHeader onRefresh={handleRefresh} />
+      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       {/* Overview Tab */}
       {activeTab === 'overview' && dashboard && (
         <OverviewTab dashboard={dashboard} />
@@ -377,55 +315,33 @@ const PlatformDashboardPage = () => {
       {activeTab === 'pending' && (
         <PendingTab pendingUsers={pendingUsers} pendingLoading={pendingLoading} onRefresh={loadPendingUsers} onApprove={handleApprove} onReject={handleReject} />
       )}
-
-      {/* Tenant Details Modal */}
-      {showTenantModal && selectedTenant && (
-        <TenantDetailModal
-          selectedTenant={selectedTenant}
-          onClose={() => { setShowTenantModal(false); setSelectedTenant(null); }}
-          onEdit={handleEditTenant}
-          onDelete={handleDeleteTenant}
-        />
-      )}
-
-      {/* Edit Tenant Modal */}
-      {editingTenant && (
-        <EditTenantModal
-          editingTenant={editingTenant}
-          tenantEditForm={tenantEditForm}
-          tenantEditLoading={tenantEditLoading}
-          onClose={() => setEditingTenant(null)}
-          onSubmit={handleUpdateTenant}
-          onFormChange={setTenantEditForm}
-        />
-      )}
-
-      {/* Create Tenant Modal */}
-      {showCreateTenantModal && (
-        <CreateTenantModal
-          tenantFormData={tenantFormData}
-          createTenantLoading={createTenantLoading}
-          onClose={() => setShowCreateTenantModal(false)}
-          onSubmit={handleCreateTenant}
-          onFormChange={setTenantFormData}
-        />
-      )}
-
-      {/* User Edit Modal */}
-      {showUserEditModal && editingUser && (
-        <UserEditModal
-          userEditForm={userEditForm}
-          userEditLoading={userEditLoading}
-          tenants={tenants}
-          onClose={() => { setShowUserEditModal(false); setEditingUser(null); }}
-          onSubmit={handleUpdateUser}
-          onFormChange={setUserEditForm}
-        />
-      )}
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
+      <DashboardModals
+        showTenantModal={showTenantModal}
+        selectedTenant={selectedTenant}
+        editingTenant={editingTenant}
+        tenantEditForm={tenantEditForm}
+        tenantEditLoading={tenantEditLoading}
+        showCreateTenantModal={showCreateTenantModal}
+        tenantFormData={tenantFormData}
+        createTenantLoading={createTenantLoading}
+        showUserEditModal={showUserEditModal}
+        editingUser={editingUser}
+        userEditForm={userEditForm}
+        userEditLoading={userEditLoading}
+        tenants={tenants}
+        onCloseTenantModal={() => { setShowTenantModal(false); setSelectedTenant(null); }}
+        onEditTenant={handleEditTenant}
+        onDeleteTenant={handleDeleteTenant}
+        onCloseEditTenant={() => setEditingTenant(null)}
+        onUpdateTenant={handleUpdateTenant}
+        onTenantEditFormChange={setTenantEditForm}
+        onCloseCreateTenant={() => setShowCreateTenantModal(false)}
+        onCreateTenant={handleCreateTenant}
+        onTenantFormChange={setTenantFormData}
+        onCloseUserEdit={() => { setShowUserEditModal(false); setEditingUser(null); }}
+        onUpdateUser={handleUpdateUser}
+        onUserEditFormChange={setUserEditForm}
+      />
     </div>
   );
 };
