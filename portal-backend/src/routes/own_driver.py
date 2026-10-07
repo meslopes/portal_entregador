@@ -22,7 +22,13 @@ logger = logging.getLogger(__name__)
 own_driver_bp = Blueprint('own_driver', __name__, url_prefix='/api/own-driver')
 
 # Secret key for own driver tokens (separate from main JWT)
-OWN_DRIVER_SECRET = os.environ.get('OWN_DRIVER_SECRET', 'own-driver-secret-key-2024')
+OWN_DRIVER_SECRET = os.environ.get('OWN_DRIVER_SECRET')
+if not OWN_DRIVER_SECRET:
+    if os.getenv('FLASK_ENV') == 'production':
+        raise RuntimeError("FATAL: OWN_DRIVER_SECRET deve ser definida em produção.")
+    import secrets
+    OWN_DRIVER_SECRET = secrets.token_hex(32)
+    logger.warning("OWN_DRIVER_SECRET não configurada — usando chave aleatória (tokens invalidam ao reiniciar)")
 
 
 def create_own_driver_token(driver_id, restaurant_id):
