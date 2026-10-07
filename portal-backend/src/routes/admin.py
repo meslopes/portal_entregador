@@ -1310,6 +1310,16 @@ def update_restaurant_subscription(restaurant_id):
 @admin_required
 def cleanup_clients_drivers():
     try:
+        # Exigir super admin para operação destrutiva
+        user = get_current_user()
+        if not user or not user.is_super_admin:
+            return jsonify({'error': 'Apenas super admin pode executar limpeza em massa'}), 403
+
+        # Confirmar via header (proteção contra execução acidental)
+        from flask import request as req
+        if req.headers.get('X-Confirm-Delete') != 'true':
+            return jsonify({'error': 'Header X-Confirm-Delete: true obrigatório'}), 400
+
         # Deletar na ordem correta para respeitar foreign keys
         # 1. Tabelas sem dependencias diretas
         db.session.execute(db.text("DELETE FROM deliveries"))
