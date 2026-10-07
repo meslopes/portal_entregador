@@ -82,16 +82,16 @@ class ProductionConfig(Config):
         'max_overflow': 10,             # Conexões extras permitidas
     }
 
-    # Validar secret keys em produção
-    if os.getenv('SECRET_KEY') and os.getenv('SECRET_KEY') != 'dev-secret-key-change-in-production':
-        SECRET_KEY = os.getenv('SECRET_KEY')
-    else:
-        SECRET_KEY = Config.SECRET_KEY  # Usa fallback se não configurado (já configurado no Cloud Run)
+    # Validar secret keys em produção — falhar fechado se não configuradas
+    _secret = os.getenv('SECRET_KEY')
+    if not _secret or _secret in ('dev-secret-key-change-in-production', 'dev-secret-key-local-nao-usar-em-producao', ''):
+        raise RuntimeError("FATAL: SECRET_KEY deve ser definida com valor seguro em produção.")
+    SECRET_KEY = _secret
 
-    if os.getenv('JWT_SECRET_KEY') and os.getenv('JWT_SECRET_KEY') != 'jwt-secret-key-change-in-production':
-        JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-    else:
-        JWT_SECRET_KEY = Config.JWT_SECRET_KEY  # Usa fallback se não configurado (já configurado no Cloud Run)
+    _jwt_secret = os.getenv('JWT_SECRET_KEY')
+    if not _jwt_secret or _jwt_secret in ('jwt-secret-key-change-in-production', 'dev-jwt-secret-key-local-nao-usar-em-producao', ''):
+        raise RuntimeError("FATAL: JWT_SECRET_KEY deve ser definida com valor seguro em produção.")
+    JWT_SECRET_KEY = _jwt_secret
 
 class TestingConfig(Config):
     """Configuração para testes"""
