@@ -1491,6 +1491,11 @@ def database_map():
 def database_restore():
     """Restaura dados de um backup JSON (cria/atualiza tenants, squares, users, restaurants)"""
     try:
+        # Exigir super admin para operação de restore
+        user = get_current_user()
+        if not user or not user.is_super_admin:
+            return jsonify({'error': 'Apenas super admin pode restaurar dados'}), 403
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados de backup não fornecidos'}), 400
@@ -1543,7 +1548,9 @@ def database_restore():
                     phone=u.get('phone'),
                     cpf=u.get('cpf')
                 )
-                user.set_password('restore123')  # Senha temporária
+                import secrets as _secrets
+                temp_password = _secrets.token_urlsafe(16)
+                user.set_password(temp_password)  # Senha aleatória — usuário deve redefinir
                 db.session.add(user)
                 results['created'] += 1
             except Exception as e:
