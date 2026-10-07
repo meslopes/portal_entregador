@@ -37,6 +37,7 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user
+from src.utils.auth import admin_required, client_or_admin_required
 
 logger = logging.getLogger(__name__)
 
@@ -46,42 +47,6 @@ admin_finance_bp = Blueprint('admin_finance', __name__)
 def get_square_filter():
     """Retorna o square_id do query param se fornecido."""
     return request.args.get('square_id', type=int)
-
-
-def admin_required(f):
-    """Decorator para verificar se o usuário é admin"""
-    from functools import wraps
-
-    from flask_jwt_extended import get_jwt_identity
-
-    from src.models.portal_models import User, UserType
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user_id = int(get_jwt_identity())
-        user = User.query.get(user_id)
-        if not user or user.user_type != UserType.ADMIN:
-            return jsonify({'error': 'Acesso restrito a administradores'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-def client_or_admin_required(f):
-    """Decorator para verificar se o usuário é cliente ou admin"""
-    from functools import wraps
-
-    from flask_jwt_extended import get_jwt_identity
-
-    from src.models.portal_models import User, UserType
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user_id = int(get_jwt_identity())
-        user = User.query.get(user_id)
-        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
-            return jsonify({'error': 'Acesso restrito'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 # DASHBOARD FINANCEIRO

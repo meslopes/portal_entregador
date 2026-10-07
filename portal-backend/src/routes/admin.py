@@ -185,6 +185,7 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user
+from src.utils.auth import admin_required, client_or_admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -195,8 +196,7 @@ def get_square_filter():
     return request.args.get('square_id', type=int)
 
 
-
-
+def soft_delete_user(user_id, admin_id=None):
 
 
 
@@ -227,70 +227,6 @@ def get_deleted_users_query(tenant_id=None, user_type=None, days=None):
         query = query.filter(User.deleted_at <= cutoff)
 
     return query.order_by(User.deleted_at.desc())
-
-
-
-
-def admin_required(f):
-
-    """Decorator para verificar se o usuário é admin"""
-
-    from functools import wraps
-
-    @wraps(f)
-
-    def decorated_function(*args, **kwargs):
-
-        user_id = int(get_jwt_identity())
-
-        user = User.query.get(user_id)
-
-        if not user or user.user_type != UserType.ADMIN:
-
-            return jsonify({'error': 'Acesso restrito a administradores'}), 403
-
-        # Verificar status do usuário e do tenant
-        from src.utils.tenant import check_user_and_tenant_status
-        block = check_user_and_tenant_status(user)
-        if block:
-            return block
-
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-
-
-
-def client_or_admin_required(f):
-
-    """Decorator para verificar se o usuário é admin ou cliente (estabelecimento)"""
-
-    from functools import wraps
-
-    @wraps(f)
-
-    def decorated_function(*args, **kwargs):
-
-        user_id = int(get_jwt_identity())
-
-        user = User.query.get(user_id)
-
-        if not user or user.user_type not in (UserType.ADMIN, UserType.CLIENT):
-
-            return jsonify({'error': 'Acesso restrito'}), 403
-
-        # Verificar status do usuário e do tenant
-        from src.utils.tenant import check_user_and_tenant_status
-        block = check_user_and_tenant_status(user)
-        if block:
-            return block
-
-        return f(*args, **kwargs)
-
-    return decorated_function
-
 
 
 

@@ -25,25 +25,10 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user
+from src.utils.auth import admin_required
 
 admin_drivers_bp = Blueprint('admin_drivers', __name__)
 logger = logging.getLogger(__name__)
-
-
-def admin_required(f):
-    """Decorator para verificar se o usuário é admin"""
-    from functools import wraps
-
-    from flask_jwt_extended import get_jwt_identity
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user_id = int(get_jwt_identity())
-        user = User.query.get(user_id)
-        if not user or user.user_type != UserType.ADMIN:
-            return jsonify({'error': 'Acesso restrito a administradores'}), 403
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 def get_square_filter():
