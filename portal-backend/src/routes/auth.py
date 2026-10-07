@@ -287,6 +287,14 @@ def register():
         except Exception:
             pass
 
+        # NÃO emitir token para usuários INACTIVE (pendentes de aprovação)
+        if user.status == UserStatus.INACTIVE:
+            db.session.commit()
+            return jsonify({
+                'message': 'Cadastro realizado com sucesso. Aguarde aprovação do administrador.',
+                'pending_approval': True
+            }), 201
+
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
 
@@ -420,11 +428,18 @@ def register_client():
         except Exception:
             pass  # Notificação é secundária — não bloqueia cadastro
 
+        # NÃO emitir token para usuários INACTIVE (pendentes de aprovação)
+        if user.status == UserStatus.INACTIVE:
+            return jsonify({
+                'message': 'Conta criada com sucesso. Aguarde aprovação do administrador.',
+                'pending_approval': True
+            }), 201
+
         access_token = create_access_token(identity=str(user.id))
         user_data = _build_user_response(user)
 
         return jsonify({
-            'message': 'Conta criada com sucesso. Aguarde aprovação do administrador.',
+            'message': 'Conta criada com sucesso.',
             'access_token': access_token,
             'user': user_data
         }), 201
