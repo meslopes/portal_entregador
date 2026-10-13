@@ -21,7 +21,7 @@ const Layout = ({ children }) => {
   const [openDropdown, setOpenDropdown] = useState(null);
 
   // GPS persistente para entregadores da plataforma — funciona em TODAS as páginas
-  // Supabase Realtime Broadcast a cada 2s (tempo real) + HTTP POST a cada 30s (persistência)
+  // Broadcast 15s (baixa precisão, economiza bateria) + HTTP POST 30s (alta precisão, persistência)
   const gpsBroadcastRef = useRef(null);
   const gpsHttpRef = useRef(null);
   useEffect(() => {
@@ -35,7 +35,7 @@ const Layout = ({ children }) => {
     const driverId = user?.driver?.id;
     const tenantId = user?.tenant_id;
 
-    // Broadcast via Supabase Realtime (tempo real, ~100ms latência)
+    // Broadcast via Supabase Realtime — a cada 15s com baixa precisão (bateria)
     const broadcast = () => {
       if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
@@ -45,11 +45,11 @@ const Layout = ({ children }) => {
           }
         },
         () => {},
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 2000 }
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 }
       );
     };
 
-    // HTTP POST para persistência no banco (a cada 30s)
+    // HTTP POST para persistência no banco (a cada 30s, alta precisão)
     const persist = () => {
       if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
@@ -60,7 +60,7 @@ const Layout = ({ children }) => {
     };
 
     broadcast(); persist();
-    gpsBroadcastRef.current = setInterval(broadcast, 2000);
+    gpsBroadcastRef.current = setInterval(broadcast, 15000);
     gpsHttpRef.current = setInterval(persist, 30000);
 
     return () => {

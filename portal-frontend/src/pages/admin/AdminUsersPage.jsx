@@ -54,7 +54,8 @@ const AdminUsersPage = () => {
 
   const loadTenants = async () => {
     try {
-      const res = await api.get('/api/platform/tenants');
+      // Endpoint de admin — não /api/platform/tenants (super admin)
+      const res = await api.get('/api/admin/tenants');
       setTenants(res.data.tenants || []);
     } catch (err) {
       console.error(err);

@@ -3,7 +3,7 @@ import { Globe } from 'lucide-react';
 import { SettingsCard, FormField } from './shared';
 import { inputStyle } from './shared.constants';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
+import { API_BASE_URL as API_URL } from '@/lib/api';
 
 const integrationToggleStyle = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',

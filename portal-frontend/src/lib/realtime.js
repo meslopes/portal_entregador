@@ -28,6 +28,18 @@ function getClient() {
   return supabase;
 }
 
+/**
+ * Obtém o JWT do usuário para autenticar o canal Realtime.
+ * Sem isso, qualquer um com a chave anon pode inscrever nos canais.
+ */
+function getAuthToken() {
+  try {
+    return localStorage.getItem('token') || localStorage.getItem('own_driver_token') || null;
+  } catch {
+    return null;
+  }
+}
+
 function getChannelName(tenantId) {
   return `gps:tenant_${tenantId || 'global'}`;
 }
@@ -42,10 +54,12 @@ export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
 
   const channelName = getChannelName(tenantId);
 
-  // Criar canal de envio na primeira chamada
+  // Criar canal de envio na primeira chamada (com JWT do usuário)
   if (!sendChannel) {
     log('Criando canal de envio:', channelName);
-    sendChannel = client.channel(channelName);
+    sendChannel = client.channel(channelName, {
+      config: { auth: { token: getAuthToken() } }
+    });
 
     sendChannel.subscribe((status) => {
       log('Canal de envio status:', status);
@@ -92,7 +106,9 @@ export function subscribeGPS(tenantId, onGPSUpdate) {
   const channelName = getChannelName(tenantId);
   log('Inscrevendo para receber GPS:', channelName);
 
-  receiveChannel = client.channel(channelName);
+  receiveChannel = client.channel(channelName, {
+    config: { auth: { token: getAuthToken() } }
+  });
 
   receiveChannel
     .on('broadcast', { event: 'gps' }, (payload) => {

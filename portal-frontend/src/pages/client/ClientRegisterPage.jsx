@@ -61,7 +61,7 @@ const ClientRegisterPage = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app'}/api/auth/register-client`, {
+      const response = await fetch(`${(await import('@/lib/api')).API_BASE_URL}/api/auth/register-client`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,5 +1,10 @@
-// Configuração da API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://muvlog-api-890250693883.us-central1.run.app';
+// Configuração da API — SEM fallback de produção (evita tráfego acidental para Cloud Run em dev)
+// Em produção, VITE_API_URL é injetada no build do Vercel. Em dev, usa localhost.
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+
+if (!API_BASE_URL) {
+  console.error('[API] VITE_API_URL não configurada — requisições falharão');
+}
 
 // Instância do axios com configurações padrão
 import axios from 'axios';
