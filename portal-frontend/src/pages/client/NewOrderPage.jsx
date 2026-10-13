@@ -64,18 +64,8 @@ const NewOrderPage = () => {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!document.querySelector('link[href*="leaflet.css"]')) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-    }
-    if (!window.L) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.async = true;
-      document.head.appendChild(script);
-    }
+    // Carrega Leaflet com SRI (via loader centralizado)
+    import('@/lib/leafletLoader').then(({ loadLeaflet }) => loadLeaflet()).catch(() => {});
   }, []);
 
   useEffect(() => {

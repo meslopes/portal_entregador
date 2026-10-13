@@ -96,14 +96,9 @@ const ClientDashboardPage = () => {
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => {
+    import('@/lib/leafletLoader')
+      .then(({ loadLeaflet }) => loadLeaflet())
+      .then(() => {
       if (mapRef.current && !mapInstanceRef.current) {
         const L = window.L;
         const map = L.map(mapRef.current, { zoomControl: true, scrollWheelZoom: true })
@@ -116,7 +111,7 @@ const ClientDashboardPage = () => {
         map.on('dragstart', () => { hasUserInteractedRef.current = true; });
         mapInstanceRef.current = map;
       }
-    };
+    }).catch(() => {});
     document.head.appendChild(script);
 
     return () => {

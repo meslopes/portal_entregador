@@ -96,15 +96,7 @@ const DriverRouteMap = () => {
     if (window.L) {
       initMap();
     } else {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = initMap;
-      document.head.appendChild(script);
+      import('@/lib/leafletLoader').then(({ loadLeaflet }) => loadLeaflet()).then(initMap).catch(() => {});
     }
   }, []);
 
