@@ -20,14 +20,13 @@ RUN apt-get update && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código da aplicação
-COPY . .
+# Copiar apenas o código da aplicação (ver .dockerignore)
+COPY src/ ./src/
+COPY main.py .
+COPY generate_pdf.py* ./
 
 # Porta que o Cloud Run espera (8080 por padrão)
 EXPOSE 8080
 
 # Iniciar com gunicorn (já está no requirements.txt)
-# --workers 2: Cloud Run já gerencia escalabilidade, manter workers baixo
-# --timeout 120: requests longas (geocodificação, PDF) precisam de mais tempo
-# --bind 0.0.0.0:8080: porta padrão do Cloud Run
 CMD exec gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 120 --access-logfile - "src.main:app"

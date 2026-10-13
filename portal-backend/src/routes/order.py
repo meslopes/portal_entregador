@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from src.models.portal_models import (
     Address,
@@ -601,7 +602,11 @@ def get_available_orders():
             (Order.special_instructions.like(f'%{offer_pattern}%'))
         )
 
-        available_orders = query.join(Restaurant).all()
+        available_orders = query.options(
+            joinedload(Order.restaurant),
+            joinedload(Order.customer),
+            joinedload(Order.delivery_address),
+        ).join(Restaurant).all()
 
         orders_data = []
         for order in available_orders:
