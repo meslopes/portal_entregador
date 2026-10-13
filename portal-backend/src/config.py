@@ -14,7 +14,9 @@ class Config:
     """Configuração base"""
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)  # Token expira em 24 horas
+    # 8h: cobre um turno de entrega sem expirar no meio do trabalho.
+    # Valor único — main.py e main_production.py importam daqui.
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
 
     # Configurações do banco de dados
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///src/database/app.db')

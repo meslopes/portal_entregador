@@ -38,10 +38,10 @@ if flask_env == 'production':
 app.config['SECRET_KEY'] = secret_key or 'dev-secret-key-local-nao-usar-em-producao'
 app.config['JWT_SECRET_KEY'] = jwt_secret_key or 'dev-jwt-secret-key-local-nao-usar-em-producao'
 
-# Token JWT expira em 4 horas
+# Token JWT: 8h (mesmo valor de config.py — fonte única)
 from datetime import timedelta
 
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=4)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=8)
 
 # Configuração do banco de dados
 database_url = os.getenv('DATABASE_URL', f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}")

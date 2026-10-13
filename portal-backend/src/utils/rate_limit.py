@@ -1,6 +1,6 @@
 """
 Rate Limiting - Proteção contra abuso de endpoints
-Usar: from src.utils.rate_limit import limiter, login_limit
+Usar: from src.utils.rate_limit import limiter, login_limit, register_limit
 """
 import os
 
@@ -22,6 +22,9 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Limites específicos para login (mais restritivo contra brute force)
-login_limit = limiter.limit("20 per minute")
-register_limit = limiter.limit("10 per minute")
+# Login: 10/min por IP — suficiente para uso legítimo, barra brute force
+login_limit = limiter.limit("10 per minute")
+# Registro: 5/min por IP — cadastros em massa
+register_limit = limiter.limit("5 per minute")
+# Troca de senha: 5/min por IP
+password_limit = limiter.limit("5 per minute")

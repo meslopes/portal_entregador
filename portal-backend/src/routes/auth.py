@@ -21,6 +21,8 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.rate_limit import login_limit as login_rate_limit
+from src.utils.rate_limit import register_limit as register_rate_limit
+from src.utils.rate_limit import password_limit as password_rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -155,6 +157,7 @@ def register_push_token_auth():
 
 # Endpoint para registro de entregador
 @auth_bp.route('/register', methods=['POST'])
+@register_rate_limit
 def register():
     try:
         from src.utils.validation import REGISTER_DRIVER_SCHEMA, ValidationError, validate_request
@@ -312,6 +315,7 @@ def register():
 
 # Endpoint para registro de cliente
 @auth_bp.route('/register-client', methods=['POST'])
+@register_rate_limit
 def register_client():
     try:
         data = request.get_json() or {}
@@ -653,6 +657,7 @@ def update_profile():
 # Endpoint para alterar senha
 @auth_bp.route('/change-password', methods=['POST'])
 @jwt_required()
+@password_rate_limit
 def change_password():
     try:
         user_id = int(get_jwt_identity())
