@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
+import { generateStrongPassword } from '@/lib/utils';
 import { showToast } from '@/components/Toast.utils';
 import { Modal, FormField } from './ui';
 import { inputStyle, btnPrimary, btnSecondary } from './ui.constants';
 import { parseAddressToFields } from './parseAddressToFields';
 
 const EMPTY_FORM = {
-  name: '', cnpj: '', phone: '', email: '', password: '123456',
+  name: '', cnpj: '', phone: '', email: '', password: '',
   address_street: '', address_number: '', address_neighborhood: '',
   address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
   latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
@@ -50,7 +51,8 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
       });
       if (editing.square_id) loadPricingTables(editing.square_id);
     } else {
-      setFormData(EMPTY_FORM);
+      // Novo estabelecimento: senha forte gerada automaticamente
+      setFormData({ ...EMPTY_FORM, password: generateStrongPassword() });
     }
     setFormError('');
   }, [editing]);
@@ -167,7 +169,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
 
         {!editing && (
           <FormField label="Senha de Acesso">
-            <input type="text" name="password" value={formData.password} onChange={handleChange} style={inputStyle} placeholder="123456 (padrão)" />
+            <input type="text" name="password" value={formData.password} onChange={handleChange} style={inputStyle} placeholder="Gerada automaticamente" />
             <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Senha para o estabelecimento fazer login no portal</p>
           </FormField>
         )}

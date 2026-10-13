@@ -4,6 +4,7 @@ import {
   Bike, Store, Shield, Mail, Phone, CheckCircle
 } from 'lucide-react';
 import api, { adminService } from '@/lib/api';
+import { generateStrongPassword } from '@/lib/utils';
 import { showToast } from '@/components/Toast.utils';
 import TrashModal from '@/components/TrashModal';
 import { FormField } from './usersFormShared';
@@ -29,7 +30,7 @@ const AdminUsersPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [showEdit, setShowEdit] = useState(null);
   const [showTrash, setShowTrash] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: 'admin123', first_name: '', last_name: '', tenant_id: '' });
+  const [formData, setFormData] = useState({ email: '', password: '', first_name: '', last_name: '', tenant_id: '' });
   const [editData, setEditData] = useState({});
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
@@ -70,7 +71,8 @@ const AdminUsersPage = () => {
   };
 
   const openCreateAdmin = () => {
-    setFormData({ email: '', password: 'admin123', first_name: '', last_name: '' });
+    // Senha gerada aleatoriamente — nunca usar senha padrão previsível
+    setFormData({ email: '', password: generateStrongPassword(), first_name: '', last_name: '' });
     setFormError('');
     setShowForm(true);
   };

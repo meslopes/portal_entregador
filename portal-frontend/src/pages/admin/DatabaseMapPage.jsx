@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import api, { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
+import { confirmDestructive, sanitizeBackupData } from '@/lib/utils';
 import HeaderToolbar from './database-map/HeaderToolbar';
 import EditUserModal from './database-map/EditUserModal';
 import { handleGeneratePDF as generatePdf } from './database-map/generatePdfReport';
@@ -65,17 +66,22 @@ const DatabaseMapPage = () => {
     return () => { if (msgTimeoutRef.current) clearTimeout(msgTimeoutRef.current); };
   }, []);
 
-  // Download backup do banco de dados como JSON
+  // Download backup do banco de dados como JSON (PII ofuscado + confirmação forte)
   const handleDownloadBackup = () => {
     if (!data) {
       showToast('Nenhum dado carregado para backup', 'error');
+      return;
+    }
+    if (!confirmDestructive('EXPORTAR', 'Exportar backup com dados do sistema?\nCPF e telefones serão mascarados.')) {
+      showToast('Exportação cancelada', 'info');
       return;
     }
     const backup = {
       exported_at: new Date().toISOString(),
       source: 'muvlog-database-map',
       version: '1.0',
-      ...data
+      pii_masked: true,
+      ...sanitizeBackupData(data)
     };
     const json = JSON.stringify(backup, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -87,15 +93,16 @@ const DatabaseMapPage = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast('Backup baixado com sucesso!', 'success');
+    showToast('Backup baixado com PII ofuscado!', 'success');
   };
 
   const handleDeleteUser = async (user) => {
     const isSuperAdmin = user.user_type === 'ADMIN' && user.is_super_admin;
     if (isSuperAdmin) { showToast('Não é possível excluir o super admin.', 'info'); return; }
-    if (!window.confirm(`Excluir ${user.first_name} ${user.last_name} (${user.email})?\n\nSe tiver pedidos ou dados vinculados, serão desvinculados automaticamente.`)) return;
+    if (!confirmDestructive('EXCLUIR', `Excluir ${user.first_name} ${user.last_name} (${user.email})?\n\nSe tiver pedidos ou dados vinculados, serão desvinculados (soft-delete).`)) return;
     try {
-      await api.delete(`/api/admin/users/${user.id}?force=true`);
+      // Soft-delete no backend — sem force=true (hard delete só via lixeira)
+      await api.delete(`/api/admin/users/${user.id}`);
       showMsg(`${user.first_name} ${user.last_name} excluído`);
       loadData();
     } catch (err) {
@@ -253,7 +260,7 @@ const DatabaseMapPage = () => {
         showSquareDropdown={showSquareDropdown}
         setShowSquareDropdown={setShowSquareDropdown}
         onCleanupTestData={async () => {
-          if (!window.confirm('ATENÇÃO: Isso vai excluir TODOS os dados de teste (pedidos iFood, clientes iFood, restaurantes de teste, entregadores de teste, faturas). Restaurantes reais (FORA DE HORA, BASTA DRINKS) serão mantidos.\n\nContinuar?')) return;
+          if (!confirmDestructive('LIMPAR', 'ATENÇÃO: Isso vai excluir TODOS os dados de teste (pedidos iFood, clientes iFood, restaurantes de teste, entregadores de teste, faturas). Restaurantes reais serão mantidos.')) return;
           try {
             const res = await api.post('/api/admin/cleanup-test-data', { action: 'all' });
             showMsg('Limpeza concluída: ' + JSON.stringify(res.data.deleted));
@@ -269,7 +276,7 @@ const DatabaseMapPage = () => {
         onRestoreBackup={async (e) => {
           const file = e.target.files[0];
           if (!file) return;
-          if (!window.confirm(`Restaurar backup de "${file.name}"?\n\nIsso vai criar/atualizar tenants, praças, usuários e estabelecimentos. Dados existentes serão atualizados.`)) return;
+          if (!confirmDestructive('RESTAURAR', `Restaurar backup de "${file.name}"?\n\nIsso vai criar/atualizar tenants, praças, usuários e estabelecimentos. Dados existentes serão atualizados.`)) return;
           try {
             const text = await file.text();
             const backupData = JSON.parse(text);

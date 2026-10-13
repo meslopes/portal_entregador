@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, AlertCircle, Copy } from 'lucide-react';
 import api, { adminService } from '@/lib/api';
+import { generateStrongPassword } from '@/lib/utils';
 import { useSquare } from '@/contexts/SquareContext.hooks';
 import { showToast } from '@/components/Toast.utils';
 import PendingDriversBanner from './admin-drivers/PendingDriversBanner';
@@ -10,7 +11,7 @@ import DriverDetailsModal from './admin-drivers/DriverDetailsModal';
 import DriverEditModal from './admin-drivers/DriverEditModal';
 
 const DEFAULT_FORM = {
-  email: '', password: '123456', first_name: '', last_name: '',
+  email: '', password: '', first_name: '', last_name: '',
   phone: '', cpf: '', vehicle_type: 'MOTORCYCLE', vehicle_plate: '',
   vehicle_model: '', vehicle_year: '', driver_license: '',
   pix_key: '', bank_account: '', tenant_id: '', square_id: '', max_concurrent_orders: '3'
@@ -179,7 +180,12 @@ const AdminDriversPage = () => {
     }
   };
 
-  const openCreateForm = () => { setFormData({ ...DEFAULT_FORM }); setFormError(''); setShowForm(true); };
+  const openCreateForm = () => {
+    // Senha gerada aleatoriamente — evitar senha padrão previsível
+    setFormData({ ...DEFAULT_FORM, password: generateStrongPassword() });
+    setFormError('');
+    setShowForm(true);
+  };
 
   const copyRegistrationLink = () => {
     const link = `${window.location.origin}/register`;

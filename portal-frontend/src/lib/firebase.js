@@ -1,27 +1,40 @@
 /**
  * Configuração do Firebase - muv.log
  * Push notifications via Firebase Cloud Messaging (FCM)
+ *
+ * As chaves vêm de variáveis de ambiente (VITE_FIREBASE_*) para não
+ * ficarem no repositório. Configure em .env.local e no Vercel.
  */
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCaPgR3xg-Fkeu3go9W4tOsb2Y3MBYYq5A",
-  authDomain: "muv-log.firebaseapp.com",
-  projectId: "muv-log",
-  storageBucket: "muv-log.firebasestorage.app",
-  messagingSenderId: "517350557310",
-  appId: "1:517350557310:web:717c9f2598fcb2f98d3a2f"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'muv-log.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'muv-log',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'muv-log.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '517350557310',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+
+// Sem config válida, FCM fica desabilitado (fail closed)
+const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.appId && vapidKey);
+if (!isConfigured) {
+  console.warn('[Firebase] Config ausente (VITE_FIREBASE_*) — push notifications desabilitadas');
+}
+
+const app = isConfigured ? initializeApp(firebaseConfig) : null;
 
 // Inicializar FCM
 let messaging = null;
-try {
-  messaging = getMessaging(app);
-} catch (err) {
-  console.warn('[Firebase] Messaging não suportado neste navegador:', err.message);
+if (isConfigured) {
+  try {
+    messaging = getMessaging(app);
+  } catch (err) {
+    console.warn('[Firebase] Messaging não suportado neste navegador:', err.message);
+  }
 }
 
 /**
@@ -39,12 +52,10 @@ export async function requestNotificationPermission() {
     }
 
     // Obter token FCM
-    const token = await getToken(messaging, {
-      vapidKey: 'BFxG3Cc9dr1bbuMbmTsYI3kI7UUb7-_e_xVvojCfRjGggZ5gHkJHuvgguj0SFTvtipaMQL2sru7LkdSXmlxfPho'
-    });
+    const token = await getToken(messaging, { vapidKey });
 
     if (token) {
-      console.log('[Firebase] Token FCM obtido:', token.substring(0, 20) + '...');
+      if (import.meta.env.DEV) console.log('[Firebase] Token FCM obtido');
       return token;
     }
 
@@ -63,7 +74,7 @@ export function onForegroundMessage(callback) {
   if (!messaging) return () => {};
 
   return onMessage(messaging, (payload) => {
-    console.log('[Firebase] Mensagem recebida em foreground:', payload);
+    if (import.meta.env.DEV) console.log('[Firebase] Mensagem recebida em foreground:', payload);
     if (callback) callback(payload);
   });
 }

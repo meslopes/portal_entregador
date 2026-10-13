@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2, RotateCcw, AlertCircle, CheckCircle, Loader2, X } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
+import { confirmDestructive } from '@/lib/utils';
 
 const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
   const [deletedUsers, setDeletedUsers] = useState([]);
@@ -53,7 +54,7 @@ const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
   };
 
   const handlePermanentDelete = async (userId) => {
-    if (!window.confirm('Tem certeza? Esta ação é IRREVERSÍVEL.')) return;
+    if (!confirmDestructive('APAGAR', 'Excluir PERMANENTEMENTE este usuário? Esta ação é IRREVERSÍVEL.')) return;
     try {
       setProcessing(true);
       await adminService.deleteUserPermanent(userId);
@@ -86,7 +87,7 @@ const TrashModal = ({ isOpen, onClose, onRestore, userType = null }) => {
 
   const handleBulkDelete = async () => {
     if (selectedUsers.length === 0) return;
-    if (!window.confirm(`Tem certeza que deseja excluir PERMANENTEMENTE ${selectedUsers.length} usuário(s)? Esta ação é IRREVERSÍVEL.`)) return;
+    if (!confirmDestructive('APAGAR TUDO', `Excluir PERMANENTEMENTE ${selectedUsers.length} usuário(s)? Esta ação é IRREVERSÍVEL.`)) return;
     try {
       setProcessing(true);
       await adminService.cleanupDeletedUsers(selectedUsers);
