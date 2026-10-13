@@ -197,11 +197,6 @@ def get_square_filter():
 
 
 def soft_delete_user(user_id, admin_id=None):
-
-
-
-
-def soft_delete_user(user_id, admin_id=None):
     """Marca um usuário como excluído (soft delete) em vez de deletar permanentemente"""
     from datetime import datetime, timezone
     user = User.query.get(user_id)
