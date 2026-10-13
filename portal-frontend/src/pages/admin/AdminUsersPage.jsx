@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import api, { adminService } from '@/lib/api';
 import { generateStrongPassword } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import { showToast } from '@/components/Toast.utils';
 import TrashModal from '@/components/TrashModal';
 import { FormField } from './usersFormShared';
@@ -22,8 +23,8 @@ const AdminUsersPage = () => {
   const [tenants, setTenants] = useState([]);
   const [squares, setSquares] = useState([]);
 
-  // Verificar se é super admin
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  // Verificar se é super admin via AuthContext (não localStorage direto)
+  const { user } = useAuth();
   const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   // Modais

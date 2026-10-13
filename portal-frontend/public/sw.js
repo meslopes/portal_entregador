@@ -13,7 +13,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-// Estratégia: Network First (sempre busca dados frescos, cache como fallback)
+// Estratégia: Network First para estáticos; NÃO cachear HTML de rotas autenticadas
+const STATIC_ASSET = /\.(js|css|png|jpg|jpeg|svg|gif|webp|woff2?|ttf|ico|json)$/i;
+
 self.addEventListener('fetch', (event) => {
   // Não interceptar chamadas de API do backend
   if (event.request.url.includes('/api/')) {
@@ -25,10 +27,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Só cachear assets estáticos — nunca HTML de páginas autenticadas
+  const url = new URL(event.request.url);
+  const isStatic = STATIC_ASSET.test(url.pathname) || url.pathname.startsWith('/assets/');
+  if (!isStatic) {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cachear recursos estáticos
         if (response.status === 200) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -38,7 +46,6 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // Fallback: buscar do cache
         return caches.match(event.request);
       })
   );

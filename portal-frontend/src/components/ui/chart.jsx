@@ -60,25 +60,22 @@ const ChartStyle = ({
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-.map(([key, itemConfig]) => {
-const color =
-  itemConfig.theme?.[theme] ||
-  itemConfig.color
-return color ? `  --color-${key}: ${color};` : null
-})
-.join("\n")}
-}
-`)
-          .join("\n"),
-      }} />
-  );
+  // CSS gerado apenas com valores de cor do config (sem input de usuário)
+  // Usar children do <style> em vez de dangerouslySetInnerHTML (React escapa)
+  const css = Object.entries(THEMES)
+    .map(([theme, prefix]) => {
+      const vars = colorConfig
+        .map(([key, itemConfig]) => {
+          const color = itemConfig.theme?.[theme] || itemConfig.color;
+          return color ? `  --color-${key}: ${color};` : null;
+        })
+        .filter(Boolean)
+        .join('\n');
+      return `${prefix} [data-chart=${id}] {\n${vars}\n}`;
+    })
+    .join('\n');
+
+  return <style>{css}</style>;
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip

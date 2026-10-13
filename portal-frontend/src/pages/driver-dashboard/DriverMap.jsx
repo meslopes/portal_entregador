@@ -22,12 +22,12 @@ const DriverMap = ({ location, currentOrder, getCurrentLocation }) => {
                 if (isMobile) {
                   const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
                   if (useWaze) {
-                    window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+                    window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
                   } else {
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
                   }
                 } else {
-                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
                 }
               }}
               style={{

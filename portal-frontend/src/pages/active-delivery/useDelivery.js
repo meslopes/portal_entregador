@@ -36,7 +36,7 @@ export function useDelivery() {
     if (!lat || !lng) {
       const address = mapTarget === 'restaurant' ? order?.restaurant?.address : order?.delivery_address?.street;
       if (address) {
-        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank', 'noopener,noreferrer');
       }
       return;
     }
@@ -44,12 +44,12 @@ export function useDelivery() {
     if (isMobile) {
       const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
       if (useWaze) {
-        window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+        window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
       } else {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
       }
     } else {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
     }
   };
 

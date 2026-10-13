@@ -128,16 +128,16 @@ const OwnDriverDeliveryPage = () => {
       if (isMobile) {
         const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
         if (useWaze) {
-          window.open(`https://www.waze.com/ul?ll=${addr.latitude},${addr.longitude}&navigate=yes`, '_blank');
+          window.open(`https://www.waze.com/ul?ll=${addr.latitude},${addr.longitude}&navigate=yes`, '_blank', 'noopener,noreferrer');
         } else {
-          window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank');
+          window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank', 'noopener,noreferrer');
         }
       } else {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank');
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank', 'noopener,noreferrer');
       }
     } else if (addr?.street) {
       const query = encodeURIComponent(`${addr.street}, ${addr.neighborhood || ''}, ${addr.city || ''}`);
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank', 'noopener,noreferrer');
     }
   };
 

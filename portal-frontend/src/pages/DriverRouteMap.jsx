@@ -247,7 +247,7 @@ const DriverRouteMap = () => {
 
   const openInGoogleMaps = (lat, lng) => {
     if (lat && lng) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
     }
   };
 

@@ -139,7 +139,7 @@ const NotificationBell = () => {
     // Se a mensagem contém um link, abrir em nova aba
     const urlMatch = notification.message?.match(/(https?:\/\/[^\s]+)/);
     if (urlMatch) {
-      window.open(urlMatch[1], '_blank');
+      window.open(urlMatch[1], '_blank', 'noopener,noreferrer');
     }
   };
 
