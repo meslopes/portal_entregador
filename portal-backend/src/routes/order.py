@@ -26,6 +26,7 @@ from src.models.portal_models import (
 )
 from src.utils.geo import haversine_distance
 from src.utils.tenant import get_current_tenant_id
+from src.utils.order_tags import sanitize_customer_instructions
 
 logger = logging.getLogger(__name__)
 
@@ -1439,7 +1440,8 @@ def edit_order(order_id):
                         logger.warning(f"Falha ao re-geocodificar: {e}")
 
         if 'special_instructions' in data:
-            order.special_instructions = data['special_instructions']
+            from src.utils.order_tags import sanitize_customer_instructions
+            order.special_instructions = sanitize_customer_instructions(data['special_instructions'])
 
         if 'delivery_fee' in data:
             order.delivery_fee = float(data['delivery_fee'])
@@ -2080,7 +2082,7 @@ def create_order():
             status=OrderStatus.SCHEDULED,
             distribution_method=data.get('distribution_method', 'nearest'),
             scheduled_at=scheduled_at,
-            special_instructions=data.get('special_instructions')
+            special_instructions=sanitize_customer_instructions(data.get('special_instructions'))
         )
 
         db.session.add(order)

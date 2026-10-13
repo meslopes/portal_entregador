@@ -1201,7 +1201,8 @@ def admin_update_order(order_id):
 
         if data.get('special_instructions') is not None:
 
-            order.special_instructions = data['special_instructions']
+            from src.utils.order_tags import sanitize_customer_instructions
+            order.special_instructions = sanitize_customer_instructions(data['special_instructions'])
 
         if data.get('distribution_method'):
 

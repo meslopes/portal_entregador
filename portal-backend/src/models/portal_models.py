@@ -677,6 +677,16 @@ class Order(db.Model):
         db.Index('ix_orders_driver_status', 'driver_id', 'status'),
     )
 
+    def customer_instructions(self):
+        """Nota do cliente sem flags internas de distribuição."""
+        from src.utils.order_tags import strip_system_tags
+        return strip_system_tags(self.special_instructions)
+
+    def internal_system_tags(self):
+        """Flags internas (OFFERED_TO, REJECTED_BY, ...) para uso do admin/sistema."""
+        from src.utils.order_tags import extract_system_tags
+        return extract_system_tags(self.special_instructions)
+
     def to_dict(self):
         result = {
             'id': self.id,
@@ -706,7 +716,8 @@ class Order(db.Model):
             'preparing_at': self.preparing_at.isoformat() if self.preparing_at else None,
             'ready_at': self.ready_at.isoformat() if self.ready_at else None,
             'picked_up_at': self.picked_up_at.isoformat() if self.picked_up_at else None,
-            'special_instructions': self.special_instructions,
+            'special_instructions': self.customer_instructions(),
+            'system_tags': self.internal_system_tags(),
             'pickup_code': self.pickup_code,
             'delivery_code': self.delivery_code,
             'square_id': self.square_id,
