@@ -33,6 +33,9 @@ def create_app(config_name=None):
 
     # Inicializar extensões
     db.init_app(app)
+    # Migrações versionadas (Alembic) — novas mudanças de schema vão em migrations/
+    from flask_migrate import Migrate
+    Migrate(app, db, compare_type=True)
     # Configurar CORS (apenas Flask-CORS, sem handler manual duplicado)
     CORS(
         app,
@@ -1172,6 +1175,27 @@ def create_app(config_name=None):
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+        # === Alembic ===
+        # As migrações inline acima são o bootstrap histórico (idempotentes).
+        # A partir de agora, mudanças de schema DEVEM ir em migrations/ (Alembic).
+        try:
+            from alembic import command
+            from alembic.config import Config as AlembicConfig
+            from sqlalchemy import inspect
+            import os as _os
+            proj_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+            alembic_cfg = AlembicConfig(_os.path.join(proj_root, 'alembic.ini'))
+            alembic_cfg.set_main_option('script_location', _os.path.join(proj_root, 'migrations'))
+            insp = inspect(db.engine)
+            if 'alembic_version' not in insp.get_table_names():
+                command.stamp(alembic_cfg, 'head')
+                print("[Alembic] Baseline marcada (schema inline existente)")
+            else:
+                command.upgrade(alembic_cfg, 'head')
+                print("[Alembic] Migrações novas aplicadas")
+        except Exception as e:
+            print(f"WARNING: Alembic indisponível: {e}")
 
     # Iniciar background tasks (process_expired_offers, process_scheduled_orders)
     from src.utils.background_tasks import start_background_tasks
