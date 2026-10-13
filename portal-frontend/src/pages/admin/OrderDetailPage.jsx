@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
 import api, { adminService, orderService, utils } from '@/lib/api';
@@ -78,7 +79,7 @@ const OrderDetailPage = () => {
         if (hasDriver) {
           const confirmMsg = 'Deseja estornar o valor ao entregador?\n\n' +
             'Clique "OK" para estornar ou "Cancelar" para apenas cancelar o pedido.';
-          refundDriver = window.confirm(confirmMsg);
+          refundDriver = await confirmAsync(confirmMsg);
         }
 
         reason = window.prompt('Motivo do cancelamento (opcional):') || '';

@@ -1,4 +1,5 @@
 import React from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { Search, Bike, Eye, Edit, Trash2, Clock } from 'lucide-react';
 import { utils } from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
@@ -20,7 +21,7 @@ const DriversTable = ({
   };
 
   const handleSuspend = async (driver) => {
-    if (!window.confirm('Suspender este entregador?')) return;
+    if (!(await confirmAsync('Suspender este entregador?'))) return;
     try {
       await adminService.updateDriverStatus(driver.id, 'SUSPENDED');
       onReload();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
@@ -89,7 +90,7 @@ const AdminPricingPage = () => {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Excluir tabela "${name}"?`)) return;
+    if (!(await confirmAsync(`Excluir tabela "${name}"?`))) return;
     try {
       await adminService.deletePricingTable(id);
       loadData();

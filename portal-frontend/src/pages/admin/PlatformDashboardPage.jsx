@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 import {
@@ -114,7 +115,7 @@ const PlatformDashboardPage = () => {
   };
 
   const handleReject = async (userId) => {
-    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    if (!(await confirmAsync('Rejeitar e excluir este cadastro?'))) return;
     try {
       await api.post(`/api/admin/users/${userId}/reject`);
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));
@@ -205,7 +206,7 @@ const PlatformDashboardPage = () => {
       mensagem += `\nTodos os dados serão excluídos permanentemente.`;
     }
 
-    if (!window.confirm(mensagem)) return;
+    if (!(await confirmAsync(mensagem))) return;
 
     try {
       const force = dadosVinculados.length > 0 ? '?force=true' : '';
@@ -255,7 +256,7 @@ const PlatformDashboardPage = () => {
   };
 
   const handleDeleteUser = async (userId, userName) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o usuário "${userName}"?`)) return;
+    if (!(await confirmAsync(`Tem certeza que deseja excluir o usuário "${userName}"?`))) return;
     try {
       await api.delete(`/api/platform/users/${userId}`);
       loadUsers();

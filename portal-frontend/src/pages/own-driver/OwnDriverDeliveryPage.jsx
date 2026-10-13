@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
@@ -121,12 +122,12 @@ const OwnDriverDeliveryPage = () => {
     input.click();
   };
 
-  const openNavigation = () => {
+  const openNavigation = async () => {
     const addr = order.delivery_address;
     if (addr?.latitude && addr?.longitude) {
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isMobile) {
-        const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+        const useWaze = await confirmAsync('Abrir no Waze?\n\nCancelar = Google Maps');
         if (useWaze) {
           window.open(`https://www.waze.com/ul?ll=${addr.latitude},${addr.longitude}&navigate=yes`, '_blank', 'noopener,noreferrer');
         } else {

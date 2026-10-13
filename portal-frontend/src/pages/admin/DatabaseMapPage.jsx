@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import api, { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 import { confirmDestructive, sanitizeBackupData } from '@/lib/utils';
@@ -204,7 +205,7 @@ const DatabaseMapPage = () => {
   };
 
   const handleDeleteOwnDriver = async (driver) => {
-    if (!window.confirm(`Excluir entregador próprio "${driver.name}"?`)) return;
+    if (!(await confirmAsync(`Excluir entregador próprio "${driver.name}"?`))) return;
     try {
       await api.delete(`/api/admin/establishment-drivers/${driver.id}`);
       showMsg(`Entregador ${driver.name} excluído`);
@@ -215,7 +216,7 @@ const DatabaseMapPage = () => {
   };
 
   const handleDeleteRestaurant = async (restaurant) => {
-    if (!window.confirm(`Excluir restaurante "${restaurant.name}"?\n\nPedidos e entregadores vinculados serão desvinculados automaticamente.`)) return;
+    if (!(await confirmAsync(`Excluir restaurante "${restaurant.name}"?\n\nPedidos e entregadores vinculados serão desvinculados automaticamente.`))) return;
     try {
       await api.delete(`/api/admin/restaurants/${restaurant.id}?force=true`);
       showMsg(`Restaurante ${restaurant.name} excluído`);

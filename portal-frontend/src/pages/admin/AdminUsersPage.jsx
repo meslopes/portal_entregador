@@ -7,6 +7,7 @@ import api, { adminService } from '@/lib/api';
 import { generateStrongPassword } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext.hooks';
 import { showToast } from '@/components/Toast.utils';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import TrashModal from '@/components/TrashModal';
 import { FormField } from './usersFormShared';
 import { inputStyle, btnPrimary, btnSecondary, pagBtn } from './usersFormShared.constants';
@@ -126,7 +127,7 @@ const AdminUsersPage = () => {
   };
 
   const handleDelete = async (userId, userName) => {
-    if (!window.confirm(`Excluir ${userName}? Esta ação não pode ser desfeita.`)) return;
+    if (!(await confirmAsync(`Excluir ${userName}? Esta ação não pode ser desfeita.`))) return;
     try {
       await adminService.deleteUser(userId);
       loadUsers();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, ArrowLeft, Clock, CheckCircle, Package, Filter, AlertCircle,
@@ -44,7 +45,7 @@ const OwnDriverEarningsPage = () => {
   useEffect(() => { loadEarnings(); }, [loadEarnings]);
 
   const handleWithdraw = async () => {
-    if (!window.confirm('Solicitar saque de todos os ganhos pendentes?')) return;
+    if (!(await confirmAsync('Solicitar saque de todos os ganhos pendentes?'))) return;
     
     try {
       setWithdrawing(true);

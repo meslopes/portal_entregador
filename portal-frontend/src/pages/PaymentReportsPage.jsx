@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
 import ExportButton from './payment-reports/ExportButton';
@@ -95,7 +96,7 @@ const PaymentReportsPage = () => {
   }, []);
 
   const handleProcessWithdrawal = async (driverId) => {
-    if (!window.confirm('Processar saque via PIX?')) return;
+    if (!(await confirmAsync('Processar saque via PIX?'))) return;
     try {
       const res = await api.post('/api/finance/process-withdrawal', {
         driver_id: driverId,
@@ -130,7 +131,7 @@ const PaymentReportsPage = () => {
   };
 
   const handlePayAll = async (driverId, paymentMethod = 'PIX') => {
-    if (!window.confirm('Marcar todos os ganhos pendentes como pagos?')) return;
+    if (!(await confirmAsync('Marcar todos os ganhos pendentes como pagos?'))) return;
     try {
       const res = await api.post('/api/finance/pay-all', {
         driver_id: driverId,

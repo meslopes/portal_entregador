@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.hooks';
 import api from '@/lib/api';
@@ -69,7 +70,7 @@ const PlatformDashboard = () => {
   };
 
   const handleDeleteAdmin = async (adminId, adminName) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o admin "${adminName}"?`)) {
+    if (!(await confirmAsync(`Tem certeza que deseja excluir o admin "${adminName}"?`))) {
       return;
     }
 

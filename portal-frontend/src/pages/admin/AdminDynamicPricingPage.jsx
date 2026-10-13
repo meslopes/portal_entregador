@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, CloudRain, TrendingUp, Calendar, XCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext.hooks';
@@ -102,7 +103,7 @@ const AdminDynamicPricingPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Excluir esta configuração de taxas?')) return;
+    if (!(await confirmAsync('Excluir esta configuração de taxas?'))) return;
     try {
       await adminService.deleteDynamicPricing(id);
       loadData();

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import {
   AlertCircle, CheckCircle, Plus, RefreshCw,
 } from 'lucide-react';
@@ -116,7 +117,7 @@ const SubscriptionPage = () => {
   };
 
   const handleGenerateAllInvoices = async () => {
-    if (!window.confirm('Gerar faturas para todas as assinaturas com cobrança pendente?')) return;
+    if (!(await confirmAsync('Gerar faturas para todas as assinaturas com cobrança pendente?'))) return;
     try {
       const res = await api.post('/api/finance/generate-all-invoices');
       setSuccess(res.data.message);

@@ -1,4 +1,5 @@
 import React from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { MapPin, Navigation } from 'lucide-react';
 
 const DriverMap = ({ location, currentOrder, getCurrentLocation }) => {
@@ -15,12 +16,12 @@ const DriverMap = ({ location, currentOrder, getCurrentLocation }) => {
           </div>
           {currentOrder?.delivery_address?.latitude && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 const lat = currentOrder.delivery_address.latitude;
                 const lng = currentOrder.delivery_address.longitude;
                 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
                 if (isMobile) {
-                  const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+                  const useWaze = await confirmAsync('Abrir no Waze?\n\nCancelar = Google Maps');
                   if (useWaze) {
                     window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
                   } else {

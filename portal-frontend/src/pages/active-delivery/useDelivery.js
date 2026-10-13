@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useNavigate, useParams } from 'react-router-dom';
 import { orderService } from '@/lib/api';
 import { offlineDB, isOnline } from '@/lib/offline';
@@ -32,7 +33,7 @@ export function useDelivery() {
   const isMounted = useRef(true);
 
   // Navegação externa (Google Maps ou Waze)
-  const openNavigation = (lat, lng) => {
+  const openNavigation = async (lat, lng) => {
     if (!lat || !lng) {
       const address = mapTarget === 'restaurant' ? order?.restaurant?.address : order?.delivery_address?.street;
       if (address) {
@@ -42,7 +43,7 @@ export function useDelivery() {
     }
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
-      const useWaze = window.confirm('Abrir no Waze?\n\nCancelar = Google Maps');
+      const useWaze = await confirmAsync('Abrir no Waze?\n\nCancelar = Google Maps');
       if (useWaze) {
         window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
       } else {

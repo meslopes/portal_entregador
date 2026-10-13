@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 
@@ -8,7 +9,7 @@ const StatusBtn = ({ status, label, color, orderId, onUpdated }) => {
   const [loading, setLoading] = useState(false);
   
   const handleClick = async () => {
-    if (!window.confirm(`Tem certeza que deseja alterar o status para "${label}"?`)) return;
+    if (!(await confirmAsync(`Tem certeza que deseja alterar o status para "${label}"?`))) return;
     try {
       setLoading(true);
       await api.put(`/api/orders/${orderId}/status`, { status });

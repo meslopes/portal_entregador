@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { Loader2, Trash2, Plus } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
@@ -80,7 +81,7 @@ const AdminsTab = ({ onEditUser }) => {
   };
 
   const handleDeleteAdmin = async (adminId, adminName) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o admin "${adminName}"?`)) {
+    if (!(await confirmAsync(`Tem certeza que deseja excluir o admin "${adminName}"?`))) {
       return;
     }
 

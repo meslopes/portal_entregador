@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useNavigate } from 'react-router-dom';
 import {
   Package, DollarSign, MapPin, Bike,
@@ -70,7 +71,7 @@ const PlatformDriverDashboardPage = () => {
   };
 
   const rejectRoute = async (routeId) => {
-    if (!window.confirm('Rejeitar esta rota?')) return;
+    if (!(await confirmAsync('Rejeitar esta rota?'))) return;
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };

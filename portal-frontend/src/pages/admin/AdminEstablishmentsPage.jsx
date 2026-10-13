@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { Plus, Copy, AlertCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
@@ -77,7 +78,7 @@ const AdminEstablishmentsPage = () => {
   };
 
   const handleReject = async (userId) => {
-    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    if (!(await confirmAsync('Rejeitar e excluir este cadastro?'))) return;
     try {
       await api.post(`/api/admin/users/${userId}/reject`);
       showToast('Cadastro rejeitado', 'info');
@@ -90,7 +91,7 @@ const AdminEstablishmentsPage = () => {
     const confirmMsg = newValue
       ? `Ativar entregadores próprios para "${establishment.name}"?\n\nO estabelecimento terá acesso ao menu "Meus Entregadores" e poderá cadastrar seus próprios entregadores.`
       : `Desativar entregadores próprios para "${establishment.name}"?\n\nO estabelecimento usará apenas entregadores da plataforma MUV.`;
-    if (!window.confirm(confirmMsg)) return;
+    if (!(await confirmAsync(confirmMsg))) return;
     try {
       await api.put(`/api/admin/establishments/${establishment.id}/subscription`, { has_own_drivers: newValue });
       setShowDetails(null);
@@ -120,9 +121,9 @@ const AdminEstablishmentsPage = () => {
 
   const handleDelete = async (id, hasOrders) => {
     if (hasOrders) {
-      if (!window.confirm('Este estabelecimento tem pedidos vinculados. Deseja excluir mesmo assim? Todos os pedidos serão apagados.')) return;
+      if (!(await confirmAsync('Este estabelecimento tem pedidos vinculados. Deseja excluir mesmo assim? Todos os pedidos serão apagados.'))) return;
     } else {
-      if (!window.confirm('Tem certeza que deseja excluir este estabelecimento?')) return;
+      if (!(await confirmAsync('Tem certeza que deseja excluir este estabelecimento?'))) return;
     }
     try { await adminService.deleteEstablishment(id, hasOrders); loadEstablishments(); }
     catch (err) { showToast(err.response?.data?.error || 'Erro ao excluir', 'error'); }

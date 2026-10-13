@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { adminService, orderService } from '@/lib/api';
@@ -175,7 +176,7 @@ const AdminDashboardPage = () => {
   };
 
   const handleReject = async (userId) => {
-    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    if (!(await confirmAsync('Rejeitar e excluir este cadastro?'))) return;
     try {
       await adminService.rejectUser(userId);
       setPendingUsers(pendingUsers.filter(u => u.id !== userId));

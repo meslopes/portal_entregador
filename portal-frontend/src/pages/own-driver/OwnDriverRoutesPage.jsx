@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useNavigate } from 'react-router-dom';
 import { Route, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
@@ -135,7 +136,7 @@ const OwnDriverRoutesPage = () => {
   };
 
   const rejectRoute = async (routeId) => {
-    if (!window.confirm('Tem certeza que deseja rejeitar esta rota? O estabelecimento será notificado.')) return;
+    if (!(await confirmAsync('Tem certeza que deseja rejeitar esta rota? O estabelecimento será notificado.'))) return;
     try {
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };

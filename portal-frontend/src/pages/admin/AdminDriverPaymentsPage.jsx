@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import {
   CreditCard, Users, DollarSign, AlertCircle, CheckCircle,
   Star, Bike, Phone, Mail, Send, Filter
@@ -29,7 +30,7 @@ const AdminDriverPaymentsPage = () => {
   };
 
   const handlePay = async (driverId) => {
-    if (!window.confirm('Confirmar pagamento para este entregador?')) return;
+    if (!(await confirmAsync('Confirmar pagamento para este entregador?'))) return;
     try {
       setPaying(driverId);
       const result = await api.post(`/api/admin/driver-payments/${driverId}/pay`);

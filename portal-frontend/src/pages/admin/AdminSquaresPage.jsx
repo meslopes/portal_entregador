@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import {
   MapPin, Plus, Edit, Trash2, AlertCircle, CheckCircle,
   Store, Users, Package, X, ToggleLeft, ToggleRight
@@ -76,7 +77,7 @@ const AdminSquaresPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta praça?')) return;
+    if (!(await confirmAsync('Tem certeza que deseja excluir esta praça?'))) return;
     try {
       await adminService.deleteSquare(id);
       loadSquares();

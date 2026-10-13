@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import {
   Package, MapPin, Clock, DollarSign, ShoppingBag,
   Plus, AlertCircle, ChevronRight, Store, User, Phone,
@@ -283,7 +284,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
           {canCancel && (
             <button
               onClick={async () => {
-                if (!window.confirm('Tem certeza que deseja cancelar este pedido?')) return;
+                if (!(await confirmAsync('Tem certeza que deseja cancelar este pedido?'))) return;
                 try {
                   await orderService.cancelOrder(order.id);
                   onClose();

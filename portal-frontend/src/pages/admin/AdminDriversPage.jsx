@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { Plus, AlertCircle, Copy } from 'lucide-react';
 import api, { adminService } from '@/lib/api';
 import { generateStrongPassword } from '@/lib/utils';
@@ -87,7 +88,7 @@ const AdminDriversPage = () => {
   };
 
   const handleRejectDriver = async (userId) => {
-    if (!window.confirm('Rejeitar e excluir este cadastro?')) return;
+    if (!(await confirmAsync('Rejeitar e excluir este cadastro?'))) return;
     try {
       await api.post(`/api/admin/users/${userId}/reject`);
       showToast('Cadastro rejeitado', 'info');
@@ -98,7 +99,7 @@ const AdminDriversPage = () => {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Excluir ${name}? Esta ação não pode ser desfeita.`)) return;
+    if (!(await confirmAsync(`Excluir ${name}? Esta ação não pode ser desfeita.`))) return;
     try {
       await adminService.deleteUser(id);
       loadDrivers();
@@ -165,7 +166,7 @@ const AdminDriversPage = () => {
       return;
     }
     const estName = establishments.find(e => e.id === parseInt(restaurantId))?.name || 'estabelecimento';
-    if (!window.confirm(`Converter "${editing.user?.first_name}" para entregador próprio de "${estName}"?\n\nO entregador será desativado da plataforma e criado como entregador próprio.`)) return;
+    if (!(await confirmAsync(`Converter "${editing.user?.first_name}" para entregador próprio de "${estName}"?\n\nO entregador será desativado da plataforma e criado como entregador próprio.`))) return;
 
     try {
       setFormLoading(true);

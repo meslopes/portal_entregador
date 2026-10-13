@@ -63,8 +63,8 @@ const ConfirmDialogContainer = () => {
   const [dialog, setDialog] = React.useState(null);
 
   React.useEffect(() => {
-    setConfirmFn((message, onConfirm, title) => {
-      setDialog({ message, onConfirm, title });
+    setConfirmFn((message, onConfirm, title, onCancel) => {
+      setDialog({ message, onConfirm, title, onCancel });
     });
     return () => { setConfirmFn(null); };
   }, []);
@@ -79,7 +79,10 @@ const ConfirmDialogContainer = () => {
         dialog.onConfirm();
         setDialog(null);
       }}
-      onCancel={() => setDialog(null)}
+      onCancel={() => {
+        if (dialog.onCancel) dialog.onCancel();
+        setDialog(null);
+      }}
     />
   );
 };
