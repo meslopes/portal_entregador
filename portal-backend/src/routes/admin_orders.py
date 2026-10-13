@@ -243,7 +243,7 @@ def reject_user(user_id):
         except Exception:
             pass
 
-        # Exclui o usuario
+        # Rejeição = soft delete (auditoria/LGPD). Hard delete só via lixeira com confirmação.
         user_type = user.user_type
 
         if user_type == UserType.DRIVER:
@@ -262,9 +262,15 @@ def reject_user(user_id):
 
                 db.session.delete(customer)
 
-
-
-        db.session.delete(user)
+        from datetime import datetime, timezone
+        from flask_jwt_extended import get_jwt_identity
+        try:
+            current_uid = int(get_jwt_identity())
+        except Exception:
+            current_uid = None
+        user.deleted_at = datetime.now(timezone.utc)
+        user.deleted_by = current_uid
+        user.status = UserStatus.INACTIVE
 
         db.session.commit()
 

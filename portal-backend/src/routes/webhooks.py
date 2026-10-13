@@ -61,6 +61,50 @@ def verify_webhook_signature(payload, signature):
     return hmac.compare_digest(expected, signature)
 
 
+def require_webhook_auth(platform_name):
+    """
+    Autentica webhooks de plataformas externas via assinatura HMAC
+    (header X-Webhook-Signature) ou token simples (X-Webhook-Token).
+    Sem autenticação em produção, a requisição é rejeitada (fail closed).
+    """
+    import os
+
+    raw_body = request.get_data(as_text=True)
+    signature = request.headers.get('X-Webhook-Signature', '')
+    token = request.headers.get('X-Webhook-Token', '') or request.headers.get('Authorization', '').replace('Bearer ', '')
+
+    # 1) Assinatura HMAC do corpo
+    if signature:
+        if verify_webhook_signature(raw_body, signature):
+            return None
+        logger.warning(f"{platform_name} webhook: assinatura HMAC inválida")
+        return jsonify({'error': 'Assinatura inválida'}), 401
+
+    # 2) Token simples compartilhado por plataforma
+    if token:
+        from src.models.portal_models import SystemConfig
+        expected = SystemConfig.query.filter_by(config_key=f'{platform_name.lower()}_webhook_token').first()
+        if expected and expected.config_value and hmac.compare_digest(expected.config_value, token):
+            return None
+        # Token genérico de webhook como fallback
+        try:
+            generic = get_webhook_secret()
+            if hmac.compare_digest(generic, token):
+                return None
+        except Exception:
+            pass
+        logger.warning(f"{platform_name} webhook: token inválido")
+        return jsonify({'error': 'Token inválido'}), 401
+
+    # 3) Sem credencial: liberado só em desenvolvimento
+    if os.getenv('FLASK_ENV') != 'production':
+        logger.warning(f"{platform_name} webhook: sem autenticação (modo dev)")
+        return None
+
+    logger.warning(f"{platform_name} webhook: requisição sem autenticação rejeitada")
+    return jsonify({'error': 'Não autorizado'}), 401
+
+
 @webhook_bp.route('/ifood', methods=['POST'])
 def ifood_webhook():
     """
@@ -864,8 +908,12 @@ def whatsapp_verify():
 
 @webhook_bp.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
-    """Recebe mensagens do WhatsApp e processa pedidos"""
+    """Recebe mensagens do WhatsApp e processa pedidos. Exige autenticação."""
     try:
+        auth_err = require_webhook_auth('WHATSAPP')
+        if auth_err:
+            return auth_err
+
         data = request.get_json()
 
         if not data or 'entry' not in data:
@@ -1060,9 +1108,13 @@ def send_order_status_whatsapp(phone, order_number):
 def food99_webhook():
     """
     Webhook para receber pedidos do 99Food.
-    Formato similar ao iFood.
+    Formato similar ao iFood. Exige autenticação (HMAC ou token).
     """
     try:
+        auth_err = require_webhook_auth('99FOOD')
+        if auth_err:
+            return auth_err
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
@@ -1089,9 +1141,13 @@ def food99_webhook():
 def instadelivery_webhook():
     """
     Webhook para receber pedidos do InstaDelivery.
-    Formato similar ao iFood.
+    Formato similar ao iFood. Exige autenticação (HMAC ou token).
     """
     try:
+        auth_err = require_webhook_auth('INSTADELIVERY')
+        if auth_err:
+            return auth_err
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
@@ -1118,9 +1174,13 @@ def instadelivery_webhook():
 def saipos_webhook():
     """
     Webhook para receber pedidos do SaiPos.
-    Formato similar ao iFood.
+    Formato similar ao iFood. Exige autenticação (HMAC ou token).
     """
     try:
+        auth_err = require_webhook_auth('SAIPOS')
+        if auth_err:
+            return auth_err
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Dados não fornecidos'}), 400
