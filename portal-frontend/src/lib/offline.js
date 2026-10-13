@@ -92,6 +92,30 @@ export const offlineDB = {
     });
   },
 
+  // Incrementar contador de tentativas e marcar como failed se esgotar
+  async incrementRetry(id, maxRetries = 5) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.get(id);
+      request.onsuccess = () => {
+        const item = request.result;
+        if (item) {
+          item.retries = (item.retries || 0) + 1;
+          // Nunca remover ações de pedido — apenas marcar failed para retry manual
+          const isOrderAction = ['ACCEPT_ORDER', 'CONFIRM_COLLECT', 'CONFIRM_DELIVERY'].includes(item.type);
+          if (item.retries >= maxRetries && !isOrderAction) {
+            item.status = 'failed';
+          }
+          store.put(item);
+        }
+        resolve();
+      };
+      request.onerror = () => reject(request.error);
+    });
+  },
+
   // Limpar ações sincronizadas (manter apenas pendentes)
   async clearSynced() {
     const db = await openDB();
@@ -158,10 +182,9 @@ export async function syncQueue() {
       synced++;
     } catch (err) {
       console.error(`Erro ao sincronizar ação ${action.id}:`, err);
-      // Incrementa tentativas — se passar de 5, marca como falha
-      if (action.retries >= 5) {
-        await offlineDB.markSynced(action.id); // Remove da fila
-      }
+      // Incrementa tentativas. Ações de pedido NUNCA são descartadas —
+      // apenas entram em status 'failed' após o limite para retry manual.
+      await offlineDB.incrementRetry(action.id, 5);
     }
   }
 

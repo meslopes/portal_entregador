@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { User, Shield, Car } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.hooks';
 import api, { API_BASE_URL } from '@/lib/api';
+import { sanitizeUserForStorage } from '@/lib/utils';
 import RegisterBranding from './register/RegisterBranding';
 import RegisterProgress from './register/RegisterProgress';
 import RegisterStep1 from './register/RegisterStep1';
@@ -218,7 +219,7 @@ const RegisterPage = () => {
       localStorage.removeItem('user');
       if (data.access_token) {
         localStorage.setItem('token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(data.user)));
       }
       // Nao fazer login - redirecionar para tela de aguardo
       navigate('/pending-approval');

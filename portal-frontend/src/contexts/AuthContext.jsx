@@ -1,5 +1,6 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import api, { authService } from '@/lib/api';
+import { sanitizeUserForStorage } from '@/lib/utils';
 
 // Estado inicial
 const initialState = {
@@ -128,9 +129,9 @@ export const AuthProvider = ({ children }) => {
         throw { response: { status: 409, data: response } };
       }
       
-      // Salva no localStorage
+      // Salva no localStorage apenas campos não-sensíveis (sem CPF/telefone)
       localStorage.setItem('token', response.access_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -169,10 +170,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.register(userData);
       
-      // Salva no localStorage
+      // Salva no localStorage apenas campos não-sensíveis (sem CPF/telefone)
       localStorage.setItem('token', response.access_token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
+      localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
+
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: {
@@ -180,7 +181,7 @@ export const AuthProvider = ({ children }) => {
           token: response.access_token,
         },
       });
-      
+
       return response;
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Erro ao criar conta';
@@ -201,7 +202,7 @@ export const AuthProvider = ({ children }) => {
 
   // Função para atualizar dados do usuário
   const updateUser = (userData) => {
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(userData)));
     dispatch({
       type: AUTH_ACTIONS.UPDATE_USER,
       payload: userData,

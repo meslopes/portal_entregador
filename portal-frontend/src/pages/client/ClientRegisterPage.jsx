@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.hooks';
+import { sanitizeUserForStorage } from '@/lib/utils';
 import StepIndicator from './client-register/StepIndicator';
 import BrandingSide from './client-register/BrandingSide';
 
@@ -90,7 +91,7 @@ const ClientRegisterPage = () => {
       localStorage.removeItem('user');
       if (data.access_token) {
         localStorage.setItem('token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(data.user)));
       }
 
       navigate('/pending-approval');

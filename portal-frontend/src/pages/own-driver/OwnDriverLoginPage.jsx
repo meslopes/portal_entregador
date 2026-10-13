@@ -22,8 +22,15 @@ const OwnDriverLoginPage = () => {
       setLoading(true);
       const res = await api.post('/api/own-driver/login', { phone, pin });
       localStorage.setItem('own_driver_token', res.data.token);
-      localStorage.setItem('own_driver_data', JSON.stringify(res.data.driver));
-      localStorage.setItem('own_driver_restaurant', JSON.stringify(res.data.restaurant));
+      // Persistir apenas o mínimo — sem PII do restaurante/entregador no localStorage
+      localStorage.setItem('own_driver_data', JSON.stringify({
+        id: res.data.driver?.id,
+        name: res.data.driver?.name,
+      }));
+      localStorage.setItem('own_driver_restaurant', JSON.stringify({
+        id: res.data.restaurant?.id,
+        name: res.data.restaurant?.name,
+      }));
       navigate('/own-driver');
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao fazer login');
