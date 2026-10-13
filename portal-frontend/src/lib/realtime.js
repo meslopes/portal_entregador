@@ -54,11 +54,14 @@ export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
 
   const channelName = getChannelName(tenantId);
 
-  // Criar canal de envio na primeira chamada (com JWT do usuário)
+  // Criar canal de envio na primeira chamada (privado + JWT do usuário)
   if (!sendChannel) {
     log('Criando canal de envio:', channelName);
     sendChannel = client.channel(channelName, {
-      config: { auth: { token: getAuthToken() } }
+      config: {
+        private: true,
+        auth: { token: getAuthToken() }
+      }
     });
 
     sendChannel.subscribe((status) => {
@@ -107,7 +110,10 @@ export function subscribeGPS(tenantId, onGPSUpdate) {
   log('Inscrevendo para receber GPS:', channelName);
 
   receiveChannel = client.channel(channelName, {
-    config: { auth: { token: getAuthToken() } }
+    config: {
+      private: true,
+      auth: { token: getAuthToken() }
+    }
   });
 
   receiveChannel
