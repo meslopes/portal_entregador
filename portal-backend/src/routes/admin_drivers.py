@@ -123,7 +123,7 @@ def get_drivers():
 
             driver_dict = driver.to_admin_dict()
 
-            driver_dict['user'] = driver.user.to_dict()
+            driver_dict['user'] = driver.user.to_dict(include_sensitive=True)
 
 
 
@@ -187,7 +187,7 @@ def get_driver_details(driver_id):
 
         driver_dict = driver.to_dict()
 
-        driver_dict['user'] = driver.user.to_dict()
+        driver_dict['user'] = driver.user.to_dict(include_sensitive=True)
 
 
 

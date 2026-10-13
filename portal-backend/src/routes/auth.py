@@ -45,7 +45,7 @@ def _generate_confirmation_token(user_id):
 
 def _build_user_response(user):
     """Monta a resposta completa do usuário com dados do driver/customer/tenant se aplicável."""
-    user_data = user.to_dict()
+    user_data = user.to_dict(include_sensitive=True)
     if user.driver:
         user_data['driver'] = user.driver.to_dict()
     customer = Customer.query.filter_by(user_id=user.id).first()
@@ -180,9 +180,11 @@ def register():
         if not re.match(email_pattern, email):
             return jsonify({'error': 'Formato de email inválido'}), 400
 
-        # Validar comprimento da senha
-        if len(password) < 6:
-            return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
+        # Validar força da senha
+        from src.utils.auth import validate_password
+        pwd_err = validate_password(password)
+        if pwd_err:
+            return jsonify({'error': pwd_err}), 400
 
         # Buscar tenant se fornecido
         tenant_id = None
@@ -335,9 +337,11 @@ def register_client():
         if not re.match(email_pattern, email):
             return jsonify({'error': 'Formato de email inválido'}), 400
 
-        # Validar comprimento da senha
-        if len(password) < 6:
-            return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
+        # Validar força da senha
+        from src.utils.auth import validate_password
+        pwd_err = validate_password(password)
+        if pwd_err:
+            return jsonify({'error': pwd_err}), 400
 
         # Verificar se email já existe
         if User.query.filter_by(email=email).first():
@@ -667,8 +671,10 @@ def change_password():
         if not check_password_hash(user.password_hash, current_password):
             return jsonify({'error': 'Senha atual incorreta'}), 401
 
-        if len(new_password) < 6:
-            return jsonify({'error': 'Nova senha deve ter pelo menos 6 caracteres'}), 400
+        from src.utils.auth import validate_password
+        pwd_err = validate_password(new_password)
+        if pwd_err:
+            return jsonify({'error': f'Nova {pwd_err[0].lower()}{pwd_err[1:]}'}), 400
 
         # Altera a senha e força a escrita no banco
         user.set_password(new_password)

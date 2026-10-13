@@ -870,7 +870,7 @@ def get_establishments():
 
         for est in establishments.items:
 
-            est_dict = est.to_dict()
+            est_dict = est.to_dict(include_sensitive=True)
 
 
 
@@ -972,7 +972,7 @@ def get_establishment_details(establishment_id):
 
 
 
-        est_dict = est.to_dict()
+        est_dict = est.to_dict(include_sensitive=True)
 
 
 
@@ -1391,7 +1391,7 @@ def update_establishment(establishment_id):
 
             'message': 'Estabelecimento atualizado com sucesso',
 
-            'establishment': est.to_dict()
+            'establishment': est.to_dict(include_sensitive=True)
 
         }), 200
 
@@ -5040,7 +5040,7 @@ def get_deleted_users():
         # Buscar nome de quem excluiu
         users_data = []
         for user in users:
-            user_dict = user.to_dict()
+            user_dict = user.to_dict(include_sensitive=True)
             if user.deleted_by:
                 deleter = User.query.get(user.deleted_by)
                 user_dict['deleted_by_name'] = f"{deleter.first_name} {deleter.last_name}" if deleter else 'Desconhecido'
@@ -5095,7 +5095,7 @@ def restore_user(user_id):
 
         return jsonify({
             'message': 'Usuário restaurado com sucesso',
-            'user': user.to_dict()
+            'user': user.to_dict(include_sensitive=True)
         }), 200
 
     except Exception as e:

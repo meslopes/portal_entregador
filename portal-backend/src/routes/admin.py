@@ -330,7 +330,7 @@ def get_all_orders():
 
             order_dict = order.to_dict()
 
-            order_dict['restaurant'] = order.restaurant.to_dict() if order.restaurant else None
+            order_dict['restaurant'] = order.restaurant.to_dict(include_sensitive=True) if order.restaurant else None
 
             order_dict['customer'] = order.customer.to_dict() if order.customer else None
 
@@ -1214,7 +1214,7 @@ def update_restaurant_subscription(restaurant_id):
 
             'message': 'Assinatura atualizada',
 
-            'restaurant': restaurant.to_dict()
+            'restaurant': restaurant.to_dict(include_sensitive=True)
 
         }), 200
 

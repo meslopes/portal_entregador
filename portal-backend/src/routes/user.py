@@ -17,7 +17,7 @@ def get_profile():
         if not user:
             return jsonify({'error': 'Usuario nao encontrado'}), 404
 
-        user_data = user.to_dict()
+        user_data = user.to_dict(include_sensitive=True)
 
         # Inclui dados do driver se for entregador
         if user.driver:
@@ -83,7 +83,7 @@ def update_profile():
 
         db.session.commit()
 
-        user_data = user.to_dict()
+        user_data = user.to_dict(include_sensitive=True)
         if user.driver:
             user_data['driver'] = user.driver.to_dict()
 

@@ -2,12 +2,27 @@
 Decorators de autenticação compartilhados.
 Centraliza admin_required e client_or_admin_required para evitar duplicação.
 """
+import re
 from functools import wraps
 
 from flask import jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from src.models.portal_models import User, UserType
+
+
+def validate_password(password):
+    """
+    Valida força da senha. Retorna None se válida, ou mensagem de erro.
+    Regras: mínimo 8 caracteres, ao menos 1 letra e 1 número.
+    """
+    if not password or len(password) < 8:
+        return 'Senha deve ter pelo menos 8 caracteres'
+    if not re.search(r'[A-Za-z]', password):
+        return 'Senha deve conter ao menos 1 letra'
+    if not re.search(r'\d', password):
+        return 'Senha deve conter ao menos 1 número'
+    return None
 
 
 def admin_required(f):

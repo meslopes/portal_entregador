@@ -170,8 +170,10 @@ def create_admin():
         if not email or not password:
             return jsonify({'error': 'Email e senha são obrigatórios'}), 400
 
-        if len(password) < 6:
-            return jsonify({'error': 'Senha deve ter pelo menos 6 caracteres'}), 400
+        from src.utils.auth import validate_password
+        pwd_err = validate_password(password)
+        if pwd_err:
+            return jsonify({'error': pwd_err}), 400
 
         # Verificar se email já existe
         if User.query.filter_by(email=email).first():

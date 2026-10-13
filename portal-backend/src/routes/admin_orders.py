@@ -103,7 +103,7 @@ def get_pending_users():
 
         for user in pending:
 
-            user_dict = user.to_dict()
+            user_dict = user.to_dict(include_sensitive=True)
 
             if user.user_type == UserType.DRIVER:
 
@@ -358,7 +358,7 @@ def get_all_users():
 
         for user in users.items:
 
-            user_dict = user.to_dict()
+            user_dict = user.to_dict(include_sensitive=True)
 
             if user.user_type == UserType.DRIVER:
 
@@ -432,7 +432,7 @@ def get_user_details(user_id):
 
 
 
-        user_dict = user.to_dict()
+        user_dict = user.to_dict(include_sensitive=True)
 
         if user.user_type == UserType.DRIVER:
 
@@ -718,9 +718,10 @@ def admin_reset_password(user_id):
 
             return jsonify({'error': 'Nova senha é obrigatória'}), 400
 
-        if len(new_password) < 6:
-
-            return jsonify({'error': 'Nova senha deve ter pelo menos 6 caracteres'}), 400
+        from src.utils.auth import validate_password
+        pwd_err = validate_password(new_password)
+        if pwd_err:
+            return jsonify({'error': f'Nova {pwd_err[0].lower()}{pwd_err[1:]}'}), 400
 
 
 

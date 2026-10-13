@@ -158,8 +158,12 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_sensitive=False):
+        """
+        Serializa o usuário. Por padrão NÃO expõe CPF/nascimento (LGPD).
+        Endpoints admin devem passar include_sensitive=True.
+        """
+        data = {
             'id': self.id,
             'tenant_id': self.tenant_id,
             'is_super_admin': self.is_super_admin,
@@ -167,8 +171,6 @@ class User(db.Model):
             'first_name': self.first_name,
             'last_name': self.last_name,
             'phone': self.phone,
-            'cpf': self.cpf,
-            'birth_date': self.birth_date.isoformat() if self.birth_date else None,
             'profile_picture_url': self.profile_picture_url,
             'user_type': self.user_type.value if self.user_type else None,
             'status': self.status.value if self.status else None,
@@ -177,6 +179,10 @@ class User(db.Model):
             'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
             'deleted_by': self.deleted_by
         }
+        if include_sensitive:
+            data['cpf'] = self.cpf
+            data['birth_date'] = self.birth_date.isoformat() if self.birth_date else None
+        return data
 
 class Driver(db.Model):
     __tablename__ = 'drivers'
@@ -498,8 +504,12 @@ class Restaurant(db.Model):
     # Relacionamentos
     orders = db.relationship('Order', backref='restaurant')
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_sensitive=False):
+        """
+        Serializa o restaurante. Por padrão NÃO expõe dados bancários (LGPD).
+        Endpoints admin/finance devem passar include_sensitive=True.
+        """
+        data = {
             'id': self.id,
             'tenant_id': self.tenant_id,
             'name': self.name,
@@ -514,12 +524,6 @@ class Restaurant(db.Model):
             'preparation_minutes': self.preparation_minutes or 10,
             'square_id': self.square_id,
             'pricing_table_id': self.pricing_table_id,
-            'bank_name': self.bank_name,
-            'bank_agency': self.bank_agency,
-            'bank_account': self.bank_account,
-            'bank_pix_key': self.bank_pix_key,
-            'asaas_customer_id': self.asaas_customer_id,
-            'external_merchant_id': self.external_merchant_id,
             'has_own_drivers': self.has_own_drivers,
             'own_driver_payment_type': self.own_driver_payment_type or 'PER_DELIVERY',
             'own_driver_fixed_value': float(self.own_driver_fixed_value) if self.own_driver_fixed_value else 5.00,
@@ -532,6 +536,14 @@ class Restaurant(db.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
+        if include_sensitive:
+            data['bank_name'] = self.bank_name
+            data['bank_agency'] = self.bank_agency
+            data['bank_account'] = self.bank_account
+            data['bank_pix_key'] = self.bank_pix_key
+            data['asaas_customer_id'] = self.asaas_customer_id
+            data['external_merchant_id'] = self.external_merchant_id
+        return data
 
 class Customer(db.Model):
     __tablename__ = 'customers'
