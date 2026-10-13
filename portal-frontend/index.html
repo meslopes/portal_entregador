@@ -11,24 +11,13 @@
     <meta name="apple-mobile-web-app-title" content="muv.log" />
     <link rel="apple-touch-icon" href="/logo-muvlog.jpg" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- CSP: previne XSS, clickjacking e injeção de scripts de terceiros -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' data:; connect-src 'self' https://muvlog-api-890250693883.us-central1.run.app https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org https://*.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
     <title>muv.log - Portal Entregador</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      // Registrar Service Worker para PWA
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((reg) => {
-              console.log('[PWA] Service Worker registrado:', reg.scope);
-            })
-            .catch((err) => {
-              console.error('[PWA] Erro ao registrar Service Worker:', err);
-            });
-        });
-      }
-    </script>
+    <script src="/register-sw.js" defer></script>
   </body>
 </html>
