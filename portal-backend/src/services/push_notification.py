@@ -27,7 +27,7 @@ def _get_service_account():
     try:
         if raw.strip().startswith('{'):
             return json.loads(raw)
-        with open(raw, 'r', encoding='utf-8') as f:
+        with open(raw, encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
         logger.error(f"[Push] Erro ao carregar service account: {e}")

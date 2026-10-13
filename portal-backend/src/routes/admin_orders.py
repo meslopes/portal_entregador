@@ -24,8 +24,8 @@ from src.models.portal_models import (
     VehicleType,
     db,
 )
-from src.utils.tenant import get_current_tenant_id, get_current_user
 from src.utils.auth import admin_required
+from src.utils.tenant import get_current_tenant_id, get_current_user
 
 admin_orders_bp = Blueprint('admin_orders', __name__)
 logger = logging.getLogger(__name__)
@@ -263,6 +263,7 @@ def reject_user(user_id):
                 db.session.delete(customer)
 
         from datetime import datetime, timezone
+
         from flask_jwt_extended import get_jwt_identity
         try:
             current_uid = int(get_jwt_identity())

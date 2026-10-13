@@ -26,8 +26,8 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.geo import haversine_distance
-from src.utils.tenant import get_current_tenant_id
 from src.utils.order_tags import sanitize_customer_instructions
+from src.utils.tenant import get_current_tenant_id
 
 logger = logging.getLogger(__name__)
 

@@ -25,9 +25,9 @@ from src.models.portal_models import (
     UserType,
     db,
 )
+from src.utils.auth import client_or_admin_required
 from src.utils.restaurant import find_restaurant_by_name
 from src.utils.tenant import get_current_user
-from src.utils.auth import admin_required, client_or_admin_required
 
 admin_est_drivers_bp = Blueprint('admin_est_drivers', __name__)
 logger = logging.getLogger(__name__)

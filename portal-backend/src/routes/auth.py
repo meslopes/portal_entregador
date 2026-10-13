@@ -21,8 +21,8 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.rate_limit import login_limit as login_rate_limit
-from src.utils.rate_limit import register_limit as register_rate_limit
 from src.utils.rate_limit import password_limit as password_rate_limit
+from src.utils.rate_limit import register_limit as register_rate_limit
 
 logger = logging.getLogger(__name__)
 

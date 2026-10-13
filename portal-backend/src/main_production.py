@@ -1180,10 +1180,11 @@ def create_app(config_name=None):
         # As migrações inline acima são o bootstrap histórico (idempotentes).
         # A partir de agora, mudanças de schema DEVEM ir em migrations/ (Alembic).
         try:
+            import os as _os
+
             from alembic import command
             from alembic.config import Config as AlembicConfig
             from sqlalchemy import inspect
-            import os as _os
             proj_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
             alembic_cfg = AlembicConfig(_os.path.join(proj_root, 'alembic.ini'))
             alembic_cfg.set_main_option('script_location', _os.path.join(proj_root, 'migrations'))

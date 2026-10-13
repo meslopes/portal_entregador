@@ -112,7 +112,6 @@ const ClientDashboardPage = () => {
         mapInstanceRef.current = map;
       }
     }).catch(() => {});
-    document.head.appendChild(script);
 
     return () => {
       if (mapInstanceRef.current) {

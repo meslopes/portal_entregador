@@ -36,8 +36,8 @@ from src.models.portal_models import (
     UserType,
     db,
 )
-from src.utils.tenant import get_current_tenant_id, get_current_user
 from src.utils.auth import admin_required, client_or_admin_required
+from src.utils.tenant import get_current_tenant_id, get_current_user
 
 logger = logging.getLogger(__name__)
 
