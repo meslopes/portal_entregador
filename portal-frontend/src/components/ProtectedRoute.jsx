@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.hooks';
 
-const ProtectedRoute = ({ children, requireAuth = true, requiredRole = null, redirectTo = '/login' }) => {
+const ProtectedRoute = ({ children, requireAuth = true, requiredRole = null, requireSuperAdmin = false, redirectTo = '/login' }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
@@ -37,6 +37,11 @@ const ProtectedRoute = ({ children, requireAuth = true, requiredRole = null, red
     } else {
       return <Navigate to="/dashboard" replace />;
     }
+  }
+
+  // Exige super admin (alem do papel ADMIN) — usado em /platform
+  if (requireSuperAdmin && !user?.is_super_admin) {
+    return <Navigate to="/admin" replace />;
   }
 
   return children;

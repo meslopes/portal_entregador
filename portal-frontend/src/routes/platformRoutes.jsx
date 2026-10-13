@@ -11,7 +11,8 @@ export default function PlatformRoutes() {
       <Route
         path="/platform"
         element={
-          <ProtectedRoute requiredRole="ADMIN">
+          // Exige ADMIN + is_super_admin — admins comuns não acessam o painel multi-tenant
+          <ProtectedRoute requiredRole="ADMIN" requireSuperAdmin>
             <Layout>
               <PlatformDashboardPage />
             </Layout>

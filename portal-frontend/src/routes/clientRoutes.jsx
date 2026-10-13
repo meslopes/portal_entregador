@@ -16,9 +16,10 @@ import OwnDriverFinancialPage from '@/pages/client/OwnDriverFinancialPage';
 import OwnDriverMetricsPage from '@/pages/client/OwnDriverMetricsPage';
 import PaymentReportsPage from '@/pages/PaymentReportsPage';
 
+// Rotas exclusivas de estabelecimentos — exige user_type=CLIENT
 function WrappedRoute({ children }) {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="CLIENT">
       <ClientLayout>{children}</ClientLayout>
     </ProtectedRoute>
   );

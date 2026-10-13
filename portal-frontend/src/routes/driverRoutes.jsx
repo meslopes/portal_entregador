@@ -13,9 +13,10 @@ import WalletPage from '@/pages/WalletPage';
 import PlatformDriverDashboardPage from '@/pages/driver/PlatformDriverDashboardPage';
 import PlatformDriverRoutesPage from '@/pages/driver/PlatformDriverRoutesPage';
 
+// Rotas exclusivas de entregadores da plataforma — exige user_type=DRIVER
 function WrappedRoute({ children }) {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole="DRIVER">
       <Layout>{children}</Layout>
     </ProtectedRoute>
   );
@@ -28,7 +29,7 @@ export default function DriverRoutes() {
       <Route
         path="/platform-driver"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="DRIVER">
             <PlatformDriverDashboardPage />
           </ProtectedRoute>
         }
@@ -36,7 +37,7 @@ export default function DriverRoutes() {
       <Route
         path="/platform-driver/routes"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="DRIVER">
             <PlatformDriverRoutesPage />
           </ProtectedRoute>
         }
