@@ -1,6 +1,7 @@
 import React from 'react';
 import { Store, Search, Phone, Mail, MapPin, Edit, Trash2 } from 'lucide-react';
 import { utils } from '@/lib/api';
+import { maskPii } from '@/lib/utils';
 
 const EstablishmentsList = ({
   establishments, loading, search, page, totalPages,
@@ -121,7 +122,7 @@ const EstablishmentsList = ({
               {est.phone && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.125rem' }}>
                   <Phone size={12} style={{ color: '#64748b' }} />
-                  <span style={{ fontSize: '0.8125rem', color: '#475569' }}>{est.phone}</span>
+                  <span style={{ fontSize: '0.8125rem', color: '#475569' }}>{maskPii(est.phone, 'phone')}</span>
                 </div>
               )}
               {est.email && (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Package, MapPin, User, Bike } from 'lucide-react';
 import { utils } from '@/lib/api';
+import { maskPii } from '@/lib/utils';
 import { STATUS_CONFIG } from './constants';
 
 const FilterButton = ({ active, onClick, children }) => (
@@ -123,7 +124,7 @@ const ClientOrdersList = ({ orders, loading, filter, setFilter, page, setPage, t
                           Entregador: <strong>{order.driver.name}</strong>
                         </span>
                         <span style={{ color: '#64748b' }}>•</span>
-                        <span style={{ color: '#64748b' }}>{order.driver.phone}</span>
+                        <span style={{ color: '#64748b' }}>{maskPii(order.driver.phone, 'phone')}</span>
                       </div>
                     )}
                   </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Store, MapPin, Bike, DollarSign } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
+import { maskPii } from '@/lib/utils';
 
 const cardStyle = {
   background: 'white', borderRadius: '0.75rem', padding: '1.25rem',
@@ -17,7 +18,7 @@ const OrderInfoCards = ({ order, si, utils }) => (
       <div style={cardStyle}>
         <h3 style={cardTitle}><User size={16} /> Cliente</h3>
         <p style={{ fontWeight: 500, color: '#1e293b' }}>{order.customer?.name || 'N/A'}</p>
-        <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{order.customer?.phone || 'N/A'}</p>
+        <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{maskPii(order.customer?.phone, 'phone') || 'N/A'}</p>
       </div>
       <div style={cardStyle}>
         <h3 style={cardTitle}><Store size={16} /> Estabelecimento</h3>

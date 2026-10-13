@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Route, RefreshCw } from 'lucide-react';
 import { ORDER_STATUS } from '@/constants/status';
 import { API_BASE_URL } from '@/lib/api';
+import { maskPii } from '@/lib/utils';
 
 const ActiveOrderCard = ({ order, onClick }) => {
   const config = ORDER_STATUS[order.status] || ORDER_STATUS.ACCEPTED;
@@ -38,7 +39,7 @@ const ActiveOrderCard = ({ order, onClick }) => {
 
       {order.customer && (
         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-          {order.customer.name} • {order.customer.phone}
+          {order.customer.name} • {maskPii(order.customer.phone, 'phone')}
         </div>
       )}
 

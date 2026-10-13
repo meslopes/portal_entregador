@@ -5,6 +5,7 @@ import {
   TrendingUp, Bike, CheckCircle, XCircle, Eye, Star, Navigation
 } from 'lucide-react';
 import api, { orderService, utils, API_BASE_URL } from '@/lib/api';
+import { maskPii } from '@/lib/utils';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
 import { showToast } from '@/components/Toast.utils';
@@ -138,7 +139,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
               {order.customer?.phone && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Phone size={14} style={{ color: '#64748b' }} />
-                  <span style={{ fontSize: '0.875rem', color: '#475569' }}>{order.customer.phone}</span>
+                  <span style={{ fontSize: '0.875rem', color: '#475569' }}>{maskPii(order.customer.phone, 'phone')}</span>
                 </div>
               )}
             </div>
@@ -171,7 +172,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{order.driver.name}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.driver.phone}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{maskPii(order.driver.phone, 'phone')}</p>
                 </div>
               </div>
             </div>

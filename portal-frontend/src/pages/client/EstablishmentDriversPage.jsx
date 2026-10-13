@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, Bike, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
 import api from '@/lib/api';
+import { maskPii } from '@/lib/utils';
 import { showToast } from '@/components/Toast.utils';
 
 const inputStyle = {
@@ -294,7 +295,7 @@ const EstablishmentDriversPage = () => {
                       {driver.vehicle_type} {driver.vehicle_plate ? `• ${driver.vehicle_plate}` : ''} {driver.vehicle_model ? `• ${driver.vehicle_model}` : ''}
                     </p>
                     {driver.phone && (
-                      <p style={{ color: '#64748b', fontSize: '0.75rem' }}>{driver.phone}</p>
+                      <p style={{ color: '#64748b', fontSize: '0.75rem' }}>{maskPii(driver.phone, 'phone')}</p>
                     )}
                     {driver.square_name && (
                       <p style={{ color: '#64748b', fontSize: '0.75rem' }}>

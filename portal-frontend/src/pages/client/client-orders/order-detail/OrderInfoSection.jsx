@@ -3,6 +3,7 @@ import {
   Bike, MapPin, User, Phone, Users
 } from 'lucide-react';
 import { utils, API_BASE_URL } from '@/lib/api';
+import { maskPii } from '@/lib/utils';
 import OrderTimeline from '@/components/OrderTimeline';
 import DeliveryCodes from '@/components/DeliveryCodes';
 import { ORDER_STATUS } from '@/constants/status';
@@ -56,7 +57,7 @@ const OrderInfoSection = ({ order }) => {
         {order.customer?.phone && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Phone size={14} style={{ color: '#64748b' }} />
-            <span style={{ fontSize: '0.875rem', color: '#475569' }}>{order.customer.phone}</span>
+            <span style={{ fontSize: '0.875rem', color: '#475569' }}>{maskPii(order.customer.phone, 'phone')}</span>
           </div>
         )}
       </InfoSection>

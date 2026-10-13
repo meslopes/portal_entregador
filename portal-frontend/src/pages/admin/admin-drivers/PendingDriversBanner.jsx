@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
+import { maskPii } from '@/lib/utils';
 
 const PendingDriversBanner = ({ pendingDrivers, onApprove, onReject }) => {
   if (pendingDrivers.length === 0) return null;
@@ -22,7 +23,7 @@ const PendingDriversBanner = ({ pendingDrivers, onApprove, onReject }) => {
             <div>
               <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>{driver.first_name} {driver.last_name}</span>
               <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{driver.email}</span>
-              {driver.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{driver.phone}</span>}
+              {driver.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{maskPii(driver.phone, 'phone')}</span>}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button onClick={() => onApprove(driver.id)} style={{

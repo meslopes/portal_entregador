@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bike, Star } from 'lucide-react';
+import { maskPii } from '@/lib/utils';
 
 const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, setFeedback, loading }) => {
   return (
@@ -20,7 +21,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
               </div>
               <div>
                 <p style={{ fontWeight: 600, color: '#1e293b' }}>{order.driver.name}</p>
-                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.driver.phone}</p>
+                <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{maskPii(order.driver.phone, 'phone')}</p>
               </div>
             </div>
           )}

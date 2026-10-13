@@ -1,5 +1,6 @@
 import React from 'react';
 import { section, badge, actionBtn, card } from './DataSection.helpers';
+import { maskPii } from '@/lib/utils';
 
 export const TenantsSection = ({ tenants, onToggleActive }) =>
   section(`Tenants (${tenants?.length || 0})`,
@@ -47,7 +48,7 @@ export const UsersSection = ({ users, onEdit, onDelete }) =>
             {u.square_name ? badge(`praça: ${u.square_name}`, '#0d9488', '#f0fdfa') : null}
             {u.linked_name ? <span style={{ fontSize: '0.6875rem', color: '#64748b', marginLeft: '0.25rem' }}>({u.linked_name})</span> : null}
             <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-              {u.email} {u.phone ? `• ${u.phone}` : ''} {u.cpf ? `• CPF: ${u.cpf}` : ''}
+              {u.email} {u.phone ? `• ${maskPii(u.phone, 'phone')}` : ''} {u.cpf ? `• CPF: ${maskPii(u.cpf, 'cpf')}` : ''}
               {u.vehicle_type ? ` • ${u.vehicle_type}` : ''} {u.vehicle_plate ? `• ${u.vehicle_plate}` : ''}
             </div>
           </div>
@@ -108,7 +109,7 @@ export const OwnDriversSection = ({ drivers, onDelete }) =>
           {d.tenant_id ? badge(`tenant:${d.tenant_id}`, '#7c3aed', '#f3e8ff') : null}
           {d.is_online ? badge('Online', '#166534', '#dcfce7') : badge('Offline', '#64748b', '#f1f5f9')}
           {d.has_pin ? badge('PIN ✓', '#1d4ed8', '#dbeafe') : badge('SEM PIN', '#dc2626', '#fee2e2')}
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>tel:{d.phone} • entregas:{d.total_deliveries}</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>tel:{maskPii(d.phone, 'phone')} • entregas:{d.total_deliveries}</div>
         </div>
         <div>
           {actionBtn('Excluir', '#dc2626', '#fee2e2', () => onDelete(d))}

@@ -56,7 +56,8 @@ export function confirmDestructive(phrase, message) {
 }
 
 /**
- * Mascara PII para export/backup: CPF e telefone nunca vão completos.
+ * Mascara PII para exibição e export: CPF e telefone nunca vão completos.
+ * Uso em listagens: maskPii(order.customer?.phone, 'phone')
  */
 export function maskPii(value, type = 'phone') {
   if (!value) return value;

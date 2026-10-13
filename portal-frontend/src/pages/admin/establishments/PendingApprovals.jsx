@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
+import { maskPii } from '@/lib/utils';
 
 const PendingApprovals = ({ pendingEstablishments, onApprove, onReject }) => {
   if (!pendingEstablishments.length) return null;
@@ -22,7 +23,7 @@ const PendingApprovals = ({ pendingEstablishments, onApprove, onReject }) => {
             <div>
               <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#1e293b' }}>{est.first_name} {est.last_name}</span>
               <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{est.email}</span>
-              {est.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{est.phone}</span>}
+              {est.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>{maskPii(est.phone, 'phone')}</span>}
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button onClick={() => onApprove(est.id)} style={{
