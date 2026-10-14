@@ -568,10 +568,12 @@ def login():
                 return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
 
             # Verificar se o tenant do usuário está ativo
-            if user.tenant_id:
+            # Super admin não depende de tenant — nunca bloquear por isso
+            if user.tenant_id and not user.is_super_admin:
                 try:
                     user_tenant = Tenant.query.get(user.tenant_id)
-                    if user_tenant and not user_tenant.is_active:
+                    # is_active NULL/None conta como ativo (padrão do modelo)
+                    if user_tenant and user_tenant.is_active is False:
                         return jsonify({'error': 'Esta organização está desativada. Entre em contato com o suporte.'}), 403
                 except Exception:
                     pass
