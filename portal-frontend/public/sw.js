@@ -1,7 +1,8 @@
 // Service Worker - muv.log Portal Entregador
 // Permite instalar como app no celular (PWA)
 
-const CACHE_NAME = 'muvlog-v1';
+// Versão do cache — incrementar para invalidar SW antigo nos clientes
+const CACHE_NAME = 'muvlog-v2';
 
 // Instalar
 self.addEventListener('install', () => {
@@ -46,7 +47,10 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        return caches.match(event.request);
+        // Sem cache? Devolve 404 em vez de undefined (quebrava o fetch)
+        return caches.match(event.request).then((cached) => {
+          return cached || new Response('', { status: 404, statusText: 'Not Found' });
+        });
       })
   );
 });

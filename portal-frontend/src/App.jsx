@@ -10,12 +10,12 @@ import ConfirmDialogContainer from '@/components/ConfirmDialog';
 import InstallPwaBanner from '@/components/InstallPwaBanner';
 import { initOfflineSync } from '@/lib/offline';
 import {
-  PublicRoutes,
-  DriverRoutes,
-  ClientRoutes,
-  OwnDriverRoutes,
-  PlatformRoutes,
-  AdminRoutes,
+  publicRoutes,
+  driverRoutes,
+  clientRoutes,
+  ownDriverRoutes,
+  platformRoutes,
+  adminRoutes,
 } from '@/routes';
 import './App.css';
 
@@ -57,12 +57,12 @@ function App() {
             <ConfirmDialogContainer />
             <InstallPwaBanner />
             <Routes>
-              <PublicRoutes />
-              <DriverRoutes />
-              <ClientRoutes />
-              <OwnDriverRoutes />
-              <PlatformRoutes />
-              <AdminRoutes />
+              {publicRoutes}
+              {driverRoutes}
+              {clientRoutes}
+              {ownDriverRoutes}
+              {platformRoutes}
+              {adminRoutes}
 
               {/* Redirecionamento padrao */}
               <Route path="/" element={

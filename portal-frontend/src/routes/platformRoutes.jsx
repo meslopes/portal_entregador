@@ -4,8 +4,7 @@ import Layout from '@/components/Layout';
 import PlatformDashboardPage from '@/pages/admin/PlatformDashboardPage';
 import PlatformLoginPage from '@/pages/platform/PlatformLoginPage';
 
-export default function PlatformRoutes() {
-  return (
+export const platformRoutes = (
     <>
       <Route path="/platform/login" element={<PlatformLoginPage />} />
       <Route
@@ -21,4 +20,3 @@ export default function PlatformRoutes() {
       />
     </>
   );
-}

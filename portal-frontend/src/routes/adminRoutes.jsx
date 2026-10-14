@@ -33,8 +33,7 @@ function AdminRoute({ children }) {
   );
 }
 
-export default function AdminRoutes() {
-  return (
+export const adminRoutes = (
     <>
       <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
       <Route path="/admin/establishments" element={<AdminRoute><AdminEstablishmentsPage /></AdminRoute>} />
@@ -61,4 +60,3 @@ export default function AdminRoutes() {
       <Route path="/admin/database-map" element={<AdminRoute><DatabaseMapPage /></AdminRoute>} />
     </>
   );
-}

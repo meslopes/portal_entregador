@@ -7,8 +7,7 @@ import OwnDriverOrdersPage from '@/pages/own-driver/OwnDriverOrdersPage';
 import OwnDriverEarningsPage from '@/pages/own-driver/OwnDriverEarningsPage';
 import OwnDriverRoutesPage from '@/pages/own-driver/OwnDriverRoutesPage';
 
-export default function OwnDriverRoutes() {
-  return (
+export const ownDriverRoutes = (
     <>
       <Route path="/own-driver/login" element={<OwnDriverLoginPage />} />
       <Route path="/own-driver" element={<OwnDriverProtectedRoute><OwnDriverDashboardPage /></OwnDriverProtectedRoute>} />
@@ -18,4 +17,3 @@ export default function OwnDriverRoutes() {
       <Route path="/own-driver/routes" element={<OwnDriverProtectedRoute><OwnDriverRoutesPage /></OwnDriverProtectedRoute>} />
     </>
   );
-}

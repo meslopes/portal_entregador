@@ -22,8 +22,7 @@ function WrappedRoute({ children }) {
   );
 }
 
-export default function DriverRoutes() {
-  return (
+export const driverRoutes = (
     <>
       <Route path="/dashboard" element={<WrappedRoute><DashboardPage /></WrappedRoute>} />
       <Route
@@ -52,4 +51,3 @@ export default function DriverRoutes() {
       <Route path="/route" element={<WrappedRoute><DriverRouteMap /></WrappedRoute>} />
     </>
   );
-}

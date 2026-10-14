@@ -8,8 +8,7 @@ import PrivacyPage from '@/pages/PrivacyPage';
 import TrackPage from '@/pages/TrackPage';
 import PendingApprovalPage from '@/pages/PendingApprovalPage';
 
-export default function PublicRoutes() {
-  return (
+export const publicRoutes = (
     <>
       <Route
         path="/login"
@@ -34,4 +33,3 @@ export default function PublicRoutes() {
       <Route path="/pending-approval" element={<PendingApprovalPage />} />
     </>
   );
-}

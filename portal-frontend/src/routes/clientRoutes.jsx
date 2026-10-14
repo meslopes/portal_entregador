@@ -25,8 +25,7 @@ function WrappedRoute({ children }) {
   );
 }
 
-export default function ClientRoutes() {
-  return (
+export const clientRoutes = (
     <>
       <Route
         path="/client/login"
@@ -58,4 +57,3 @@ export default function ClientRoutes() {
       <Route path="/client/routes" element={<WrappedRoute><EstablishmentRoutesPage /></WrappedRoute>} />
     </>
   );
-}
