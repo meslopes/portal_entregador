@@ -1306,15 +1306,16 @@ def database_map():
         squares = Square.query.order_by(Square.id).all()
         result['squares'] = [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id, 'is_active': s.is_active} for s in squares]
 
-        # Users (limitar a 500 para performance)
-        users = User.query.order_by(User.id).limit(500).all()
+        # Users (limitar a 500 para performance) — sem soft-deleted
+        users = User.query.filter(User.deleted_at.is_(None)).order_by(User.id).limit(500).all()
+        tenants_map = {t.id: t.name for t in tenants}
         result['users'] = []
         for u in users:
             user_data = {
                 'id': u.id, 'email': u.email, 'first_name': u.first_name, 'last_name': u.last_name,
                 'user_type': u.user_type.value if u.user_type else None,
                 'status': u.status.value if u.status else None,
-                'tenant_id': u.tenant_id, 'phone': u.phone, 'cpf': u.cpf,
+                'tenant_id': u.tenant_id, 'tenant_name': tenants_map.get(u.tenant_id), 'phone': u.phone, 'cpf': u.cpf,
                 'birth_date': u.birth_date.isoformat() if u.birth_date else None,
                 'square_id': None, 'square_name': None, 'linked_name': None,
                 # Driver fields

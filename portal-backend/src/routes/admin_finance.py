@@ -5030,7 +5030,12 @@ def get_deleted_users():
         if tenant_id:
             query = query.filter(User.tenant_id == tenant_id)
         if user_type:
-            query = query.filter(User.user_type == user_type)
+            # user_type é Enum — comparar com UserType
+            from src.models.portal_models import UserType
+            try:
+                query = query.filter(User.user_type == UserType(user_type))
+            except ValueError:
+                query = query.filter(User.user_type == user_type)
         if days:
             cutoff = datetime.now(timezone.utc) - timedelta(days=days)
             query = query.filter(User.deleted_at >= cutoff)
@@ -5047,9 +5052,12 @@ def get_deleted_users():
             else:
                 user_dict['deleted_by_name'] = 'Sistema'
 
-            # Calcular dias desde exclusão
+            # Calcular dias desde exclusão (deleted_at pode ser naive)
             if user.deleted_at:
-                delta = datetime.now(timezone.utc) - user.deleted_at
+                deleted_at = user.deleted_at
+                if deleted_at.tzinfo is None:
+                    deleted_at = deleted_at.replace(tzinfo=timezone.utc)
+                delta = datetime.now(timezone.utc) - deleted_at
                 user_dict['days_deleted'] = delta.days
 
             users_data.append(user_dict)

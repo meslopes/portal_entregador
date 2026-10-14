@@ -16,7 +16,12 @@ def get_current_user():
         return g._current_user
     try:
         user_id = int(get_jwt_identity())
-        g._current_user = db.session.get(User, user_id)
+        user = db.session.get(User, user_id)
+        # Usuário soft-deleted não deve autenticar
+        if user and getattr(user, 'deleted_at', None):
+            g._current_user = None
+            return None
+        g._current_user = user
         return g._current_user
     except (ValueError, TypeError):
         return None

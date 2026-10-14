@@ -113,10 +113,11 @@ def get_admins():
         # Pre-load tenants
         tenants_map = {t.id: t.name for t in Tenant.query.all()}
 
-        # Buscar admins (excluindo super admins)
+        # Buscar admins (excluindo super admins e soft-deleted)
         admins = User.query.filter(
             User.user_type == UserType.ADMIN,
-            not User.is_super_admin
+            User.is_super_admin == False,  # noqa: E712
+            User.deleted_at.is_(None)
         ).all()
 
         result = []

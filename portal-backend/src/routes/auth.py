@@ -561,6 +561,9 @@ def login():
             user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password_hash, password):
+            # Soft delete bloqueia login
+            if user.deleted_at:
+                return jsonify({'error': 'Esta conta foi excluída. Entre em contato com o suporte.'}), 403
             # Verifica se o usuario esta ativo
             if user.status == UserStatus.INACTIVE:
                 return jsonify({'error': 'Sua conta está pendente de aprovação. Aguarde o administrador liberar seu acesso.'}), 403
