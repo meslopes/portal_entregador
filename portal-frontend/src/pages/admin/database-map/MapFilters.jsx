@@ -43,7 +43,7 @@ export const UsersSection = ({ users, onEdit, onDelete }) =>
         <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <strong>ID:{u.id}</strong> {u.first_name} {u.last_name} {badge(u.user_type, c, bg)}
-            {isSuperAdmin ? badge('SUPER ADMIN', '#f59e0b', '#fef3c7') : (u.tenant_id ? badge(`tenant:${u.tenant_id}`, '#7c3aed', '#f3e8ff') : null)}
+            {isSuperAdmin ? badge('SUPER ADMIN', '#f59e0b', '#fef3c7') : (u.tenant_name ? badge(u.tenant_name, '#7c3aed', '#f3e8ff') : (u.tenant_id ? badge(`tenant:${u.tenant_id}`, '#7c3aed', '#f3e8ff') : null))}
             {badge(u.status, u.status === 'ACTIVE' ? '#166534' : '#dc2626', u.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2')}
             {u.square_name ? badge(`praça: ${u.square_name}`, '#0d9488', '#f0fdfa') : null}
             {u.linked_name ? <span style={{ fontSize: '0.6875rem', color: '#64748b', marginLeft: '0.25rem' }}>({u.linked_name})</span> : null}

@@ -142,11 +142,12 @@ export const AuthProvider = ({ children }) => {
       });
 
       // Registrar token FCM para push notifications (background, sem travar login)
+      // Usa endpoint genérico — vale para driver, client e admin
       try {
         const { requestNotificationPermission } = await import('@/lib/firebase');
         const fcmToken = await requestNotificationPermission();
         if (fcmToken) {
-          api.post('/api/driver/push-token', { token: fcmToken }).catch(() => {});
+          api.post('/api/auth/register-push-token', { token: fcmToken }).catch(() => {});
         }
       } catch {
         // Push notification é opcional — não bloqueia login

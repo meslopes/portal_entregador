@@ -230,6 +230,7 @@ const PlatformDashboardPage = () => {
       phone: user.phone || '',
       status: user.status || 'ACTIVE',
       tenant_id: user.tenant_id || '',
+      user_type: user.user_type || '',
       password: ''
     });
     setShowUserEditModal(true);

@@ -88,7 +88,10 @@ const UserEditModal = ({ userEditForm, userEditLoading, tenants, onClose, onSubm
                 onChange={(e) => onFormChange(prev => ({ ...prev, tenant_id: e.target.value }))}
                 style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', background: 'white' }}
               >
-                <option value="">Plataforma (sem tenant)</option>
+                {/* Sem tenant é extremamente restrito — só para admins (promoção controlada) */}
+                {(userEditForm.user_type === 'ADMIN' || !userEditForm.tenant_id) && (
+                  <option value="">Plataforma (sem tenant) — restrito</option>
+                )}
                 {tenants.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
