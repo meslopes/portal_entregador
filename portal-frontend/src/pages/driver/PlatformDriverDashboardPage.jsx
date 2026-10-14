@@ -57,7 +57,12 @@ const PlatformDriverDashboardPage = () => {
     }
   }, [navigate]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    // Auto-refresh a cada 20s (sem flash de loading)
+    const interval = setInterval(() => loadData(true), 20000);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
   const acceptRoute = async (routeId) => {
     try {

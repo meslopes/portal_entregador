@@ -95,6 +95,11 @@ const DashboardPage = () => {
   useEffect(() => {
     loadDashboardData();
     if (user?.driver?.is_online) getCurrentLocation().catch(() => {});
+    // Auto-refresh stats/pedido atual a cada 20s
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 20000);
+    return () => clearInterval(interval);
   }, [user?.driver?.is_online]);
 
   useEffect(() => { if (user?.driver) setIsOnline(user.driver.is_online); }, [user]);
