@@ -2,38 +2,39 @@
 // Permite instalar como app no celular (PWA)
 
 // Versão do cache — incrementar para invalidar SW antigo nos clientes
-const CACHE_NAME = 'muvlog-v2';
+const CACHE_NAME = 'muvlog-v3';
 
 // Instalar
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-// Ativar
+// Ativar — limpa caches antigos e assume os clientes
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => clients.claim())
+  );
 });
 
-// Estratégia: Network First para estáticos; NÃO cachear HTML de rotas autenticadas
-const STATIC_ASSET = /\.(js|css|png|jpg|jpeg|svg|gif|webp|woff2?|ttf|ico|json)$/i;
+// Só interceptar assets estáticos do MESMO ORIGEM (build do app).
+// NUNCA interceptar: tiles OSM/Google, CDNs, APIs, imagens cross-origin.
+const STATIC_ASSET = /\.(js|css|woff2?|ttf|ico)$/i;
 
 self.addEventListener('fetch', (event) => {
-  // Não interceptar chamadas de API do backend
-  if (event.request.url.includes('/api/')) {
-    return;
-  }
-
-  // Não interceptar conexões do Supabase (Realtime WebSocket, Storage, etc.)
-  if (event.request.url.includes('supabase.co')) {
-    return;
-  }
-
-  // Só cachear assets estáticos — nunca HTML de páginas autenticadas
   const url = new URL(event.request.url);
+
+  // Apenas GET e mesmo origem
+  if (event.request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
+
+  // Não interceptar chamadas de API
+  if (url.pathname.includes('/api/')) return;
+
+  // Só assets /assets/*.js|css e equivalentes
   const isStatic = STATIC_ASSET.test(url.pathname) || url.pathname.startsWith('/assets/');
-  if (!isStatic) {
-    return;
-  }
+  if (!isStatic) return;
 
   event.respondWith(
     fetch(event.request)
@@ -47,7 +48,6 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // Sem cache? Devolve 404 em vez de undefined (quebrava o fetch)
         return caches.match(event.request).then((cached) => {
           return cached || new Response('', { status: 404, statusText: 'Not Found' });
         });
