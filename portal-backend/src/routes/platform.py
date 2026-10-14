@@ -384,6 +384,12 @@ def get_tenants():
                 'slug': tenant.slug,
                 'plan': tenant.plan or 'basic',
                 'is_active': tenant.is_active,
+                'phone': tenant.phone,
+                'email': tenant.email,
+                'cnpj': tenant.cnpj,
+                'address': tenant.address,
+                'primary_color': tenant.primary_color,
+                'secondary_color': tenant.secondary_color,
                 'created_at': tenant.created_at.isoformat() if tenant.created_at else None,
                 'users_count': users_count,
                 'drivers_count': drivers_count,
@@ -469,7 +475,7 @@ def get_platform_users():
     try:
         tenant_id = request.args.get('tenant_id', type=int)
 
-        query = User.query
+        query = User.query.filter(User.deleted_at.is_(None))
         if tenant_id:
             query = query.filter(User.tenant_id == tenant_id)
 
@@ -486,10 +492,12 @@ def get_platform_users():
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
+                'phone': user.phone,
+                'cpf': user.cpf,
                 'user_type': user.user_type.value if user.user_type else 'UNKNOWN',
                 'status': user.status.value if user.status else 'UNKNOWN',
                 'tenant_id': user.tenant_id,
-                'tenant_name': tenants_map.get(user.tenant_id) if user.tenant_id else None,
+                'tenant_name': tenants_map.get(user.tenant_id) if user.tenant_id else 'Plataforma (sem tenant)',
                 'created_at': user.created_at.isoformat() if user.created_at else None
             })
 
@@ -740,11 +748,27 @@ def delete_tenant(tenant_id):
                 'suggestion': 'Use ?force=true para excluir mesmo assim'
             }), 400
 
-        # Excluir dados vinculados se force=true
+        # Excluir dados vinculados se force=true (ordem respeita FKs)
         if force:
-            db.session.execute(db.text("DELETE FROM orders WHERE tenant_id = :tid"), {"tid": tenant_id})
-            db.session.execute(db.text("DELETE FROM drivers WHERE tenant_id = :tid"), {"tid": tenant_id})
-            db.session.execute(db.text("DELETE FROM restaurants WHERE tenant_id = :tid"), {"tid": tenant_id})
+            tables = [
+                "deliveries", "order_stops", "platform_driver_stops", "platform_driver_routes",
+                "own_driver_stops", "own_driver_routes", "own_driver_earnings",
+                "driver_bonuses", "driver_achievements", "driver_penalties", "driver_points_log",
+                "driver_weekly_scores", "driver_scores", "driver_restaurants",
+                "establishment_subscriptions", "subscription_invoices", "invoices",
+                "payments", "orders", "customers", "establishment_drivers",
+                "dynamic_pricing", "route_settings", "special_days", "peak_hours",
+                "squares", "restaurants", "drivers",
+            ]
+            for table in tables:
+                try:
+                    db.session.execute(db.text(f"DELETE FROM {table} WHERE tenant_id = :tid"), {"tid": tenant_id})
+                except Exception:
+                    db.session.rollback()
+                    try:
+                        db.session.execute(db.text(f"UPDATE {table} SET tenant_id = NULL WHERE tenant_id = :tid"), {"tid": tenant_id})
+                    except Exception:
+                        pass
             db.session.execute(db.text("UPDATE users SET tenant_id = NULL WHERE tenant_id = :tid"), {"tid": tenant_id})
 
         db.session.delete(tenant)
