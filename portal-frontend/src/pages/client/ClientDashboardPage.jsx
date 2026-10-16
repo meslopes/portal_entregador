@@ -34,7 +34,25 @@ const ClientDashboardPage = () => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  const driverMarkersRef = useRef(new Map()); // chave normalizada → marker Leaflet
+  const realtimePosRef = useRef(new Map());   // chave → { lat, lng, ts } do último GPS
   const hasUserInteractedRef = useRef(false); // Se o usuário interagiu com o mapa
+
+  // IDs chegam como 12, '12', 'own_12' conforme o tipo — normaliza para casar sempre
+  const normalizeDriverId = (id) => {
+    if (id === null || id === undefined) return '';
+    return String(id).replace(/^own_/, '');
+  };
+
+  // Posição Realtime é mais fresca que o banco (HTTP a cada 30s) — não deixar o poll sobrescrever
+  const applyRealtimePositions = (drivers) => (drivers || []).map(d => {
+    const key = normalizeDriverId(d.driver_id ?? d.id);
+    const pos = realtimePosRef.current.get(key);
+    if (pos && Date.now() - pos.ts < 90000) {
+      return { ...d, latitude: pos.lat, longitude: pos.lng };
+    }
+    return d;
+  });
 
   const loadData = useCallback(async () => {
     try {
@@ -47,7 +65,7 @@ const ClientDashboardPage = () => {
       setOrders(ordersData.orders || []);
       setTotalPages(ordersData.pages || 1);
       setStats(statsData);
-      setTrackingDrivers(trackingData.drivers || []);
+      setTrackingDrivers(applyRealtimePositions(trackingData.drivers));
       setRestaurantData(trackingData.restaurant || null);
       setDeliveryAddresses(trackingData.delivery_addresses || []);
     } catch (err) {
@@ -62,28 +80,42 @@ const ClientDashboardPage = () => {
     loadData();
   }, [loadData]);
 
-  // Refresh tracking a cada 10 segundos
+  // Refresh tracking a cada 30s — fallback do Realtime (que atualiza a cada ~15s)
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const data = await orderService.getMyTracking();
-        setTrackingDrivers(data.drivers || []);
+        // Merge: posição do Realtime mais recente tem prioridade sobre o banco
+        setTrackingDrivers(applyRealtimePositions(data.drivers));
         setRestaurantData(data.restaurant || null);
         setDeliveryAddresses(data.delivery_addresses || []);
       } catch { /* intentionally empty */ }
-    }, 10000);
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Supabase Realtime: atualizar posição dos entregadores em tempo real
+  // Supabase Realtime: posição dos entregadores em tempo real (WebSocket)
   useEffect(() => {
     if (!isRealtimeAvailable() || !user?.tenant_id) return;
     const cleanup = subscribeGPS(user.tenant_id, (gpsData) => {
+      const key = normalizeDriverId(gpsData.driver_id);
+      if (!key || !gpsData.lat || !gpsData.lng) return;
+
+      // Guarda posição fresca (o poll HTTP não pode sobrescrever)
+      realtimePosRef.current.set(key, {
+        lat: gpsData.lat,
+        lng: gpsData.lng,
+        ts: Date.now()
+      });
+
+      // Move só este marcador (sem recriar o mapa todo)
+      const marker = driverMarkersRef.current.get(key);
+      if (marker) {
+        marker.setLatLng([gpsData.lat, gpsData.lng]);
+      }
+
       setTrackingDrivers(prev => prev.map(d => {
-        // Atualizar posição do driver que enviou GPS
-        if (d.driver_id === gpsData.driver_id ||
-            d.driver_id === `own_${gpsData.driver_id}` ||
-            `own_${d.driver_id?.replace('own_', '')}` === `own_${gpsData.driver_id}`) {
+        if (normalizeDriverId(d.driver_id ?? d.id) === key) {
           return { ...d, latitude: gpsData.lat, longitude: gpsData.lng };
         }
         return d;
@@ -118,15 +150,18 @@ const ClientDashboardPage = () => {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      driverMarkersRef.current.clear();
+      markersRef.current = [];
     };
   }, []);
 
-  // Atualiza marcadores
+  // Atualiza marcadores — posições via setLatLng (sem recriar tudo a cada GPS)
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
     const L = window.L;
     const map = mapInstanceRef.current;
 
+    // Remove apenas marcadores fixos (estabelecimento + endereços)
     markersRef.current.forEach(m => map.removeLayer(m));
     markersRef.current = [];
 
@@ -172,8 +207,21 @@ const ClientDashboardPage = () => {
       bounds.push([addr.latitude, addr.longitude]);
     });
 
-    // Marcadores dos entregadores (plataforma + próprios)
+    // Marcadores dos entregadores — recria só se a lista de chaves mudou
+    const nextKeys = new Set();
     trackingDrivers.forEach(driver => {
+      const key = normalizeDriverId(driver.driver_id ?? driver.id);
+      if (!key) return;
+      nextKeys.add(key);
+
+      const existing = driverMarkersRef.current.get(key);
+      if (existing && driver.latitude && driver.longitude) {
+        // Já existe: só move (Realtime/poll de posição)
+        existing.setLatLng([driver.latitude, driver.longitude]);
+        bounds.push([driver.latitude, driver.longitude]);
+        return;
+      }
+
       if (!driver.latitude || !driver.longitude) return;
 
       // Cores: próprio livre = roxo, próprio com pedido = azul, plataforma = cor do status
@@ -212,8 +260,16 @@ const ClientDashboardPage = () => {
         .addTo(map)
         .bindPopup(popupHtml);
 
-      markersRef.current.push(marker);
+      driverMarkersRef.current.set(key, marker);
       bounds.push([driver.latitude, driver.longitude]);
+    });
+
+    // Remove marcadores de entregadores que saíram da lista
+    driverMarkersRef.current.forEach((marker, key) => {
+      if (!nextKeys.has(key)) {
+        map.removeLayer(marker);
+        driverMarkersRef.current.delete(key);
+      }
     });
 
     if (bounds.length > 0 && !hasUserInteractedRef.current) map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
