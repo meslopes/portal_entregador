@@ -4,8 +4,12 @@ import StatusOrderCard from './StatusOrderCard';
 
 export default function StatusTab({
   orders,
+  // Seção de status aberta (ex.: 'PENDING') — separada do menu do pedido
+  expandedStatus,
+  onToggleStatus,
+  // Menu ⋮ do pedido (order.id) — NÃO pode fechar a seção de status
   selectedOrderMenu,
-  onToggleMenu,
+  onToggleOrderMenu,
   onOpenAssign,
   onCenterMap,
   getTimeRemaining,
@@ -21,15 +25,16 @@ export default function StatusTab({
         .map(([status, config]) => {
           const statusOrders = getOrdersByStatus(status);
           const count = statusOrders.length;
+          const isSectionOpen = expandedStatus === status;
 
           return (
             <div key={status} style={{ marginBottom: '0.25rem' }}>
               <button
-                onClick={() => onToggleMenu(`status:${status}`)}
+                onClick={() => onToggleStatus(status)}
                 style={{
                   width: '100%', display: 'flex', justifyContent: 'space-between',
                   alignItems: 'center', padding: '0.75rem', border: 'none',
-                  background: selectedOrderMenu === `status:${status}` ? '#f8fafc' : 'transparent',
+                  background: isSectionOpen ? '#f8fafc' : 'transparent',
                   borderRadius: '0.375rem', cursor: 'pointer',
                   transition: 'background 0.15s'
                 }}
@@ -52,14 +57,14 @@ export default function StatusTab({
                     size={14}
                     style={{
                       color: '#64748b',
-                      transform: selectedOrderMenu === `status:${status}` ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transform: isSectionOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                       transition: 'transform 0.2s'
                     }}
                   />
                 </div>
               </button>
 
-              {selectedOrderMenu === `status:${status}` && (
+              {isSectionOpen && (
                 <div style={{ padding: '0.25rem 0.5rem' }}>
                   {count === 0 && (
                     <div style={{ padding: '0.5rem 0.75rem', color: '#94a3b8', fontSize: '0.75rem' }}>
@@ -71,7 +76,7 @@ export default function StatusTab({
                       key={order.id}
                       order={order}
                       isMenuOpen={selectedOrderMenu === order.id}
-                      onToggleMenu={onToggleMenu}
+                      onToggleMenu={onToggleOrderMenu}
                       onOpenAssign={onOpenAssign}
                       onCenterMap={onCenterMap}
                       getTimeRemaining={getTimeRemaining}
