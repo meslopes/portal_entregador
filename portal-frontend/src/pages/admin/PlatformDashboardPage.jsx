@@ -30,6 +30,7 @@ const PlatformDashboardPage = () => {
   const [userEditForm, setUserEditForm] = useState({ first_name: '', last_name: '', email: '', phone: '', status: 'ACTIVE', tenant_id: '', password: '' });
   const [userEditLoading, setUserEditLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -162,16 +163,19 @@ const PlatformDashboardPage = () => {
   };
 
   const handleEditTenant = (tenant) => {
+    // Completa dados faltantes com a lista em memória (evita form zerado ao abrir via detalhes)
+    const fromList = tenants.find(t => t.id === tenant.id) || {};
+    const pick = (...vals) => vals.find(v => v !== undefined && v !== null && v !== '') ?? '';
     setEditingTenant(tenant);
     setTenantEditForm({
-      name: tenant.name || '',
-      slug: tenant.slug || '',
-      plan: tenant.plan || 'basic',
-      phone: tenant.phone || '',
-      email: tenant.email || '',
-      cnpj: tenant.cnpj || '',
-      primary_color: tenant.primary_color || '#2563eb',
-      secondary_color: tenant.secondary_color || '#1e40af'
+      name: pick(tenant.name, fromList.name),
+      slug: pick(tenant.slug, fromList.slug),
+      plan: pick(tenant.plan, fromList.plan) || 'basic',
+      phone: pick(tenant.phone, fromList.phone),
+      email: pick(tenant.email, fromList.email),
+      cnpj: pick(tenant.cnpj, fromList.cnpj),
+      primary_color: pick(tenant.primary_color, fromList.primary_color) || '#2563eb',
+      secondary_color: pick(tenant.secondary_color, fromList.secondary_color) || '#1e40af'
     });
     setShowTenantModal(false);
   };
@@ -268,19 +272,31 @@ const PlatformDashboardPage = () => {
     }
   };
 
-  const handleRefresh = () => {
-    loadDashboard();
-    loadTenants();
-    loadPendingUsers();
-    loadUsers();
-    setRefreshKey(k => k + 1);
+  const handleRefresh = async () => {
+    // Feedback visual: mostra spinner enquanto recarrega os dados
+    try {
+      setRefreshing(true);
+      await Promise.all([
+        loadDashboard(),
+        loadTenants(),
+        loadPendingUsers(),
+        loadUsers(),
+      ]);
+      setRefreshKey(k => k + 1);
+      showToast('Dados atualizados com sucesso!', 'success');
+    } catch {
+      showToast('Erro ao atualizar dados', 'error');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   if (loading) return <LoadingPage />;
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
-      <PlatformHeader onRefresh={handleRefresh} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <PlatformHeader onRefresh={handleRefresh} refreshing={refreshing} />
       <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       {/* Overview Tab */}
       {activeTab === 'overview' && dashboard && (

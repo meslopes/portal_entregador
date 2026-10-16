@@ -427,6 +427,13 @@ def get_tenant_details(tenant_id):
                 'slug': tenant.slug,
                 'plan': tenant.plan or 'basic',
                 'is_active': tenant.is_active,
+                # Campos de contato e white-label — necessários no modal de edição
+                'phone': tenant.phone,
+                'email': tenant.email,
+                'cnpj': tenant.cnpj,
+                'address': tenant.address,
+                'primary_color': tenant.primary_color,
+                'secondary_color': tenant.secondary_color,
                 'created_at': tenant.created_at.isoformat() if tenant.created_at else None,
                 'users': [{'id': u.id, 'email': u.email, 'first_name': u.first_name} for u in User.query.filter_by(tenant_id=tenant.id).all()],
                 'drivers_count': len(drivers),

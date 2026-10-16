@@ -51,6 +51,9 @@ export default function Sidebar({
   selectedOrderMenu,
   setSelectedOrderMenu,
 }) {
+  // Alterna o submenu de status (abre/fecha) — StatusTab espera onToggleMenu
+  const onToggleMenu = (id) => setSelectedOrderMenu((prev) => (prev === id ? null : id));
+
   const TabButton = ({ id, label, count, badgeBg }) => (
     <button
       onClick={() => setActiveTab(id)}
@@ -140,10 +143,8 @@ export default function Sidebar({
         {activeTab === 'status' && (
           <StatusTab
             orders={orders}
-            expandedStatus={expandedStatus}
-            setExpandedStatus={setExpandedStatus}
             selectedOrderMenu={selectedOrderMenu}
-            setSelectedOrderMenu={setSelectedOrderMenu}
+            onToggleMenu={onToggleMenu}
             onOpenAssign={onOpenAssign}
             onCenterMap={onCenterMap}
             getTimeRemaining={getTimeRemaining}
