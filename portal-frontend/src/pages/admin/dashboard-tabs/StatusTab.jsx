@@ -59,8 +59,13 @@ export default function StatusTab({
                 </div>
               </button>
 
-              {selectedOrderMenu === `status:${status}` && count > 0 && (
+              {selectedOrderMenu === `status:${status}` && (
                 <div style={{ padding: '0.25rem 0.5rem' }}>
+                  {count === 0 && (
+                    <div style={{ padding: '0.5rem 0.75rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                      Nenhum pedido nesta etapa
+                    </div>
+                  )}
                   {statusOrders.slice(0, 5).map(order => (
                     <StatusOrderCard
                       key={order.id}
