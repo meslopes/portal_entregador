@@ -60,7 +60,9 @@ const Layout = ({ children }) => {
     };
 
     broadcast(); persist();
-    gpsBroadcastRef.current = setInterval(broadcast, 15000);
+    // 5s: latência baixa para o estabelecimento ver o pin em tempo real
+    // Bateria: enableHighAccuracy=false no broadcast (só o persist 30s usa alta precisão)
+    gpsBroadcastRef.current = setInterval(broadcast, 5000);
     gpsHttpRef.current = setInterval(persist, 30000);
 
     return () => {

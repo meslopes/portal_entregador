@@ -38,7 +38,8 @@ const OwnDriverProtectedRoute = ({ children }) => {
 
         broadcast();
         persist();
-        gpsBroadcastRef.current = setInterval(broadcast, 15000);
+        // 5s no broadcast para o estabelecimento ver em tempo real
+        gpsBroadcastRef.current = setInterval(broadcast, 5000);
         gpsHttpRef.current = setInterval(persist, 30000);
       } catch (err) {
         if (cancelled) return;

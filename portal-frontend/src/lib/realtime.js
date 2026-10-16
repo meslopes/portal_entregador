@@ -1,8 +1,13 @@
 /**
  * Módulo de GPS em tempo real via Supabase Realtime (Broadcast).
- * 
+ *
  * Envio via WebSocket (channel.send()) — confiável, baixa latência.
  * Recepção via WebSocket subscription.
+ *
+ * IMPORTANTE: canais NÃO privados. Canal privado exige JWT do Supabase Auth;
+ * o app usa JWT do Flask, que o Realtime rejeita em silêncio (canal nunca
+ * fica SUBSCRIBED e o GPS não é transmitido). O nome do canal isola por tenant
+ * (`gps:tenant_<id>`).
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -28,18 +33,6 @@ function getClient() {
   return supabase;
 }
 
-/**
- * Obtém o JWT do usuário para autenticar o canal Realtime.
- * Sem isso, qualquer um com a chave anon pode inscrever nos canais.
- */
-function getAuthToken() {
-  try {
-    return localStorage.getItem('token') || localStorage.getItem('own_driver_token') || null;
-  } catch {
-    return null;
-  }
-}
-
 function getChannelName(tenantId) {
   return `gps:tenant_${tenantId || 'global'}`;
 }
@@ -54,26 +47,25 @@ export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
 
   const channelName = getChannelName(tenantId);
 
-  // Criar canal de envio na primeira chamada (privado + JWT do usuário)
   if (!sendChannel) {
     log('Criando canal de envio:', channelName);
-    sendChannel = client.channel(channelName, {
-      config: {
-        private: true,
-        auth: { token: getAuthToken() }
-      }
-    });
+    // Canal público por tenant — JWT do Flask não autentica Realtime privado
+    sendChannel = client.channel(channelName);
 
     sendChannel.subscribe((status) => {
       log('Canal de envio status:', status);
       if (status === 'SUBSCRIBED') {
         sendChannelReady = true;
         log('Canal de envio PRONTO');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        sendChannelReady = false;
+        // Recriar canal na próxima chamada
+        try { client.removeChannel(sendChannel); } catch { /* ignore */ }
+        sendChannel = null;
       }
     });
   }
 
-  // Só enviar quando o canal estiver inscrito
   if (!sendChannelReady) return;
 
   const payload = {
@@ -84,7 +76,6 @@ export function sendGPS(driverId, lat, lng, tenantId, driverType = 'platform') {
     timestamp: Date.now()
   };
 
-  // Enviar via WebSocket (confiável quando inscrito)
   sendChannel.send({
     type: 'broadcast',
     event: 'gps',
@@ -109,12 +100,7 @@ export function subscribeGPS(tenantId, onGPSUpdate) {
   const channelName = getChannelName(tenantId);
   log('Inscrevendo para receber GPS:', channelName);
 
-  receiveChannel = client.channel(channelName, {
-    config: {
-      private: true,
-      auth: { token: getAuthToken() }
-    }
-  });
+  receiveChannel = client.channel(channelName);
 
   receiveChannel
     .on('broadcast', { event: 'gps' }, (payload) => {

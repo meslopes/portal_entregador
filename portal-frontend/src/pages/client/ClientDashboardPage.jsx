@@ -80,7 +80,7 @@ const ClientDashboardPage = () => {
     loadData();
   }, [loadData]);
 
-  // Refresh tracking a cada 30s — fallback do Realtime (que atualiza a cada ~15s)
+  // Fallback HTTP a cada 8s — Realtime (5s no entregador) é o caminho principal
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -90,7 +90,7 @@ const ClientDashboardPage = () => {
         setRestaurantData(data.restaurant || null);
         setDeliveryAddresses(data.delivery_addresses || []);
       } catch { /* intentionally empty */ }
-    }, 30000);
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
