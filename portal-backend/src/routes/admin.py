@@ -1304,11 +1304,11 @@ def database_map():
         # Squares
         from src.models.portal_models import Square
         squares = Square.query.order_by(Square.id).all()
-        result['squares'] = [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id, 'is_active': s.is_active} for s in squares]
+        tenants_map = {t.id: t.name for t in tenants}
+        result['squares'] = [{'id': s.id, 'name': s.name, 'city': s.city, 'state': s.state, 'tenant_id': s.tenant_id, 'tenant_name': tenants_map.get(s.tenant_id), 'is_active': s.is_active} for s in squares]
 
         # Users (limitar a 500 para performance) — sem soft-deleted
         users = User.query.filter(User.deleted_at.is_(None)).order_by(User.id).limit(500).all()
-        tenants_map = {t.id: t.name for t in tenants}
         result['users'] = []
         for u in users:
             user_data = {
@@ -1362,20 +1362,38 @@ def database_map():
                             if sq: user_data['square_name'] = sq.name
             result['users'].append(user_data)
 
-        # Restaurants (limitar a 200)
+        # Restaurants (limitar a 200) — com nomes de tenant e praça
         restaurants = Restaurant.query.order_by(Restaurant.id).limit(200).all()
-        result['restaurants'] = [{'id': r.id, 'name': r.name, 'address': r.address, 'tenant_id': r.tenant_id, 'square_id': r.square_id, 'has_own_drivers': r.has_own_drivers, 'is_active': r.is_active} for r in restaurants]
+        squares_map = {s.id: s.name for s in squares}
+        result['restaurants'] = [{
+            'id': r.id, 'name': r.name, 'address': r.address,
+            'tenant_id': r.tenant_id, 'tenant_name': tenants_map.get(r.tenant_id),
+            'square_id': r.square_id, 'square_name': squares_map.get(r.square_id),
+            'has_own_drivers': r.has_own_drivers, 'is_active': r.is_active
+        } for r in restaurants]
 
         # Customers (limitar a 500)
         customers = Customer.query.order_by(Customer.id).all()
-        result['customers'] = [{'id': c.id, 'name': c.name, 'phone': c.phone, 'user_id': c.user_id, 'tenant_id': c.tenant_id} for c in customers]
+        result['customers'] = [{'id': c.id, 'name': c.name, 'phone': c.phone, 'user_id': c.user_id, 'tenant_id': c.tenant_id, 'tenant_name': tenants_map.get(c.tenant_id)} for c in customers]
 
-        # Platform Drivers
-        drivers = Driver.query.order_by(Driver.id).all()
+        # Platform Drivers — EXCLUIR convertidos para próprio (evita aparecer nas 2 listas)
+        drivers = Driver.query.filter(
+            db.or_(Driver.converted_to_own.is_(False), Driver.converted_to_own.is_(None))
+        ).order_by(Driver.id).all()
         drivers_data = []
         for d in drivers:
             user = User.query.get(d.user_id) if d.user_id else None
-            drivers_data.append({'id': d.id, 'user_id': d.user_id, 'name': f"{user.first_name} {user.last_name}" if user else 'SEM USER', 'email': user.email if user else None, 'vehicle_type': d.vehicle_type.value if d.vehicle_type else None, 'vehicle_plate': d.vehicle_plate, 'square_id': d.square_id, 'tenant_id': d.tenant_id, 'is_online': d.is_online, 'is_blocked': d.is_blocked, 'total_deliveries': d.total_deliveries, 'rating': float(d.rating) if d.rating else None})
+            drivers_data.append({
+                'id': d.id, 'user_id': d.user_id,
+                'name': f"{user.first_name} {user.last_name}" if user else 'SEM USER',
+                'email': user.email if user else None,
+                'vehicle_type': d.vehicle_type.value if d.vehicle_type else None,
+                'vehicle_plate': d.vehicle_plate,
+                'square_id': d.square_id, 'square_name': squares_map.get(d.square_id),
+                'tenant_id': d.tenant_id, 'tenant_name': tenants_map.get(d.tenant_id),
+                'is_online': d.is_online, 'is_blocked': d.is_blocked,
+                'total_deliveries': d.total_deliveries, 'rating': float(d.rating) if d.rating else None
+            })
         result['platform_drivers'] = drivers_data
 
         # Own Drivers
@@ -1384,7 +1402,17 @@ def database_map():
         for od in own_drivers:
             restaurant = Restaurant.query.get(od.restaurant_id)
             square = restaurant.square if restaurant else None
-            result['own_drivers'].append({'id': od.id, 'name': od.name, 'phone': od.phone, 'vehicle_type': od.vehicle_type, 'vehicle_plate': od.vehicle_plate, 'restaurant_id': od.restaurant_id, 'restaurant_name': restaurant.name if restaurant else None, 'square_id': restaurant.square_id if restaurant else None, 'square_name': square.name if square else None, 'tenant_id': restaurant.tenant_id if restaurant else None, 'is_online': od.is_online, 'is_active': od.is_active, 'has_pin': bool(od.pin_hash), 'total_deliveries': od.total_deliveries})
+            result['own_drivers'].append({
+                'id': od.id, 'name': od.name, 'phone': od.phone,
+                'vehicle_type': od.vehicle_type, 'vehicle_plate': od.vehicle_plate,
+                'restaurant_id': od.restaurant_id, 'restaurant_name': restaurant.name if restaurant else None,
+                'square_id': restaurant.square_id if restaurant else None,
+                'square_name': square.name if square else None,
+                'tenant_id': restaurant.tenant_id if restaurant else None,
+                'tenant_name': tenants_map.get(restaurant.tenant_id) if restaurant else None,
+                'is_online': od.is_online, 'is_active': od.is_active,
+                'has_pin': bool(od.pin_hash), 'total_deliveries': od.total_deliveries
+            })
 
         # Orders summary
         from sqlalchemy import func as sqlfunc
@@ -1584,73 +1612,99 @@ def toggle_tenant_active(tenant_id):
 @jwt_required()
 @admin_required
 def cleanup_test_data():
-    """Limpa dados em lotes para evitar timeout."""
+    """Remove SOMENTE dados de teste identificados por padrão (não apaga dados reais).
+
+    Critérios de "teste":
+      - email/name contendo: teste, test@, test., exemplo, sandbox, ifood, demo, qa, 99food
+      - restaurantes com nome de teste
+      - pedidos de restaurantes de teste / sandbox
+
+    Body: { "action": "all" | "preview", "confirm": true }
+      - preview: retorna o que seria apagado sem apagar
+      - confirm=true: executa a limpeza (exige super admin)
+    """
     try:
         user = get_current_user()
         if not user or not user.is_super_admin:
             return jsonify({'error': 'Apenas super admin'}), 403
 
-        deleted = {}
+        data = request.get_json() or {}
+        action = data.get('action', 'preview')
+        # Palavras que marcam registro como teste
+        tokens = ('teste', 'test@', 'test.', 'exemplo', 'sandbox', 'ifood', 'demo', 'qa', '99food')
 
-        # Deletar em ordem de dependencia (filhos primeiro)
-        # Lotes de 5000 para evitar timeout
+        def is_test_text(val):
+            if not val:
+                return False
+            v = val.lower()
+            return any(t in v for t in tokens)
+
+        # Coletar IDs de usuários de teste (NUNCA admins)
+        test_user_ids = []
+        for u in User.query.filter(User.user_type != UserType.ADMIN).all():
+            if is_test_text(u.email) or is_test_text(u.first_name) or is_test_text(u.last_name):
+                test_user_ids.append(u.id)
+
+        # Restaurantes de teste
+        test_rest_ids = []
+        for r in Restaurant.query.all():
+            if is_test_text(r.name) or is_test_text(r.address or '') or (r.cnpj and is_test_text(r.cnpj)):
+                test_rest_ids.append(r.id)
+
+        deleted = {
+            'criterio': list(tokens),
+            'usuarios_teste': len(test_user_ids),
+            'restaurantes_teste': len(test_rest_ids),
+        }
+
+        if action == 'preview':
+            deleted['mode'] = 'preview'
+            deleted['aviso'] = 'Nada foi apagado. Envie action=all + confirm=true para executar.'
+            return jsonify({'message': 'Prévia da limpeza', 'deleted': deleted}), 200
+
+        if not data.get('confirm'):
+            return jsonify({'error': 'Envie confirm=true para executar a limpeza'}), 400
+
+        # Limpeza real — só registros de teste, na ordem de dependência
         batch = 5000
 
-        tables = [
-            'own_driver_earnings', 'deliveries', 'payments',
-            'driver_scores', 'driver_bonuses', 'driver_achievements',
-            'driver_penalties', 'driver_restaurants',
-            'orders', 'addresses', 'notifications',
-            'platform_credentials', 'invoices',
-            'establishment_drivers', 'drivers',
-            'customers', 'system_configs', 'dynamic_pricing',
-        ]
+        def delete_where(sql, params=None):
+            total = 0
+            while True:
+                r = db.session.execute(db.text(sql), params or {})
+                db.session.commit()
+                total += r.rowcount
+                if r.rowcount < batch:
+                    break
+            return total
 
-        for tbl in tables:
-            try:
-                total = 0
-                while True:
-                    r = db.session.execute(db.text(f"DELETE FROM {tbl} WHERE id IN (SELECT id FROM {tbl} LIMIT {batch})"))
-                    db.session.commit()
-                    total += r.rowcount
-                    if r.rowcount < batch:
-                        break
-                deleted[tbl] = total
-            except Exception as e:
-                db.session.rollback()
-                deleted[tbl] = f'erro: {str(e)[:60]}'
+        if test_user_ids:
+            ph = ','.join([':u%d' % i for i in range(len(test_user_ids))])
+            pmap = {'u%d' % i: v for i, v in enumerate(test_user_ids)}
+            rest_ph = ''
+            if test_rest_ids:
+                rest_ph = ' OR restaurant_id IN (' + ','.join([':r%d' % i for i in range(len(test_rest_ids))]) + ')'
+                pmap.update({'r%d' % i: v for i, v in enumerate(test_rest_ids)})
+            deleted['orders'] = delete_where(
+                f"DELETE FROM orders WHERE customer_id IN (SELECT id FROM customers WHERE user_id IN ({ph})){rest_ph}",
+                pmap
+            )
+            deleted['customers'] = delete_where(f"DELETE FROM customers WHERE user_id IN ({ph})", pmap)
+            deleted['notifications'] = delete_where(f"DELETE FROM notifications WHERE user_id IN ({ph})", pmap)
+            deleted['users'] = delete_where(f"DELETE FROM users WHERE id IN ({ph}) AND user_type != 'ADMIN'", pmap)
 
-        # Users nao-admin
-        try:
-            r = db.session.execute(db.text("DELETE FROM users WHERE user_type != 'ADMIN'"))
-            db.session.commit()
-            deleted['non_admin_users'] = r.rowcount
-        except Exception as e:
-            db.session.rollback()
-            deleted['non_admin_users'] = f'erro: {str(e)[:60]}'
+        if test_rest_ids:
+            ph = ','.join([':r%d' % i for i in range(len(test_rest_ids))])
+            pmap = {'r%d' % i: v for i, v in enumerate(test_rest_ids)}
+            deleted['establishment_drivers'] = delete_where(f"DELETE FROM establishment_drivers WHERE restaurant_id IN ({ph})", pmap)
+            deleted['restaurants'] = delete_where(f"DELETE FROM restaurants WHERE id IN ({ph})", pmap)
 
-        # Restaurantes
-        try:
-            r = db.session.execute(db.text("DELETE FROM restaurants"))
-            db.session.commit()
-            deleted['restaurants'] = r.rowcount
-        except Exception as e:
-            db.session.rollback()
-            deleted['restaurants'] = f'erro: {str(e)[:60]}'
-
-        # Tramandai
-        try:
-            r = db.session.execute(db.text("DELETE FROM squares WHERE city = 'Tramandai'"))
-            db.session.commit()
-            deleted['tramandai'] = r.rowcount
-        except Exception as e:
-            db.session.rollback()
-            deleted['tramandai'] = f'erro: {str(e)[:60]}'
-
-        return jsonify({'message': 'Limpeza concluida', 'deleted': deleted}), 200
+        deleted['mode'] = 'cleaned'
+        return jsonify({'message': 'Limpeza de dados de teste concluída', 'deleted': deleted}), 200
 
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Erro na limpeza de teste: {e}")
         return jsonify({'error': str(e)}), 500
 
 

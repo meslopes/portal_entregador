@@ -215,6 +215,24 @@ const DatabaseMapPage = () => {
     }
   };
 
+  // Define/reseta PIN de 4 dígitos do entregador próprio (login no app de próprio)
+  const handleSetPin = async (driver) => {
+    const pin = window.prompt(`PIN de 4 dígitos para "${driver.name}" (login no app de entregador próprio):`);
+    if (pin === null) return;
+    const clean = pin.trim();
+    if (clean.length !== 4 || !/^\d{4}$/.test(clean)) {
+      showMsg('PIN deve ter exatamente 4 dígitos numéricos', true);
+      return;
+    }
+    try {
+      await api.post(`/api/admin/establishment-drivers/${driver.id}/pin`, { pin: clean });
+      showMsg(`PIN de ${driver.name} definido com sucesso`);
+      loadData();
+    } catch (err) {
+      showMsg(err.response?.data?.error || 'Erro ao definir PIN', true);
+    }
+  };
+
   const handleDeleteRestaurant = async (restaurant) => {
     if (!(await confirmAsync(`Excluir restaurante "${restaurant.name}"?\n\nPedidos e entregadores vinculados serão desvinculados automaticamente.`))) return;
     try {
@@ -261,9 +279,13 @@ const DatabaseMapPage = () => {
         showSquareDropdown={showSquareDropdown}
         setShowSquareDropdown={setShowSquareDropdown}
         onCleanupTestData={async () => {
-          if (!confirmDestructive('LIMPAR', 'ATENÇÃO: Isso vai excluir TODOS os dados de teste (pedidos iFood, clientes iFood, restaurantes de teste, entregadores de teste, faturas). Restaurantes reais serão mantidos.')) return;
+          if (!confirmDestructive('LIMPAR', 'ATENÇÃO: Isso remove SOMENTE dados de TESTE (email/nome com "teste", "exemplo", "sandbox", "ifood", "99food", "demo").\n\nDados reais e admins NÃO são apagados.\n\nDeseja ver a prévia e confirmar?')) return;
           try {
-            const res = await api.post('/api/admin/cleanup-test-data', { action: 'all' });
+            const preview = await api.post('/api/admin/cleanup-test-data', { action: 'preview' });
+            const p = preview.data.deleted || {};
+            const ok = await confirmAsync(`Prévia: ${p.usuarios_teste || 0} usuário(s) de teste, ${p.restaurantes_teste || 0} restaurante(s) de teste.\n\nExecutar limpeza?`);
+            if (!ok) return;
+            const res = await api.post('/api/admin/cleanup-test-data', { action: 'all', confirm: true });
             showMsg('Limpeza concluída: ' + JSON.stringify(res.data.deleted));
             loadData();
           } catch (err) {
@@ -302,7 +324,7 @@ const DatabaseMapPage = () => {
       <UsersSection users={d.users} onEdit={openEdit} onDelete={handleDeleteUser} />
       <RestaurantsSection restaurants={d.restaurants} onDelete={handleDeleteRestaurant} />
       <PlatformDriversSection drivers={d.platform_drivers} />
-      <OwnDriversSection drivers={d.own_drivers} onDelete={handleDeleteOwnDriver} />
+      <OwnDriversSection drivers={d.own_drivers} onDelete={handleDeleteOwnDriver} onSetPin={handleSetPin} />
       <OrderSummarySection orderSummary={data.order_summary} />
       <RecentOrdersSection orders={data.recent_orders} />
 

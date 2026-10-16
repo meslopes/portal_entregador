@@ -243,7 +243,28 @@ def create_establishment_driver():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_est_drivers_bp.route('/establishment-drivers/<int:driver_id>/pin', methods=['POST'])
+@jwt_required()
+@client_or_admin_required
+def set_establishment_driver_pin(driver_id):
+    """Define ou reseta o PIN de 4 dígitos de um entregador próprio (admin/estabelecimento)."""
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
 
+        data = request.get_json() or {}
+        pin = (data.get('pin') or '').strip()
+        if len(pin) != 4 or not pin.isdigit():
+            return jsonify({'error': 'PIN deve ter 4 dígitos numéricos'}), 400
+
+        driver.set_pin(pin)
+        db.session.commit()
+        return jsonify({'message': 'PIN definido com sucesso', 'has_pin': True}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @admin_est_drivers_bp.route('/establishment-drivers/<int:driver_id>', methods=['PUT'])

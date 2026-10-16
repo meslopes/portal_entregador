@@ -65,7 +65,10 @@ def get_drivers():
         query = Driver.query.join(User)
 
         # Excluir entregadores convertidos para próprio
-        query = query.filter(not Driver.converted_to_own)
+        # (NOT coluna em SQLAlchemy não funciona — usar .is_(False))
+        query = query.filter(
+            db.or_(Driver.converted_to_own.is_(False), Driver.converted_to_own.is_(None))
+        )
 
         # Filtrar usuários excluídos (soft delete)
         query = query.filter(User.deleted_at.is_(None))

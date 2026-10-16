@@ -27,7 +27,7 @@ export const SquaresSection = ({ squares }) =>
     squares?.length ? squares.map(s => card(
       <div key={s.id}>
         <strong>ID:{s.id}</strong> {s.name} - {s.city}/{s.state}
-        {s.tenant_id ? badge(`tenant:${s.tenant_id}`, '#7c3aed', '#f3e8ff') : badge('sem tenant', '#64748b', '#f1f5f9')}
+        {s.tenant_name ? badge(s.tenant_name, '#7c3aed', '#f3e8ff') : (s.tenant_id ? badge(`tenant:${s.tenant_id}`, '#7c3aed', '#f3e8ff') : badge('sem tenant', '#64748b', '#f1f5f9'))}
         {s.is_active ? badge('Ativo', '#166534', '#dcfce7') : badge('Inativo', '#dc2626', '#fee2e2')}
       </div>
     )) : <p style={{ color: '#64748b' }}>Nenhuma praça cadastrada</p>
@@ -67,8 +67,8 @@ export const RestaurantsSection = ({ restaurants, onDelete }) =>
       <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <strong>ID:{r.id}</strong> {r.name}
-          {r.tenant_id ? badge(`tenant:${r.tenant_id}`, '#7c3aed', '#f3e8ff') : null}
-          {r.square_id ? badge(`praça:${r.square_id}`, '#0d9488', '#f0fdfa') : null}
+          {r.tenant_name ? badge(r.tenant_name, '#7c3aed', '#f3e8ff') : (r.tenant_id ? badge(`tenant:${r.tenant_id}`, '#7c3aed', '#f3e8ff') : null)}
+          {r.square_name ? badge(r.square_name, '#0d9488', '#f0fdfa') : (r.square_id ? badge(`praça:${r.square_id}`, '#0d9488', '#f0fdfa') : null)}
           {r.has_own_drivers ? badge('Tem Próprios', '#f59e0b', '#fef3c7') : null}
           {r.is_active ? badge('Ativo', '#166534', '#dcfce7') : badge('Inativo', '#dc2626', '#fee2e2')}
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{r.address}</div>
@@ -86,8 +86,8 @@ export const PlatformDriversSection = ({ drivers }) =>
       <div key={d.id}>
         <strong>ID:{d.id}</strong> {d.name} {badge('PLATAFORMA', '#2563eb', '#dbeafe')}
         {d.vehicle_type} {d.vehicle_plate ? `• ${d.vehicle_plate}` : ''}
-        {d.square_id ? badge(`praça:${d.square_id}`, '#0d9488', '#f0fdfa') : null}
-        {d.tenant_id ? badge(`tenant:${d.tenant_id}`, '#7c3aed', '#f3e8ff') : null}
+        {d.square_name ? badge(d.square_name, '#0d9488', '#f0fdfa') : (d.square_id ? badge(`praça:${d.square_id}`, '#0d9488', '#f0fdfa') : null)}
+        {d.tenant_name ? badge(d.tenant_name, '#7c3aed', '#f3e8ff') : (d.tenant_id ? badge(`tenant:${d.tenant_id}`, '#7c3aed', '#f3e8ff') : null)}
         {d.is_online ? badge('Online', '#166534', '#dcfce7') : badge('Offline', '#64748b', '#f1f5f9')}
         {d.is_blocked ? badge('BLOQUEADO', '#dc2626', '#fee2e2') : null}
         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
@@ -97,7 +97,7 @@ export const PlatformDriversSection = ({ drivers }) =>
     )) : <p style={{ color: '#64748b' }}>Nenhum entregador da plataforma</p>
   );
 
-export const OwnDriversSection = ({ drivers, onDelete }) =>
+export const OwnDriversSection = ({ drivers, onDelete, onSetPin }) =>
   section(`Entregadores Próprios (${drivers?.length || 0})`,
     drivers?.length ? drivers.map(d => card(
       <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeftColor: '#f59e0b' }}>
@@ -105,13 +105,14 @@ export const OwnDriversSection = ({ drivers, onDelete }) =>
           <strong>ID:{d.id}</strong> {d.name} {badge('PRÓPRIO', '#92400e', '#fef3c7')}
           {d.vehicle_type} {d.vehicle_plate ? `• ${d.vehicle_plate}` : ''}
           <span style={{ fontWeight: 500, color: '#0d9488', marginLeft: '0.5rem' }}>Restaurante: {d.restaurant_name} (ID:{d.restaurant_id})</span>
-          {d.square_name ? badge(`${d.square_name}`, '#0d9488', '#f0fdfa') : null}
-          {d.tenant_id ? badge(`tenant:${d.tenant_id}`, '#7c3aed', '#f3e8ff') : null}
+          {d.square_name ? badge(d.square_name, '#0d9488', '#f0fdfa') : null}
+          {d.tenant_name ? badge(d.tenant_name, '#7c3aed', '#f3e8ff') : (d.tenant_id ? badge(`tenant:${d.tenant_id}`, '#7c3aed', '#f3e8ff') : null)}
           {d.is_online ? badge('Online', '#166534', '#dcfce7') : badge('Offline', '#64748b', '#f1f5f9')}
           {d.has_pin ? badge('PIN ✓', '#1d4ed8', '#dbeafe') : badge('SEM PIN', '#dc2626', '#fee2e2')}
           <div style={{ fontSize: '0.75rem', color: '#64748b' }}>tel:{maskPii(d.phone, 'phone')} • entregas:{d.total_deliveries}</div>
         </div>
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {actionBtn(d.has_pin ? 'Resetar PIN' : 'Definir PIN', '#1d4ed8', '#dbeafe', () => onSetPin(d))}
           {actionBtn('Excluir', '#dc2626', '#fee2e2', () => onDelete(d))}
         </div>
       </div>
