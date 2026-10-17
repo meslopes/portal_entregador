@@ -190,13 +190,27 @@ def create_establishment_driver():
                 if user_restaurant and int(data['restaurant_id']) != user_restaurant.id:
                     return jsonify({'error': 'Acesso negado: você só pode cadastrar entregadores no seu próprio estabelecimento'}), 403
 
+        # Telefone é OBRIGATÓRIO para login do próprio
+        phone_raw = (data.get('phone') or '').strip()
+        if not phone_raw or not ''.join(filter(str.isdigit, phone_raw)):
+            return jsonify({'error': 'Telefone é obrigatório (login do entregador próprio)'}), 400
+
+        # Telefone único entre cadastros ativos
+        from src.utils.driver_type import find_phone_conflict
+        conflict = find_phone_conflict(phone_raw)
+        if conflict:
+            return jsonify({
+                'error': f"Telefone já cadastrado para: {conflict['label']}. "
+                         'Cada pessoa deve ter um telefone único.'
+            }), 400
+
         driver = EstablishmentDriver(
 
             restaurant_id=data['restaurant_id'],
 
             name=data['name'],
 
-            phone=data.get('phone'),
+            phone=phone_raw,
 
             vehicle_type=data.get('vehicle_type', 'MOTO'),
 
@@ -315,7 +329,17 @@ def update_establishment_driver(driver_id):
 
         if 'phone' in data:
 
-            driver.phone = data['phone']
+            new_phone = (data.get('phone') or '').strip()
+            from src.utils.driver_type import find_phone_conflict, normalize_phone
+            if not normalize_phone(new_phone):
+                return jsonify({'error': 'Telefone é obrigatório e não pode ficar vazio'}), 400
+            conflict = find_phone_conflict(new_phone, exclude_own_driver_id=driver.id)
+            if conflict:
+                return jsonify({
+                    'error': f"Telefone já cadastrado para: {conflict['label']}. "
+                             'Cada pessoa deve ter um telefone único.'
+                }), 400
+            driver.phone = new_phone
 
         if 'vehicle_type' in data:
 

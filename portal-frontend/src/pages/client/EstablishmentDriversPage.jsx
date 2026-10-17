@@ -68,6 +68,7 @@ const EstablishmentDriversPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name) { setError('Nome é obrigatório'); return; }
+    if (!form.phone || !form.phone.replace(/\D/g, '')) { setError('Telefone é obrigatório (login do entregador)'); return; }
 
     try {
       const userRes = await api.get('/api/user/profile');

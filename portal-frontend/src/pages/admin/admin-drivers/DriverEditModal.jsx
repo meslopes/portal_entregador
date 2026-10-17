@@ -91,7 +91,18 @@ const DriverEditModal = ({
             </p>
             <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
               Selecione um estabelecimento e defina o PIN de 4 dígitos (login no app de próprios).
+              {!editData?.phone && <strong style={{ color: '#dc2626' }}> Telefone é obrigatório — este cadastro está sem telefone.</strong>}
             </p>
+            {!editData?.phone && (
+              <div style={{ marginBottom: '0.5rem' }}>
+                <input
+                  id="convert-phone"
+                  type="tel"
+                  placeholder="Telefone (obrigatório para conversão)"
+                  style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
               <select id="convert-restaurant" style={{ ...inputStyle, flex: 1, marginBottom: 0 }}>
                 <option value="">Selecione um estabelecimento</option>

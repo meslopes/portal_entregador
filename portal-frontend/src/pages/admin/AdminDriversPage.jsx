@@ -163,12 +163,18 @@ const AdminDriversPage = () => {
     const restaurantId = select?.value;
     const pinInput = document.getElementById('convert-pin');
     const pin = (pinInput?.value || '').trim();
+    const phoneInput = document.getElementById('convert-phone');
+    const phone = (phoneInput?.value || '').trim() || (editing?.user?.phone || '').trim();
     if (!restaurantId) {
       showToast('Selecione um estabelecimento', 'error');
       return;
     }
     if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
       showToast('Defina um PIN de 4 dígitos para o entregador logar no app de próprios', 'error');
+      return;
+    }
+    if (!phone.replace(/\D/g, '')) {
+      showToast('Telefone é obrigatório para o login do entregador próprio', 'error');
       return;
     }
     const estName = establishments.find(e => e.id === parseInt(restaurantId))?.name || 'estabelecimento';
@@ -178,7 +184,8 @@ const AdminDriversPage = () => {
       setFormLoading(true);
       await api.post(`/api/admin/drivers/${editing.id}/convert-to-own`, {
         restaurant_id: parseInt(restaurantId),
-        pin
+        pin,
+        phone
       });
       showToast(`Entregador convertido para ${estName}! PIN definido — já pode logar no app de próprios.`, 'success');
       setShowEdit(false);
@@ -216,6 +223,10 @@ const AdminDriversPage = () => {
     e.preventDefault();
     if (!formData.email || !formData.first_name || !formData.last_name) {
       setFormError('Email, nome e sobrenome são obrigatórios');
+      return;
+    }
+    if (!formData.phone || !formData.phone.replace(/\D/g, '')) {
+      setFormError('Telefone é obrigatório');
       return;
     }
 

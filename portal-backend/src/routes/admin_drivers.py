@@ -27,6 +27,7 @@ from src.models.portal_models import (
 from src.utils.auth import admin_required
 from src.utils.driver_type import (
     find_own_driver_by_phone,
+    find_phone_conflict,
     is_platform_driver_excluded,
     mark_driver_converted_by_phone,
     normalize_phone,
@@ -305,19 +306,21 @@ def create_driver():
 
             return jsonify({'error': 'Senha é obrigatória'}), 400
 
-
+        # Telefone é OBRIGATÓRIO (login de próprios + identidade entre listas)
+        phone_raw = (data.get('phone') or '').strip()
+        if not normalize_phone(phone_raw):
+            return jsonify({'error': 'Telefone é obrigatório'}), 400
 
         if User.query.filter_by(email=email).first():
 
             return jsonify({'error': 'Email já cadastrado'}), 400
 
-        # Se o telefone já for de um entregador PRÓPRIO ativo, bloquear
-        # (senão a mesma pessoa aparece nas duas listas)
-        phone_in = data.get('phone')
-        if phone_in and find_own_driver_by_phone(phone_in):
+        # Telefone não pode se repetir entre cadastros (pessoas diferentes)
+        conflict = find_phone_conflict(phone_raw)
+        if conflict:
             return jsonify({
-                'error': 'Este telefone já está cadastrado como entregador PRÓPRIO de um estabelecimento. '
-                         'Não pode ser criado como entregador da plataforma ao mesmo tempo.'
+                'error': f"Telefone já cadastrado para: {conflict['label']}. "
+                         'Cada pessoa deve ter um telefone único.'
             }), 400
 
 
@@ -472,7 +475,17 @@ def update_driver(driver_id):
 
         if 'phone' in data:
 
-            user.phone = data['phone']
+            new_phone = (data.get('phone') or '').strip()
+            # Telefone não pode ficar vazio nem duplicar
+            if not normalize_phone(new_phone):
+                return jsonify({'error': 'Telefone é obrigatório e não pode ficar vazio'}), 400
+            conflict = find_phone_conflict(new_phone, exclude_user_id=user.id)
+            if conflict:
+                return jsonify({
+                    'error': f"Telefone já cadastrado para: {conflict['label']}. "
+                             'Cada pessoa deve ter um telefone único.'
+                }), 400
+            user.phone = new_phone
 
         if 'email' in data:
 
@@ -614,12 +627,24 @@ def convert_driver_to_own(driver_id):
 
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
+        # Telefone pode ser preenchido no ato da conversão (se o cadastro original não tinha)
+        phone_override = (data.get('phone') or '').strip()
+        if phone_override:
+            conflict = find_phone_conflict(phone_override, exclude_user_id=user.id)
+            if conflict:
+                return jsonify({
+                    'error': f"Telefone já cadastrado para: {conflict['label']}. "
+                             'Use um telefone único para este entregador.'
+                }), 400
+            user.phone = phone_override
+
         # Identidade: telefone do User (NÃO usar nome — nomes podem mentir)
         phone_norm = normalize_phone(user.phone)
 
         if not phone_norm:
 
-            return jsonify({'error': 'Entregador sem telefone cadastrado. Atualize o telefone antes de converter.'}), 400
+            return jsonify({'error': 'Telefone é obrigatório para converter em entregador próprio. '
+                                     'Informe o telefone no formulário de conversão.'}), 400
 
         # Desativar EstablishmentDriver ativos do MESMO telefone em OUTROS restaurantes
         for old in EstablishmentDriver.query.filter(

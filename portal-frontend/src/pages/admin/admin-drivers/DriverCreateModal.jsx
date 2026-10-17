@@ -40,8 +40,8 @@ const DriverCreateModal = ({
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <FormField label="Telefone">
-              <input type="text" name="phone" value={formData.phone} onChange={onChange} style={inputStyle} placeholder="(53) 99999-0000" />
+            <FormField label="Telefone *">
+              <input type="text" name="phone" value={formData.phone} onChange={onChange} style={inputStyle} placeholder="(53) 99999-0000" required />
             </FormField>
             <FormField label="CPF">
               <input type="text" name="cpf" value={formData.cpf} onChange={onChange} style={inputStyle} placeholder="000.000.000-00" />

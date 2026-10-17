@@ -20,6 +20,41 @@ def normalize_phone(phone):
     return ''.join(filter(str.isdigit, str(phone)))
 
 
+def find_phone_conflict(phone, exclude_user_id=None, exclude_own_driver_id=None):
+    """
+    Verifica se o telefone já está em uso por outro cadastro.
+    Retorna dict com conflito ou None. Usar em create/update para evitar duplicidade.
+    """
+    target = normalize_phone(phone)
+    if not target:
+        return None
+
+    # Conflito com User (qualquer tipo) — telefone deve ser único entre pessoas
+    users = User.query.filter(User.deleted_at.is_(None)).all()
+    for u in users:
+        if exclude_user_id and u.id == exclude_user_id:
+            continue
+        if normalize_phone(u.phone) == target:
+            return {
+                'type': 'user',
+                'id': u.id,
+                'label': f'{u.first_name} {u.last_name} ({u.email})',
+                'user_type': u.user_type.value if u.user_type else None,
+            }
+
+    # Conflito com EstablishmentDriver ativo
+    for od in EstablishmentDriver.query.filter(EstablishmentDriver.is_active.is_(True)).all():
+        if exclude_own_driver_id and od.id == exclude_own_driver_id:
+            continue
+        if normalize_phone(od.phone) == target:
+            return {
+                'type': 'own_driver',
+                'id': od.id,
+                'label': f'{od.name} (próprio id {od.id})',
+            }
+    return None
+
+
 def find_own_driver_by_phone(phone, restaurant_id=None):
     """Busca entregador próprio ativo pelo telefone (normalizado)."""
     target = normalize_phone(phone)
