@@ -54,8 +54,8 @@ export default function UsersTab({ users, usersLoading, tenants, selectedTenantF
                   <td style={{ padding: '0.75rem', fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>{user.first_name} {user.last_name}</td>
                   <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#64748b' }}>{user.email}</td>
                   <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                    <span style={{ padding: '0.25rem 0.5rem', borderRadius: '9999px', background: user.user_type === 'ADMIN' ? '#dbeafe' : user.user_type === 'DRIVER' ? '#dcfce7' : '#fef3c7', color: user.user_type === 'ADMIN' ? '#2563eb' : user.user_type === 'DRIVER' ? '#16a34a' : '#d97706', fontSize: '0.75rem', fontWeight: 500 }}>
-                      {user.user_type === 'ADMIN' ? 'Admin' : user.user_type === 'DRIVER' ? 'Entregador' : 'Cliente'}
+                    <span style={{ padding: '0.25rem 0.5rem', borderRadius: '9999px', background: user.user_type === 'ADMIN' ? '#dbeafe' : user.user_type === 'DRIVER' ? (user.driver_subtype === 'OWN' ? '#fef3c7' : '#dcfce7') : '#fef3c7', color: user.user_type === 'ADMIN' ? '#2563eb' : user.user_type === 'DRIVER' ? (user.driver_subtype === 'OWN' ? '#d97706' : '#16a34a') : '#d97706', fontSize: '0.75rem', fontWeight: 500 }}>
+                      {user.user_type === 'ADMIN' ? 'Admin' : user.user_type === 'DRIVER' ? (user.driver_subtype === 'OWN' ? 'Entregador Próprio' : 'Entregador Plataforma') : 'Cliente'}
                     </span>
                   </td>
                   <td style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.875rem', color: '#64748b' }}>{user.tenant_name || 'Plataforma'}</td>

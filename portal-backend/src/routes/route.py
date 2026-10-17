@@ -978,8 +978,9 @@ def get_active_routes():
         if not user:
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
-        # Buscar entregador próprio
-        driver = EstablishmentDriver.query.filter_by(user_id=user_id).first()
+        # Buscar entregador próprio por telefone (coluna user_id não existe em EstablishmentDriver)
+        from src.utils.driver_type import find_own_driver_by_phone
+        driver = find_own_driver_by_phone(user.phone)
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
 

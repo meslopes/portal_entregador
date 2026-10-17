@@ -161,17 +161,26 @@ const AdminDriversPage = () => {
   const handleConvertToOwn = async () => {
     const select = document.getElementById('convert-restaurant');
     const restaurantId = select?.value;
+    const pinInput = document.getElementById('convert-pin');
+    const pin = (pinInput?.value || '').trim();
     if (!restaurantId) {
       showToast('Selecione um estabelecimento', 'error');
       return;
     }
+    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      showToast('Defina um PIN de 4 dígitos para o entregador logar no app de próprios', 'error');
+      return;
+    }
     const estName = establishments.find(e => e.id === parseInt(restaurantId))?.name || 'estabelecimento';
-    if (!(await confirmAsync(`Converter "${editing.user?.first_name}" para entregador próprio de "${estName}"?\n\nO entregador será desativado da plataforma e criado como entregador próprio.`))) return;
+    if (!(await confirmAsync(`Converter "${editing.user?.first_name}" para entregador próprio de "${estName}"?\n\nO entregador será desativado da plataforma e criado como entregador próprio com o PIN definido.`))) return;
 
     try {
       setFormLoading(true);
-      await api.post(`/api/admin/drivers/${editing.id}/convert-to-own`, { restaurant_id: parseInt(restaurantId) });
-      showToast(`Entregador convertido para ${estName}!`, 'success');
+      await api.post(`/api/admin/drivers/${editing.id}/convert-to-own`, {
+        restaurant_id: parseInt(restaurantId),
+        pin
+      });
+      showToast(`Entregador convertido para ${estName}! PIN definido — já pode logar no app de próprios.`, 'success');
       setShowEdit(false);
       loadDrivers();
     } catch (err) {

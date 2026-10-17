@@ -90,15 +90,25 @@ const DriverEditModal = ({
               Converter para Entregador Próprio
             </p>
             <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem' }}>
-              Selecione um estabelecimento para vincular este entregador como próprio.
+              Selecione um estabelecimento e defina o PIN de 4 dígitos (login no app de próprios).
             </p>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
               <select id="convert-restaurant" style={{ ...inputStyle, flex: 1, marginBottom: 0 }}>
                 <option value="">Selecione um estabelecimento</option>
                 {establishments.map(est => (
                   <option key={est.id} value={est.id}>{est.name}</option>
                 ))}
               </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                id="convert-pin"
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="PIN 4 dígitos"
+                style={{ ...inputStyle, flex: 1, marginBottom: 0, letterSpacing: '0.25rem', fontFamily: 'monospace' }}
+              />
               <button type="button" onClick={onConvertToOwn} style={{
                 padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
                 background: '#16a34a', color: 'white', fontSize: '0.8125rem',

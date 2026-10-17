@@ -25,6 +25,12 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.auth import admin_required
+from src.utils.driver_type import (
+    find_own_driver_by_phone,
+    is_platform_driver_excluded,
+    mark_driver_converted_by_phone,
+    normalize_phone,
+)
 from src.utils.tenant import get_current_tenant_id, get_current_user
 
 admin_drivers_bp = Blueprint('admin_drivers', __name__)
@@ -64,11 +70,26 @@ def get_drivers():
 
         query = Driver.query.join(User)
 
-        # Excluir entregadores convertidos para próprio
-        # (NOT coluna em SQLAlchemy não funciona — usar .is_(False))
+        # Excluir entregadores PRÓPRIOS da lista de plataforma:
+        # 1) convertidos via flag converted_to_own
+        # 2) quem já tem EstablishmentDriver ativo com o mesmo telefone (NÃO usar nome)
+        # NOT coluna em SQLAlchemy não funciona — usar .is_(False)
         query = query.filter(
             db.or_(Driver.converted_to_own.is_(False), Driver.converted_to_own.is_(None))
         )
+        # Telefones de own drivers ativos → esconder Users/Drivers do mesmo telefone
+        own_phones = {
+            normalize_phone(od.phone)
+            for od in EstablishmentDriver.query.filter(EstablishmentDriver.is_active.is_(True)).all()
+            if normalize_phone(od.phone)
+        }
+        if own_phones:
+            user_ids_own = [
+                u.id for u in User.query.filter(User.deleted_at.is_(None)).all()
+                if normalize_phone(u.phone) in own_phones
+            ]
+            if user_ids_own:
+                query = query.filter(~Driver.user_id.in_(user_ids_own))
 
         # Filtrar usuários excluídos (soft delete)
         query = query.filter(User.deleted_at.is_(None))
@@ -289,6 +310,15 @@ def create_driver():
         if User.query.filter_by(email=email).first():
 
             return jsonify({'error': 'Email já cadastrado'}), 400
+
+        # Se o telefone já for de um entregador PRÓPRIO ativo, bloquear
+        # (senão a mesma pessoa aparece nas duas listas)
+        phone_in = data.get('phone')
+        if phone_in and find_own_driver_by_phone(phone_in):
+            return jsonify({
+                'error': 'Este telefone já está cadastrado como entregador PRÓPRIO de um estabelecimento. '
+                         'Não pode ser criado como entregador da plataforma ao mesmo tempo.'
+            }), 400
 
 
 
@@ -544,7 +574,11 @@ def update_driver(driver_id):
 
 def convert_driver_to_own(driver_id):
 
-    """Converte um entregador da plataforma em entregador próprio de um estabelecimento"""
+    """Converte um entregador da plataforma em entregador próprio de um estabelecimento.
+
+    Identidade por TELEFONE (não por nome). O admin define o PIN de 4 dígitos
+    no ato da conversão para o entregador logar no app de próprios.
+    """
 
     try:
 
@@ -562,6 +596,12 @@ def convert_driver_to_own(driver_id):
 
             return jsonify({'error': 'restaurant_id é obrigatório'}), 400
 
+        pin = (data.get('pin') or '').strip()
+
+        if not pin or len(pin) != 4 or not pin.isdigit():
+
+            return jsonify({'error': 'PIN de 4 dígitos é obrigatório para converter em entregador próprio'}), 400
+
         restaurant = Restaurant.query.get(int(restaurant_id))
 
         if not restaurant:
@@ -574,35 +614,35 @@ def convert_driver_to_own(driver_id):
 
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
-        # Verificar se já existe EstablishmentDriver para este usuário/restaurante
-        driver_name = f"{user.first_name} {user.last_name}"
+        # Identidade: telefone do User (NÃO usar nome — nomes podem mentir)
+        phone_norm = normalize_phone(user.phone)
 
-        # Desativar registros anteriores em OUTROS restaurantes (evitar duplicatas)
-        old_records = EstablishmentDriver.query.filter(
-            EstablishmentDriver.name == driver_name,
-            EstablishmentDriver.restaurant_id != restaurant.id,
-            EstablishmentDriver.is_active
-        ).all()
-        for old in old_records:
-            old.is_active = False
+        if not phone_norm:
 
-        existing_od = EstablishmentDriver.query.filter_by(
-            restaurant_id=restaurant.id, name=driver_name
-        ).first()
+            return jsonify({'error': 'Entregador sem telefone cadastrado. Atualize o telefone antes de converter.'}), 400
 
+        # Desativar EstablishmentDriver ativos do MESMO telefone em OUTROS restaurantes
+        for old in EstablishmentDriver.query.filter(
+            EstablishmentDriver.is_active.is_(True),
+            EstablishmentDriver.restaurant_id != restaurant.id
+        ).all():
+            if normalize_phone(old.phone) == phone_norm:
+                old.is_active = False
+
+        # Reutilizar EstablishmentDriver do mesmo telefone neste restaurante (ou criar)
+        existing_od = find_own_driver_by_phone(user.phone, restaurant_id=restaurant.id)
         if existing_od:
-            # Já existe — apenas reativar e atualizar dados
             own_driver = existing_od
             own_driver.is_active = True
+            own_driver.name = own_driver.name or f"{user.first_name} {user.last_name}"
             own_driver.phone = user.phone or own_driver.phone or ''
             own_driver.vehicle_type = driver.vehicle_type.value if driver.vehicle_type else own_driver.vehicle_type or 'MOTO'
             own_driver.vehicle_plate = driver.vehicle_plate or own_driver.vehicle_plate or ''
             own_driver.vehicle_model = driver.vehicle_model or own_driver.vehicle_model or ''
         else:
-            # Criar EstablishmentDriver com dados do Driver
             own_driver = EstablishmentDriver(
                 restaurant_id=restaurant.id,
-                name=driver_name,
+                name=f"{user.first_name} {user.last_name}",
                 phone=user.phone or '',
                 vehicle_type=driver.vehicle_type.value if driver.vehicle_type else 'MOTO',
                 vehicle_plate=driver.vehicle_plate or '',
@@ -610,6 +650,9 @@ def convert_driver_to_own(driver_id):
                 is_active=True
             )
             db.session.add(own_driver)
+
+        # PIN definido pelo admin na conversão
+        own_driver.set_pin(pin)
 
         # Desativar o Driver da plataforma (soft delete)
         driver.is_online = False
@@ -621,7 +664,7 @@ def convert_driver_to_own(driver_id):
         db.session.commit()
 
         return jsonify({
-            'message': f'Entregador convertido com sucesso para {restaurant.name}',
+            'message': f'Entregador convertido com sucesso para {restaurant.name}. PIN definido — entregador já pode logar no app de próprios.',
             'own_driver': own_driver.to_dict()
         }), 200
 
@@ -648,16 +691,15 @@ def convert_own_to_platform(driver_id):
         data = request.get_json() or {}
         restaurant_id = data.get('restaurant_id')
 
-        # Desativar EstablishmentDriver correspondente
-        if restaurant_id:
-            user = db.session.get(User, driver.user_id)
-            if user:
-                driver_name = f"{user.first_name} {user.last_name}"
-                # Buscar por nome (phone pode estar vazio)
-                est_driver = EstablishmentDriver.query.filter_by(
-                    restaurant_id=restaurant_id, name=driver_name
-                ).first()
-                if est_driver:
+        user = db.session.get(User, driver.user_id) if driver.user_id else None
+
+        # Desativar EstablishmentDriver correspondente por TELEFONE (não por nome)
+        phone_norm = normalize_phone(user.phone) if user else ''
+        if restaurant_id and phone_norm:
+            for est_driver in EstablishmentDriver.query.filter_by(
+                restaurant_id=restaurant_id, is_active=True
+            ).all():
+                if normalize_phone(est_driver.phone) == phone_norm:
                     est_driver.is_active = False
 
             # Verificar se restaurante ainda tem outros entregadores próprios ativos

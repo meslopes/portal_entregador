@@ -210,6 +210,13 @@ def create_establishment_driver():
 
         )
 
+        # PIN opcional no cadastro — se vier, já grava (evita login bloqueado)
+        pin = (data.get('pin') or '').strip()
+        if pin:
+            if len(pin) != 4 or not pin.isdigit():
+                return jsonify({'error': 'PIN deve ter 4 dígitos numéricos'}), 400
+            driver.set_pin(pin)
+
         db.session.add(driver)
 
 
@@ -221,6 +228,11 @@ def create_establishment_driver():
         if restaurant:
 
             restaurant.has_own_drivers = True
+
+        # Se o telefone já existir como entregador da plataforma, marcar como convertido
+        # para NÃO aparecer nas duas listas (identidade = telefone, não nome)
+        from src.utils.driver_type import mark_driver_converted_by_phone
+        mark_driver_converted_by_phone(data.get('phone'))
 
 
 

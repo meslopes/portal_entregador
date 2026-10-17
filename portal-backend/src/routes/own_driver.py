@@ -118,6 +118,10 @@ def login():
     if not driver.is_active:
         return jsonify({'error': 'Entregador inativo. Entre em contato com o estabelecimento.'}), 403
 
+    # PIN ainda não definido — erro claro (evita "PIN incorreto" confuso)
+    if not driver.pin_hash:
+        return jsonify({'error': 'PIN ainda não foi cadastrado. Peça ao estabelecimento para definir seu PIN.'}), 403
+
     if not driver.check_pin(pin):
         return jsonify({'error': 'PIN incorreto'}), 401
 

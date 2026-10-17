@@ -493,7 +493,10 @@ def get_platform_users():
         tenants_map = {t.id: t.name for t in Tenant.query.all()}
 
         result = []
+        # Classificação Próprio vs Plataforma por telefone (não por nome)
+        from src.utils.driver_type import get_driver_subtype_for_user
         for user in users:
+            subtype = get_driver_subtype_for_user(user)
             result.append({
                 'id': user.id,
                 'email': user.email,
@@ -502,6 +505,8 @@ def get_platform_users():
                 'phone': user.phone,
                 'cpf': user.cpf,
                 'user_type': user.user_type.value if user.user_type else 'UNKNOWN',
+                # Para DRIVER: 'OWN' (próprio) ou 'PLATFORM' (plataforma)
+                'driver_subtype': subtype,
                 'status': user.status.value if user.status else 'UNKNOWN',
                 'tenant_id': user.tenant_id,
                 'tenant_name': tenants_map.get(user.tenant_id) if user.tenant_id else 'Plataforma (sem tenant)',

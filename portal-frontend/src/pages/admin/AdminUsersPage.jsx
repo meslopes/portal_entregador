@@ -145,10 +145,10 @@ const AdminUsersPage = () => {
     }
   };
 
-  const getTypeLabel = (type) => {
+  const getTypeLabel = (type, user) => {
     switch (type) {
       case 'ADMIN': return 'Admin';
-      case 'DRIVER': return 'Entregador';
+      case 'DRIVER': return user?.driver_subtype === 'OWN' ? 'Entregador Próprio' : 'Entregador Plataforma';
       case 'CLIENT': return 'Estabelecimento';
       default: return type;
     }
@@ -228,7 +228,7 @@ const AdminUsersPage = () => {
                     <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.875rem' }}>{user.first_name} {user.last_name}</p>
                     <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{user.email}</p>
                   </div>
-                  <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#f1f5f9', color: '#64748b' }}>{getTypeLabel(user.user_type)}</span>
+                  <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#f1f5f9', color: '#64748b' }}>{getTypeLabel(user.user_type, user)}</span>
                   <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: statusStyle.bg, color: statusStyle.color }}>{user.status}</span>
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
                     <button onClick={() => openEdit(user)} style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }} title="Editar"><Edit size={16} /></button>

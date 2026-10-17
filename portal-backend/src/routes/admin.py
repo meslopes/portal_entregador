@@ -1376,27 +1376,7 @@ def database_map():
         customers = Customer.query.order_by(Customer.id).all()
         result['customers'] = [{'id': c.id, 'name': c.name, 'phone': c.phone, 'user_id': c.user_id, 'tenant_id': c.tenant_id, 'tenant_name': tenants_map.get(c.tenant_id)} for c in customers]
 
-        # Platform Drivers — EXCLUIR convertidos para próprio (evita aparecer nas 2 listas)
-        drivers = Driver.query.filter(
-            db.or_(Driver.converted_to_own.is_(False), Driver.converted_to_own.is_(None))
-        ).order_by(Driver.id).all()
-        drivers_data = []
-        for d in drivers:
-            user = User.query.get(d.user_id) if d.user_id else None
-            drivers_data.append({
-                'id': d.id, 'user_id': d.user_id,
-                'name': f"{user.first_name} {user.last_name}" if user else 'SEM USER',
-                'email': user.email if user else None,
-                'vehicle_type': d.vehicle_type.value if d.vehicle_type else None,
-                'vehicle_plate': d.vehicle_plate,
-                'square_id': d.square_id, 'square_name': squares_map.get(d.square_id),
-                'tenant_id': d.tenant_id, 'tenant_name': tenants_map.get(d.tenant_id),
-                'is_online': d.is_online, 'is_blocked': d.is_blocked,
-                'total_deliveries': d.total_deliveries, 'rating': float(d.rating) if d.rating else None
-            })
-        result['platform_drivers'] = drivers_data
-
-        # Own Drivers
+        # Own Drivers (carregar antes — serve de referência para excluir da lista de plataforma)
         own_drivers = EstablishmentDriver.query.order_by(EstablishmentDriver.id).all()
         result['own_drivers'] = []
         for od in own_drivers:
@@ -1413,6 +1393,34 @@ def database_map():
                 'is_online': od.is_online, 'is_active': od.is_active,
                 'has_pin': bool(od.pin_hash), 'total_deliveries': od.total_deliveries
             })
+
+        # Platform Drivers — EXCLUIR próprios (converted_to_own OU telefone de own driver ativo)
+        from src.utils.driver_type import normalize_phone
+        drivers = Driver.query.filter(
+            db.or_(Driver.converted_to_own.is_(False), Driver.converted_to_own.is_(None))
+        ).order_by(Driver.id).all()
+        own_phones = {
+            normalize_phone(od.phone)
+            for od in own_drivers if od.is_active and normalize_phone(od.phone)
+        }
+        drivers_data = []
+        for d in drivers:
+            user = User.query.get(d.user_id) if d.user_id else None
+            # Pular se o telefone do User já é de um own driver ativo (evita 2 listas)
+            if user and normalize_phone(user.phone) in own_phones:
+                continue
+            drivers_data.append({
+                'id': d.id, 'user_id': d.user_id,
+                'name': f"{user.first_name} {user.last_name}" if user else 'SEM USER',
+                'email': user.email if user else None,
+                'vehicle_type': d.vehicle_type.value if d.vehicle_type else None,
+                'vehicle_plate': d.vehicle_plate,
+                'square_id': d.square_id, 'square_name': squares_map.get(d.square_id),
+                'tenant_id': d.tenant_id, 'tenant_name': tenants_map.get(d.tenant_id),
+                'is_online': d.is_online, 'is_blocked': d.is_blocked,
+                'total_deliveries': d.total_deliveries, 'rating': float(d.rating) if d.rating else None
+            })
+        result['platform_drivers'] = drivers_data
 
         # Orders summary
         from sqlalchemy import func as sqlfunc

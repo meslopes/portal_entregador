@@ -369,6 +369,10 @@ def get_all_users():
 
                     user_dict['driver'] = driver.to_dict()
 
+                # Classificação Próprio vs Plataforma (telefone, não nome)
+                from src.utils.driver_type import get_driver_subtype_for_user
+                user_dict['driver_subtype'] = get_driver_subtype_for_user(user)
+
             elif user.user_type == UserType.CLIENT:
 
                 customer = Customer.query.filter_by(user_id=user.id).first()

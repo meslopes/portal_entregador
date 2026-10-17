@@ -114,10 +114,9 @@ def get_user_role(user):
         return 'client'
 
     if user.user_type == UserType.DRIVER:
-        # Verificar se é entregador próprio (EstablishmentDriver)
-        from src.models.portal_models import EstablishmentDriver
-        own_driver = EstablishmentDriver.query.filter_by(user_id=user.id).first()
-        if own_driver:
+        # Verificar se é entregador próprio (por telefone — coluna user_id não existe)
+        from src.utils.driver_type import find_own_driver_by_phone, get_driver_subtype_for_user
+        if get_driver_subtype_for_user(user) == 'OWN':
             return 'own_driver'
         return 'driver'
 
