@@ -51,7 +51,22 @@ export function handleGeneratePDF(data) {
   @media print { body { padding: 10px; } .no-print { display: none; } }
 </style>
 </head><body>
-<button class="no-print" onclick="window.print()" style="position:fixed;top:10px;right:10px;padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;z-index:999">🖨️ Imprimir / Salvar PDF</button>
+<button class="no-print" id="btn-print" style="position:fixed;top:10px;right:10px;padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;z-index:999">🖨️ Imprimir / Salvar PDF</button>
+<button class="no-print" id="btn-download" style="position:fixed;top:10px;right:170px;padding:8px 16px;background:#0d9488;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;z-index:999">💾 Baixar HTML</button>
+<script>
+  // Edge/Chrome: window.print() direto em about:blank falha. Blob + atraso é mais estável.
+  document.getElementById('btn-print').addEventListener('click', function () {
+    setTimeout(function () { window.focus(); window.print(); }, 150);
+  });
+  document.getElementById('btn-download').addEventListener('click', function () {
+    var blob = new Blob([document.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mapa-banco-dados-muvlog.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>
 <h1>📊 Mapa do Banco de Dados — muv.log</h1>
 <p class="subtitle">Gerado em ${now} | Dados em tempo real</p>
 
@@ -192,11 +207,43 @@ export function handleGeneratePDF(data) {
   html += `<p class="info" style="margin-top:20px;text-align:center;">Fim do relatório — muv.log Database Map</p>`;
   html += `</body></html>`;
 
-  const win = window.open('', '_blank');
+  // Abrir via Blob URL — about:blank + document.write quebra print/save no Microsoft Edge
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
   if (!win) {
+    URL.revokeObjectURL(url);
     return false; // signal popup blocked
   }
-  win.document.write(html);
-  win.document.close();
+
+  // Ligar botões da janela do relatório (evita depender de script inline no Blob/CSP)
+  const wire = () => {
+    try {
+      const btnPrint = win.document.getElementById('btn-print');
+      const btnDownload = win.document.getElementById('btn-download');
+      if (btnPrint) {
+        btnPrint.onclick = () => {
+          win.focus();
+          setTimeout(() => win.print(), 200);
+        };
+      }
+      if (btnDownload) {
+        btnDownload.onclick = () => {
+          const pageBlob = new Blob([win.document.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
+          const a = win.document.createElement('a');
+          a.href = URL.createObjectURL(pageBlob);
+          a.download = 'mapa-banco-dados-muvlog.html';
+          a.click();
+          URL.revokeObjectURL(a.href);
+        };
+      }
+    } catch { /* ignore cross-window errors */ }
+  };
+  if (win.document.readyState === 'complete') {
+    wire();
+  } else {
+    win.addEventListener('load', wire);
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
   return true;
 }
