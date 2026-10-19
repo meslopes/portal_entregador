@@ -5,7 +5,7 @@ import { showToast } from '@/components/Toast.utils';
 import { confirmDestructive, sanitizeBackupData } from '@/lib/utils';
 import HeaderToolbar from './database-map/HeaderToolbar';
 import EditUserModal from './database-map/EditUserModal';
-import { handleGeneratePDF as generatePdf } from './database-map/generatePdfReport';
+import { handleGeneratePDF as generatePdf, handleDownloadHTML as downloadHtml } from './database-map/generatePdfReport';
 import {
   TenantsSection,
   SquaresSection,
@@ -260,12 +260,21 @@ const DatabaseMapPage = () => {
     }
   };
 
-  // === GERAR PDF (abre janela de impressão) ===
+  // === GERAR PDF (impressão via iframe — sem popup) ===
   const handleGeneratePDF = () => {
     if (!data) return;
     const ok = generatePdf(data);
     if (!ok) {
-      showToast('O navegador bloqueou o popup. Permita popups para este site e tente novamente.', 'info');
+      showToast('Não foi possível abrir a impressão. Use "Baixar HTML" e abra o arquivo em outro navegador.', 'info');
+    }
+  };
+
+  // === BAIXAR HTML (abre em qualquer navegador: Chrome, Firefox, Edge) ===
+  const handleDownloadHTML = () => {
+    if (!data) return;
+    const ok = downloadHtml(data);
+    if (ok) {
+      showToast('HTML baixado! Abra o arquivo em Chrome/Firefox e use Ctrl+P para salvar como PDF.', 'info');
     }
   };
 
@@ -300,6 +309,7 @@ const DatabaseMapPage = () => {
         }}
         onCopyJSON={() => { navigator.clipboard.writeText(JSON.stringify(data, null, 2)); showMsg('JSON copiado! Cole no chat para gerar o PDF.'); }}
         onGeneratePDF={handleGeneratePDF}
+        onDownloadHTML={handleDownloadHTML}
         onRefresh={loadData}
         onDownloadBackup={handleDownloadBackup}
         onRestoreBackup={async (e) => {

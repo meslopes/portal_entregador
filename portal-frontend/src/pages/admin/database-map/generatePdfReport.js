@@ -1,6 +1,6 @@
 /**
  * PDF report generator for the database map.
- * Pure presentation logic — opens a print-ready HTML page in a new window.
+ * Pure presentation logic — builds print-ready HTML (impressão via iframe, download HTML).
  */
 
 const escapeHtml = (str) => {
@@ -8,8 +8,9 @@ const escapeHtml = (str) => {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 };
 
-export function handleGeneratePDF(data) {
-  if (!data) return;
+/** Monta o HTML do relatório. */
+function buildReportHtml(data) {
+  if (!data) return '';
   const d = data;
   const now = new Date().toLocaleString('pt-BR');
 
@@ -207,43 +208,64 @@ export function handleGeneratePDF(data) {
   html += `<p class="info" style="margin-top:20px;text-align:center;">Fim do relatório — muv.log Database Map</p>`;
   html += `</body></html>`;
 
-  // Abrir via Blob URL — about:blank + document.write quebra print/save no Microsoft Edge
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, '_blank');
-  if (!win) {
-    URL.revokeObjectURL(url);
-    return false; // signal popup blocked
-  }
+  return html;
+}
 
-  // Ligar botões da janela do relatório (evita depender de script inline no Blob/CSP)
-  const wire = () => {
+/**
+ * Imprime / salva como PDF SEM popup (Edge bloqueia window.open + blob).
+ * Usa iframe oculto na página atual — mais estável em Edge/Chrome/Firefox.
+ */
+export function handleGeneratePDF(data) {
+  const html = buildReportHtml(data);
+  if (!html) return false;
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  const doPrint = () => {
     try {
-      const btnPrint = win.document.getElementById('btn-print');
-      const btnDownload = win.document.getElementById('btn-download');
-      if (btnPrint) {
-        btnPrint.onclick = () => {
-          win.focus();
-          setTimeout(() => win.print(), 200);
-        };
-      }
-      if (btnDownload) {
-        btnDownload.onclick = () => {
-          const pageBlob = new Blob([win.document.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
-          const a = win.document.createElement('a');
-          a.href = URL.createObjectURL(pageBlob);
-          a.download = 'mapa-banco-dados-muvlog.html';
-          a.click();
-          URL.revokeObjectURL(a.href);
-        };
-      }
-    } catch { /* ignore cross-window errors */ }
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch {
+      // fallback: baixa HTML se print falhar
+      downloadReportHtml(html);
+    }
+    // remove o iframe depois do diálogo
+    setTimeout(() => iframe.remove(), 2000);
   };
-  if (win.document.readyState === 'complete') {
-    wire();
+
+  if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+    setTimeout(doPrint, 100);
   } else {
-    win.addEventListener('load', wire);
+    iframe.onload = () => setTimeout(doPrint, 100);
+    // fallback se onload não disparar
+    setTimeout(doPrint, 800);
   }
-  setTimeout(() => URL.revokeObjectURL(url), 15000);
   return true;
+}
+
+/** Baixa o relatório como arquivo HTML (abre localmente e imprime de lá). */
+export function downloadReportHtml(html) {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mapa-banco-dados-muvlog-${new Date().toISOString().slice(0, 10)}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  return true;
+}
+
+export function handleDownloadHTML(data) {
+  const html = buildReportHtml(data);
+  if (!html) return false;
+  return downloadReportHtml(html);
 }

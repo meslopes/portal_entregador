@@ -10,6 +10,7 @@ const HeaderToolbar = ({
   onCleanupTestData,
   onCopyJSON,
   onGeneratePDF,
+  onDownloadHTML,
   onRefresh,
   onDownloadBackup,
   onRestoreBackup,
@@ -84,7 +85,8 @@ const HeaderToolbar = ({
         </div>
         <button onClick={onCleanupTestData} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontWeight: 600 }}>🧹 Limpar Testes</button>
         <button onClick={onCopyJSON} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#7c3aed', color: 'white', cursor: 'pointer', fontWeight: 600 }}>📋 Copiar JSON</button>
-        <button onClick={onGeneratePDF} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', cursor: 'pointer', fontWeight: 600 }}>📄 Gerar PDF</button>
+        <button onClick={onGeneratePDF} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', cursor: 'pointer', fontWeight: 600 }}>📄 Imprimir / PDF</button>
+        <button onClick={onDownloadHTML} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#0f766e', color: 'white', cursor: 'pointer', fontWeight: 600 }}>💾 Baixar HTML</button>
         <button onClick={onRefresh} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Atualizar</button>
         <button onClick={onDownloadBackup} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#16a34a', color: 'white', cursor: 'pointer', fontWeight: 600 }}>💾 Baixar Backup</button>
         <label style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#ea580c', color: 'white', cursor: 'pointer', fontWeight: 600, display: 'inline-block' }}>
