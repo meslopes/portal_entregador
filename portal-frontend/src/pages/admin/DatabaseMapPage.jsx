@@ -180,11 +180,17 @@ const DatabaseMapPage = () => {
 
       await adminService.updateUser(editingUser.id, userData);
 
-      // Reset password if provided
-      if (editForm.new_password && editForm.new_password.length >= 4) {
+      // Reset password if provided — validar igual ao backend (8+, 1 letra, 1 número)
+      if (editForm.new_password) {
+        const pwd = editForm.new_password;
+        if (pwd.length < 8 || !/[A-Za-z]/.test(pwd) || !/\d/.test(pwd)) {
+          showMsg('Dados salvos, mas a senha não foi redefinida: mínimo 8 caracteres, com ao menos 1 letra e 1 número.', true);
+          setSaving(false);
+          return;
+        }
         try {
           await api.post(`/api/admin/users/${editingUser.id}/reset-password`, {
-            new_password: editForm.new_password
+            new_password: pwd
           });
         } catch (pwErr) {
           showMsg('Dados salvos, mas erro ao redefinir senha: ' + (pwErr.response?.data?.error || 'erro'), true);

@@ -108,7 +108,8 @@ const UserEditModal = ({ userEditForm, userEditLoading, tenants, onClose, onSubm
               value={userEditForm.password}
               onChange={(e) => onFormChange(prev => ({ ...prev, password: e.target.value }))}
               style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
-              placeholder="Deixe vazio para manter a senha atual"
+              placeholder="Deixe vazio para manter (mín. 8, com letra e número)"
+              autoComplete="new-password"
             />
           </div>
 

@@ -558,8 +558,11 @@ def update_platform_user(user_id):
                 return jsonify({'error': 'Não é possível remover tenant_id de um admin. Use /setup-super-admin para promover a super admin.'}), 400
             user.tenant_id = data['tenant_id'] if data['tenant_id'] else None
         if 'password' in data and data['password']:
-            from werkzeug.security import generate_password_hash
-            user.password_hash = generate_password_hash(data['password'])
+            from src.utils.auth import validate_password
+            pwd_err = validate_password(data['password'])
+            if pwd_err:
+                return jsonify({'error': pwd_err}), 400
+            user.set_password(data['password'])
 
         db.session.commit()
 

@@ -10,10 +10,17 @@ const inputStyle = {
   boxSizing: 'border-box', fontFamily: 'inherit'
 };
 
-const Field = ({ label, value, onChange, type = 'text', placeholder = '' }) => (
+const Field = ({ label, value, onChange, type = 'text', placeholder = '', autoComplete }) => (
   <div>
     <label style={labelStyle}>{label}</label>
-    <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} style={inputStyle} placeholder={placeholder} />
+    <input
+      type={type}
+      value={value || ''}
+      onChange={e => onChange(e.target.value)}
+      style={inputStyle}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+    />
   </div>
 );
 
@@ -127,7 +134,17 @@ const EditUserModal = ({ editingUser, editForm, setEditForm, saving, tenants, sq
           {/* SEÇÃO: REDEFINIR SENHA */}
           <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#dc2626', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Redefinir Senha</h4>
           <div style={{ marginBottom: '1.5rem' }}>
-            <Field label="Nova Senha (deixe vazio para não alterar)" value={editForm.new_password} onChange={v => setEditForm(p => ({ ...p, new_password: v }))} type="password" placeholder="Mínimo 4 caracteres" />
+            <Field
+              label="Nova Senha (deixe vazio para não alterar)"
+              value={editForm.new_password}
+              onChange={v => setEditForm(p => ({ ...p, new_password: v }))}
+              type="password"
+              placeholder="Ex.: Entregador2026"
+              autoComplete="new-password"
+            />
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.375rem' }}>
+              Mínimo <strong>8 caracteres</strong>, com ao menos <strong>1 letra</strong> e <strong>1 número</strong>.
+            </p>
           </div>
 
           {/* BOTÕES */}
