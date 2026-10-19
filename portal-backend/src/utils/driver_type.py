@@ -120,7 +120,7 @@ def platform_drivers_query():
 
 def get_driver_subtype_for_user(user):
     """
-    Para um User: retorna 'OWN', 'PLATFORM' ou None (se não for entregador).
+    para um User: retorna 'OWN', 'PLATFORM' ou None (se não for entregador).
     Usado em listas de usuários.
     """
     if not user or not user.user_type or user.user_type.value != 'DRIVER':
@@ -131,3 +131,70 @@ def get_driver_subtype_for_user(user):
     if find_own_driver_by_phone(user.phone):
         return 'OWN'
     return 'PLATFORM'
+
+
+def sync_user_phone_to_own_driver(user, old_phone=None, new_phone=None):
+    """
+    Mantém o telefone do cadastro próprio (EstablishmentDriver) igual ao do User.
+    Evita que a mesma pessoa fique com 2 telefones após edição no admin.
+    """
+    if not user or not new_phone:
+        return []
+    new_norm = normalize_phone(new_phone)
+    if not new_norm:
+        return []
+
+    updated = []
+    name = f"{user.first_name} {user.last_name}".strip()
+
+    # 1) Melhor match: telefone antigo
+    if old_phone and normalize_phone(old_phone):
+        od = find_own_driver_by_phone(old_phone)
+        if od and normalize_phone(od.phone) != new_norm:
+            od.phone = new_phone
+            updated.append(od.id)
+            return updated
+
+    # 2) Match por nome — só UM (o ativo mais recente) para não copiar telefone
+    #    para vários cadastros homônimos de teste
+    if name:
+        candidates = [
+            od for od in EstablishmentDriver.query.filter(EstablishmentDriver.is_active.is_(True)).all()
+            if (od.name or '').strip() == name
+        ]
+        # Preferir quem já tem telefone (provável par real); senão o de maior id
+        candidates.sort(key=lambda x: (bool(normalize_phone(x.phone)), x.id), reverse=True)
+        if candidates:
+            od = candidates[0]
+            if normalize_phone(od.phone) != new_norm:
+                od.phone = new_phone
+                updated.append(od.id)
+    return updated
+
+
+def sync_own_phone_to_user(own_driver, old_phone=None, new_phone=None):
+    """
+    Quando o telefone do próprio muda, reflete no User correspondente (se houver).
+    """
+    if not own_driver or not new_phone:
+        return None
+    new_norm = normalize_phone(new_phone)
+    if not new_norm:
+        return None
+
+    user = None
+    if old_phone and normalize_phone(old_phone):
+        user = find_platform_user_by_phone(old_phone)
+    if not user and (own_driver.name or '').strip():
+        for u in User.query.filter(User.deleted_at.is_(None)).all():
+            name = f"{u.first_name} {u.last_name}".strip()
+            if name == (own_driver.name or '').strip():
+                user = u
+                break
+    if not user:
+        return None
+
+    if normalize_phone(user.phone) != new_norm:
+        user.phone = new_phone
+        return user.id
+    return None

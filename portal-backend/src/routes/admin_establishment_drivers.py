@@ -330,7 +330,7 @@ def update_establishment_driver(driver_id):
         if 'phone' in data:
 
             new_phone = (data.get('phone') or '').strip()
-            from src.utils.driver_type import find_phone_conflict, normalize_phone
+            from src.utils.driver_type import find_phone_conflict, normalize_phone, sync_own_phone_to_user
             if not normalize_phone(new_phone):
                 return jsonify({'error': 'Telefone é obrigatório e não pode ficar vazio'}), 400
             conflict = find_phone_conflict(new_phone, exclude_own_driver_id=driver.id)
@@ -339,7 +339,10 @@ def update_establishment_driver(driver_id):
                     'error': f"Telefone já cadastrado para: {conflict['label']}. "
                              'Cada pessoa deve ter um telefone único.'
                 }), 400
+            old_phone = driver.phone
             driver.phone = new_phone
+            # Refletir no User (se for a mesma pessoa)
+            sync_own_phone_to_user(driver, old_phone=old_phone, new_phone=new_phone)
 
         if 'vehicle_type' in data:
 

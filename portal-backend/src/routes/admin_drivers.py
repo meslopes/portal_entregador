@@ -476,6 +476,7 @@ def update_driver(driver_id):
         if 'phone' in data:
 
             new_phone = (data.get('phone') or '').strip()
+            old_phone = user.phone
             # Telefone não pode ficar vazio nem duplicar
             if not normalize_phone(new_phone):
                 return jsonify({'error': 'Telefone é obrigatório e não pode ficar vazio'}), 400
@@ -486,6 +487,9 @@ def update_driver(driver_id):
                              'Cada pessoa deve ter um telefone único.'
                 }), 400
             user.phone = new_phone
+            # Manter cadastro próprio (EstablishmentDriver) com o MESMO telefone
+            from src.utils.driver_type import sync_user_phone_to_own_driver
+            sync_user_phone_to_own_driver(user, old_phone=old_phone, new_phone=new_phone)
 
         if 'email' in data:
 

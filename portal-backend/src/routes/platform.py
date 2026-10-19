@@ -547,7 +547,12 @@ def update_platform_user(user_id):
                 return jsonify({'error': 'Email já cadastrado'}), 400
             user.email = data['email']
         if 'phone' in data:
-            user.phone = data['phone']
+            old_phone = user.phone
+            new_phone = (data.get('phone') or '').strip()
+            user.phone = new_phone
+            # Sincronizar com cadastro próprio, se existir
+            from src.utils.driver_type import sync_user_phone_to_own_driver
+            sync_user_phone_to_own_driver(user, old_phone=old_phone, new_phone=new_phone)
         if 'status' in data:
             from src.models.portal_models import UserStatus
             user.status = UserStatus(data['status'])
