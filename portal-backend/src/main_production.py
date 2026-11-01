@@ -105,6 +105,9 @@ def create_app(config_name=None):
     from src.routes.webhooks_ifood import webhooks_ifood_bp
     app.register_blueprint(webhooks_ifood_bp, url_prefix='/api/webhooks')
 
+    from src.routes.webhooks_whatsapp import webhooks_whatsapp_bp
+    app.register_blueprint(webhooks_whatsapp_bp, url_prefix='/api/webhooks')
+
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
 

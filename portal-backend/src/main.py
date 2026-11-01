@@ -87,6 +87,11 @@ from src.routes.webhooks_ifood import webhooks_ifood_bp
 
 app.register_blueprint(webhooks_ifood_bp, url_prefix='/api/webhooks')
 
+# Robô do WhatsApp (extraído de webhooks.py)
+from src.routes.webhooks_whatsapp import webhooks_whatsapp_bp
+
+app.register_blueprint(webhooks_whatsapp_bp, url_prefix='/api/webhooks')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
