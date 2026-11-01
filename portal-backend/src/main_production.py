@@ -126,6 +126,9 @@ def create_app(config_name=None):
     from src.routes.admin_driver_payments import admin_driver_payments_bp
     app.register_blueprint(admin_driver_payments_bp, url_prefix='/api/admin')
 
+    from src.routes.admin_invoices import admin_invoices_bp
+    app.register_blueprint(admin_invoices_bp, url_prefix='/api/admin')
+
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
 

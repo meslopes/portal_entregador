@@ -122,6 +122,11 @@ from src.routes.admin_driver_payments import admin_driver_payments_bp
 
 app.register_blueprint(admin_driver_payments_bp, url_prefix='/api/admin')
 
+# Geração de faturas (extraído de admin_payments.py)
+from src.routes.admin_invoices import admin_invoices_bp
+
+app.register_blueprint(admin_invoices_bp, url_prefix='/api/admin')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
