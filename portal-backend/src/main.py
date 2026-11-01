@@ -117,6 +117,11 @@ from src.routes.admin_exports import admin_exports_bp
 
 app.register_blueprint(admin_exports_bp, url_prefix='/api/admin')
 
+# Pagamentos a entregadores e saques (extraído de admin_payments.py)
+from src.routes.admin_driver_payments import admin_driver_payments_bp
+
+app.register_blueprint(admin_driver_payments_bp, url_prefix='/api/admin')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
