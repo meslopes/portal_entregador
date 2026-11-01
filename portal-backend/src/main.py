@@ -260,9 +260,15 @@ from src.routes.route_platform import route_platform_bp
 
 app.register_blueprint(route_platform_bp)
 
-from src.routes.finance import finance_bp
+# Financeiro — pagamentos (extraído de finance.py)
+from src.routes.finance_payments import finance_payments_bp
 
-app.register_blueprint(finance_bp)
+app.register_blueprint(finance_payments_bp)
+
+# Financeiro — faturas e assinaturas (extraído de finance.py)
+from src.routes.finance_billing import finance_billing_bp
+
+app.register_blueprint(finance_billing_bp)
 
 # Inicializa banco de dados
 db.init_app(app)

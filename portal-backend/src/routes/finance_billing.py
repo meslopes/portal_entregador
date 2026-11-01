@@ -1,7 +1,5 @@
-"""
-Endpoints de relatórios financeiros para entregadores próprios.
-Agrupamento por frequência de pagamento e quitação por período.
-Cobrança de assinatura para estabelecimentos com entregadores próprios.
+﻿"""Módulo finance_billing — extraído de src/routes/finance.py no refactor de arquivos grandes.
+Movimento puro de código — comportamento idêntico ao original.
 """
 import logging
 from datetime import datetime, timedelta, timezone
@@ -23,289 +21,11 @@ from src.utils.tenant import get_current_tenant_id, get_current_user
 
 logger = logging.getLogger(__name__)
 
-finance_bp = Blueprint('finance', __name__, url_prefix='/api/finance')
+
+finance_billing_bp = Blueprint('finance_billing', __name__, url_prefix='/api/finance')
 
 
-def get_period_start(date, frequency):
-    """Retorna o início do período baseado na frequência"""
-    if frequency == 'DAILY':
-        return date.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif frequency == 'WEEKLY':
-        # Início da semana (segunda-feira)
-        days_since_monday = date.weekday()
-        return (date - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
-    elif frequency == 'MONTHLY':
-        return date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    else:  # ON_DEMAND
-        return date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-
-def get_period_end(date, frequency):
-    """Retorna o fim do período baseado na frequência"""
-    if frequency == 'DAILY':
-        return date.replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif frequency == 'WEEKLY':
-        days_until_sunday = 6 - date.weekday()
-        return (date + timedelta(days=days_until_sunday)).replace(hour=23, minute=59, second=59, microsecond=999999)
-    elif frequency == 'MONTHLY':
-        if date.month == 12:
-            return date.replace(year=date.year + 1, month=1, day=1) - timedelta(microseconds=1)
-        return date.replace(month=date.month + 1, day=1) - timedelta(microseconds=1)
-    else:  # ON_DEMAND
-        return date.replace(hour=23, minute=59, second=59, microsecond=999999)
-
-
-@finance_bp.route('/payment-reports', methods=['GET'])
-@jwt_required()
-def get_payment_reports():
-    """Relatório de pagamentos agrupados por frequência"""
-    try:
-        user = get_current_user()
-        tenant_id = get_current_tenant_id()
-
-        # Filtros
-        restaurant_id = request.args.get('restaurant_id', type=int)
-        driver_id = request.args.get('driver_id', type=int)
-        frequency = request.args.get('frequency')  # DAILY, WEEKLY, MONTHLY, ON_DEMAND
-        period = request.args.get('period', 'month')  # week, month, all
-
-        # Determinar escopo baseado no tipo de usuário
-        restaurant_ids = None
-        if user.user_type == UserType.CLIENT:
-            # Estabelecimento: ver apenas seus próprios entregadores
-            customer = Customer.query.filter_by(user_id=user.id).first()
-            if not customer:
-                return jsonify({'error': 'Perfil não encontrado'}), 404
-            restaurant = Restaurant.query.filter_by(name=customer.name).first()
-            if not restaurant:
-                return jsonify({'error': 'Restaurante não encontrado'}), 404
-            restaurant_id = restaurant.id
-        elif user.user_type == UserType.ADMIN:
-            # Admin: ver todos do tenant ou restaurante específico
-            if restaurant_id:
-                pass  # Filtrar por restaurante específico
-            elif tenant_id:
-                # Filtrar por tenant
-                restaurant_ids = [r.id for r in Restaurant.query.filter_by(tenant_id=tenant_id).all()]
-            else:
-                # Super admin: ver todos
-                restaurant_ids = [r.id for r in Restaurant.query.all()]
-
-        # Buscar entregadores
-        query = EstablishmentDriver.query
-        if restaurant_id:
-            query = query.filter_by(restaurant_id=restaurant_id)
-        elif user.user_type == UserType.ADMIN and not restaurant_id and tenant_id:
-            query = query.filter(EstablishmentDriver.restaurant_id.in_(restaurant_ids))
-
-        if driver_id:
-            query = query.filter_by(id=driver_id)
-
-        if frequency:
-            query = query.filter_by(payment_frequency=frequency)
-
-        drivers = query.all()
-
-        # Período de busca
-        now = datetime.now(timezone.utc)
-        if period == 'week':
-            start_date = now - timedelta(days=7)
-        elif period == 'month':
-            start_date = now - timedelta(days=30)
-        else:
-            start_date = now - timedelta(days=365)
-
-        # Gerar relatório por entregador
-        reports = []
-        for driver in drivers:
-            freq = driver.payment_frequency or 'WEEKLY'
-
-            # Buscar ganhos no período
-            earnings = OwnDriverEarning.query.filter(
-                OwnDriverEarning.establishment_driver_id == driver.id,
-                OwnDriverEarning.created_at >= start_date
-            ).order_by(OwnDriverEarning.created_at).all()
-
-            if not earnings:
-                continue
-
-            # Agrupar por período
-            periods = {}
-            for earning in earnings:
-                period_start = get_period_start(earning.created_at, freq)
-                period_key = period_start.isoformat()
-
-                if period_key not in periods:
-                    periods[period_key] = {
-                        'period_start': period_start.isoformat(),
-                        'period_end': get_period_end(period_start, freq).isoformat(),
-                        'total_earning': 0,
-                        'total_paid': 0,
-                        'delivery_count': 0,
-                        'earnings': [],
-                        'is_paid': True  # Assume pago até encontrar um não pago
-                    }
-
-                periods[period_key]['total_earning'] += float(earning.driver_earning or 0)
-                if earning.is_paid:
-                    periods[period_key]['total_paid'] += float(earning.driver_earning or 0)
-                else:
-                    periods[period_key]['is_paid'] = False
-                periods[period_key]['delivery_count'] += 1
-                periods[period_key]['earnings'].append({
-                    'id': earning.id,
-                    'order_id': earning.order_id,
-                    'delivery_fee': float(earning.delivery_fee or 0),
-                    'driver_earning': float(earning.driver_earning or 0),
-                    'payment_type': earning.payment_type,
-                    'is_paid': earning.is_paid,
-                    'created_at': earning.created_at.isoformat()
-                })
-
-            # Calcular totais
-            total_earning = sum(p['total_earning'] for p in periods.values())
-            total_paid = sum(p['total_paid'] for p in periods.values())
-            total_pending = total_earning - total_paid
-
-            reports.append({
-                'driver_id': driver.id,
-                'driver_name': driver.name,
-                'driver_phone': driver.phone,
-                'restaurant_id': driver.restaurant_id,
-                'restaurant_name': driver.restaurant.name if driver.restaurant else 'N/A',
-                'payment_frequency': freq,
-                'total_earning': total_earning,
-                'total_paid': total_paid,
-                'total_pending': total_pending,
-                'periods': list(periods.values())
-            })
-
-        # Ordenar por nome do entregador
-        reports.sort(key=lambda x: x['driver_name'])
-
-        return jsonify({
-            'reports': reports,
-            'summary': {
-                'total_drivers': len(reports),
-                'total_earning': sum(r['total_earning'] for r in reports),
-                'total_paid': sum(r['total_paid'] for r in reports),
-                'total_pending': sum(r['total_pending'] for r in reports)
-            }
-        }), 200
-
-    except Exception as e:
-        logger.error(f"Erro ao gerar relatório: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@finance_bp.route('/pay-period', methods=['POST'])
-@jwt_required()
-def pay_period():
-    """Marca ganhos de um período como pagos"""
-    try:
-        user = get_current_user()
-        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
-            return jsonify({'error': 'Sem permissão'}), 403
-
-        data = request.get_json()
-        driver_id = data.get('driver_id')
-        period_start = data.get('period_start')
-        payment_method = data.get('payment_method', 'PIX')
-
-        if not driver_id or not period_start:
-            return jsonify({'error': 'Entregador e período são obrigatórios'}), 400
-
-        # Buscar entregador
-        driver = EstablishmentDriver.query.get(driver_id)
-        if not driver:
-            return jsonify({'error': 'Entregador não encontrado'}), 404
-
-        # Determinar frequência e período
-        freq = driver.payment_frequency or 'WEEKLY'
-        start = datetime.fromisoformat(period_start)
-        end = get_period_end(start, freq)
-
-        # Buscar ganhos não pagos no período
-        earnings = OwnDriverEarning.query.filter(
-            OwnDriverEarning.establishment_driver_id == driver_id,
-            OwnDriverEarning.created_at >= start,
-            OwnDriverEarning.created_at <= end,
-            not OwnDriverEarning.is_paid
-        ).all()
-
-        if not earnings:
-            return jsonify({'message': 'Nenhum ganho pendente neste período'}), 200
-
-        # Marcar como pagos
-        total_paid = 0
-        for earning in earnings:
-            earning.is_paid = True
-            earning.paid_at = datetime.now(timezone.utc)
-            earning.payment_method = payment_method
-            total_paid += float(earning.driver_earning or 0)
-
-        db.session.commit()
-
-        return jsonify({
-            'message': f'{len(earnings)} pagamento(s) quitado(s)',
-            'total_paid': total_paid,
-            'payment_method': payment_method
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Erro ao pagar período: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@finance_bp.route('/pay-all', methods=['POST'])
-@jwt_required()
-def pay_all():
-    """Marca todos os ganhos pendentes de um entregador como pagos"""
-    try:
-        user = get_current_user()
-        if not user or user.user_type not in [UserType.ADMIN, UserType.CLIENT]:
-            return jsonify({'error': 'Sem permissão'}), 403
-
-        data = request.get_json()
-        driver_id = data.get('driver_id')
-        payment_method = data.get('payment_method', 'PIX')
-
-        if not driver_id:
-            return jsonify({'error': 'Entregador é obrigatório'}), 400
-
-        # Buscar ganhos não pagos
-        earnings = OwnDriverEarning.query.filter(
-            OwnDriverEarning.establishment_driver_id == driver_id,
-            not OwnDriverEarning.is_paid
-        ).all()
-
-        if not earnings:
-            return jsonify({'message': 'Nenhum ganho pendente'}), 200
-
-        # Marcar como pagos
-        total_paid = 0
-        for earning in earnings:
-            earning.is_paid = True
-            earning.paid_at = datetime.now(timezone.utc)
-            earning.payment_method = payment_method
-            total_paid += float(earning.driver_earning or 0)
-
-        db.session.commit()
-
-        return jsonify({
-            'message': f'{len(earnings)} pagamento(s) quitado(s)',
-            'total_paid': total_paid,
-            'payment_method': payment_method
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Erro ao pagar todos: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@finance_bp.route('/establishment-subscription', methods=['GET'])
+@finance_billing_bp.route('/establishment-subscription', methods=['GET'])
 @jwt_required()
 def get_establishment_subscription():
     """Obtém informações de assinatura/cobrança do estabelecimento"""
@@ -356,7 +76,7 @@ def get_establishment_subscription():
 
 # ==================== ASSINATURA ====================
 
-@finance_bp.route('/subscriptions', methods=['GET'])
+@finance_billing_bp.route('/subscriptions', methods=['GET'])
 @jwt_required()
 def get_subscriptions():
     """Lista todas as assinaturas"""
@@ -386,7 +106,7 @@ def get_subscriptions():
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/subscriptions', methods=['POST'])
+@finance_billing_bp.route('/subscriptions', methods=['POST'])
 @jwt_required()
 def create_subscription():
     """Cria uma nova assinatura para um estabelecimento"""
@@ -453,7 +173,7 @@ def create_subscription():
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/subscriptions/<int:subscription_id>', methods=['PUT'])
+@finance_billing_bp.route('/subscriptions/<int:subscription_id>', methods=['PUT'])
 @jwt_required()
 def update_subscription(subscription_id):
     """Atualiza configuração da assinatura"""
@@ -486,7 +206,7 @@ def update_subscription(subscription_id):
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/subscriptions/<int:subscription_id>/generate-invoice', methods=['POST'])
+@finance_billing_bp.route('/subscriptions/<int:subscription_id>/generate-invoice', methods=['POST'])
 @jwt_required()
 def generate_invoice(subscription_id):
     """Gera fatura manual para uma assinatura com integração Asaas"""
@@ -613,7 +333,7 @@ def generate_invoice(subscription_id):
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/invoices', methods=['GET'])
+@finance_billing_bp.route('/invoices', methods=['GET'])
 @jwt_required()
 def get_invoices():
     """Lista faturas de assinatura"""
@@ -649,7 +369,7 @@ def get_invoices():
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/invoices/<int:invoice_id>/pay', methods=['POST'])
+@finance_billing_bp.route('/invoices/<int:invoice_id>/pay', methods=['POST'])
 @jwt_required()
 def pay_invoice(invoice_id):
     """Marca uma fatura como paga"""
@@ -683,7 +403,7 @@ def pay_invoice(invoice_id):
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/generate-all-invoices', methods=['POST'])
+@finance_billing_bp.route('/generate-all-invoices', methods=['POST'])
 @jwt_required()
 def generate_all_invoices():
     """Gera faturas para todas as assinaturas com cobrança pendente (com Asaas)"""
@@ -805,7 +525,7 @@ def generate_all_invoices():
 
 # ==================== SAQUES DE ENTREGADORES PRÓPRIOS ====================
 
-@finance_bp.route('/own-driver-withdrawals', methods=['GET'])
+@finance_billing_bp.route('/own-driver-withdrawals', methods=['GET'])
 @jwt_required()
 def get_own_driver_withdrawals():
     """Lista entregadores próprios com saldo pendente"""
@@ -876,7 +596,7 @@ def get_own_driver_withdrawals():
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/process-withdrawal', methods=['POST'])
+@finance_billing_bp.route('/process-withdrawal', methods=['POST'])
 @jwt_required()
 def process_own_driver_withdrawal():
     """Processa saque de entregador próprio via PIX"""
@@ -957,7 +677,7 @@ def process_own_driver_withdrawal():
 
 # ==================== NOTIFICAÇÕES DE VENCIMENTO ====================
 
-@finance_bp.route('/check-invoice-due-dates', methods=['POST'])
+@finance_billing_bp.route('/check-invoice-due-dates', methods=['POST'])
 @jwt_required()
 def check_invoice_due_dates():
     """Verifica faturas próximas do vencimento e vencidas, cria notificações"""
@@ -1095,7 +815,7 @@ def check_invoice_due_dates():
         return jsonify({'error': str(e)}), 500
 
 
-@finance_bp.route('/overdue-report', methods=['GET'])
+@finance_billing_bp.route('/overdue-report', methods=['GET'])
 @jwt_required()
 def get_overdue_report():
     """Relatório de inadimplência - faturas vencidas"""
@@ -1161,3 +881,4 @@ def get_overdue_report():
     except Exception as e:
         logger.error(f"Erro ao gerar relatório de inadimplência: {e}")
         return jsonify({'error': str(e)}), 500
+
