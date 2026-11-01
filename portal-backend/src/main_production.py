@@ -117,6 +117,9 @@ def create_app(config_name=None):
     from src.routes.admin_database import admin_database_bp
     app.register_blueprint(admin_database_bp, url_prefix='/api/admin')
 
+    from src.routes.admin_integrations import admin_integrations_bp
+    app.register_blueprint(admin_integrations_bp, url_prefix='/api/admin')
+
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
 

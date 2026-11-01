@@ -107,6 +107,11 @@ from src.routes.admin_database import admin_database_bp
 
 app.register_blueprint(admin_database_bp, url_prefix='/api/admin')
 
+# Credenciais e atribuições (extraído de admin.py)
+from src.routes.admin_integrations import admin_integrations_bp
+
+app.register_blueprint(admin_integrations_bp, url_prefix='/api/admin')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
