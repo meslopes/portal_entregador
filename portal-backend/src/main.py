@@ -245,9 +245,20 @@ from src.routes.platform_routes import platform_routes_bp
 
 app.register_blueprint(platform_routes_bp)
 
-from src.routes.route import route_bp
+# Rotas de entrega — gestão (extraído de route.py)
+from src.routes.route_management import route_management_bp
 
-app.register_blueprint(route_bp)
+app.register_blueprint(route_management_bp)
+
+# Rotas de entrega — entregador (extraído de route.py)
+from src.routes.route_driver import route_driver_bp
+
+app.register_blueprint(route_driver_bp)
+
+# Rotas de entrega — plataforma (extraído de route.py)
+from src.routes.route_platform import route_platform_bp
+
+app.register_blueprint(route_platform_bp)
 
 from src.routes.finance import finance_bp
 

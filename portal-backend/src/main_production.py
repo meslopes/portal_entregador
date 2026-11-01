@@ -150,8 +150,14 @@ def create_app(config_name=None):
     from src.routes.own_driver import own_driver_bp
     app.register_blueprint(own_driver_bp)
 
-    from src.routes.route import route_bp
-    app.register_blueprint(route_bp)
+    from src.routes.route_management import route_management_bp
+    app.register_blueprint(route_management_bp)
+
+    from src.routes.route_driver import route_driver_bp
+    app.register_blueprint(route_driver_bp)
+
+    from src.routes.route_platform import route_platform_bp
+    app.register_blueprint(route_platform_bp)
 
     from src.routes.route_settings import route_settings_bp
     app.register_blueprint(route_settings_bp)
