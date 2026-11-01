@@ -102,6 +102,11 @@ from src.routes.webhooks_payments import webhooks_payments_bp
 
 app.register_blueprint(webhooks_payments_bp, url_prefix='/api/webhooks')
 
+# Ferramentas de banco/limpeza (extraído de admin.py)
+from src.routes.admin_database import admin_database_bp
+
+app.register_blueprint(admin_database_bp, url_prefix='/api/admin')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 

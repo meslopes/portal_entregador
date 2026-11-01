@@ -114,6 +114,9 @@ def create_app(config_name=None):
     from src.routes.webhooks_payments import webhooks_payments_bp
     app.register_blueprint(webhooks_payments_bp, url_prefix='/api/webhooks')
 
+    from src.routes.admin_database import admin_database_bp
+    app.register_blueprint(admin_database_bp, url_prefix='/api/admin')
+
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
 
