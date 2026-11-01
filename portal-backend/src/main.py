@@ -107,6 +107,11 @@ from src.routes.order_my import order_my_bp
 
 app.register_blueprint(order_my_bp, url_prefix='/api/orders')
 
+# Estabelecimentos (extraído de admin_finance.py)
+from src.routes.admin_establishments import admin_establishments_bp
+
+app.register_blueprint(admin_establishments_bp, url_prefix='/api/admin')
+
 # Gestão de rotas de entrega (extraído de order.py)
 from src.routes.order_delivery_routes import order_delivery_routes_bp
 
