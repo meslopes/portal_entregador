@@ -1,4 +1,4 @@
-"""Webhooks de parceiros (99Food, InstaDelivery, Saipos).
+﻿"""Webhooks de parceiros (99Food, InstaDelivery, Saipos).
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -21,7 +21,7 @@ from src.routes.webhooks import (
     require_webhook_auth,
 )
 
-webhooks_partners_bp = Blueprint('partners', __name__)
+webhooks_partners_bp = Blueprint('webhooks_partners', __name__)
 
 
 @webhooks_partners_bp.route('/99food', methods=['POST'])
@@ -262,5 +262,6 @@ def process_platform_cancellation(order_data, platform):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 

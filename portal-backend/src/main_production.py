@@ -111,6 +111,9 @@ def create_app(config_name=None):
     from src.routes.webhooks_partners import webhooks_partners_bp
     app.register_blueprint(webhooks_partners_bp, url_prefix='/api/webhooks')
 
+    from src.routes.webhooks_payments import webhooks_payments_bp
+    app.register_blueprint(webhooks_payments_bp, url_prefix='/api/webhooks')
+
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')
 

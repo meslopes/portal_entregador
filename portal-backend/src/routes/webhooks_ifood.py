@@ -1,4 +1,4 @@
-"""Webhooks e processamento do iFood.
+﻿"""Webhooks e processamento do iFood.
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -22,7 +22,7 @@ from src.models.portal_models import (
 logger = logging.getLogger(__name__)
 
 
-webhooks_ifood_bp = Blueprint('ifood', __name__)
+webhooks_ifood_bp = Blueprint('webhooks_ifood', __name__)
 
 
 @webhooks_ifood_bp.route('/ifood', methods=['POST'])
@@ -749,4 +749,5 @@ def process_ifood_cancellation(order_data):
 # ============================================
 # WEBHOOK GENERICo (para outras plataformas)
 # ============================================
+
 

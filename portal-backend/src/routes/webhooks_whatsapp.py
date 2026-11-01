@@ -1,4 +1,4 @@
-"""Webhooks e robô do WhatsApp.
+﻿"""Webhooks e robô do WhatsApp.
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -26,7 +26,7 @@ from src.utils.geo import haversine_distance
 logger = logging.getLogger(__name__)
 
 
-webhooks_whatsapp_bp = Blueprint('whatsapp', __name__)
+webhooks_whatsapp_bp = Blueprint('webhooks_whatsapp', __name__)
 
 
 @webhooks_whatsapp_bp.route('/whatsapp', methods=['GET'])
@@ -375,4 +375,5 @@ def process_driver_response_whatsapp(phone, action):
 # ============================================
 # WEBHOOK ASAAS (Pagamentos)
 # ============================================
+
 

@@ -97,6 +97,11 @@ from src.routes.webhooks_partners import webhooks_partners_bp
 
 app.register_blueprint(webhooks_partners_bp, url_prefix='/api/webhooks')
 
+# Pagamentos Asaas (extraído de webhooks.py)
+from src.routes.webhooks_payments import webhooks_payments_bp
+
+app.register_blueprint(webhooks_payments_bp, url_prefix='/api/webhooks')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
