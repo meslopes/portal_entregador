@@ -1660,37 +1660,6 @@ def get_active_orders():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@order_bp.route('/test-geocode', methods=['GET', 'POST'])
-def test_geocode():
-    """Endpoint para testar geocodificação diretamente"""
-    try:
-        if request.method == 'GET':
-            address = request.args.get('address', 'Rua Julio de Castilhos, 100 - Centro, Capao da Canoa - RS')
-            city = request.args.get('city', 'Capao da Canoa')
-        else:
-            data = request.get_json()
-            address = data.get('address', '')
-            city = data.get('city', '')
-
-        from src.services.geocoding import geocode_address, geocode_with_photon
-
-        # Testar Photon diretamente
-        photon_result = geocode_with_photon(address, city)
-
-        # Testar geocode_address completo
-        full_result = geocode_address(address, city)
-
-        return jsonify({
-            'input': {'address': address, 'city': city},
-            'photon_result': photon_result,
-            'full_result': full_result,
-            'photon_success': photon_result is not None,
-            'full_success': full_result is not None,
-            'is_approximate': full_result.get('is_approximate', False) if full_result else None
-        }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 
 @order_bp.route('/estimate-fee', methods=['POST'])
 @jwt_required()
