@@ -147,10 +147,15 @@ from src.routes.admin_drivers import admin_drivers_bp
 
 app.register_blueprint(admin_drivers_bp, url_prefix='/api/admin')
 
-# Establishment drivers routes (extraído de admin.py)
-from src.routes.admin_establishment_drivers import admin_est_drivers_bp
+# Entregadores próprios — cadastro (extraído de admin_establishment_drivers.py)
+from src.routes.admin_est_drivers_crud import admin_est_drivers_crud_bp
 
-app.register_blueprint(admin_est_drivers_bp, url_prefix='/api/admin')
+app.register_blueprint(admin_est_drivers_crud_bp, url_prefix='/api/admin')
+
+# Entregadores próprios — pagamentos e métricas (extraído de admin_establishment_drivers.py)
+from src.routes.admin_est_drivers_pay import admin_est_drivers_pay_bp
+
+app.register_blueprint(admin_est_drivers_pay_bp, url_prefix='/api/admin')
 
 # Rotas do usuário em pedidos (extraído de order.py)
 from src.routes.order_my import order_my_bp

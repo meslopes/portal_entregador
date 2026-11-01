@@ -60,8 +60,11 @@ def create_app(config_name=None):
     from src.routes.admin_drivers import admin_drivers_bp
     app.register_blueprint(admin_drivers_bp, url_prefix='/api/admin')
 
-    from src.routes.admin_establishment_drivers import admin_est_drivers_bp
-    app.register_blueprint(admin_est_drivers_bp, url_prefix='/api/admin')
+    from src.routes.admin_est_drivers_crud import admin_est_drivers_crud_bp
+    app.register_blueprint(admin_est_drivers_crud_bp, url_prefix='/api/admin')
+
+    from src.routes.admin_est_drivers_pay import admin_est_drivers_pay_bp
+    app.register_blueprint(admin_est_drivers_pay_bp, url_prefix='/api/admin')
 
     from src.routes.order_my import order_my_bp
     app.register_blueprint(order_my_bp, url_prefix='/api/orders')
