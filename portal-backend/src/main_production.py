@@ -74,6 +74,9 @@ def create_app(config_name=None):
     from src.routes.order_acceptance import order_acceptance_bp
     app.register_blueprint(order_acceptance_bp, url_prefix='/api/orders')
 
+    from src.routes.order_lifecycle import order_lifecycle_bp
+    app.register_blueprint(order_lifecycle_bp, url_prefix='/api/orders')
+
     from src.routes.webhooks import webhook_bp
     app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 

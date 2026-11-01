@@ -119,6 +119,11 @@ from src.routes.order_acceptance import order_acceptance_bp
 
 app.register_blueprint(order_acceptance_bp, url_prefix='/api/orders')
 
+# Criação e mudanças de estado (extraído de order.py)
+from src.routes.order_lifecycle import order_lifecycle_bp
+
+app.register_blueprint(order_lifecycle_bp, url_prefix='/api/orders')
+
 from src.routes.user import user_bp
 
 app.register_blueprint(user_bp, url_prefix='/api/user')
