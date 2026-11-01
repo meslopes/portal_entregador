@@ -82,6 +82,11 @@ app.register_blueprint(driver_bp, url_prefix='/api/driver')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 
+# Webhooks do iFood (extraído de webhooks.py)
+from src.routes.webhooks_ifood import webhooks_ifood_bp
+
+app.register_blueprint(webhooks_ifood_bp, url_prefix='/api/webhooks')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
