@@ -68,6 +68,9 @@ def create_app(config_name=None):
     from src.routes.order_my import order_my_bp
     app.register_blueprint(order_my_bp, url_prefix='/api/orders')
 
+    from src.routes.order_delivery_routes import order_delivery_routes_bp
+    app.register_blueprint(order_delivery_routes_bp, url_prefix='/api/orders')
+
     from src.routes.webhooks import webhook_bp
     app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 

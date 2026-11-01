@@ -109,6 +109,11 @@ from src.routes.order_my import order_my_bp
 
 app.register_blueprint(order_my_bp, url_prefix='/api/orders')
 
+# Gestão de rotas de entrega (extraído de order.py)
+from src.routes.order_delivery_routes import order_delivery_routes_bp
+
+app.register_blueprint(order_delivery_routes_bp, url_prefix='/api/orders')
+
 from src.routes.user import user_bp
 
 app.register_blueprint(user_bp, url_prefix='/api/user')
