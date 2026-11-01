@@ -68,7 +68,7 @@ def start_background_tasks(app):
             if lock:
                 try:
                     with app.app_context():
-                        from src.routes.order import process_expired_offers
+                        from src.services.order_helpers import process_expired_offers
                         process_expired_offers()
                 except Exception as e:
                     logger.error(f"[BG_TASK] process_expired_offers error: {e}")
@@ -92,7 +92,7 @@ def start_background_tasks(app):
             if lock:
                 try:
                     with app.app_context():
-                        from src.routes.order import process_scheduled_orders
+                        from src.services.order_helpers import process_scheduled_orders
                         process_scheduled_orders()
                 except Exception as e:
                     logger.error(f"[BG_TASK] process_scheduled_orders error: {e}")

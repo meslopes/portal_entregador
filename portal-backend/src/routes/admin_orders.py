@@ -48,7 +48,7 @@ def process_scheduled_orders():
 
     try:
 
-        from src.routes.order import process_scheduled_orders as process_orders
+        from src.services.order_helpers import process_scheduled_orders as process_orders
 
         process_orders()
 

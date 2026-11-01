@@ -410,7 +410,7 @@ def reject_order(order_id):
 
         # Tentar próximo entregador próprio (em background)
         try:
-            from src.routes.order import find_nearest_own_driver
+            from src.services.order_helpers import find_nearest_own_driver
             next_driver = find_nearest_own_driver(order, exclude_driver_id=driver.id)
             if next_driver:
                 order.assigned_to_own_driver = True

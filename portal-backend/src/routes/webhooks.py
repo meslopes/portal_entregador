@@ -1426,7 +1426,7 @@ def process_driver_response_whatsapp(phone, action):
 
         elif action == 'REJECT':
             # Busca proximo entregador
-            from src.routes.order import find_nearest_available_driver
+            from src.services.order_helpers import find_nearest_available_driver
             next_driver = find_nearest_available_driver(pending_order, exclude_driver_ids=[driver.id])
 
             if next_driver and next_driver.user.phone:
