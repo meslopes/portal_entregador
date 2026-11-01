@@ -112,6 +112,11 @@ from src.routes.admin_integrations import admin_integrations_bp
 
 app.register_blueprint(admin_integrations_bp, url_prefix='/api/admin')
 
+# Exportação/importação CSV (extraído de admin.py)
+from src.routes.admin_exports import admin_exports_bp
+
+app.register_blueprint(admin_exports_bp, url_prefix='/api/admin')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
