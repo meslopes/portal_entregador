@@ -16,7 +16,6 @@ from src.routes.admin import admin_bp
 # Importar blueprints
 from src.routes.auth import auth_bp
 from src.routes.driver import driver_bp
-from src.routes.order import order_bp
 
 
 def create_app(config_name=None):
@@ -49,7 +48,6 @@ def create_app(config_name=None):
     # Registrar blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(driver_bp, url_prefix='/api/driver')
-    app.register_blueprint(order_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
     # Blueprints extraídos de admin.py e order.py (mesmos do src/main.py)
@@ -76,6 +74,9 @@ def create_app(config_name=None):
 
     from src.routes.order_lifecycle import order_lifecycle_bp
     app.register_blueprint(order_lifecycle_bp, url_prefix='/api/orders')
+
+    from src.routes.order_queries import order_queries_bp
+    app.register_blueprint(order_queries_bp, url_prefix='/api/orders')
 
     from src.routes.webhooks import webhook_bp
     app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')

@@ -1,3 +1,8 @@
+"""Consultas de pedidos (leitura).
+
+Extraído de order.py no refactor de arquivos grandes (2026-11-01).
+Movimento puro de código — comportamento idêntico ao original.
+"""
 import logging
 
 from flask import Blueprint, jsonify, request
@@ -11,15 +16,15 @@ from src.models.portal_models import (
     User,
     UserType,
 )
+from src.utils.restaurant import find_restaurant_by_name
 
 logger = logging.getLogger(__name__)
 
 
-from src.utils.restaurant import find_restaurant_by_name
+order_queries_bp = Blueprint('order_queries', __name__)
 
-order_bp = Blueprint('order', __name__)
 
-@order_bp.route('/current', methods=['GET'])
+@order_queries_bp.route('/current', methods=['GET'])
 @jwt_required()
 def get_current_order():
     """Obtém o pedido atual do entregador"""
@@ -67,7 +72,7 @@ def get_current_order():
         return jsonify({'error': str(e)}), 500
 
 
-@order_bp.route('/active', methods=['GET'])
+@order_queries_bp.route('/active', methods=['GET'])
 @jwt_required()
 def get_active_orders():
     """Obtém todos os pedidos ativos do entregador (aceitos, preparando, pronto, coletado)"""
@@ -110,7 +115,7 @@ def get_active_orders():
         return jsonify({'error': str(e)}), 500
 
 
-@order_bp.route('/estimate-fee', methods=['POST'])
+@order_queries_bp.route('/estimate-fee', methods=['POST'])
 @jwt_required()
 def estimate_fee():
     """Estima o frete de entrega sem criar o pedido"""
@@ -266,7 +271,7 @@ def estimate_fee():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@order_bp.route('/<int:order_id>', methods=['GET'])
+@order_queries_bp.route('/<int:order_id>', methods=['GET'])
 @jwt_required()
 def get_order_details(order_id):
     """Obtém detalhes de um pedido específico"""

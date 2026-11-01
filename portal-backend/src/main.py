@@ -17,7 +17,6 @@ from src.models.portal_models import db
 from src.routes.admin import admin_bp
 from src.routes.auth import auth_bp
 from src.routes.driver import driver_bp
-from src.routes.order import order_bp
 from src.routes.webhooks import webhook_bp
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
@@ -80,7 +79,6 @@ else:
 # Registra blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(driver_bp, url_prefix='/api/driver')
-app.register_blueprint(order_bp, url_prefix='/api/orders')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 
@@ -123,6 +121,11 @@ app.register_blueprint(order_acceptance_bp, url_prefix='/api/orders')
 from src.routes.order_lifecycle import order_lifecycle_bp
 
 app.register_blueprint(order_lifecycle_bp, url_prefix='/api/orders')
+
+# Consultas de pedidos (extraído de order.py)
+from src.routes.order_queries import order_queries_bp
+
+app.register_blueprint(order_queries_bp, url_prefix='/api/orders')
 
 from src.routes.user import user_bp
 
