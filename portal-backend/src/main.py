@@ -92,6 +92,11 @@ from src.routes.webhooks_whatsapp import webhooks_whatsapp_bp
 
 app.register_blueprint(webhooks_whatsapp_bp, url_prefix='/api/webhooks')
 
+# Parceiros 99Food/InstaDelivery/Saipos (extraído de webhooks.py)
+from src.routes.webhooks_partners import webhooks_partners_bp
+
+app.register_blueprint(webhooks_partners_bp, url_prefix='/api/webhooks')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
