@@ -52,6 +52,22 @@ def create_app(config_name=None):
     app.register_blueprint(order_bp, url_prefix='/api/orders')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
+    # Blueprints extraídos de admin.py e order.py (mesmos do src/main.py)
+    from src.routes.admin_finance import admin_finance_bp
+    app.register_blueprint(admin_finance_bp, url_prefix='/api/admin')
+
+    from src.routes.admin_orders import admin_orders_bp
+    app.register_blueprint(admin_orders_bp, url_prefix='/api/admin')
+
+    from src.routes.admin_drivers import admin_drivers_bp
+    app.register_blueprint(admin_drivers_bp, url_prefix='/api/admin')
+
+    from src.routes.admin_establishment_drivers import admin_est_drivers_bp
+    app.register_blueprint(admin_est_drivers_bp, url_prefix='/api/admin')
+
+    from src.routes.order_my import order_my_bp
+    app.register_blueprint(order_my_bp, url_prefix='/api/orders')
+
     from src.routes.webhooks import webhook_bp
     app.register_blueprint(webhook_bp, url_prefix='/api/webhooks')
 
