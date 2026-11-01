@@ -114,6 +114,11 @@ from src.routes.order_delivery_routes import order_delivery_routes_bp
 
 app.register_blueprint(order_delivery_routes_bp, url_prefix='/api/orders')
 
+# Ofertas, aceite e atribuição (extraído de order.py)
+from src.routes.order_acceptance import order_acceptance_bp
+
+app.register_blueprint(order_acceptance_bp, url_prefix='/api/orders')
+
 from src.routes.user import user_bp
 
 app.register_blueprint(user_bp, url_prefix='/api/user')
