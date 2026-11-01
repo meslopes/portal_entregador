@@ -137,6 +137,11 @@ from src.routes.admin_users_softdelete import admin_users_softdelete_bp
 
 app.register_blueprint(admin_users_softdelete_bp, url_prefix='/api/admin')
 
+# Rastreio ao vivo (extraído de admin_finance.py)
+from src.routes.admin_live_tracking import admin_live_tracking_bp
+
+app.register_blueprint(admin_live_tracking_bp, url_prefix='/api/admin')
+
 # Gestão de rotas de entrega (extraído de order.py)
 from src.routes.order_delivery_routes import order_delivery_routes_bp
 
