@@ -1687,12 +1687,12 @@ def cleanup_test_data():
             return total
 
         if test_user_ids:
-            ph = ','.join([':u%d' % i for i in range(len(test_user_ids))])
-            pmap = {'u%d' % i: v for i, v in enumerate(test_user_ids)}
+            ph = ','.join([f':u{i}' for i in range(len(test_user_ids))])
+            pmap = {f'u{i}': v for i, v in enumerate(test_user_ids)}
             rest_ph = ''
             if test_rest_ids:
-                rest_ph = ' OR restaurant_id IN (' + ','.join([':r%d' % i for i in range(len(test_rest_ids))]) + ')'
-                pmap.update({'r%d' % i: v for i, v in enumerate(test_rest_ids)})
+                rest_ph = ' OR restaurant_id IN (' + ','.join([f':r{i}' for i in range(len(test_rest_ids))]) + ')'
+                pmap.update({f'r{i}': v for i, v in enumerate(test_rest_ids)})
             deleted['orders'] = delete_where(
                 f"DELETE FROM orders WHERE customer_id IN (SELECT id FROM customers WHERE user_id IN ({ph})){rest_ph}",
                 pmap
@@ -1702,8 +1702,8 @@ def cleanup_test_data():
             deleted['users'] = delete_where(f"DELETE FROM users WHERE id IN ({ph}) AND user_type != 'ADMIN'", pmap)
 
         if test_rest_ids:
-            ph = ','.join([':r%d' % i for i in range(len(test_rest_ids))])
-            pmap = {'r%d' % i: v for i, v in enumerate(test_rest_ids)}
+            ph = ','.join([f':r{i}' for i in range(len(test_rest_ids))])
+            pmap = {f'r{i}': v for i, v in enumerate(test_rest_ids)}
             deleted['establishment_drivers'] = delete_where(f"DELETE FROM establishment_drivers WHERE restaurant_id IN ({ph})", pmap)
             deleted['restaurants'] = delete_where(f"DELETE FROM restaurants WHERE id IN ({ph})", pmap)
 

@@ -115,7 +115,7 @@ def get_user_role(user):
 
     if user.user_type == UserType.DRIVER:
         # Verificar se é entregador próprio (por telefone — coluna user_id não existe)
-        from src.utils.driver_type import find_own_driver_by_phone, get_driver_subtype_for_user
+        from src.utils.driver_type import get_driver_subtype_for_user
         if get_driver_subtype_for_user(user) == 'OWN':
             return 'own_driver'
         return 'driver'

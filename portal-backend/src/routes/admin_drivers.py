@@ -28,8 +28,6 @@ from src.utils.auth import admin_required
 from src.utils.driver_type import (
     find_own_driver_by_phone,
     find_phone_conflict,
-    is_platform_driver_excluded,
-    mark_driver_converted_by_phone,
     normalize_phone,
 )
 from src.utils.tenant import get_current_tenant_id, get_current_user

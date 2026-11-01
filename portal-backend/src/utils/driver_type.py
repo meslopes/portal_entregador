@@ -106,9 +106,7 @@ def is_platform_driver_excluded(driver):
     if driver.converted_to_own:
         return True
     user = db.session.get(User, driver.user_id) if driver.user_id else None
-    if user and find_own_driver_by_phone(user.phone):
-        return True
-    return False
+    return bool(user and find_own_driver_by_phone(user.phone))
 
 
 def platform_drivers_query():

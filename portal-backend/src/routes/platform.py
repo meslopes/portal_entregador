@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from datetime import datetime, timezone
 
@@ -785,10 +786,8 @@ def delete_tenant(tenant_id):
                     db.session.execute(db.text(f"DELETE FROM {table} WHERE tenant_id = :tid"), {"tid": tenant_id})
                 except Exception:
                     db.session.rollback()
-                    try:
+                    with contextlib.suppress(Exception):
                         db.session.execute(db.text(f"UPDATE {table} SET tenant_id = NULL WHERE tenant_id = :tid"), {"tid": tenant_id})
-                    except Exception:
-                        pass
             db.session.execute(db.text("UPDATE users SET tenant_id = NULL WHERE tenant_id = :tid"), {"tid": tenant_id})
 
         db.session.delete(tenant)
