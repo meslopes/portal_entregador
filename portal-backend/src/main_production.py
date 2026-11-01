@@ -75,9 +75,6 @@ def create_app(config_name=None):
     from src.routes.admin_pricing import admin_pricing_bp
     app.register_blueprint(admin_pricing_bp, url_prefix='/api/admin')
 
-    from src.routes.admin_payments import admin_payments_bp
-    app.register_blueprint(admin_payments_bp, url_prefix='/api/admin')
-
     from src.routes.admin_tenants_squares import admin_tenants_squares_bp
     app.register_blueprint(admin_tenants_squares_bp, url_prefix='/api/admin')
 
@@ -128,6 +125,9 @@ def create_app(config_name=None):
 
     from src.routes.admin_invoices import admin_invoices_bp
     app.register_blueprint(admin_invoices_bp, url_prefix='/api/admin')
+
+    from src.routes.admin_invoice_billing import admin_invoice_billing_bp
+    app.register_blueprint(admin_invoice_billing_bp, url_prefix='/api/admin')
 
     from src.routes.user import user_bp
     app.register_blueprint(user_bp, url_prefix='/api/user')

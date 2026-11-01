@@ -127,6 +127,11 @@ from src.routes.admin_invoices import admin_invoices_bp
 
 app.register_blueprint(admin_invoices_bp, url_prefix='/api/admin')
 
+# Cobrança de faturas (extraído de admin_payments.py)
+from src.routes.admin_invoice_billing import admin_invoice_billing_bp
+
+app.register_blueprint(admin_invoice_billing_bp, url_prefix='/api/admin')
+
 # Finance routes (extraído de admin.py)
 from src.routes.admin_finance import admin_finance_bp
 
@@ -166,11 +171,6 @@ app.register_blueprint(admin_reports_bp, url_prefix='/api/admin')
 from src.routes.admin_pricing import admin_pricing_bp
 
 app.register_blueprint(admin_pricing_bp, url_prefix='/api/admin')
-
-# Pagamentos, faturas e saques (extraído de admin_finance.py)
-from src.routes.admin_payments import admin_payments_bp
-
-app.register_blueprint(admin_payments_bp, url_prefix='/api/admin')
 
 # Tenants e praças (extraído de admin_finance.py)
 from src.routes.admin_tenants_squares import admin_tenants_squares_bp

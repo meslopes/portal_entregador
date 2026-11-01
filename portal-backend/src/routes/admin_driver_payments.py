@@ -1,4 +1,4 @@
-"""Módulo driver_payments — extraído de src/routes/admin_payments.py no refactor de arquivos grandes.
+﻿"""Módulo driver_payments — extraído de src/routes/admin_payments.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 from datetime import datetime, timezone
@@ -14,7 +14,7 @@ from src.models.portal_models import (
     User,
     db,
 )
-from src.routes.admin_payments import get_square_filter
+from src.routes.admin_finance import get_square_filter
 from src.utils.auth import admin_required
 from src.utils.tenant import get_current_tenant_id
 
@@ -510,3 +510,4 @@ def process_withdrawal_auto(withdrawal_id):
 
 
 # ============================================
+

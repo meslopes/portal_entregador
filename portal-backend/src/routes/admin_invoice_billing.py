@@ -1,6 +1,4 @@
-"""Pagamentos a entregadores, faturas e saques.
-
-Extraído de admin_finance.py no refactor de arquivos grandes (2026-11-01).
+"""Módulo invoice_billing — extraído de src/routes/admin_payments.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import logging
@@ -25,10 +23,10 @@ from src.utils.auth import admin_required
 logger = logging.getLogger(__name__)
 
 
-admin_payments_bp = Blueprint('payments', __name__)
+admin_invoice_billing_bp = Blueprint('admin_invoice_billing', __name__)
 
 
-@admin_payments_bp.route('/invoices/<int:invoice_id>/pay', methods=['POST'])
+@admin_invoice_billing_bp.route('/invoices/<int:invoice_id>/pay', methods=['POST'])
 
 @jwt_required()
 
@@ -142,7 +140,7 @@ def pay_invoice(invoice_id):
 
 
 
-@admin_payments_bp.route('/invoices/<int:invoice_id>/charge', methods=['POST'])
+@admin_invoice_billing_bp.route('/invoices/<int:invoice_id>/charge', methods=['POST'])
 
 @jwt_required()
 
@@ -318,7 +316,7 @@ def create_invoice_charge(invoice_id):
 
 
 
-@admin_payments_bp.route('/invoices/<int:invoice_id>/send-link', methods=['POST'])
+@admin_invoice_billing_bp.route('/invoices/<int:invoice_id>/send-link', methods=['POST'])
 
 @jwt_required()
 
