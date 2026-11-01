@@ -78,6 +78,9 @@ def create_app(config_name=None):
     from src.routes.admin_payments import admin_payments_bp
     app.register_blueprint(admin_payments_bp, url_prefix='/api/admin')
 
+    from src.routes.admin_tenants_squares import admin_tenants_squares_bp
+    app.register_blueprint(admin_tenants_squares_bp, url_prefix='/api/admin')
+
     from src.routes.order_delivery_routes import order_delivery_routes_bp
     app.register_blueprint(order_delivery_routes_bp, url_prefix='/api/orders')
 
