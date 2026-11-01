@@ -72,6 +72,9 @@ def create_app(config_name=None):
     from src.routes.admin_reports import admin_reports_bp
     app.register_blueprint(admin_reports_bp, url_prefix='/api/admin')
 
+    from src.routes.admin_pricing import admin_pricing_bp
+    app.register_blueprint(admin_pricing_bp, url_prefix='/api/admin')
+
     from src.routes.order_delivery_routes import order_delivery_routes_bp
     app.register_blueprint(order_delivery_routes_bp, url_prefix='/api/orders')
 

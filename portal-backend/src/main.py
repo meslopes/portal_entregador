@@ -117,6 +117,11 @@ from src.routes.admin_reports import admin_reports_bp
 
 app.register_blueprint(admin_reports_bp, url_prefix='/api/admin')
 
+# Preços e configurações (extraído de admin_finance.py)
+from src.routes.admin_pricing import admin_pricing_bp
+
+app.register_blueprint(admin_pricing_bp, url_prefix='/api/admin')
+
 # Gestão de rotas de entrega (extraído de order.py)
 from src.routes.order_delivery_routes import order_delivery_routes_bp
 
