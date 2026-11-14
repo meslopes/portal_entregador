@@ -5,19 +5,9 @@ import { useAuth } from '@/contexts/AuthContext.hooks';
 import { sanitizeUserForStorage } from '@/lib/utils';
 import StepIndicator from './client-register/StepIndicator';
 import BrandingSide from './client-register/BrandingSide';
+import { formatCnpj, getCnpjHint, isCnpjValid } from '@/lib/cnpj';
 
 // --- Validações em tempo real (espelham o backend: src/utils/auth.py validate_password) ---
-
-// Formata o CNPJ enquanto digita: XX.XXX.XXX/XXXX-XX (aceita só dígitos, máx. 14)
-const formatCnpj = (digits) => {
-  const d = digits.replace(/\D/g, '').slice(0, 14);
-  let out = d.slice(0, 2);
-  if (d.length > 2) out += '.' + d.slice(2, 5);
-  if (d.length > 5) out += '.' + d.slice(5, 8);
-  if (d.length > 8) out += '/' + d.slice(8, 12);
-  if (d.length > 12) out += '-' + d.slice(12, 14);
-  return out;
-};
 
 // Regras da senha — usadas no checklist ao vivo e na validação de etapa
 const passwordChecks = (pwd) => [
@@ -71,7 +61,7 @@ const ClientRegisterPage = () => {
         return false;
       }
       const cnpjDigits = formData.cnpj.replace(/\D/g, '');
-      if (cnpjOverflow || (cnpjDigits.length > 0 && cnpjDigits.length !== 14)) {
+      if (!isCnpjValid(formData.cnpj, cnpjOverflow) && cnpjDigits.length > 0) {
         setLocalError('CNPJ inválido: deve ter 14 dígitos — verifique o número');
         return false;
       }
@@ -146,15 +136,7 @@ const ClientRegisterPage = () => {
   const currentError = localError || error;
 
   // --- Feedback em tempo real (CNPJ e senha) ---
-  const cnpjDigits = formData.cnpj.replace(/\D/g, '');
-  let cnpjHint = null;
-  if (cnpjOverflow) {
-    cnpjHint = { ok: false, text: 'Quantidade de dígitos excedeu o permitido (14) — verifique o CNPJ' };
-  } else if (cnpjDigits.length > 0 && cnpjDigits.length < 14) {
-    cnpjHint = { ok: false, text: `CNPJ deve ter 14 dígitos — faltam ${14 - cnpjDigits.length}` };
-  } else if (cnpjDigits.length === 14) {
-    cnpjHint = { ok: true, text: 'CNPJ completo' };
-  }
+  const cnpjHint = getCnpjHint(formData.cnpj, cnpjOverflow);
   const pwdChecks = passwordChecks(formData.password);
   const confirmMismatch = formData.confirmPassword && formData.password !== formData.confirmPassword;
 

@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext.hooks';
 import LogoUpload from './white-label/LogoUpload';
 import ColorPicker from './white-label/ColorPicker';
 import SectionCard from './white-label/SectionCard';
+import CnpjField from '@/components/CnpjField';
+import { isCnpjValid } from '@/lib/cnpj';
 
 const inputStyle = {
   width: '100%', padding: '0.625rem 0.875rem',
@@ -72,6 +74,11 @@ const AdminWhiteLabelPage = () => {
   };
 
   const handleSave = async () => {
+    // Trava do CNPJ: 14 dígitos (com ou sem máscara)
+    if (!isCnpjValid(formData.cnpj)) {
+      setError('CNPJ inválido: deve ter 14 dígitos — verifique o número');
+      return;
+    }
     try {
       setSaving(true);
       setError('');
@@ -218,10 +225,9 @@ const AdminWhiteLabelPage = () => {
 
           <div>
             <label style={labelStyle}>CNPJ</label>
-            <input
-              type="text"
+            <CnpjField
               value={formData.cnpj}
-              onChange={(e) => setFormData(prev => ({ ...prev, cnpj: e.target.value }))}
+              onChange={(v) => setFormData(prev => ({ ...prev, cnpj: v }))}
               style={inputStyle}
               placeholder="00.000.000/0000-00"
             />

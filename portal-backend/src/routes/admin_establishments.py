@@ -303,11 +303,16 @@ def create_establishment():
 
 
 
-        # Verificar CNPJ se fornecido
+        # Validar/normalizar CNPJ (14 dígitos, grava formatado) e checar duplicidade
+        from src.utils.validation import normalize_cnpj
 
-        if data.get('cnpj'):
+        cnpj, cnpj_err = normalize_cnpj(data.get('cnpj'))
+        if cnpj_err:
+            return jsonify({'error': cnpj_err}), 400
 
-            existing = Restaurant.query.filter_by(cnpj=data['cnpj']).first()
+        if cnpj:
+
+            existing = Restaurant.query.filter_by(cnpj=cnpj).first()
 
             if existing:
 
@@ -389,7 +394,7 @@ def create_establishment():
 
             name=data['name'],
 
-            cnpj=data.get('cnpj'),
+            cnpj=cnpj,
 
             phone=data.get('phone'),
 
@@ -525,21 +530,30 @@ def update_establishment(establishment_id):
 
             est.name = data['name']
 
-        if data.get('cnpj'):
+        # Validar/normalizar CNPJ (14 dígitos, grava formatado) e checar duplicidade
+        from src.utils.validation import normalize_cnpj
 
-            existing = Restaurant.query.filter(
+        if 'cnpj' in data:
 
-                Restaurant.cnpj == data['cnpj'],
+            cnpj, cnpj_err = normalize_cnpj(data.get('cnpj'))
+            if cnpj_err:
+                return jsonify({'error': cnpj_err}), 400
 
-                Restaurant.id != establishment_id
+            if cnpj:
 
-            ).first()
+                existing = Restaurant.query.filter(
 
-            if existing:
+                    Restaurant.cnpj == cnpj,
 
-                return jsonify({'error': 'CNPJ já cadastrado'}), 400
+                    Restaurant.id != establishment_id
 
-            est.cnpj = data['cnpj']
+                ).first()
+
+                if existing:
+
+                    return jsonify({'error': 'CNPJ já cadastrado'}), 400
+
+            est.cnpj = cnpj
 
         if 'phone' in data:
 

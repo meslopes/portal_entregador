@@ -7,6 +7,7 @@ import { showToast } from '@/components/Toast.utils';
 import { Modal, FormField } from './ui';
 import { inputStyle, btnPrimary, btnSecondary } from './ui.constants';
 import { parseAddressToFields } from './parseAddressToFields';
+import { formatCnpj, getCnpjHint, isCnpjValid } from '@/lib/cnpj';
 
 const EMPTY_FORM = {
   name: '', cnpj: '', phone: '', email: '', password: '',
@@ -22,6 +23,8 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
   const [formError, setFormError] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [pricingTables, setPricingTables] = useState([]);
+  // Aviso quando o usuário cola/digita CNPJ com mais de 14 dígitos (a máscara corta, mas avisamos)
+  const [cnpjOverflow, setCnpjOverflow] = useState(false);
 
   const loadPricingTables = async (sqId) => {
     try {
@@ -59,6 +62,14 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'cnpj') {
+      // Máscara automática + aviso se exceder 14 dígitos
+      const raw = value.replace(/\D/g, '');
+      setCnpjOverflow(raw.length > 14);
+      setFormData(prev => ({ ...prev, cnpj: formatCnpj(raw) }));
+      setFormError('');
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
     setFormError('');
     if (name === 'square_id') {
@@ -71,6 +82,11 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
     e.preventDefault();
     if (!formData.name || !formData.address_street || !formData.address_number || !formData.address_neighborhood) {
       setFormError('Nome, rua, número e bairro são obrigatórios');
+      return;
+    }
+    // Trava do CNPJ: 14 dígitos (com ou sem máscara) — mesmo aviso do campo
+    if (!isCnpjValid(formData.cnpj, cnpjOverflow)) {
+      setFormError('CNPJ inválido: deve ter 14 dígitos — verifique o número');
       return;
     }
 
@@ -133,6 +149,9 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
     }
   };
 
+  // Feedback em tempo real do CNPJ (mesmo padrão do cadastro de estabelecimento público)
+  const cnpjHint = getCnpjHint(formData.cnpj, cnpjOverflow);
+
   return (
     <Modal onClose={onClose}>
       <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -156,7 +175,15 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <FormField label="CNPJ">
-            <input type="text" name="cnpj" value={formData.cnpj} onChange={handleChange} style={inputStyle} placeholder="00.000.000/0001-00" />
+            <input type="text" name="cnpj" inputMode="numeric" maxLength={18}
+              value={formData.cnpj} onChange={handleChange}
+              style={{ ...inputStyle, ...(cnpjHint ? { borderColor: cnpjHint.ok ? '#22c55e' : '#ef4444' } : {}) }}
+              placeholder="00.000.000/0001-00" />
+            {cnpjHint && (
+              <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', marginBottom: 0, color: cnpjHint.ok ? '#16a34a' : '#dc2626' }}>
+                {cnpjHint.ok ? '✓' : '⚠'} {cnpjHint.text}
+              </p>
+            )}
           </FormField>
           <FormField label="Telefone">
             <input type="text" name="phone" value={formData.phone} onChange={handleChange} style={inputStyle} placeholder="(53) 99999-9999" />

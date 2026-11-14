@@ -1,4 +1,5 @@
 import React from 'react';
+import CnpjField from '@/components/CnpjField';
 
 const EditTenantModal = ({ editingTenant, tenantEditForm, tenantEditLoading, onClose, onSubmit, onFormChange }) => {
   return (
@@ -82,10 +83,9 @@ const EditTenantModal = ({ editingTenant, tenantEditForm, tenantEditLoading, onC
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
                 CNPJ
               </label>
-              <input
-                type="text"
+              <CnpjField
                 value={tenantEditForm.cnpj}
-                onChange={(e) => onFormChange(prev => ({ ...prev, cnpj: e.target.value }))}
+                onChange={(v) => onFormChange(prev => ({ ...prev, cnpj: v }))}
                 style={{ width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>

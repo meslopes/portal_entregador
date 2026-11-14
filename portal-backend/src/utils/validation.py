@@ -131,6 +131,27 @@ def validate_request(schema: Schema, data: dict[str, Any]) -> dict[str, Any]:
     return validated
 
 
+def normalize_cnpj(value) -> tuple[str | None, str | None]:
+    """
+    Valida e normaliza CNPJ para gravação segura no banco.
+
+    Aceita com ou sem máscara, exige 14 dígitos e devolve no formato
+    XX.XXX.XXX/XXXX-XX (18 caracteres — cabe em db.String(18)).
+    Isso evita o 500 StringDataRightTruncation quando o usuário digita
+    CNPJ maior que a coluna.
+
+    Returns:
+        (cnpj_formatado, None) se válido/ausente, ou (None, mensagem_de_erro).
+    """
+    if not value:
+        return None, None
+    digits = re.sub(r'\D', '', str(value))
+    if len(digits) != 14:
+        return None, 'CNPJ inválido: deve ter 14 dígitos (com ou sem máscara)'
+    formatted = f'{digits[:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:]}'
+    return formatted, None
+
+
 # ============================================================
 # SCHEMAS PRÉ-DEFINIDOS PARA ENDPOINTS COMUNS
 # ============================================================

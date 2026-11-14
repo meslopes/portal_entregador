@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
+import { isCnpjValid } from '@/lib/cnpj';
 import {
   OverviewTab, TenantsTab, UsersTab, PendingTab, AdminsTab,
   PlatformHeader, TabNavigation, LoadingPage, DashboardModals
@@ -148,6 +149,11 @@ const PlatformDashboardPage = () => {
 
   const handleCreateTenant = async (e) => {
     e.preventDefault();
+    // Trava do CNPJ: 14 dígitos (com ou sem máscara)
+    if (!isCnpjValid(tenantFormData.cnpj)) {
+      showToast('CNPJ inválido: deve ter 14 dígitos — verifique o número', 'error');
+      return;
+    }
     setCreateTenantLoading(true);
     try {
       await api.post('/api/platform/tenants', tenantFormData);
@@ -183,6 +189,11 @@ const PlatformDashboardPage = () => {
   const handleUpdateTenant = async (e) => {
     e.preventDefault();
     if (!editingTenant) return;
+    // Trava do CNPJ: 14 dígitos (com ou sem máscara)
+    if (!isCnpjValid(tenantEditForm.cnpj)) {
+      showToast('CNPJ inválido: deve ter 14 dígitos — verifique o número', 'error');
+      return;
+    }
     setTenantEditLoading(true);
     try {
       await api.put(`/api/platform/tenants/${editingTenant.id}`, tenantEditForm);

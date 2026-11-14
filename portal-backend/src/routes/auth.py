@@ -358,15 +358,12 @@ def register_client():
         if len(phone_digits) not in (10, 11):
             return jsonify({'error': 'Telefone inválido: informe 10 ou 11 dígitos'}), 400
 
-        # Validar e normalizar CNPJ: exige 14 dígitos (aceita com ou sem máscara)
-        # e grava formatado (XX.XXX.XXX/XXXX-XX = 18 chars) para caber na coluna
-        if cnpj:
-            cnpj_digits = re.sub(r'\D', '', str(cnpj))
-            if len(cnpj_digits) != 14:
-                return jsonify({'error': 'CNPJ inválido: deve ter 14 dígitos (com ou sem máscara)'}), 400
-            cnpj = f'{cnpj_digits[:2]}.{cnpj_digits[2:5]}.{cnpj_digits[5:8]}/{cnpj_digits[8:12]}-{cnpj_digits[12:]}'
-        else:
-            cnpj = None
+        # Validar e normalizar CNPJ (14 dígitos, grava formatado — ver utils/validation.py)
+        from src.utils.validation import normalize_cnpj
+
+        cnpj, cnpj_err = normalize_cnpj(cnpj)
+        if cnpj_err:
+            return jsonify({'error': cnpj_err}), 400
 
         # Validar força da senha
         from src.utils.auth import validate_password
