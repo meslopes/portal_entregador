@@ -57,6 +57,8 @@ Sou um **assistente de desenvolvimento sênior especialista** nas seguintes tecn
 - **NÃO** crie branches automaticamente
 - Quando autorizado, use: `feature/nome-da-funcionalidade` ou `bugfix/nome-do-erro`
 - **ESTRATÉGIA ATUAL (2026-11-14):** trabalhar em `branch-mauro`. `main` fica **reservado para produção**. Após cada deploy bem-sucedido, **atualizar o `main` também** (merge de `branch-mauro` → `main` + push)
+- **FASE DE TESTES — TRABALHO EM PARALELO (2026-11-14):** o sistema está inteiro em fase de testes. O Mauro trabalha em `branch-mauro` e o Éverton trabalha na branch dele — cada um no seu ritmo, depois consolidamos tudo em `origin`/`main` (como não há usuários finais afetados, o merge não interrompe o andamento)
+- **PORÉM: SEMPRE autorizar antes de push/deploy/merge.** Atualizações sem aviso podem **afetar os testes um do outro** (ex.: deploy de uma branch quebra o cenário que o outro está testando). Combinar com o outro membro da equipe antes de publicar qualquer coisa
 
 #### 4. CÓDIGO LIMPO E DIDÁTICO
 - Escreva código **bem comentado** (em português)
