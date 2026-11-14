@@ -40,11 +40,12 @@ Sou um **assistente de desenvolvimento sênior especialista** nas seguintes tecn
 
 ### Regras de Conduta
 
-#### 1. PROIBIDO DEPLOYS E PUSHS AUTOMÁTICOS
-- **NUNCA** faça `git push` automaticamente
-- **NUNCA** faça deploy automático
+#### 1. PROIBIDO PUSHS E DEPLOYS SEM AUTORIZAÇÃO
+- **NUNCA** faça `git push` sem autorização explícita do Mauro
+- **NUNCA** faça deploy sem autorização explícita do Mauro
 - **SEMPRE** sugira o commit e espere autorização
-- Após autorização, forneça os comandos git completos
+- **Após autorização, EXECUTE você mesmo** os comandos de commit/push/deploy (não apenas forneça os comandos para o usuário digitar)
+- Deploy "automático" = executado pela IA de ponta a ponta, sempre que o Mauro autorizar. Ver **Procedimento de Deploy** abaixo
 
 #### 2. COMMITS
 - **Pode agrupar** múltiplas alterações em um único commit quando faz sentido
@@ -136,6 +137,38 @@ Se qualquer item falhar, corrijo antes de seguir.
 - **NUNCA** commitar se houver conflitos não resolvidos
 - **SEMPRE** verificar se a mudança não quebra funcionalidade existente
 - O resultado do checklist deve ser mostrado junto com a sugestão de commit
+
+### Procedimento de Deploy (Oficial)
+
+Após autorização do Mauro, a IA executa o deploy de ponta a ponta — nunca apenas entrega comandos para o usuário digitar.
+
+**Antes de tudo:** git sincronizado **NÃO** significa site atualizado. O git integration do Vercel está **quebrado** (dispara deploys no projeto errado `portal-entregador` e eles ficam *Canceled*). Por isso o deploy é sempre executado manualmente via CLI, abaixo.
+
+**FRONTEND (Vercel) — quando houver mudança no frontend:**
+1. `cd portal-frontend`
+2. `npx vercel --prod` (projeto **`portal-frontend`** / equipe **`muvy`**)
+3. `npx vercel inspect portal-entregador-gamma.vercel.app` — **obrigatório**: confirmar que o deployment exibido é o recém-criado
+4. Site oficial do usuário: **`https://portal-entregador-gamma.vercel.app`**
+5. O domínio gamma é **domínio do projeto** e aponta automaticamente para o deploy de produção mais recente (desde 2026-11-14). O `vercel alias set` **não é mais necessário** — se o `inspect` mostrar deployment antigo, reportar o problema em vez de reportar "no ar"
+6. Hard refresh no navegador do usuário: `Ctrl+Shift+R`
+
+**BACKEND (Cloud Run) — quando houver mudança no backend:**
+1. `cd portal-backend` (ou raiz do repo)
+2. `gcloud run deploy muvlog-api --source portal-backend --region us-central1 --project project-0799c4fd-82a2-49a0-b7d`
+3. Health: `GET https://muvlog-api-890250693883.us-central1.run.app/api/health` deve retornar `200`
+4. Env/secrets **preservados** da revisão anterior (não precisa re-passar). Se precisar mexer em env/secret: `gcloud run services update muvlog-api --region us-central1 --set-secrets ...`
+
+**ORDEM APÓS AUTORIZAÇÃO:**
+```
+git push origin <branch>
+→ deploy Vercel (--prod) [se frontend mudou]
+→ vercel inspect gamma (confirmar apontamento)
+→ deploy Cloud Run [se backend mudou]
+→ health check + teste no navegador EM PRODUÇÃO
+→ só então reportar "no ar" ao usuário
+```
+
+**Checklist anti-confusão:** quando o usuário disser "ainda não funcionou" após um fix, verificar primeiro deploy/alias/domínio antes de suspeitar do código.
 
 ### Auditoria de Segurança — Itens Pendentes (05/09/2026)
 
@@ -304,5 +337,11 @@ cd portal-backend && python -c "from src.main import app; print('OK')"
 - **Quando usar Low/Medium:** Ajustes de UI, textos, correções simples
 - **Economia burra:** Usar low o tempo todo gasta mais créditos no total por causa do retrabalho
 - **Objetivo:** Menos erros = menos retrabalho = menos créditos gastos = mais eficiência
+
+#### 10. FONTE DE VERDADE
+- **Este documento + `MEMORY.md`** são a fonte oficial de regras e procedimentos
+- `README.md`, `AGENTS.md` e demais docs podem estar **desatualizados** — NUNCA confiar sem verificar no código/infra real
+- Em caso de conflito entre documentação, vale este documento + `MEMORY.md`
+- Após qualquer procedimento novo validado (ex.: deploy, integração), **atualizar este documento** para não voltar a trabalhar com informação inverídica
 
 ### FIM DAS REGRAS
