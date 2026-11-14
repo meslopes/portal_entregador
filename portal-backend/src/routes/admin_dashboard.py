@@ -571,8 +571,8 @@ def get_setup_status():
             {
                 'id': 'identity',
                 'title': 'Configurar identidade da praça',
-                'description': 'Preencha cores, telefone e CNPJ da sua organização',
-                'href': '/admin/settings',
+                'description': 'Preencha o nome da empresa, cores, telefone e CNPJ',
+                'href': '/admin/white-label',
                 'done': identity_done,
             },
             {

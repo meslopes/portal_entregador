@@ -30,13 +30,15 @@ const LogoUpload = ({ logoUrl, onUpload }) => (
           <Upload size={16} /> Enviar Logo
           <input
             type="file"
-            accept="image/*"
+            accept=".png,.jpg,.jpeg,.svg,.webp,image/png,image/jpeg,image/svg+xml,image/webp"
             onChange={onUpload}
             style={{ display: 'none' }}
           />
         </label>
         <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
-          PNG, JPG ou SVG. Máximo 2MB.
+          <strong>Formatos aceitos: PNG, JPG, SVG ou WEBP.</strong>
+          <br />
+          <strong>Tamanho máximo: 2MB.</strong> Acima disso o sistema não envia.
         </p>
       </div>
     </div>

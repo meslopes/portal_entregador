@@ -26,106 +26,55 @@ admin_tenants_squares_bp = Blueprint('tenants_squares', __name__)
 
 
 @admin_tenants_squares_bp.route('/tenant/logo', methods=['POST'])
-
 @jwt_required()
-
 @admin_required
-
 def upload_tenant_logo():
+    """Faz upload do logo do tenant para o Supabase Storage.
 
-    """Faz upload do logo do tenant"""
-
+    Recebe a imagem em base64 e devolve a URL pública — o mesmo padrão
+    das fotos de prova de entrega. Valida tipo e tamanho antes de enviar.
+    """
     try:
-
-
-
-        import base64
-        import os
-
-
+        from src.utils.supabase_storage import upload_logo
+        from src.utils.validation import Schema, ValidationError, validate_request
 
         user = get_current_user()
-
         if not user or not user.tenant_id:
-
             return jsonify({'error': 'Usuário não pertence a nenhuma organização'}), 400
 
-
-
         tenant = Tenant.query.get(user.tenant_id)
-
         if not tenant:
-
             return jsonify({'error': 'Organização não encontrada'}), 404
 
+        schema = Schema({
+            'logo_data': {'type': str, 'required': True, 'max_length': 4 * 1024 * 1024},
+            'filename': {'type': str, 'required': False, 'max_length': 255},
+        })
+        try:
+            data = validate_request(schema, request.get_json() or {})
+        except ValidationError as e:
+            return jsonify({'error': '; '.join(e.errors)}), 400
 
-
-        data = request.get_json()
-
-        logo_data = data.get('logo_data')  # Base64 encoded image
-
-        filename = data.get('filename', 'logo.png')
-
-
-
-        if not logo_data:
-
-            return jsonify({'error': 'Dados do logo são obrigatórios'}), 400
-
-
-
-        # Criar diretório de uploads se não existir
-
-        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'logos')
-
-        os.makedirs(uploads_dir, exist_ok=True)
-
-
-
-        # Salvar arquivo
-
-        if ',' in logo_data:
-
-            logo_data = logo_data.split(',')[1]
-
-
-
-        filepath = os.path.join(uploads_dir, f"tenant_{tenant.id}_{filename}")
-
-        with open(filepath, 'wb') as f:
-
-            f.write(base64.b64decode(logo_data))
-
-
-
-        # Atualizar URL do logo no tenant
-
-        logo_url = f"/uploads/logos/tenant_{tenant.id}_{filename}"
+        # Upload no Supabase Storage (valida tipo e tamanho — ValueError com
+        # mensagem amigável para mostrar direto ao usuário)
+        try:
+            logo_url = upload_logo(data['logo_data'], tenant.id, data.get('filename') or 'logo')
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
 
         tenant.logo_url = logo_url
-
         tenant.updated_at = datetime.now(timezone.utc)
-
         db.session.commit()
 
-
-
         return jsonify({
-
             'message': 'Logo atualizado com sucesso',
-
             'logo_url': logo_url
-
         }), 200
 
     except Exception as e:
-
         db.session.rollback()
-
+        logger.error(f"Erro no upload do logo: {e}")
         return jsonify({'error': str(e)}), 500
-
-
-
 
 
 @admin_tenants_squares_bp.route('/tenants', methods=['POST'])

@@ -4,6 +4,7 @@ import {
   ArrowLeft, Save, Globe, FileText, Loader2
 } from 'lucide-react';
 import { adminService } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext.hooks';
 import LogoUpload from './white-label/LogoUpload';
 import ColorPicker from './white-label/ColorPicker';
 import SectionCard from './white-label/SectionCard';
@@ -22,6 +23,7 @@ const labelStyle = {
 
 const AdminWhiteLabelPage = () => {
   const navigate = useNavigate();
+  const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -77,6 +79,8 @@ const AdminWhiteLabelPage = () => {
 
       const data = await adminService.updateTenantSettings(formData);
       setTenant(data.tenant);
+      // Atualiza o AuthContext para o nome/cores mudarem no cabeçalho na hora
+      updateUser({ ...(user || {}), tenant: data.tenant });
       setSuccess('Configurações salvas com sucesso!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -91,14 +95,38 @@ const AdminWhiteLabelPage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Permite escolher o mesmo arquivo de novo depois de corrigir
+    e.target.value = '';
+
+    // Valida ANTES de enviar — com mensagem clara do que é aceito
+    const tiposAceitos = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'];
+    const limiteBytes = 2 * 1024 * 1024; // 2MB
+
+    if (!tiposAceitos.includes(file.type)) {
+      setError(`Formato não aceito ("${file.name}"). Use PNG, JPG, SVG ou WEBP.`);
+      return;
+    }
+    if (file.size > limiteBytes) {
+      const tamanhoMb = (file.size / (1024 * 1024)).toFixed(1);
+      setError(`Imagem muito grande (${tamanhoMb}MB). Tamanho máximo permitido: 2MB.`);
+      return;
+    }
+
     try {
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const base64 = event.target.result;
-        const data = await adminService.uploadTenantLogo(base64, file.name);
-        setTenant(prev => ({ ...prev, logo_url: data.logo_url }));
-        setSuccess('Logo atualizado com sucesso!');
-        setTimeout(() => setSuccess(''), 3000);
+        try {
+          const base64 = event.target.result;
+          const data = await adminService.uploadTenantLogo(base64, file.name);
+          setTenant(prev => ({ ...prev, logo_url: data.logo_url }));
+          // Atualiza o contexto para o logo novo aparecer no cabeçalho imediatamente
+          updateUser({ ...(user || {}), tenant: { ...(user?.tenant || {}), logo_url: data.logo_url } });
+          setSuccess('Logo atualizado com sucesso!');
+          setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+          // Mostra a mensagem do servidor (ex.: tamanho/formato) em vez de erro genérico
+          setError(err?.response?.data?.error || 'Erro ao fazer upload do logo');
+        }
       };
       reader.readAsDataURL(file);
     } catch (err) {

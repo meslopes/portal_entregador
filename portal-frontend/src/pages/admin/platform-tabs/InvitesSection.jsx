@@ -16,7 +16,7 @@ const InvitesSection = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ tenant_id: '', email: '', expires_days: 7 });
+  const [form, setForm] = useState({ tenant_id: '', new_company_name: '', email: '', expires_days: 7 });
 
   const loadInvites = async () => {
     try {
@@ -46,14 +46,33 @@ const InvitesSection = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!form.tenant_id) {
-      showToast('Selecione a empresa (tenant)', 'error');
-      return;
-    }
-    setCreating(true);
+
     try {
+      let tenantId = form.tenant_id;
+
+      // Opção "Nova empresa": cria o tenant com o nome digitado e usa o id novo
+      if (tenantId === 'new') {
+        const nome = form.new_company_name.trim();
+        if (!nome) {
+          showToast('Digite o nome da empresa', 'error');
+          return;
+        }
+        const tenantResp = await api.post('/api/platform/tenants', { name: nome });
+        tenantId = tenantResp.data.tenant?.id || tenantResp.data.id;
+        if (!tenantId) {
+          showToast('Erro ao criar a empresa', 'error');
+          return;
+        }
+      }
+
+      if (!tenantId) {
+        showToast('Selecione a empresa ou digite um nome novo', 'error');
+        return;
+      }
+
+      setCreating(true);
       const payload = {
-        tenant_id: parseInt(form.tenant_id, 10),
+        tenant_id: parseInt(tenantId, 10),
         expires_days: parseInt(form.expires_days, 10) || 7,
       };
       if (form.email.trim()) payload.email = form.email.trim();
@@ -67,8 +86,9 @@ const InvitesSection = () => {
 
       showToast('Convite criado! Link copiado para a área de transferência.', 'success');
       setShowForm(false);
-      setForm({ tenant_id: '', email: '', expires_days: 7 });
+      setForm({ tenant_id: '', new_company_name: '', email: '', expires_days: 7 });
       loadInvites();
+      loadTenants();
     } catch (err) {
       showToast(err?.response?.data?.error || 'Erro ao criar convite', 'error');
     } finally {
@@ -128,7 +148,7 @@ const InvitesSection = () => {
       {showForm && (
         <form onSubmit={handleCreate} style={styles.form}>
           <div style={styles.field}>
-            <label style={styles.label}>Empresa (tenant) *</label>
+            <label style={styles.label}>Empresa *</label>
             <select
               value={form.tenant_id}
               onChange={(e) => setForm({ ...form, tenant_id: e.target.value })}
@@ -136,11 +156,26 @@ const InvitesSection = () => {
               style={styles.input}
             >
               <option value="">Selecione...</option>
+              <option value="new">＋ Nova empresa (digitar nome)</option>
               {tenants.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
           </div>
+          {form.tenant_id === 'new' && (
+            <div style={styles.field}>
+              <label style={styles.label}>Nome da empresa *</label>
+              <input
+                type="text"
+                value={form.new_company_name}
+                onChange={(e) => setForm({ ...form, new_company_name: e.target.value })}
+                placeholder="Ex.: Expresso Zona Sul"
+                maxLength={200}
+                required
+                style={styles.input}
+              />
+            </div>
+          )}
           <div style={styles.field}>
             <label style={styles.label}>Email pré-definido (opcional)</label>
             <input
