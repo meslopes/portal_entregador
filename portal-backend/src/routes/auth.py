@@ -139,6 +139,54 @@ def check_email():
     return jsonify({'available': not bool(exists)}), 200
 
 
+def _make_status_token(user):
+    """
+    Emite um token JWT leve para o recém-cadastrado consultar o próprio
+    status de aprovação sem estar logado.
+
+    Necessário porque usuário INACTIVE (pendente) NÃO recebe token de acesso —
+    sem isto, a página de "aguardando aprovação" não consegue consultar o status
+    e acabava interpretando o 401 de /profile como "cadastro rejeitado".
+    O claim 'purpose' impede que o token seja usado como sessão normal
+    (o portão de status em utils/tenant.py bloqueia tokens com purpose).
+    """
+    from datetime import timedelta
+
+    return create_access_token(
+        identity=str(user.id),
+        expires_delta=timedelta(days=30),
+        additional_claims={'purpose': 'registration_status'},
+    )
+
+
+@auth_bp.route('/registration-status', methods=['GET'])
+@register_rate_limit
+def registration_status():
+    """
+    Consulta pública do status de um cadastro: PENDING / APPROVED / REJECTED.
+
+    Autenticação: o status_token emitido no registro (query param 'token').
+    REJECTED = usuário inexistente ou soft-deleted (rejeição apaga a conta).
+    """
+    from flask_jwt_extended import decode_token
+
+    token = request.args.get('token', '')
+    try:
+        payload = decode_token(token)
+        if payload.get('purpose') != 'registration_status':
+            return jsonify({'error': 'Token inválido'}), 400
+        user_id = int(payload['sub'])
+    except Exception:
+        return jsonify({'error': 'Token inválido'}), 400
+
+    user = User.query.get(user_id)
+    if not user or user.deleted_at:
+        return jsonify({'status': 'REJECTED'}), 200
+    if user.status == UserStatus.ACTIVE:
+        return jsonify({'status': 'APPROVED'}), 200
+    return jsonify({'status': 'PENDING'}), 200
+
+
 @auth_bp.route('/register-push-token', methods=['POST'])
 @jwt_required()
 def register_push_token_auth():
@@ -296,12 +344,13 @@ def register():
         except Exception:
             pass
 
-        # NÃO emitir token para usuários INACTIVE (pendentes de aprovação)
+        # NÃO emitir token de acesso para usuários INACTIVE (pendentes de aprovação)
         if user.status == UserStatus.INACTIVE:
             db.session.commit()
             return jsonify({
                 'message': 'Cadastro realizado com sucesso. Aguarde aprovação do administrador.',
-                'pending_approval': True
+                'pending_approval': True,
+                'status_token': _make_status_token(user)
             }), 201
 
         access_token = create_access_token(identity=str(user.id))
@@ -460,11 +509,12 @@ def register_client():
         except Exception:
             pass  # Notificação é secundária — não bloqueia cadastro
 
-        # NÃO emitir token para usuários INACTIVE (pendentes de aprovação)
+        # NÃO emitir token de acesso para usuários INACTIVE (pendentes de aprovação)
         if user.status == UserStatus.INACTIVE:
             return jsonify({
                 'message': 'Conta criada com sucesso. Aguarde aprovação do administrador.',
-                'pending_approval': True
+                'pending_approval': True,
+                'status_token': _make_status_token(user)
             }), 201
 
         access_token = create_access_token(identity=str(user.id))

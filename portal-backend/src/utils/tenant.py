@@ -100,6 +100,9 @@ def register_status_jwt_gate(jwt):
     def _token_de_usuario_bloqueado(jwt_header, jwt_payload):
         # Retorna True = token tratado como revogado (a resposta vem no revoked_token_loader)
         from src.models.portal_models import UserStatus
+        # Tokens de propósito especial (ex.: status de cadastro) não servem de sessão
+        if jwt_payload.get('purpose'):
+            return True
         try:
             user = db.session.get(User, int(jwt_payload['sub']))
         except (ValueError, TypeError, KeyError):

@@ -221,6 +221,12 @@ const RegisterPage = () => {
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(data.user)));
       }
+      // Guardar o status_token para a tela de aguardo consultar o status
+      // mesmo sem login (sobrevive a refresh dentro da aba)
+      try {
+        if (data.status_token) sessionStorage.setItem('registration_status_token', data.status_token);
+        else sessionStorage.removeItem('registration_status_token');
+      } catch { /* sessionStorage indisponível */ }
       // Nao fazer login - redirecionar para tela de aguardo
       navigate('/pending-approval');
     } catch (err) {

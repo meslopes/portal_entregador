@@ -7,6 +7,14 @@ const PendingApprovalPage = () => {
   const [status, setStatus] = useState('pending'); // pending, approved, rejected
   const [checking, setChecking] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(false);
+  // Token de status emitido no cadastro (usuário pendente NÃO tem token de acesso)
+  const [statusToken] = useState(() => {
+    try {
+      return sessionStorage.getItem('registration_status_token') || '';
+    } catch {
+      return '';
+    }
+  });
   const navigate = useNavigate();
   const intervalRef = useRef(null);
 
@@ -28,26 +36,31 @@ const PendingApprovalPage = () => {
     setupPush();
   }, []);
 
-  // Polling para verificar status do cadastro
+  // Polling para verificar status do cadastro (via status_token — sem login)
   useEffect(() => {
     const checkStatus = async () => {
+      // Sem token de status não dá para consultar sem login — fica em "pendente"
+      if (!statusToken) {
+        setChecking(false);
+        return;
+      }
       try {
-        const res = await api.get('/api/user/profile');
-        const user = res.data;
-        if (user.status === 'ACTIVE') {
+        const res = await api.get(`/api/auth/registration-status?token=${encodeURIComponent(statusToken)}`);
+        const s = res.data?.status;
+        if (s === 'APPROVED') {
           setStatus('approved');
           playSound();
           clearInterval(intervalRef.current);
           // Redirecionar para login após 3 segundos
           setTimeout(() => navigate('/login'), 3000);
-        }
-      } catch (err) {
-        // Se retornar 401/403, pode ter sido rejeitado (usuário deletado)
-        if (err.response?.status === 401 || err.response?.status === 403) {
+        } else if (s === 'REJECTED') {
           setStatus('rejected');
           playSound();
           clearInterval(intervalRef.current);
         }
+        // PENDING = continua aguardando — só mostramos "rejeitado" com confirmação do servidor
+      } catch {
+        // Erro de rede ou token inválido NÃO é rejeição — mantém "pendente"
       } finally {
         setChecking(false);
       }
@@ -61,7 +74,7 @@ const PendingApprovalPage = () => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [navigate]);
+  }, [navigate, statusToken]);
 
   // Escutar mensagens em foreground (quando o app está aberto)
   useEffect(() => {
