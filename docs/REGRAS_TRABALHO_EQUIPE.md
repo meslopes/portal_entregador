@@ -56,6 +56,7 @@ Sou um **assistente de desenvolvimento sênior especialista** nas seguintes tecn
 - **Aguarde autorização** para criar branches
 - **NÃO** crie branches automaticamente
 - Quando autorizado, use: `feature/nome-da-funcionalidade` ou `bugfix/nome-do-erro`
+- **ESTRATÉGIA ATUAL (2026-11-14):** trabalhar em `branch-mauro`. `main` fica **reservado para produção**. Após cada deploy bem-sucedido, **atualizar o `main` também** (merge de `branch-mauro` → `main` + push)
 
 #### 4. CÓDIGO LIMPO E DIDÁTICO
 - Escreva código **bem comentado** (em português)
@@ -160,11 +161,12 @@ Após autorização do Mauro, a IA executa o deploy de ponta a ponta — nunca a
 
 **ORDEM APÓS AUTORIZAÇÃO:**
 ```
-git push origin <branch>
+git push origin branch-mauro
 → deploy Vercel (--prod) [se frontend mudou]
 → vercel inspect gamma (confirmar apontamento)
 → deploy Cloud Run [se backend mudou]
 → health check + teste no navegador EM PRODUÇÃO
+→ merge branch-mauro → main + git push origin main (atualizar produção)
 → só então reportar "no ar" ao usuário
 ```
 
