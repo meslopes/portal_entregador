@@ -77,34 +77,6 @@ const RegisterPage = () => {
     return null;
   };
 
-  // Carregar praças e detectar localização
-  useEffect(() => {
-    // Verificar se veio de um link de convite (?square=X)
-    const inviteSquareId = searchParams.get('square');
-
-    fetch(`${API_BASE_URL}/api/auth/squares/public`)
-      .then(res => res.json())
-      .then(data => {
-        const loadedSquares = data.squares || [];
-        setSquares(loadedSquares);
-
-        // Se link de convite, selecionar direto
-        if (inviteSquareId) {
-          const found = loadedSquares.find(s => s.id === parseInt(inviteSquareId));
-          if (found) {
-            setFormData(prev => ({ ...prev, square_id: String(found.id) }));
-            setNearestSquare(found);
-            setLocationStatus('found');
-            return;
-          }
-        }
-
-        // Caso contrário, tentar GPS
-        detectNearestSquare(loadedSquares);
-      })
-      .catch(() => {});
-  }, [searchParams, detectNearestSquare]);
-
   // Detectar praça mais próxima via GPS
   const detectNearestSquare = useCallback(async (loadedSquares) => {
     if (!loadedSquares || loadedSquares.length === 0) return;
@@ -159,6 +131,34 @@ const RegisterPage = () => {
       { timeout: 10000, enableHighAccuracy: false }
     );
   }, []);
+
+  // Carregar praças e detectar localização
+  useEffect(() => {
+    // Verificar se veio de um link de convite (?square=X)
+    const inviteSquareId = searchParams.get('square');
+
+    fetch(`${API_BASE_URL}/api/auth/squares/public`)
+      .then(res => res.json())
+      .then(data => {
+        const loadedSquares = data.squares || [];
+        setSquares(loadedSquares);
+
+        // Se link de convite, selecionar direto
+        if (inviteSquareId) {
+          const found = loadedSquares.find(s => s.id === parseInt(inviteSquareId));
+          if (found) {
+            setFormData(prev => ({ ...prev, square_id: String(found.id) }));
+            setNearestSquare(found);
+            setLocationStatus('found');
+            return;
+          }
+        }
+
+        // Caso contrário, tentar GPS
+        detectNearestSquare(loadedSquares);
+      })
+      .catch(() => {});
+  }, [searchParams, detectNearestSquare]);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
