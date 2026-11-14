@@ -45,6 +45,11 @@ def create_app(config_name=None):
     )
     jwt = JWTManager(app)
 
+    # Portão central de status: bloqueia tokens de usuários INACTIVE/SUSPENDED/deletados
+    from src.utils.tenant import register_status_jwt_gate
+
+    register_status_jwt_gate(jwt)
+
     # Registrar blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(driver_bp, url_prefix='/api/driver')

@@ -1,12 +1,19 @@
 import React from 'react';
-import { Trash2, Edit, Users } from 'lucide-react';
+import { Trash2, Edit, Users, Check, X } from 'lucide-react';
 
 const cardStyle = {
   background: 'white', borderRadius: '0.75rem', padding: '1.5rem',
   boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
 };
 
-const AdminsTable = ({ admins, onEditUser, onDeleteAdmin }) => {
+// Rótulo e cores do badge de status do admin
+const STATUS_BADGE = {
+  ACTIVE: { label: 'Ativo', background: '#dcfce7', color: '#16a34a' },
+  INACTIVE: { label: 'Pendente', background: '#fef3c7', color: '#b45309' },
+  SUSPENDED: { label: 'Suspenso', background: '#fef2f2', color: '#dc2626' },
+};
+
+const AdminsTable = ({ admins, onEditUser, onDeleteAdmin, onApprove, onReject }) => {
   if (admins.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
@@ -58,19 +65,57 @@ const AdminsTable = ({ admins, onEditUser, onDeleteAdmin }) => {
                   {admin.orders_month}
                 </td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                  <span style={{
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    background: admin.status === 'ACTIVE' ? '#dcfce7' : '#fef2f2',
-                    color: admin.status === 'ACTIVE' ? '#16a34a' : '#dc2626'
-                  }}>
-                    {admin.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
-                  </span>
+                  {(() => {
+                    const badge = STATUS_BADGE[admin.status] || STATUS_BADGE.SUSPENDED;
+                    return (
+                      <span style={{
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        background: badge.background,
+                        color: badge.color
+                      }}>
+                        {badge.label}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    {/* Admin pendente: aprovar / rejeitar (só super admin — ver backend) */}
+                    {admin.status === 'INACTIVE' && onApprove && (
+                      <button
+                        onClick={() => onApprove(admin.id, admin.first_name)}
+                        style={{
+                          padding: '0.375rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          color: '#16a34a'
+                        }}
+                        title="Aprovar (liberar acesso)"
+                      >
+                        <Check size={16} />
+                      </button>
+                    )}
+                    {admin.status === 'INACTIVE' && onReject && (
+                      <button
+                        onClick={() => onReject(admin.id, admin.first_name)}
+                        style={{
+                          padding: '0.375rem',
+                          borderRadius: '0.375rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          color: '#dc2626'
+                        }}
+                        title="Rejeitar cadastro"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                     <button
                       onClick={() => onEditUser(admin)}
                       style={{

@@ -31,6 +31,8 @@ const AdminInvitePage = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  // Conta criada mas pendente de aprovação do super administrador
+  const [created, setCreated] = useState(false);
 
   // Carrega os dados do convite ao abrir a página
   useEffect(() => {
@@ -90,6 +92,12 @@ const AdminInvitePage = () => {
 
       const response = await api.post('/api/auth/invites/accept', payload);
 
+      // Conta nasce pendente de aprovação do super administrador — sem auto-login
+      if (response.data.pending_approval) {
+        setCreated(true);
+        return;
+      }
+
       // Login automático — mesmas chaves e higienização do AuthContext
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.data.user)));
@@ -129,6 +137,26 @@ const AdminInvitePage = () => {
           <h1 style={{ ...styles.title, textAlign: 'center' }}>Convite indisponível</h1>
           <p style={styles.muted}>
             {mensagens[inviteStatus] || inviteError}
+          </p>
+          <button onClick={() => navigate('/login')} style={{ ...styles.button, marginTop: 8 }}>
+            Ir para o login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Conta criada, aguardando aprovação do super administrador ──
+  if (created) {
+    return (
+      <div style={styles.center}>
+        <div style={styles.card}>
+          <ShieldCheck size={40} color="#16a34a" style={{ margin: '0 auto 12px' }} />
+          <h1 style={{ ...styles.title, textAlign: 'center' }}>Conta criada!</h1>
+          <p style={styles.muted}>
+            Sua conta de administrador foi criada, mas precisa da aprovação do{' '}
+            <strong style={{ color: '#111827' }}>super administrador</strong> antes de acessar o painel.
+            Você poderá entrar assim que for liberado.
           </p>
           <button onClick={() => navigate('/login')} style={{ ...styles.button, marginTop: 8 }}>
             Ir para o login

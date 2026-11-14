@@ -11,7 +11,12 @@ from src.models.portal_models import Tenant, User, db
 
 
 def get_current_user():
-    """Obtém o usuário atual a partir do JWT token (cached per request)."""
+    """Obtém o usuário atual a partir do JWT token (cached per request).
+
+    Segurança: usuário soft-deleted, INACTIVE (pendente de aprovação) ou
+    SUSPENDED retorna None — a conta fica inoperante até ser liberada.
+    (O portão principal é o register_status_jwt_gate; aqui é a 2ª camada.)
+    """
     if hasattr(g, '_current_user'):
         return g._current_user
     try:
@@ -21,6 +26,12 @@ def get_current_user():
         if user and getattr(user, 'deleted_at', None):
             g._current_user = None
             return None
+        # Conta pendente de aprovação ou suspensa não deve operar
+        if user is not None and getattr(user, 'status', None) is not None:
+            from src.models.portal_models import UserStatus
+            if user.status in (UserStatus.INACTIVE, UserStatus.SUSPENDED):
+                g._current_user = None
+                return None
         g._current_user = user
         return g._current_user
     except (ValueError, TypeError):
@@ -70,6 +81,48 @@ def check_user_and_tenant_status(user):
             return jsonify({'error': 'Esta organização está desativada. Entre em contato com o suporte.'}), 403
 
     return None
+
+
+def register_status_jwt_gate(jwt):
+    """
+    Portão CENTRAL de status do usuário para toda requisição autenticada.
+
+    Usa o hook token_in_blocklist_loader do Flask-JWT-Extended, executado em
+    TODAS as rotas com @jwt_required() — inclusive as que não chamam
+    check_user_and_tenant_status. Assim, um usuário INACTIVE/SUSPENDED (ou
+    soft-deleted) perde acesso imediatamente, mesmo que o token tenha sido
+    emitido ANTES da mudança de status (tokens vivem 8h).
+
+    Deve ser chamado uma única vez, logo após JWTManager(app).
+    """
+
+    @jwt.token_in_blocklist_loader
+    def _token_de_usuario_bloqueado(jwt_header, jwt_payload):
+        # Retorna True = token tratado como revogado (a resposta vem no revoked_token_loader)
+        from src.models.portal_models import UserStatus
+        try:
+            user = db.session.get(User, int(jwt_payload['sub']))
+        except (ValueError, TypeError, KeyError):
+            return True
+        if not user:
+            return True  # usuário não existe mais (ex.: banco recriado)
+        if getattr(user, 'deleted_at', None):
+            return True  # soft delete
+        return user.status in (UserStatus.INACTIVE, UserStatus.SUSPENDED)
+
+    @jwt.revoked_token_loader
+    def _resposta_usuario_bloqueado(jwt_header, jwt_payload):
+        # Mensagem clara do motivo real (não "token revogado")
+        from src.models.portal_models import UserStatus
+        try:
+            user = db.session.get(User, int(jwt_payload['sub']))
+        except (ValueError, TypeError, KeyError):
+            user = None
+        if user and user.status == UserStatus.INACTIVE:
+            return jsonify({'error': 'Sua conta está pendente de aprovação. Aguarde o administrador liberar seu acesso.'}), 403
+        if user and user.status == UserStatus.SUSPENDED:
+            return jsonify({'error': 'Sua conta foi suspensa. Entre em contato com o administrador.'}), 403
+        return jsonify({'error': 'Token inválido ou usuário não encontrado. Faça login novamente.'}), 401
 
 
 def tenant_required(f):

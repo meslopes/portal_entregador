@@ -1,4 +1,4 @@
-﻿"""Módulo admin_users — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
+"""Módulo admin_users — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import contextlib
@@ -22,6 +22,23 @@ from src.utils.auth import admin_required
 from src.utils.tenant import get_current_tenant_id
 
 admin_users_bp = Blueprint('admin_users', __name__)
+
+
+def _exigir_super_admin_para_admin(user):
+    """
+    Contas do tipo ADMIN só podem ser aprovadas/rejeitadas pelo SUPER administrador.
+    Clientes e entregadores seguem o fluxo normal (admin do tenant aprova).
+    Retorna None se liberado, ou (resposta, código) se bloqueado.
+    """
+    if user.user_type != UserType.ADMIN:
+        return None
+    try:
+        current = User.query.get(int(get_jwt_identity()))
+    except (ValueError, TypeError):
+        current = None
+    if not current or not current.is_super_admin:
+        return jsonify({'error': 'Apenas o super administrador pode aprovar ou rejeitar admins'}), 403
+    return None
 
 
 @admin_users_bp.route('/pending-users', methods=['GET'])
@@ -113,6 +130,11 @@ def approve_user(user_id):
 
             return jsonify({'error': 'Usuário não está pendente'}), 400
 
+        # Admins exigem aprovação do super administrador
+        block = _exigir_super_admin_para_admin(user)
+        if block:
+            return block
+
         # Verificar tenant - admin só aprova usuários do seu tenant ou sem tenant
         tenant_id = get_current_tenant_id()
         if tenant_id and user.tenant_id and user.tenant_id != tenant_id:
@@ -189,6 +211,11 @@ def reject_user(user_id):
 
         if user.status != UserStatus.INACTIVE:
             return jsonify({'error': 'Usuário não está pendente'}), 400
+
+        # Admins exigem aprovação (e rejeição) do super administrador
+        block = _exigir_super_admin_para_admin(user)
+        if block:
+            return block
 
         # Notifica o usuario via Push Notification antes de excluir
         try:
@@ -822,7 +849,7 @@ def create_admin_user():
 
             user_type=UserType.ADMIN,
 
-            status=UserStatus.ACTIVE,
+            status=UserStatus.INACTIVE,
 
             tenant_id=tenant_id
 
@@ -838,7 +865,9 @@ def create_admin_user():
 
         return jsonify({
 
-            'message': 'Admin criado com sucesso',
+            'message': 'Admin criado. Aguardando aprovação do super administrador.',
+
+            'pending_approval': True,
 
             'user': {
 

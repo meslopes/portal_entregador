@@ -100,11 +100,15 @@ def create_admin():
             phone=unique_phone,
             cpf=unique_cpf,
             user_type=UserType.ADMIN,
-            status=UserStatus.ACTIVE
+            status=UserStatus.INACTIVE  # Pendente de aprovação do super administrador
         )
         db.session.add(user)
         db.session.commit()
-        return jsonify({'message': 'Usuário admin criado com sucesso', 'email': email}), 201
+        return jsonify({
+            'message': 'Usuário admin criado. Aguardando aprovação do super administrador.',
+            'email': email,
+            'pending_approval': True
+        }), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -340,6 +344,29 @@ def register_client():
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
             return jsonify({'error': 'Formato de email inválido'}), 400
+
+        # Guardas de tamanho (evita 500 por coluna pequena no banco)
+        if len(email) > 255:
+            return jsonify({'error': 'Email deve ter no máximo 255 caracteres'}), 400
+        if len(establishment_name) > 200:
+            return jsonify({'error': 'Nome do estabelecimento deve ter no máximo 200 caracteres'}), 400
+        if len(address) > 500:
+            return jsonify({'error': 'Endereço deve ter no máximo 500 caracteres'}), 400
+
+        # Validar telefone (10 ou 11 dígitos, aceita com ou sem máscara)
+        phone_digits = re.sub(r'\D', '', phone or '')
+        if len(phone_digits) not in (10, 11):
+            return jsonify({'error': 'Telefone inválido: informe 10 ou 11 dígitos'}), 400
+
+        # Validar e normalizar CNPJ: exige 14 dígitos (aceita com ou sem máscara)
+        # e grava formatado (XX.XXX.XXX/XXXX-XX = 18 chars) para caber na coluna
+        if cnpj:
+            cnpj_digits = re.sub(r'\D', '', str(cnpj))
+            if len(cnpj_digits) != 14:
+                return jsonify({'error': 'CNPJ inválido: deve ter 14 dígitos (com ou sem máscara)'}), 400
+            cnpj = f'{cnpj_digits[:2]}.{cnpj_digits[2:5]}.{cnpj_digits[5:8]}/{cnpj_digits[8:12]}-{cnpj_digits[12:]}'
+        else:
+            cnpj = None
 
         # Validar força da senha
         from src.utils.auth import validate_password
@@ -876,7 +903,7 @@ def get_invite(token):
 @auth_bp.route('/invites/accept', methods=['POST'])
 @register_rate_limit
 def accept_invite():
-    """Aceita um convite e cria a conta do admin (auto-login).
+    """Aceita um convite e cria a conta do admin (pendente de aprovação do super admin).
 
     Body: token, first_name, last_name, password, email (obrigatório se o
     convite não tiver email pré-definido), phone (opcional).
@@ -949,6 +976,7 @@ def accept_invite():
             return jsonify({'error': 'Este convite não está mais disponível'}), 410
 
         # Criar o usuário admin no tenant do convite
+        # Nasce INACTIVE: só o super administrador pode liberar o acesso
         user = User(
             tenant_id=invite.tenant_id,
             email=email,
@@ -957,20 +985,17 @@ def accept_invite():
             last_name=data['last_name'],
             phone=data.get('phone') or None,
             user_type=UserType.ADMIN,
-            status=UserStatus.ACTIVE,
+            status=UserStatus.INACTIVE,
         )
         db.session.add(user)
         db.session.flush()
         invite.used_by_user_id = user.id
         db.session.commit()
 
-        access_token = create_access_token(identity=str(user.id))
-        user_data = _build_user_response(user)
-
+        # NÃO emitir token: conta pendente de aprovação do super administrador
         return jsonify({
-            'message': 'Conta criada com sucesso',
-            'access_token': access_token,
-            'user': user_data,
+            'message': 'Conta criada com sucesso. Aguardando aprovação do super administrador.',
+            'pending_approval': True,
         }), 201
 
     except Exception as e:

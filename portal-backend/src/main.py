@@ -51,6 +51,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Inicializa extensões
 jwt = JWTManager(app)
 
+# Portão central de status: bloqueia tokens de usuários INACTIVE/SUSPENDED/deletados
+# em TODAS as rotas @jwt_required() (ver src/utils/tenant.py)
+from src.utils.tenant import register_status_jwt_gate
+
+register_status_jwt_gate(jwt)
+
 # Rate Limiting: protege contra abuso
 from src.utils.rate_limit import limiter
 

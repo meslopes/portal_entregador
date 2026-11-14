@@ -6,6 +6,26 @@ import { sanitizeUserForStorage } from '@/lib/utils';
 import StepIndicator from './client-register/StepIndicator';
 import BrandingSide from './client-register/BrandingSide';
 
+// --- Validações em tempo real (espelham o backend: src/utils/auth.py validate_password) ---
+
+// Formata o CNPJ enquanto digita: XX.XXX.XXX/XXXX-XX (aceita só dígitos, máx. 14)
+const formatCnpj = (digits) => {
+  const d = digits.replace(/\D/g, '').slice(0, 14);
+  let out = d.slice(0, 2);
+  if (d.length > 2) out += '.' + d.slice(2, 5);
+  if (d.length > 5) out += '.' + d.slice(5, 8);
+  if (d.length > 8) out += '/' + d.slice(8, 12);
+  if (d.length > 12) out += '-' + d.slice(12, 14);
+  return out;
+};
+
+// Regras da senha — usadas no checklist ao vivo e na validação de etapa
+const passwordChecks = (pwd) => [
+  { ok: pwd.length >= 8, text: 'Pelo menos 8 caracteres' },
+  { ok: /[a-zA-Z]/.test(pwd), text: 'Pelo menos 1 letra' },
+  { ok: /[0-9]/.test(pwd), text: 'Pelo menos 1 número' },
+];
+
 const ClientRegisterPage = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -25,25 +45,46 @@ const ClientRegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
+  // Aviso quando o usuário cola/digita CNPJ com mais de 14 dígitos (a máscara corta, mas avisamos)
+  const [cnpjOverflow, setCnpjOverflow] = useState(false);
 
   const { error, clearError } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    if (name === 'cnpj') {
+      const rawDigits = value.replace(/\D/g, '');
+      setCnpjOverflow(rawDigits.length > 14);
+      setFormData(prev => ({ ...prev, cnpj: formatCnpj(rawDigits) }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     clearError();
     setLocalError('');
   };
 
   const validateStep = () => {
-    if (step === 1 && (!formData.name || !formData.phone)) {
-      setLocalError('Nome do estabelecimento e telefone são obrigatórios');
-      return false;
+    if (step === 1) {
+      if (!formData.name || !formData.phone) {
+        setLocalError('Nome do estabelecimento e telefone são obrigatórios');
+        return false;
+      }
+      const cnpjDigits = formData.cnpj.replace(/\D/g, '');
+      if (cnpjOverflow || (cnpjDigits.length > 0 && cnpjDigits.length !== 14)) {
+        setLocalError('CNPJ inválido: deve ter 14 dígitos — verifique o número');
+        return false;
+      }
     }
     if (step === 2) {
       if (!formData.email) { setLocalError('Email é obrigatório'); return false; }
       if (formData.password !== formData.confirmPassword) { setLocalError('As senhas não coincidem'); return false; }
-      if (formData.password.length < 6) { setLocalError('A senha deve ter pelo menos 6 caracteres'); return false; }
+      // Mesmas regras do backend (src/utils/auth.py — validate_password)
+      if (formData.password.length < 8) { setLocalError('A senha deve ter pelo menos 8 caracteres'); return false; }
+      if (!/[a-zA-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+        setLocalError('A senha deve conter ao menos 1 letra e 1 número');
+        return false;
+      }
     }
     if (step === 3 && (!formData.address_street || !formData.address_number || !formData.address_neighborhood)) {
       setLocalError('Preencha rua, número e bairro');
@@ -104,6 +145,19 @@ const ClientRegisterPage = () => {
 
   const currentError = localError || error;
 
+  // --- Feedback em tempo real (CNPJ e senha) ---
+  const cnpjDigits = formData.cnpj.replace(/\D/g, '');
+  let cnpjHint = null;
+  if (cnpjOverflow) {
+    cnpjHint = { ok: false, text: 'Quantidade de dígitos excedeu o permitido (14) — verifique o CNPJ' };
+  } else if (cnpjDigits.length > 0 && cnpjDigits.length < 14) {
+    cnpjHint = { ok: false, text: `CNPJ deve ter 14 dígitos — faltam ${14 - cnpjDigits.length}` };
+  } else if (cnpjDigits.length === 14) {
+    cnpjHint = { ok: true, text: 'CNPJ completo' };
+  }
+  const pwdChecks = passwordChecks(formData.password);
+  const confirmMismatch = formData.confirmPassword && formData.password !== formData.confirmPassword;
+
   const inputStyle = {
     width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.5rem',
     border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none',
@@ -157,8 +211,15 @@ const ClientRegisterPage = () => {
                   <div style={{ marginBottom: '1rem' }}>
                     <label style={labelStyle}>CNPJ</label>
                     <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', marginBottom: '0.25rem' }}>Cadastro Nacional da Pessoa Jurídica (opcional para pessoa física)</p>
-                    <input name="cnpj" style={inputStyle} placeholder="00.000.000/0001-00"
+                    <input name="cnpj" inputMode="numeric" maxLength={18}
+                      style={{ ...inputStyle, ...(cnpjHint ? { borderColor: cnpjHint.ok ? '#22c55e' : '#ef4444' } : {}) }}
+                      placeholder="00.000.000/0001-00"
                       value={formData.cnpj} onChange={handleChange} />
+                    {cnpjHint && (
+                      <p style={{ fontSize: '0.75rem', marginTop: '0.375rem', marginBottom: 0, color: cnpjHint.ok ? '#16a34a' : '#dc2626' }}>
+                        {cnpjHint.ok ? '✓' : '⚠'} {cnpjHint.text}
+                      </p>
+                    )}
                   </div>
                   <div style={{ marginBottom: '1rem' }}>
                     <label style={labelStyle}>Telefone *</label>
@@ -184,21 +245,35 @@ const ClientRegisterPage = () => {
                     <label style={labelStyle}>Senha *</label>
                     <div className="password-wrapper">
                       <input type={showPassword ? 'text' : 'password'} name="password" style={{ ...inputStyle, paddingRight: '2.75rem' }}
-                        placeholder="Mínimo 6 caracteres" value={formData.password} onChange={handleChange} required />
+                        placeholder="Mínimo 8 caracteres" value={formData.password} onChange={handleChange} required />
                       <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
+                    </div>
+                    {/* Checklist ao vivo: cada regra fica verde/vermelha enquanto o usuário digita */}
+                    <div style={{ marginTop: '0.375rem', display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+                      {pwdChecks.map((check, i) => (
+                        <p key={i} style={{ fontSize: '0.75rem', margin: 0, color: formData.password ? (check.ok ? '#16a34a' : '#dc2626') : '#64748b' }}>
+                          {formData.password ? (check.ok ? '✓' : '✗') : '•'} {check.text}
+                        </p>
+                      ))}
                     </div>
                   </div>
                   <div style={{ marginBottom: '1.5rem' }}>
                     <label style={labelStyle}>Confirmar Senha *</label>
                     <div className="password-wrapper">
-                      <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" style={{ ...inputStyle, paddingRight: '2.75rem' }}
+                      <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword"
+                        style={{ ...inputStyle, paddingRight: '2.75rem', ...(confirmMismatch ? { borderColor: '#ef4444' } : {}) }}
                         placeholder="Confirme sua senha" value={formData.confirmPassword} onChange={handleChange} required />
                       <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                    {confirmMismatch && (
+                      <p style={{ fontSize: '0.75rem', marginTop: '0.375rem', marginBottom: 0, color: '#dc2626' }}>
+                        ⚠ As senhas não coincidem
+                      </p>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button type="button" className="auth-btn-secondary" onClick={prevStep} style={{ flex: 1 }}>

@@ -94,6 +94,36 @@ const AdminsTab = ({ onEditUser }) => {
     }
   };
 
+  // Aprova um admin pendente (libera o acesso) — só super admin pode
+  const handleApproveAdmin = async (adminId, adminName) => {
+    if (!(await confirmAsync(`Aprovar o admin "${adminName}" e liberar o acesso?`))) {
+      return;
+    }
+
+    try {
+      await api.post(`/api/admin/users/${adminId}/approve`);
+      showToast('Admin aprovado com sucesso', 'success');
+      loadAdmins();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao aprovar admin', 'error');
+    }
+  };
+
+  // Rejeita um admin pendente (soft delete) — só super admin pode
+  const handleRejectAdmin = async (adminId, adminName) => {
+    if (!(await confirmAsync(`Rejeitar o cadastro do admin "${adminName}"? Esta ação não pode ser desfeita.`))) {
+      return;
+    }
+
+    try {
+      await api.post(`/api/admin/users/${adminId}/reject`);
+      showToast('Cadastro rejeitado', 'success');
+      loadAdmins();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao rejeitar admin', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
@@ -138,6 +168,8 @@ const AdminsTab = ({ onEditUser }) => {
         admins={admins}
         onEditUser={onEditUser}
         onDeleteAdmin={handleDeleteAdmin}
+        onApprove={handleApproveAdmin}
+        onReject={handleRejectAdmin}
       />
 
       <InvitesSection />
