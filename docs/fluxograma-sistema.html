@@ -485,6 +485,8 @@
             <li><strong>Editar admin</strong> — nome, email, tenant vinculado <span class="route">PUT /api/platform/admins/:id</span></li>
             <li><strong>Excluir admin</strong> — com proteção se tiver dados vinculados <span class="route">DELETE /api/platform/admins/:id</span></li>
             <li><strong>Resetar senha</strong> — definir nova senha para o admin <span class="route">POST /api/platform/admins/:id/reset-password</span></li>
+            <li><strong>Gerar convite de admin</strong> — link de auto-cadastro com token de uso único <span class="route">POST /api/platform/admin-invites</span></li>
+            <li><strong>Listar/revogar convites</strong> — status PENDENTE/USADO/EXPIRADO/REVOGADO <span class="route">GET/DELETE /api/platform/admin-invites</span></li>
           </ul>
         </div>
 
@@ -823,6 +825,7 @@
           <div class="flow-group-title"><span class="flow-group-icon">📝</span> Cadastro & Status</div>
           <ul class="activity-list">
             <li><strong>Registrar-se</strong> — nome, telefone, veículo, praça de atuação <span class="route">POST /api/auth/register</span></li>
+            <li><strong>Aceitar convite de admin</strong> — cria conta de admin pelo link (auto-login) <span class="route">GET/POST /api/auth/invites/*</span></li>
             <li><strong>Escolher praça no cadastro</strong> — seletor de região (opcional) <span class="route">GET /api/auth/squares/public</span></li>
             <li><strong>Ficar online/offline</strong> — toggle de disponibilidade <span class="route">POST /api/driver/status</span></li>
             <li><strong>Atualizar localização</strong> — GPS em tempo real <span class="route">POST /api/driver/location</span></li>

@@ -6,6 +6,7 @@ import { showToast } from '@/components/Toast.utils';
 import TrashModal from '@/components/TrashModal';
 import AdminsTable from './AdminsTable';
 import AdminFormModal from './AdminFormModal';
+import InvitesSection from './InvitesSection';
 
 const AdminsTab = ({ onEditUser }) => {
   const [admins, setAdmins] = useState([]);
@@ -138,6 +139,8 @@ const AdminsTab = ({ onEditUser }) => {
         onEditUser={onEditUser}
         onDeleteAdmin={handleDeleteAdmin}
       />
+
+      <InvitesSection />
 
       <AdminFormModal
         show={showCreateModal}

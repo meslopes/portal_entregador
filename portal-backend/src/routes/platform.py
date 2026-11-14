@@ -799,3 +799,115 @@ def delete_tenant(tenant_id):
         db.session.rollback()
         logger.error(f"Erro ao excluir tenant: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# CONVITES DE ADMIN (onboarding self-service)
+# ============================================
+
+@platform_bp.route('/admin-invites', methods=['POST'])
+@jwt_required()
+@platform_admin_required
+def create_admin_invite():
+    """Cria um convite para um futuro admin criar a própria conta.
+
+    Body: tenant_id (obrigatório), email (opcional — se vier, só esse email aceita),
+    expires_days (opcional, padrão 7, máximo 30).
+    Retorna o token; o link é montado pelo frontend.
+    """
+    try:
+        from datetime import timedelta
+
+        from src.models.portal_models import AdminInvite, Tenant
+        from src.utils.validation import Schema, ValidationError, validate_request
+
+        schema = Schema({
+            'tenant_id': {'type': int, 'required': True, 'min': 1},
+            'email': {'type': str, 'required': False, 'max_length': 255},
+            'expires_days': {'type': int, 'required': False, 'min': 1, 'max': 30, 'default': 7},
+        })
+        try:
+            data = validate_request(schema, request.get_json() or {})
+        except ValidationError as e:
+            return jsonify({'error': '; '.join(e.errors)}), 400
+
+        tenant = Tenant.query.get(data['tenant_id'])
+        if not tenant:
+            return jsonify({'error': 'Tenant não encontrado'}), 404
+
+        email = (data.get('email') or '').strip().lower() or None
+        if email:
+            # Evitar convite para email que já tem conta
+            if User.query.filter_by(email=email).first():
+                return jsonify({'error': 'Este email já possui cadastro'}), 400
+
+        import secrets
+
+        creator_id = int(get_jwt_identity())
+        invite = AdminInvite(
+            tenant_id=tenant.id,
+            email=email,
+            token=secrets.token_urlsafe(32),
+            created_by=creator_id,
+            expires_at=AdminInvite.now_naive() + timedelta(days=data.get('expires_days', 7)),
+        )
+        db.session.add(invite)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Convite criado com sucesso',
+            'invite': invite.to_dict(),
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao criar convite: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/admin-invites', methods=['GET'])
+@jwt_required()
+@platform_admin_required
+def list_admin_invites():
+    """Lista convites de admin (mais recentes primeiro) com status derivado."""
+    try:
+        from src.models.portal_models import AdminInvite
+
+        tenant_id = request.args.get('tenant_id', type=int)
+        query = AdminInvite.query
+        if tenant_id:
+            query = query.filter_by(tenant_id=tenant_id)
+        invites = query.order_by(AdminInvite.created_at.desc()).limit(100).all()
+
+        return jsonify({'invites': [i.to_dict() for i in invites]}), 200
+
+    except Exception as e:
+        logger.error(f"Erro ao listar convites: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/admin-invites/<int:invite_id>', methods=['DELETE'])
+@jwt_required()
+@platform_admin_required
+def revoke_admin_invite(invite_id):
+    """Revoga um convite ainda não utilizado."""
+    try:
+        from src.models.portal_models import AdminInvite
+
+        invite = AdminInvite.query.get(invite_id)
+        if not invite:
+            return jsonify({'error': 'Convite não encontrado'}), 404
+        if invite.used_at:
+            return jsonify({'error': 'Convite já foi utilizado'}), 400
+        if invite.revoked_at:
+            return jsonify({'message': 'Convite já estava revogado'}), 200
+
+        invite.revoked_at = AdminInvite.now_naive()
+        db.session.commit()
+
+        return jsonify({'message': 'Convite revogado com sucesso'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao revogar convite: {e}")
+        return jsonify({'error': str(e)}), 500

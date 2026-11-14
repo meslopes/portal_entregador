@@ -2,6 +2,7 @@ import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import AdminInvitePage from '@/pages/AdminInvitePage';
 import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
@@ -30,6 +31,7 @@ export const publicRoutes = (
           </ProtectedRoute>
         }
       />
+      <Route path="/invite/:token" element={<AdminInvitePage />} />
       <Route path="/pending-approval" element={<PendingApprovalPage />} />
     </>
   );

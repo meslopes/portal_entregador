@@ -397,6 +397,72 @@ class OwnDriverEarning(db.Model):
 
 
 
+class AdminInvite(db.Model):
+    """Convite de criação de conta de admin (onboarding self-service).
+
+    O super admin gera um link com token; o futuro admin abre o link,
+    preenche os próprios dados e a conta nasce ligada ao tenant — sem
+    ninguém precisar criar senha por ele.
+    """
+    __tablename__ = 'admin_invites'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
+    # Email pré-definido no convite (opcional). Se preenchido, só esse email pode aceitar.
+    email = db.Column(db.String(255))
+    # Token aleatório de uso único embutido no link
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    # Preenchidos quando o convite é aceito
+    used_at = db.Column(db.DateTime)
+    used_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    # Revogado manualmente pelo super admin antes de ser usado
+    revoked_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    # Relacionamentos
+    tenant = db.relationship('Tenant', backref='admin_invites')
+    created_by_user = db.relationship('User', foreign_keys=[created_by])
+    used_by_user = db.relationship('User', foreign_keys=[used_by_user_id])
+
+    @staticmethod
+    def now_naive():
+        """Data/hora atual em UTC SEM fuso — compatível com a coluna TIMESTAMP.
+
+        O banco guarda TIMESTAMP sem fuso; comparar com datetime aware
+        (utcnow) causa "can't compare offset-naive and offset-aware".
+        """
+        from datetime import datetime, timezone
+
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+    @property
+    def status(self):
+        """Status derivado: REVOKED > USED > EXPIRED > PENDING."""
+        if self.revoked_at:
+            return 'REVOKED'
+        if self.used_at:
+            return 'USED'
+        if self.expires_at and self.expires_at <= AdminInvite.now_naive():
+            return 'EXPIRED'
+        return 'PENDING'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'tenant_name': self.tenant.name if self.tenant else None,
+            'email': self.email,
+            'token': self.token,
+            'status': self.status,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'used_at': self.used_at.isoformat() if self.used_at else None,
+            'revoked_at': self.revoked_at.isoformat() if self.revoked_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 __all__ = [
     "Tenant",
     "User",
@@ -405,4 +471,5 @@ __all__ = [
     "DriverPenalty",
     "EstablishmentDriver",
     "OwnDriverEarning",
+    "AdminInvite",
 ]

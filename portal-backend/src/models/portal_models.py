@@ -52,6 +52,7 @@ from src.models.orders import (  # noqa: F401
     Restaurant,
 )
 from src.models.users import (  # noqa: F401
+    AdminInvite,
     Driver,
     DriverPenalty,
     DriverRestaurant,
@@ -63,6 +64,7 @@ from src.models.users import (  # noqa: F401
 
 __all__ = [
     "Address",
+    "AdminInvite",
     "Customer",
     "Delivery",
     "DeliveryRoute",

@@ -839,3 +839,141 @@ def get_2fa_status():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# CONVITES DE ADMIN (onboarding self-service)
+# ============================================
+
+@auth_bp.route('/invites/<token>', methods=['GET'])
+def get_invite(token):
+    """Consulta pública de um convite — mostra para qual empresa é o convite.
+
+    Não expõe dados sensíveis: só nome do tenant, email pré-definido (se houver)
+    e se o convite está utilizável.
+    """
+    try:
+        from src.models.portal_models import AdminInvite
+
+        invite = AdminInvite.query.filter_by(token=token).first()
+        if not invite:
+            return jsonify({'error': 'Convite não encontrado'}), 404
+
+        status = invite.status
+        return jsonify({
+            'valid': status == 'PENDING',
+            'status': status,
+            'tenant_name': invite.tenant.name if invite.tenant else None,
+            'email': invite.email,
+            'expires_at': invite.expires_at.isoformat() if invite.expires_at else None,
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Erro ao consultar convite: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/invites/accept', methods=['POST'])
+@register_rate_limit
+def accept_invite():
+    """Aceita um convite e cria a conta do admin (auto-login).
+
+    Body: token, first_name, last_name, password, email (obrigatório se o
+    convite não tiver email pré-definido), phone (opcional).
+    O uso do token é atômico — não pode ser aceito duas vezes.
+    """
+    try:
+        from src.models.portal_models import AdminInvite
+        from src.utils.validation import Schema, ValidationError, validate_request
+
+        schema = Schema({
+            'token': {'type': str, 'required': True, 'max_length': 64},
+            'first_name': {'type': str, 'required': True, 'min_length': 1, 'max_length': 100},
+            'last_name': {'type': str, 'required': True, 'min_length': 1, 'max_length': 100},
+            'password': {'type': str, 'required': True, 'min_length': 8, 'max_length': 128},
+            'email': {'type': str, 'required': False, 'max_length': 255},
+            'phone': {'type': str, 'required': False, 'max_length': 20},
+        })
+        try:
+            data = validate_request(schema, request.get_json() or {})
+        except ValidationError as e:
+            return jsonify({'error': '; '.join(e.errors)}), 400
+
+        # Validar força da senha (mesma regra do registro comum)
+        from src.utils.auth import validate_password
+        pwd_err = validate_password(data['password'])
+        if pwd_err:
+            return jsonify({'error': pwd_err}), 400
+
+        invite = AdminInvite.query.filter_by(token=data['token']).first()
+        if not invite:
+            return jsonify({'error': 'Convite não encontrado'}), 404
+
+        status = invite.status
+        if status == 'REVOKED':
+            return jsonify({'error': 'Este convite foi revogado'}), 410
+        if status == 'USED':
+            return jsonify({'error': 'Este convite já foi utilizado'}), 410
+        if status == 'EXPIRED':
+            return jsonify({'error': 'Este convite expirou. Peça um novo convite.'}), 410
+
+        # Email: o convite pode pré-definir um; nesse caso, só ele vale
+        email = (data.get('email') or '').strip().lower()
+        if invite.email:
+            if email and email != invite.email.lower():
+                return jsonify({'error': 'Este convite é para outro email'}), 400
+            email = invite.email.lower()
+        if not email:
+            return jsonify({'error': 'Email é obrigatório'}), 400
+
+        import re
+
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            return jsonify({'error': 'Formato de email inválido'}), 400
+
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Este email já possui cadastro'}), 400
+
+        # Uso atômico do token: só um aceite passa (previne corrida/duplo clique)
+        updated = (
+            db.session.query(AdminInvite)
+            .filter(
+                AdminInvite.id == invite.id,
+                AdminInvite.used_at.is_(None),
+                AdminInvite.revoked_at.is_(None),
+                AdminInvite.expires_at > AdminInvite.now_naive(),
+            )
+            .update({'used_at': AdminInvite.now_naive()}, synchronize_session=False)
+        )
+        if not updated:
+            return jsonify({'error': 'Este convite não está mais disponível'}), 410
+
+        # Criar o usuário admin no tenant do convite
+        user = User(
+            tenant_id=invite.tenant_id,
+            email=email,
+            password_hash=generate_password_hash(data['password']),
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            phone=data.get('phone') or None,
+            user_type=UserType.ADMIN,
+            status=UserStatus.ACTIVE,
+        )
+        db.session.add(user)
+        db.session.flush()
+        invite.used_by_user_id = user.id
+        db.session.commit()
+
+        access_token = create_access_token(identity=str(user.id))
+        user_data = _build_user_response(user)
+
+        return jsonify({
+            'message': 'Conta criada com sucesso',
+            'access_token': access_token,
+            'user': user_data,
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao aceitar convite: {e}")
+        return jsonify({'error': str(e)}), 500
