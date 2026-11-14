@@ -1,4 +1,4 @@
-﻿"""Módulo admin_dashboard — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
+"""Módulo admin_dashboard — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import contextlib
@@ -514,6 +514,109 @@ def admin_delete_order(order_id):
 
         db.session.rollback()
 
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# STATUS DE CONFIGURAÇÃO INICIAL (onboarding)
+# ============================================
+
+@admin_dashboard_bp.route('/setup-status', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_setup_status():
+    """Retorna quais etapas de configuração inicial do admin já foram concluídas.
+
+    Usado pelo checklist "Primeiros Passos" no dashboard do admin.
+    A ordem das etapas segue a cadeia de setup do sistema:
+    identidade → praça → tabela de preço → estabelecimento → entregador.
+    """
+    try:
+        from src.models.portal_models import (
+            PricingTable,
+            Restaurant,
+            Square,
+            Tenant,
+        )
+
+        tenant_id = get_current_tenant_id()
+        user = get_current_user()
+
+        # Super admin não tem tenant_id — usar o tenant do request para filtrar,
+        # ou sem filtro se nenhum for informado (visão global).
+        def count_model(model):
+            """Conta registros do tenant atual (sem filtro para super admin)."""
+            query = model.query
+            if tenant_id:
+                query = query.filter_by(tenant_id=tenant_id)
+            return query.count()
+
+        # Passo 1 — identidade do tenant (cores, telefone, CNPJ)
+        identity_done = False
+        tenant_name = None
+        if tenant_id:
+            tenant = Tenant.query.get(tenant_id)
+            if tenant:
+                tenant_name = tenant.name
+                # Considera feito se tem telefone OU CNPJ preenchidos
+                # (cor sempre tem default, então não conta sozinha)
+                identity_done = bool(tenant.phone or tenant.cnpj)
+
+        squares_count = count_model(Square)
+        pricing_tables_count = count_model(PricingTable)
+        restaurants_count = count_model(Restaurant)
+        drivers_count = count_model(Driver)
+
+        steps = [
+            {
+                'id': 'identity',
+                'title': 'Configurar identidade da praça',
+                'description': 'Preencha cores, telefone e CNPJ da sua organização',
+                'href': '/admin/settings',
+                'done': identity_done,
+            },
+            {
+                'id': 'square',
+                'title': 'Criar uma praça',
+                'description': 'A praça é a região onde sua operação atua (ex.: Centro)',
+                'href': '/admin/squares',
+                'done': squares_count > 0,
+            },
+            {
+                'id': 'pricing_table',
+                'title': 'Criar tabela de preço',
+                'description': 'Define quanto se cobra por entrega — sem ela pedidos não têm frete',
+                'href': '/admin/pricing',
+                'done': pricing_tables_count > 0,
+            },
+            {
+                'id': 'establishment',
+                'title': 'Cadastrar estabelecimento',
+                'description': 'Restaurantes/lojas que receberão pedidos',
+                'href': '/admin/establishments',
+                'done': restaurants_count > 0,
+            },
+            {
+                'id': 'driver',
+                'title': 'Cadastrar entregador',
+                'description': 'Quem fará as entregas',
+                'href': '/admin/drivers',
+                'done': drivers_count > 0,
+            },
+        ]
+
+        completed = sum(1 for s in steps if s['done'])
+
+        return jsonify({
+            'steps': steps,
+            'completed': completed,
+            'total': len(steps),
+            'all_done': completed == len(steps),
+            'tenant_name': tenant_name,
+        }), 200
+
+    except Exception as e:
+        logger.error(f'Erro ao obter setup-status: {e}')
         return jsonify({'error': str(e)}), 500
 
 

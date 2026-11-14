@@ -10,6 +10,12 @@ export const adminService = {
     return response.data;
   },
 
+  // Status das etapas de configuracao inicial (checklist "Primeiros Passos")
+  getSetupStatus: async () => {
+    const response = await api.get('/api/admin/setup-status');
+    return response.data;
+  },
+
   processScheduledOrders: async () => {
     const response = await api.post('/api/admin/process-scheduled');
     return response.data;

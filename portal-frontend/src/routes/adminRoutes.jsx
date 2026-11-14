@@ -21,6 +21,7 @@ import AdminDriverPaymentsPage from '@/pages/admin/AdminDriverPaymentsPage';
 import AdminSquaresPage from '@/pages/admin/AdminSquaresPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminWhiteLabelPage from '@/pages/admin/AdminWhiteLabelPage';
+import AdminGuidePage from '@/pages/admin/AdminGuidePage';
 import DatabaseMapPage from '@/pages/admin/DatabaseMapPage';
 import PaymentReportsPage from '@/pages/PaymentReportsPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
@@ -57,6 +58,7 @@ export const adminRoutes = (
       <Route path="/admin/platform-routes" element={<AdminRoute><AdminPlatformRoutesPage /></AdminRoute>} />
       <Route path="/admin/white-label" element={<AdminRoute><AdminWhiteLabelPage /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+      <Route path="/admin/guide" element={<AdminRoute><AdminGuidePage /></AdminRoute>} />
       <Route path="/admin/database-map" element={<AdminRoute><DatabaseMapPage /></AdminRoute>} />
     </>
   );

@@ -346,4 +346,11 @@ cd portal-backend && python -c "from src.main import app; print('OK')"
 - Em caso de conflito entre documentação, vale este documento + `MEMORY.md`
 - Após qualquer procedimento novo validado (ex.: deploy, integração), **atualizar este documento** para não voltar a trabalhar com informação inverídica
 
+#### 11. PROJETO AUTO-EXPLICITIVO (documentação para qualquer pessoa)
+- **O projeto não pode depender do conhecimento de quem o criou.** Qualquer pessoa da equipe (ou de suporte) deve conseguir entender e operar o sistema sem que alguém precise "levar pela mão"
+- **Contexto que existe só na cabeça de uma pessoa está perdido.** Toda decisão, fluxo, ordem de configuração e regra de negócio deve estar escrita em documentação acessível (docs/, guias no próprio sistema, comentários de código)
+- **Prioridade para onboarding:** quando um fluxo novo for criado ou alterado, perguntar "uma pessoa nova conseguiria seguir isso sozinha?" — se não, documentar
+- **Ferramentas preferidas (nesta ordem):** (1) guias embutidos no próprio sistema (contexto exato onde a pessoa está), (2) `docs/` com roteiros passo a passo, (3) comentários de código em português
+- **Manter atualizado:** documentação que não acompanha o código vira desinformação — atualizar junto com a mudança, não depois
+
 ### FIM DAS REGRAS

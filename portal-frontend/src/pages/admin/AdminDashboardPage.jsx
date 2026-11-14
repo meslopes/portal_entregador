@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { useSquare } from '@/contexts/SquareContext.hooks';
 import { showToast } from '@/components/Toast.utils';
 import { Sidebar, MapSection, AssignDriverModal, SettingsModal } from './dashboard-tabs';
+import AdminSetupChecklist from './AdminSetupChecklist';
 import { getTimeRemaining, geocodeCity } from './dashboardHelpers';
 
 const AdminDashboardPage = () => {
@@ -268,6 +269,7 @@ const AdminDashboardPage = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 4rem)', background: '#f1f5f9', position: 'relative' }}>
+      <AdminSetupChecklist />
       <Sidebar
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}

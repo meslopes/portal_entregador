@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Package, DollarSign, Clock, Settings,
-  LayoutDashboard, Users, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Wallet, TrendingUp, Globe, AlertTriangle, Route, Bike
+  LayoutDashboard, Users, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Wallet, TrendingUp, Globe, AlertTriangle, Route, Bike, BookOpen
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.hooks';
 import { driverService } from '@/lib/api';
@@ -125,6 +125,7 @@ const Layout = ({ children }) => {
       name: 'Configurações',
       icon: Settings,
       children: [
+        { name: 'Primeiros Passos', href: '/admin/guide', icon: BookOpen },
         { name: 'Geral', href: '/admin/settings', icon: Settings },
         { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
         { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
