@@ -769,28 +769,80 @@ def delete_tenant(tenant_id):
                 'suggestion': 'Use ?force=true para excluir mesmo assim'
             }), 400
 
-        # Excluir dados vinculados se force=true (ordem respeita FKs)
+        # Excluir dados vinculados se force=true
+        # Estratégia genérica: o banco descobre sozinho todas as chaves
+        # estrangeiras e apaga os dados que derivam do tenant na ordem certa
+        # (filhos antes dos pais). Tabela nova criada no futuro entra
+        # automaticamente, sem precisar manter lista aqui.
         if force:
-            tables = [
-                "deliveries", "order_stops", "platform_driver_stops", "platform_driver_routes",
-                "own_driver_stops", "own_driver_routes", "own_driver_earnings",
-                "driver_bonuses", "driver_achievements", "driver_penalties", "driver_points_log",
-                "driver_weekly_scores", "driver_scores", "driver_restaurants",
-                "establishment_subscriptions", "subscription_invoices", "invoices",
-                "payments", "orders", "customers", "establishment_drivers",
-                "dynamic_pricing", "route_settings", "special_days", "peak_hours",
-                "squares", "restaurants", "drivers",
-            ]
-            for table in tables:
-                try:
-                    db.session.execute(db.text(f"DELETE FROM {table} WHERE tenant_id = :tid"), {"tid": tenant_id})
-                except Exception:
-                    db.session.rollback()
-                    with contextlib.suppress(Exception):
-                        db.session.execute(db.text(f"UPDATE {table} SET tenant_id = NULL WHERE tenant_id = :tid"), {"tid": tenant_id})
-            db.session.execute(db.text("UPDATE users SET tenant_id = NULL WHERE tenant_id = :tid"), {"tid": tenant_id})
+            from collections import defaultdict
 
-        db.session.delete(tenant)
+            # 1) Mapa de ligações: filho.coluna -> pai (ex.: addresses.customer_id -> customers)
+            fks = db.session.execute(db.text("""
+                SELECT kcu.table_name, kcu.column_name, ccu.table_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                JOIN information_schema.constraint_column_usage ccu
+                  ON tc.constraint_name = ccu.constraint_name
+                WHERE tc.constraint_type = 'FOREIGN KEY'
+                  AND tc.table_schema = 'public'
+            """)).fetchall()
+
+            # 2) Coletar os IDs de tudo que deriva do tenant (caminhando as ligações)
+            ids_por_tabela = defaultdict(set)
+            ids_por_tabela['tenants'].add(tenant_id)
+            mudou = True
+            while mudou:
+                mudou = False
+                for filho, coluna, pai in fks:
+                    if not ids_por_tabela.get(pai) or filho == pai:
+                        continue
+                    rows = db.session.execute(db.text(
+                        f'SELECT id FROM "{filho}" WHERE "{coluna}" = ANY(:pids)'
+                    ), {"pids": list(ids_por_tabela[pai])}).fetchall()
+                    novos = {r[0] for r in rows} - ids_por_tabela[filho]
+                    if novos:
+                        ids_por_tabela[filho] |= novos
+                        mudou = True
+
+            # 3) Ordem de exclusão: filho antes do pai (ordenação topológica)
+            tabelas = {t for t in ids_por_tabela if ids_por_tabela[t] and t != 'users'}
+            posteriores = defaultdict(set)
+            grau = defaultdict(int)
+            for filho, coluna, pai in fks:
+                if filho in tabelas and pai in tabelas and filho != pai and pai not in posteriores[filho]:
+                    posteriores[filho].add(pai)
+                    grau[pai] += 1
+            fila = [t for t in tabelas if grau[t] == 0]
+            ordem = []
+            while fila:
+                t = fila.pop()
+                ordem.append(t)
+                for pai in posteriores[t]:
+                    grau[pai] -= 1
+                    if grau[pai] == 0:
+                        fila.append(pai)
+            # Sobras de ciclos (se houver) vão por último
+            ordem += [t for t in tabelas if t not in ordem]
+
+            # 4) Apagar na ordem (savepoint: uma falha não derruba as demais)
+            for tabela in ordem:
+                try:
+                    with db.session.begin_nested():
+                        db.session.execute(db.text(
+                            f'DELETE FROM "{tabela}" WHERE id = ANY(:ids)'
+                        ), {"ids": list(ids_por_tabela[tabela])})
+                except Exception:
+                    pass  # savepoint revertido — as demais exclusões seguem
+
+            # 5) Usuários são mantidos no sistema — apenas desvinculados do tenant
+            if ids_por_tabela.get('users'):
+                db.session.execute(db.text(
+                    "UPDATE users SET tenant_id = NULL WHERE id = ANY(:ids)"
+                ), {"ids": list(ids_por_tabela['users'])})
+
+                db.session.delete(tenant)
         db.session.commit()
 
         return jsonify({'message': 'Tenant excluído com sucesso'}), 200
