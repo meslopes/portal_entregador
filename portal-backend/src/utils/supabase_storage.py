@@ -207,9 +207,10 @@ def upload_logo(base64_data, tenant_id, filename='logo'):
     ext = LOGO_ALLOWED_MIME[mime]
     storage_path = f"tenant_{tenant_id}/logo.{ext}"
 
+    # x-upsert: permite reenviar o logo (sobrescreve o arquivo anterior)
     resp = requests.post(
         f'{SUPABASE_URL}/storage/v1/object/{LOGOS_BUCKET}/{storage_path}',
-        headers={**get_headers(), 'Content-Type': mime},
+        headers={**get_headers(), 'Content-Type': mime, 'x-upsert': 'true'},
         data=image_bytes,
         timeout=30
     )
@@ -218,6 +219,9 @@ def upload_logo(base64_data, tenant_id, filename='logo'):
         logger.error(f"Erro no upload do logo: {resp.status_code} - {resp.text}")
         raise ValueError('Erro ao enviar a imagem. Tente novamente.')
 
-    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{LOGOS_BUCKET}/{storage_path}"
+    # ?v= força o navegador a recarregar quando o logo muda (cache-buster)
+    from datetime import datetime
+    versao = datetime.now().strftime('%Y%m%d%H%M%S')
+    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{LOGOS_BUCKET}/{storage_path}?v={versao}"
     logger.info(f"Logo do tenant {tenant_id} enviado: {storage_path}")
     return public_url
