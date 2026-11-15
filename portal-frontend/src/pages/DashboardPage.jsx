@@ -176,21 +176,39 @@ const DashboardPage = () => {
     }
   };
 
+  // Descreve a causa real de uma falha de geolocalização (para o entregador agir)
+  const describeGeoError = (err) => {
+    if (err && err.code === 1) return 'permissão de localização negada — libere nas configurações do navegador';
+    if (err && err.code === 2) return 'localização indisponível neste dispositivo';
+    if (err && err.code === 3) return 'tempo esgotado ao obter a localização';
+    return 'não foi possível obter sua localização';
+  };
+
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocalização não suportada pelo navegador'));
         return;
       }
+      const finish = (pos) => {
+        const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setLocation(loc);
+        resolve(loc);
+      };
+      // 1ª tentativa: GPS preciso. Em falha/timeout (comum em Edge), 2ª tentativa
+      // rápida via rede (menos precisa, mas resolve sem GPS do dispositivo)
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-          setLocation(loc);
-          resolve(loc);
-        },
+        finish,
         (err) => {
-          console.warn('Erro ao obter localização:', err.message);
-          reject(err);
+          console.warn('Erro ao obter localização (precisa):', err.message);
+          navigator.geolocation.getCurrentPosition(
+            finish,
+            (err2) => {
+              console.warn('Erro ao obter localização (rápida):', err2.message);
+              reject(err2);
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 }
+          );
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
@@ -208,7 +226,7 @@ const DashboardPage = () => {
           setIsOnline(true);
           updateUser({ ...user, driver: response.driver });
           setError('');
-        } catch {
+        } catch (geoErr) {
           const fallbackLat = user?.driver?.square?.latitude || -29.9150;
           const fallbackLng = user?.driver?.square?.longitude || -51.1780;
           console.warn('GPS indisponível, usando localização padrão da praça:', fallbackLat, fallbackLng);
@@ -217,7 +235,11 @@ const DashboardPage = () => {
             setIsOnline(true);
             setLocation({ latitude: fallbackLat, longitude: fallbackLng });
             updateUser({ ...user, driver: response.driver });
-            setError('⚠️ GPS não disponível — usando localização padrão da praça. Para GPS real, acesse via HTTPS.');
+            // Mensagem fiel à causa real; o aviso de HTTPS só aparece se a página
+            // realmente não for segura (em HTTPS a causa é outra: permissão/timeout)
+            const causa = describeGeoError(geoErr);
+            const httpsHint = window.isSecureContext ? '' : ' Para GPS real, acesse via HTTPS.';
+            setError(`⚠️ GPS não disponível (${causa}) — usando localização padrão da praça.${httpsHint}`);
           } catch (apiErr) {
             setError('Erro ao ficar online: ' + (apiErr.message || 'Tente novamente'));
           }
