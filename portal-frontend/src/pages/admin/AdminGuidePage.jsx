@@ -322,8 +322,11 @@ const AdminGuidePage = () => {
         <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
           Com as 5 etapas concluídas, sua praça já opera: estabelecimentos recebem pedidos,
           entregadores se conectam ao app e as entregas são rastreadas em tempo real.
-          Para aprofundar em cada tela, use o menu <strong>Ajuda</strong> ou consulte o
-          checklist lateral do dashboard, que mostra o que falta configurar.
+          Para aprofundar em cada tela, use o menu <strong>Ajuda</strong> — a
+          <strong> Central de Ajuda</strong> tem FAQ e contatos, e este guia fica em
+          <strong> Ajuda → Guia dos Primeiros Passos</strong>. Enquanto houver etapas
+          pendentes, o checklist lateral do dashboard mostra o que falta configurar
+          (ele se recolhe sozinho quando tudo estiver concluído).
         </p>
       </div>
     </div>
