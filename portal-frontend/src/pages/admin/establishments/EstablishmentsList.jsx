@@ -1,11 +1,11 @@
 import React from 'react';
-import { Store, Search, Phone, Mail, MapPin, Edit, Trash2 } from 'lucide-react';
+import { Store, Search, Phone, Mail, MapPin, Edit, Trash2, Users, Bike } from 'lucide-react';
 import { utils } from '@/lib/api';
 import { maskPii } from '@/lib/utils';
 
 const EstablishmentsList = ({
   establishments, loading, search, page, totalPages,
-  onSearch, onPageChange, onOpenDetails, onEdit, onDelete, onToggleActive
+  onSearch, onPageChange, onOpenDetails, onEdit, onDelete, onToggleActive, onToggleOwnDrivers
 }) => {
   if (loading) {
     return (
@@ -54,7 +54,7 @@ const EstablishmentsList = ({
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         {/* Header da tabela */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 100px',
+          display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 132px',
           padding: '0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9',
           background: '#f8fafc', fontSize: '0.75rem', fontWeight: 600,
           color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em'
@@ -73,7 +73,7 @@ const EstablishmentsList = ({
           <div
             key={est.id}
             style={{
-              display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 100px',
+              display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 132px',
               padding: '1rem 1.25rem', borderBottom: '1px solid #f8fafc',
               alignItems: 'center', cursor: 'pointer', transition: 'background 0.1s'
             }}
@@ -92,15 +92,16 @@ const EstablishmentsList = ({
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                   <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>{est.name}</p>
-                  {est.has_own_drivers && (
-                    <span style={{
-                      padding: '0.0625rem 0.375rem', borderRadius: '9999px',
-                      fontSize: '0.5625rem', fontWeight: 600,
-                      background: '#dbeafe', color: '#1d4ed8'
-                    }}>
-                      Próprios
-                    </span>
-                  )}
+                  {/* Selo do modo de entrega — SEMPRE visível: o admin precisa saber
+                      de relance que cada estabelecimento pode ser Plataforma OU Próprios */}
+                  <span style={{
+                    padding: '0.0625rem 0.375rem', borderRadius: '9999px',
+                    fontSize: '0.5625rem', fontWeight: 600,
+                    background: est.has_own_drivers ? '#dbeafe' : '#dcfce7',
+                    color: est.has_own_drivers ? '#1d4ed8' : '#15803d'
+                  }}>
+                    {est.has_own_drivers ? 'Próprios' : 'Plataforma'}
+                  </span>
                   {!est.square_id && (
                     <span style={{
                       padding: '0.0625rem 0.375rem', borderRadius: '9999px',
@@ -175,6 +176,14 @@ const EstablishmentsList = ({
 
             {/* Ações */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.25rem' }} onClick={e => e.stopPropagation()}>
+              {/* Trocar modo de entrega: mesma confirmação e endpoint dos detalhes */}
+              <button
+                onClick={() => onToggleOwnDrivers(est)}
+                style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: est.has_own_drivers ? '#2563eb' : '#16a34a', transition: 'color 0.15s' }}
+                title={est.has_own_drivers ? 'Mudar p/ Plataforma' : 'Mudar p/ Próprios'}
+              >
+                {est.has_own_drivers ? <Bike size={16} /> : <Users size={16} />}
+              </button>
               <button
                 onClick={() => onEdit(est)}
                 style={{ padding: '0.375rem', borderRadius: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b', transition: 'color 0.15s' }}

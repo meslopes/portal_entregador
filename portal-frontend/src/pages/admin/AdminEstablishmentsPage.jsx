@@ -181,6 +181,7 @@ const AdminEstablishmentsPage = () => {
         onSearch={e => { setSearch(e.target.value); setPage(1); }}
         onPageChange={setPage} onOpenDetails={openDetails}
         onEdit={openEditForm} onDelete={handleDelete} onToggleActive={toggleActive}
+        onToggleOwnDrivers={handleToggleOwnDrivers}
       />
 
       {showForm && (

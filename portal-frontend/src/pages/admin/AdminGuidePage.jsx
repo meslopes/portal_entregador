@@ -269,6 +269,43 @@ const AdminGuidePage = () => {
         ))}
       </div>
 
+      {/* Tipos de entrega — recurso que não é óbvio de descobrir (pedido do Mauro) */}
+      <div
+        style={{
+          background: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: 12,
+          padding: 20,
+          marginTop: 24,
+        }}
+      >
+        <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: '#111827' }}>
+          Tipos de entrega: Plataforma ou Próprios
+        </h3>
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
+          Cada estabelecimento opera em um de dois modos — e você pode trocar quando quiser:
+        </p>
+        <p style={{ margin: '0 0 8px', fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
+          <strong>🚲 Plataforma</strong> (padrão): as entregas são feitas pelos entregadores da
+          plataforma MUV. O estabelecimento só cria os pedidos. <br />
+          <strong>👥 Próprios</strong>: o estabelecimento cadastra e gerencia os seus próprios
+          entregadores pelo menu <strong>Meus Entregadores</strong> — com regras de pagamento
+          próprias (por entrega, por km, percentual...).
+        </p>
+        <p style={{ margin: '0 0 8px', fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
+          <strong>Como trocar:</strong> no menu <strong>Estabelecimentos</strong>, cada linha tem
+          um selo com o modo atual (<em>Plataforma</em> ou <em>Próprios</em>). Clique no ícone de
+          troca na coluna <strong>Ações</strong> — ou abra os detalhes e use o botão{" "}
+          <strong>"Mudar p/ Próprios / Plataforma"</strong> no card "Tipo de Entregador".
+          O sistema pede confirmação antes de aplicar.
+        </p>
+        <p style={{ margin: 0, fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
+          <strong>Quando usar cada um:</strong> use <em>Plataforma</em> quando quiser cobertura sem
+          equipe própria; use <em>Próprios</em> quando o estabelecimento tem seus próprios
+          entregadores e quer controlar pagamentos. Dá para voltar atrás a qualquer momento.
+        </p>
+      </div>
+
       {/* Rodapé */}
       <div
         style={{
