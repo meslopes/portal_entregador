@@ -6,9 +6,14 @@ Movimento puro de código — comportamento idêntico ao original.
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from src.models.portal_models import (
+    AdminInvite,
+    Customer,
+    Driver,
+    Notification,
+    PushToken,
     SystemConfig,
     User,
     db,
@@ -17,6 +22,119 @@ from src.utils.auth import admin_required
 from src.utils.tenant import get_current_tenant_id
 
 admin_users_softdelete_bp = Blueprint('users_softdelete', __name__)
+
+
+def _descobrir_fks_para(tabela_alvo):
+    """Lista (tabela, coluna) com FKs que apontam para tabela_alvo.id.
+
+    Descoberta dinâmica via information_schema — tabela nova no futuro entra
+    automaticamente. JOIN com constraint_column_usage feito SÓ por
+    constraint_name (juntar por table_name retorna 0 linhas — a ccu é a tabela PAI).
+    """
+    sql = """
+        SELECT tc.table_name, kcu.column_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+        JOIN information_schema.constraint_column_usage ccu
+          ON tc.constraint_name = ccu.constraint_name
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND ccu.table_name = :tabela AND ccu.column_name = 'id'
+    """
+    return db.session.execute(db.text(sql), {'tabela': tabela_alvo}).fetchall()
+
+
+def _limpar_perfil_driver(driver_id):
+    """
+    Apaga o perfil de entregador e tudo que só existe por causa dele.
+    Recusa se houver histórico de negócio (pedidos/pagamentos/entregas) —
+    esses registros são contábeis e não podem sumir junto com a conta.
+
+    Retorna None quando liberado, ou mensagem de erro (str).
+    """
+    tabelas_historico = {'orders', 'payments', 'deliveries'}
+    for tabela, coluna in _descobrir_fks_para('drivers'):
+        if tabela in tabelas_historico:
+            n = db.session.execute(
+                db.text(f'SELECT count(*) FROM "{tabela}" WHERE "{coluna}" = :id'),
+                {'id': driver_id},
+            ).scalar()
+            if n:
+                return (
+                    f'Não foi possível excluir: o entregador tem {n} registro(s) '
+                    f'em "{tabela}" (histórico de pedidos/pagamentos/entregas). '
+                    'Mantenha o usuário na lixeira para preservar o histórico.'
+                )
+    # Sem histórico de negócio: apaga filhos (gamificação, vínculos, rotas...) e o perfil
+    for tabela, coluna in _descobrir_fks_para('drivers'):
+        db.session.execute(
+            db.text(f'DELETE FROM "{tabela}" WHERE "{coluna}" = :id'),
+            {'id': driver_id},
+        )
+    db.session.delete(db.session.get(Driver, driver_id))
+    return None
+
+
+def _excluir_referencias_do_usuario(user, ator_id=None):
+    """
+    Remove/desvincula SÓ o que é pessoal do usuário e trava a exclusão
+    definitiva (FKs apontando para users.id).
+
+    REGRAS DE OURO (2026-11-16, pedido do Mauro):
+    - Dados COMPARTILHADOS do tenant (estabelecimentos, pedidos, praças,
+      tabelas de preço, convites, outros admins) NUNCA são apagados junto —
+      num tenant com 2 admins, excluir um não pode afetar o que é do outro.
+    - Só dados 100% PESSOAIS do usuário saem (notificações dele, tokens de
+      dispositivo dele, perfil de cliente/entregador DELE).
+
+    Semântica por tabela:
+    - notifications / push_tokens: apaga (endereçados só a este usuário)
+    - admin_invites.used_by_user_id: desvincula (convite do tenant preservado)
+    - admin_invites.created_by: TRANSFERE para OUTRO admin ativo do MESMO
+      tenant (quem fica é o dono natural do convite). Só se o tenant não tiver
+      outro admin, transfere para quem está executando a exclusão. Sem nenhuma
+      dessas opções, apaga (created_by é NOT NULL e não pode apontar para o
+      usuário que está sendo excluído)
+    - customers.user_id: desvincula (pedidos/endereços do histórico preservados)
+    - drivers.user_id: apaga o perfil SÓ sem histórico de negócio (ver acima)
+
+    Retorna None quando liberado, ou mensagem de erro (str).
+    """
+    from src.models.portal_models import UserStatus, UserType
+
+    Notification.query.filter_by(user_id=user.id).delete()
+    PushToken.query.filter_by(user_id=user.id).delete()
+    AdminInvite.query.filter_by(used_by_user_id=user.id).update({'used_by_user_id': None})
+
+    # Convites criados pelo usuário pertencem ao TENANT. A autoria vai para o
+    # outro admin do mesmo tenant (o que fica) — NÃO para o super admin que
+    # eventualmente está executando a exclusão no painel da plataforma
+    substituto = None
+    if user.tenant_id:
+        substituto = (
+            User.query
+            .filter(
+                User.user_type == UserType.ADMIN,
+                User.tenant_id == user.tenant_id,
+                User.id != user.id,
+                User.deleted_at.is_(None),
+                User.status == UserStatus.ACTIVE,
+            )
+            .order_by(User.id)
+            .first()
+        )
+    novo_created_by = substituto.id if substituto else ator_id
+    if novo_created_by:
+        AdminInvite.query.filter_by(created_by=user.id).update({'created_by': novo_created_by})
+    else:
+        AdminInvite.query.filter_by(created_by=user.id).delete(synchronize_session=False)
+
+    Customer.query.filter_by(user_id=user.id).update({'user_id': None})
+
+    driver = Driver.query.filter_by(user_id=user.id).first()
+    if driver:
+        return _limpar_perfil_driver(driver.id)
+    return None
 
 
 @admin_users_softdelete_bp.route('/deleted-users', methods=['GET'])
@@ -134,6 +252,16 @@ def delete_user_permanent(user_id):
         if not user.deleted_at:
             return jsonify({'error': 'Usuário deve estar na lixeira antes de ser excluído permanentemente'}), 400
 
+        # Desvincular/apagar SÓ o que é pessoal do usuário (FKs para users.id).
+        # Dados do tenant (estabelecimentos, pedidos, convites...) são preservados
+        try:
+            ator_id = int(get_jwt_identity())
+        except (ValueError, TypeError):
+            ator_id = None
+        erro = _excluir_referencias_do_usuario(user, ator_id=ator_id)
+        if erro:
+            return jsonify({'error': erro}), 400
+
         # Excluir permanentemente
         db.session.delete(user)
         db.session.commit()
@@ -161,19 +289,35 @@ def cleanup_deleted_users():
         tenant_id = get_current_tenant_id()
 
         deleted_count = 0
+        recusados = []
+        try:
+            ator_id = int(get_jwt_identity())
+        except (ValueError, TypeError):
+            ator_id = None
         for user_id in user_ids:
             user = User.query.get(user_id)
             if user and user.deleted_at:
                 # Verificar tenant
                 if tenant_id and user.tenant_id != tenant_id:
                     continue
+                # Savepoint por usuário: se recusado, nada parcial fica para trás
+                savepoint = db.session.begin_nested()
+                erro = _excluir_referencias_do_usuario(user, ator_id=ator_id)
+                if erro:
+                    savepoint.rollback()
+                    recusados.append(f'{user.email}: {erro}')
+                    continue
                 db.session.delete(user)
                 deleted_count += 1
+                savepoint.commit()
 
         db.session.commit()
 
+        mensagem = f'{deleted_count} usuário(s) excluído(s) permanentemente'
+        if recusados:
+            mensagem += f' — {len(recusados)} recusado(s): ' + '; '.join(recusados)
         return jsonify({
-            'message': f'{deleted_count} usuário(s) excluído(s) permanentemente',
+            'message': mensagem,
             'deleted_count': deleted_count
         }), 200
 
