@@ -340,8 +340,6 @@ def create_square():
 
             driver_percentage=data.get('driver_percentage', 65.0),
 
-            gamification_percentage=data.get('gamification_percentage', 5.0),
-
             is_active=True
 
         )
@@ -428,7 +426,7 @@ def update_square(square_id):
         # Campos de preço: passam a gravar na TABELA PADRÃO da praça (não mais
         # na praça). Mantido por compatibilidade com telas/payloads antigos.
         campos_preco = ('price_per_km', 'min_distance_km', 'max_delivery_fee',
-                        'driver_percentage', 'gamification_percentage', 'fixed_fee')
+                        'driver_percentage', 'fixed_fee')
 
         if any(data.get(c) is not None for c in campos_preco):
 

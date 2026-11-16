@@ -436,8 +436,6 @@ def create_pricing_table():
 
             driver_percentage=safe_float(data.get('driver_percentage'), 65.0),
 
-            gamification_percentage=safe_float(data.get('gamification_percentage'), 5.0),
-
             is_active=data.get('is_active', True)
 
         )
@@ -599,14 +597,6 @@ def update_pricing_table(table_id):
             if val is not None:
 
                 table.driver_percentage = val
-
-        if 'gamification_percentage' in data:
-
-            val = safe_float(data['gamification_percentage'])
-
-            if val is not None:
-
-                table.gamification_percentage = val
 
         if 'is_active' in data:
 

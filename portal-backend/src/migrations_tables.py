@@ -230,33 +230,67 @@ def run_table_migrations():
     # "Padrão — <nome>" copiando os valores LEGADOS da praça (preço não muda).
     # min/max_delivery_fee ficam NULL de propósito: o caminho antigo (praça)
     # nunca aplicou piso/teto — manter sem clamp preserva o frete observado.
+    # Só roda se as colunas legadas ainda existem (banco novo já nasce sem).
     try:
-        db.session.execute(db.text("""
-            INSERT INTO pricing_tables
-                (tenant_id, square_id, name, description, price_per_km, fixed_fee,
-                 min_distance_km, min_delivery_fee, max_delivery_fee,
-                 driver_percentage, gamification_percentage, is_active, created_at, updated_at)
-            SELECT s.tenant_id, s.id, 'Padrão — ' || s.name,
-                   'Tabela padrão criada na consolidação de preços (2026-11-16)',
-                   COALESCE(s.price_per_km, 2.95), COALESCE(s.fixed_fee, 0),
-                   COALESCE(s.min_distance_km, 4.0), NULL, NULL,
-                   COALESCE(s.driver_percentage, 65.0), COALESCE(s.gamification_percentage, 5.0),
-                   TRUE, NOW(), NOW()
-            FROM squares s
-            WHERE s.default_pricing_table_id IS NULL
-              AND NOT EXISTS (
-                  SELECT 1 FROM pricing_tables p
-                  WHERE p.square_id = s.id AND p.name = 'Padrão — ' || s.name
-              )
-        """))
-        db.session.execute(db.text("""
-            UPDATE squares s SET default_pricing_table_id = p.id
-            FROM pricing_tables p
-            WHERE p.square_id = s.id
-              AND p.name = 'Padrão — ' || s.name
-              AND s.default_pricing_table_id IS NULL
-        """))
-        db.session.commit()
+        tem_legadas = db.session.execute(db.text(
+            "SELECT count(*) FROM information_schema.columns "
+            "WHERE table_name = 'squares' AND column_name = 'price_per_km'"
+        )).scalar()
+    except Exception:
+        db.session.rollback()
+        tem_legadas = 0
+    if tem_legadas:
+        try:
+            db.session.execute(db.text("""
+                INSERT INTO pricing_tables
+                    (tenant_id, square_id, name, description, price_per_km, fixed_fee,
+                     min_distance_km, min_delivery_fee, max_delivery_fee,
+                     driver_percentage, gamification_percentage, is_active, created_at, updated_at)
+                SELECT s.tenant_id, s.id, 'Padrão — ' || s.name,
+                       'Tabela padrão criada na consolidação de preços (2026-11-16)',
+                       COALESCE(s.price_per_km, 2.95), COALESCE(s.fixed_fee, 0),
+                       COALESCE(s.min_distance_km, 4.0), NULL, NULL,
+                       COALESCE(s.driver_percentage, 65.0), COALESCE(s.gamification_percentage, 5.0),
+                       TRUE, NOW(), NOW()
+                FROM squares s
+                WHERE s.default_pricing_table_id IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM pricing_tables p
+                      WHERE p.square_id = s.id AND p.name = 'Padrão — ' || s.name
+                  )
+            """))
+            db.session.execute(db.text("""
+                UPDATE squares s SET default_pricing_table_id = p.id
+                FROM pricing_tables p
+                WHERE p.square_id = s.id
+                  AND p.name = 'Padrão — ' || s.name
+                  AND s.default_pricing_table_id IS NULL
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    # Migration FASE 2 DE PREÇOS (2026-11-16): drop das colunas legadas de preço
+    # em squares e de gamification_percentage (fonte do MuvScore = SystemConfig).
+    # Só derruba se toda praça já tiver tabela padrão (paridade garantida).
+    try:
+        pendentes = db.session.execute(db.text(
+            "SELECT count(*) FROM squares WHERE default_pricing_table_id IS NULL"
+        )).scalar()
+        if not pendentes:
+            for col in ('price_per_km', 'fixed_fee', 'min_distance_km',
+                        'max_delivery_fee', 'driver_percentage', 'gamification_percentage'):
+                db.session.execute(db.text(
+                    "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns "
+                    f"WHERE table_name = 'squares' AND column_name = '{col}') "
+                    f"THEN ALTER TABLE squares DROP COLUMN {col}; END IF; END $$"
+                ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = 'pricing_tables' AND column_name = 'gamification_percentage') "
+                "THEN ALTER TABLE pricing_tables DROP COLUMN gamification_percentage; END IF; END $$"
+            ))
+            db.session.commit()
     except Exception:
         db.session.rollback()
 

@@ -69,25 +69,10 @@ def run_inline_migrations():
     except Exception:
         db.session.rollback()
 
-    # Migration: adicionar colunas de preco na tabela squares
-    for col in ['price_per_km', 'max_delivery_fee', 'min_distance_km', 'driver_percentage']:
-        try:
-            db.session.execute(db.text(
-                f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'squares' AND column_name = '{col}') THEN ALTER TABLE squares ADD COLUMN {col} NUMERIC(10,2); END IF; END $$"
-            ))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-
-    # Migration: gamification_percentage em squares e pricing_tables
-    for table in ['squares', 'pricing_tables']:
-        try:
-            db.session.execute(db.text(
-                f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '{table}' AND column_name = 'gamification_percentage') THEN ALTER TABLE {table} ADD COLUMN gamification_percentage NUMERIC(5,2) DEFAULT 5.0; END IF; END $$"
-            ))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
+    # FASE 2 DE PREÇOS (2026-11-16): as migrações que ADICIONAVAM colunas de
+    # preço em squares e gamification_percentage em squares/pricing_tables foram
+    # REMOVIDAS — essas colunas foram derrubadas de propósito (valores vivem em
+    # pricing_tables; gamification vive no SystemConfig). Não recriar.
 
     # Migration: adicionar colunas de status de pedidos na tabela route_settings
     for col, col_type in [

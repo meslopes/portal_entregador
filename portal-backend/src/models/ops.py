@@ -33,11 +33,10 @@ class Notification(db.Model):
 class Square(db.Model):
     """Praça/Cidade onde o sistema opera.
 
-    Regra de preços (Fase 1, 2026-11-16): valores (R$/km, taxas, percentuais)
+    Regra de preços (Fases 1 e 2, 2026-11-16): valores (R$/km, taxas, percentuais)
     vivem SÓ nas tabelas de preço (PricingTable). A praça apenas INDICA qual
-    tabela é a padrão (default_pricing_table_id). As colunas de preço abaixo
-    são legado — mantidas no banco por segurança, mas não são mais a fonte
-    de leitura (a migração as copia para a tabela padrão).
+    tabela é a padrão (default_pricing_table_id). As colunas de preço legadas
+    FORAM REMOVIDAS (Fase 2) — valores migrados para a tabela padrão.
     """
     __tablename__ = 'squares'
 
@@ -52,13 +51,6 @@ class Square(db.Model):
     # referência é circular com pricing_tables.square_id (a coluna é criada
     # pela migração e a integridade é garantida pela aplicação).
     default_pricing_table_id = db.Column(db.Integer, nullable=True)
-    # ── LEGADO (pré-Fase 1) — valores duplicados; fonte real = PricingTable ──
-    price_per_km = db.Column(db.Numeric(10, 2), default=2.95)
-    fixed_fee = db.Column(db.Numeric(10, 2), default=0)  # Tarifa fixa (0 = usar preço por km)
-    min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)  # Distancia minima cobrada (4km padrao)
-    max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
-    driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)  # Percentual do entregador (65% padrao)
-    gamification_percentage = db.Column(db.Numeric(5, 2), default=5.0)  # Percentual para gamificação (5% padrao)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -75,15 +67,14 @@ class Square(db.Model):
         return PricingTable.query.get(self.default_pricing_table_id)
 
     def to_dict(self):
-        # Valores vêm da tabela padrão (fonte única); colunas legadas só como
-        # fallback para o instante anterior à migração de boot
+        # Valores SEMPRE da tabela padrão (fonte única); constantes só se a
+        # praça ainda não tiver tabela (situação transitória de configuração)
         pt = self.get_default_pricing_table()
-        price_per_km = float(pt.price_per_km) if pt and pt.price_per_km else (float(self.price_per_km) if self.price_per_km else 2.95)
-        fixed_fee = float(pt.fixed_fee) if pt and pt.fixed_fee is not None else (float(self.fixed_fee) if self.fixed_fee else 0)
-        min_distance_km = float(pt.min_distance_km) if pt and pt.min_distance_km else (float(self.min_distance_km) if self.min_distance_km else 4.0)
-        max_delivery_fee = float(pt.max_delivery_fee) if pt and pt.max_delivery_fee else (float(self.max_delivery_fee) if self.max_delivery_fee else 50.00)
-        driver_percentage = float(pt.driver_percentage) if pt and pt.driver_percentage else (float(self.driver_percentage) if self.driver_percentage else 65.0)
-        gamification_percentage = float(pt.gamification_percentage) if pt and pt.gamification_percentage else (float(self.gamification_percentage) if self.gamification_percentage else 5.0)
+        price_per_km = float(pt.price_per_km) if pt and pt.price_per_km else 2.95
+        fixed_fee = float(pt.fixed_fee) if pt and pt.fixed_fee is not None else 0
+        min_distance_km = float(pt.min_distance_km) if pt and pt.min_distance_km else 4.0
+        max_delivery_fee = float(pt.max_delivery_fee) if pt and pt.max_delivery_fee else 50.00
+        driver_percentage = float(pt.driver_percentage) if pt and pt.driver_percentage else 65.0
         return {
             'id': self.id,
             'name': self.name,
@@ -97,7 +88,6 @@ class Square(db.Model):
             'min_delivery_fee': price_per_km * min_distance_km,
             'max_delivery_fee': max_delivery_fee,
             'driver_percentage': driver_percentage,
-            'gamification_percentage': gamification_percentage,
             'pricing_tables': [t.to_dict() for t in self.pricing_tables] if self.pricing_tables else [],
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()

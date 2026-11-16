@@ -15,7 +15,7 @@ const AdminPricingPage = () => {
   const [form, setForm] = useState({
     name: '', description: '', square_id: '', price_per_km: '2.95',
     min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50',
-    driver_percentage: '65', gamification_percentage: '5', is_active: true
+    driver_percentage: '65', is_active: true
   });
 
   useEffect(() => { loadData(); }, []);
@@ -37,7 +37,7 @@ const AdminPricingPage = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', gamification_percentage: '5', is_active: true });
+    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true });
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -52,7 +52,6 @@ const AdminPricingPage = () => {
       min_delivery_fee: String(table.min_delivery_fee || ''),
       max_delivery_fee: String(table.max_delivery_fee || '50'),
       driver_percentage: String(table.driver_percentage || '65'),
-      gamification_percentage: String(table.gamification_percentage || '5'),
       is_active: table.is_active !== false
     });
     setEditingId(table.id);
@@ -71,7 +70,6 @@ const AdminPricingPage = () => {
         min_delivery_fee: form.min_delivery_fee ? parseFloat(form.min_delivery_fee) : null,
         max_delivery_fee: parseFloat(form.max_delivery_fee) || 50,
         driver_percentage: parseFloat(form.driver_percentage) || 65,
-        gamification_percentage: parseFloat(form.gamification_percentage) || 5,
         is_active: form.is_active
       };
       if (editingId) {
@@ -220,14 +218,10 @@ const AdminPricingPage = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>% Entregador</label>
                   <input type="number" step="1" value={form.driver_percentage} onChange={e => setForm(p => ({ ...p, driver_percentage: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>% Gamificação</label>
-                  <input type="number" step="1" value={form.gamification_percentage} onChange={e => setForm(p => ({ ...p, gamification_percentage: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '0.25rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>

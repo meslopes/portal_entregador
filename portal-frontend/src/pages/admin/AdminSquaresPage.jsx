@@ -186,8 +186,6 @@ const AdminSquaresPage = () => {
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.max_delivery_fee || '50,00'}</span>
                     <span style={{ color: '#64748b' }}>Entregador recebe:</span>
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.driver_percentage || '65'}%</span>
-                    <span style={{ color: '#64748b' }}>Gamificação:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.gamification_percentage || '5'}%</span>
                   </div>
                 </div>
               </div>

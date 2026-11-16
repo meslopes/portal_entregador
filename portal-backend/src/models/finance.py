@@ -75,7 +75,8 @@ class PricingTable(db.Model):
     min_delivery_fee = db.Column(db.Numeric(10, 2))
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
     driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)
-    gamification_percentage = db.Column(db.Numeric(5, 2), default=5.0)
+    # gamification_percentage REMOVIDO (Fase 2, 2026-11-16): a fonte do MuvScore
+    # é o SystemConfig (Configurações → Preços) — o campo aqui só confundia
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
@@ -96,7 +97,6 @@ class PricingTable(db.Model):
             'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else float(self.price_per_km) * float(self.min_distance_km or 4.0),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
             'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 65.0,
-            'gamification_percentage': float(self.gamification_percentage) if self.gamification_percentage else 5.0,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

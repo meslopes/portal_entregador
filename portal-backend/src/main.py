@@ -335,9 +335,10 @@ with app.app_context():
         print(f"Migração 2FA: {e}")
         db.session.rollback()
 
-    # Migration: adicionar fixed_fee em squares e pricing_tables
+    # Migration: adicionar fixed_fee em pricing_tables (squares NÃO — Fase 2
+    # de preços removeu as colunas de preço da praça de propósito)
     try:
-        for table in ['squares', 'pricing_tables']:
+        for table in ['pricing_tables']:
             if dialect == 'sqlite':
                 result = db.session.execute(db.text(f"PRAGMA table_info({table})"))
                 cols = [row[1] for row in result.fetchall()]
@@ -397,7 +398,8 @@ with app.app_context():
         # copiando os valores LEGADOS da praça (preço observado não muda).
         # min/max_delivery_fee NULL de propósito: o caminho antigo (praça) nunca
         # aplicou piso/teto — manter sem clamp preserva o frete observado.
-        if dialect != 'sqlite':
+        # Só roda se as colunas legadas ainda existem (banco novo já nasce sem)
+        if dialect != 'sqlite' and 'price_per_km' in columns:
             db.session.execute(db.text("""
                 INSERT INTO pricing_tables
                     (tenant_id, square_id, name, description, price_per_km, fixed_fee,
@@ -427,6 +429,34 @@ with app.app_context():
             print("Tabelas padrão de preços criadas/ligadas para as praças")
     except Exception as e:
         print(f"Migração Fase 1 de preços: {e}")
+        db.session.rollback()
+
+    # Migration FASE 2 DE PREÇOS (2026-11-16): drop das colunas legadas.
+    # - squares: os 6 campos de preço morrem (valores vivem em pricing_tables)
+    # - gamification_percentage: morre em squares E pricing_tables — a fonte do
+    #   MuvScore é o SystemConfig (Configurações → Preços), que já é lido hoje
+    # Só derruba se toda praça já tiver tabela padrão (nenhum preço se perde).
+    try:
+        pendentes = db.session.execute(db.text(
+            "SELECT count(*) FROM squares WHERE default_pricing_table_id IS NULL"
+        )).scalar()
+        if not pendentes:
+            for col in ('price_per_km', 'fixed_fee', 'min_distance_km',
+                        'max_delivery_fee', 'driver_percentage', 'gamification_percentage'):
+                db.session.execute(db.text(
+                    "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns "
+                    f"WHERE table_name = 'squares' AND column_name = '{col}') "
+                    f"THEN ALTER TABLE squares DROP COLUMN {col}; END IF; END $$"
+                ))
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns "
+                "WHERE table_name = 'pricing_tables' AND column_name = 'gamification_percentage') "
+                "THEN ALTER TABLE pricing_tables DROP COLUMN gamification_percentage; END IF; END $$"
+            ))
+            db.session.commit()
+            print("Fase 2 de preços: colunas legadas removidas (squares) e gamification consolidado no SystemConfig")
+    except Exception as e:
+        print(f"Migração Fase 2 de preços: {e}")
         db.session.rollback()
 
 # Iniciar background tasks apenas em produção
