@@ -186,49 +186,21 @@ def estimate_fee():
             duration_min = route_info['duration_min']
             distance_source = route_info['source']
 
-        # Calcular frete
+        # Calcular frete — fonte única: tabela do estabelecimento →
+        # tabela padrão da praça → padrão global (ver order_helpers)
         delivery_fee = 0
         price_per_km = 2.95
-        fixed_fee = 0
         min_km = 4.0
 
         logger.info(f"[FRETE] Distancia OSRM: {distance_km} km")
 
-        if restaurant.pricing_table_id:
-            from src.models.portal_models import PricingTable
-            pt = PricingTable.query.get(restaurant.pricing_table_id)
-            if pt:
-                fixed_fee = float(pt.fixed_fee or 0)
-                if fixed_fee > 0:
-                    # Tarifa fixa: valor independente da distância
-                    delivery_fee = fixed_fee
-                    logger.info(f"[FRETE] Tarifa fixa (pricing table): R${fixed_fee}")
-                elif pt.price_per_km:
-                    price_per_km = float(pt.price_per_km)
-                    min_km = float(pt.min_distance_km or 4.0)
-                    km_total = max(distance_km, min_km)
-                    delivery_fee = round(km_total * price_per_km, 2)
-                    logger.info(f"[FRETE] Pricing table: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
-                    if pt.min_delivery_fee:
-                        delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
-                    if pt.max_delivery_fee:
-                        delivery_fee = min(delivery_fee, float(pt.max_delivery_fee))
-        elif restaurant.square_id:
-            from src.models.portal_models import Square
-            sq = Square.query.get(restaurant.square_id)
-            if sq:
-                fixed_fee = float(sq.fixed_fee or 0)
-                if fixed_fee > 0:
-                    delivery_fee = fixed_fee
-                    logger.info(f"[FRETE] Tarifa fixa (square): R${fixed_fee}")
-                elif sq.price_per_km:
-                    price_per_km = float(sq.price_per_km)
-                    min_km = float(sq.min_distance_km or 4.0)
-                    km_total = max(distance_km, min_km)
-                    delivery_fee = round(km_total * price_per_km, 2)
-                    logger.info(f"[FRETE] Square: price_per_km={price_per_km}, min_km={min_km}, km_total={km_total}, fee={delivery_fee}")
+        from src.services.order_helpers import calcular_frete_tabela, resolve_pricing_table
+        pt = resolve_pricing_table(restaurant)
+        if pt:
+            delivery_fee, price_per_km, min_km = calcular_frete_tabela(pt, distance_km)
+            logger.info(f"[FRETE] Tabela '{pt.name}' (id {pt.id}): price_per_km={price_per_km}, min_km={min_km}, fee={delivery_fee}")
         else:
-            logger.info(f"[FRETE] Usando padrao: price_per_km={price_per_km}, min_km={min_km}")
+            logger.warning(f"[FRETE] Estabelecimento {restaurant.id} SEM tabela de preços — usando padrão 2.95")
             km_total = max(distance_km, min_km)
             delivery_fee = round(km_total * price_per_km, 2)
 

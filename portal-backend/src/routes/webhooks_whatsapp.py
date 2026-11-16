@@ -1,4 +1,4 @@
-﻿"""Webhooks e robô do WhatsApp.
+"""Webhooks e robô do WhatsApp.
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -285,18 +285,9 @@ def process_driver_response_whatsapp(phone, action):
                 delivery_longitude=pending_order.delivery_address.longitude
             )
 
-            # Calcula ganhos usando Haversine (% configurável)
-            driver_pct = 0.70
-            if pending_order.restaurant and pending_order.restaurant.pricing_table_id:
-                from src.models.portal_models import PricingTable
-                pt = PricingTable.query.get(pending_order.restaurant.pricing_table_id)
-                if pt and pt.driver_percentage:
-                    driver_pct = float(pt.driver_percentage) / 100.0
-            elif pending_order.restaurant and pending_order.restaurant.square_id:
-                from src.models.portal_models import Square
-                sq = Square.query.get(pending_order.restaurant.square_id)
-                if sq and sq.driver_percentage:
-                    driver_pct = float(sq.driver_percentage) / 100.0
+            # Calcula ganhos usando Haversine (% configurável — fonte única de preços)
+            from src.services.order_helpers import get_driver_percentage
+            driver_pct = get_driver_percentage(pending_order)
             base_earning = float(pending_order.delivery_fee) * driver_pct
             if delivery.delivery_latitude and delivery.pickup_latitude:
                 distance = haversine_distance(
@@ -329,19 +320,10 @@ def process_driver_response_whatsapp(phone, action):
             next_driver = find_nearest_available_driver(pending_order, exclude_driver_ids=[driver.id])
 
             if next_driver and next_driver.user.phone:
-                # Calcula distancia usando Haversine
+                # Calcula distancia usando Haversine (% — fonte única de preços)
                 km_total = 0
-                driver_pct = 0.70
-                if pending_order.restaurant and pending_order.restaurant.pricing_table_id:
-                    from src.models.portal_models import PricingTable
-                    pt = PricingTable.query.get(pending_order.restaurant.pricing_table_id)
-                    if pt and pt.driver_percentage:
-                        driver_pct = float(pt.driver_percentage) / 100.0
-                elif pending_order.restaurant and pending_order.restaurant.square_id:
-                    from src.models.portal_models import Square
-                    sq = Square.query.get(pending_order.restaurant.square_id)
-                    if sq and sq.driver_percentage:
-                        driver_pct = float(sq.driver_percentage) / 100.0
+                from src.services.order_helpers import get_driver_percentage
+                driver_pct = get_driver_percentage(pending_order)
                 driver_earnings = float(pending_order.delivery_fee) * driver_pct
                 if pending_order.delivery_address and pending_order.delivery_address.latitude and pending_order.restaurant and pending_order.restaurant.latitude:
                     km_total = haversine_distance(

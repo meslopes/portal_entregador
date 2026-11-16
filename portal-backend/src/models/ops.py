@@ -31,7 +31,14 @@ class Notification(db.Model):
         }
 
 class Square(db.Model):
-    """Praça/Cidade onde o sistema opera"""
+    """Praça/Cidade onde o sistema opera.
+
+    Regra de preços (Fase 1, 2026-11-16): valores (R$/km, taxas, percentuais)
+    vivem SÓ nas tabelas de preço (PricingTable). A praça apenas INDICA qual
+    tabela é a padrão (default_pricing_table_id). As colunas de preço abaixo
+    são legado — mantidas no banco por segurança, mas não são mais a fonte
+    de leitura (a migração as copia para a tabela padrão).
+    """
     __tablename__ = 'squares'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -40,7 +47,12 @@ class Square(db.Model):
     city = db.Column(db.String(100), nullable=False)
     state = db.Column(db.String(2), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    # Tabela de precos por km
+    # Tabela de preços padrão da praça — indica qual tabela vale para
+    # estabelecimentos sem tabela própria. Sem FK declarada porque a
+    # referência é circular com pricing_tables.square_id (a coluna é criada
+    # pela migração e a integridade é garantida pela aplicação).
+    default_pricing_table_id = db.Column(db.Integer, nullable=True)
+    # ── LEGADO (pré-Fase 1) — valores duplicados; fonte real = PricingTable ──
     price_per_km = db.Column(db.Numeric(10, 2), default=2.95)
     fixed_fee = db.Column(db.Numeric(10, 2), default=0)  # Tarifa fixa (0 = usar preço por km)
     min_distance_km = db.Column(db.Numeric(5, 2), default=4.0)  # Distancia minima cobrada (4km padrao)
@@ -55,20 +67,37 @@ class Square(db.Model):
     drivers = db.relationship('Driver', backref='square')
     pricing_tables = db.relationship('PricingTable', backref='square', cascade='all, delete-orphan')
 
+    def get_default_pricing_table(self):
+        """Tabela de preços padrão da praça (a fonte de valores da praça)."""
+        if not self.default_pricing_table_id:
+            return None
+        from src.models.portal_models import PricingTable
+        return PricingTable.query.get(self.default_pricing_table_id)
+
     def to_dict(self):
+        # Valores vêm da tabela padrão (fonte única); colunas legadas só como
+        # fallback para o instante anterior à migração de boot
+        pt = self.get_default_pricing_table()
+        price_per_km = float(pt.price_per_km) if pt and pt.price_per_km else (float(self.price_per_km) if self.price_per_km else 2.95)
+        fixed_fee = float(pt.fixed_fee) if pt and pt.fixed_fee is not None else (float(self.fixed_fee) if self.fixed_fee else 0)
+        min_distance_km = float(pt.min_distance_km) if pt and pt.min_distance_km else (float(self.min_distance_km) if self.min_distance_km else 4.0)
+        max_delivery_fee = float(pt.max_delivery_fee) if pt and pt.max_delivery_fee else (float(self.max_delivery_fee) if self.max_delivery_fee else 50.00)
+        driver_percentage = float(pt.driver_percentage) if pt and pt.driver_percentage else (float(self.driver_percentage) if self.driver_percentage else 65.0)
+        gamification_percentage = float(pt.gamification_percentage) if pt and pt.gamification_percentage else (float(self.gamification_percentage) if self.gamification_percentage else 5.0)
         return {
             'id': self.id,
             'name': self.name,
             'city': self.city,
             'state': self.state,
             'is_active': self.is_active,
-            'price_per_km': float(self.price_per_km) if self.price_per_km else 2.95,
-            'fixed_fee': float(self.fixed_fee) if self.fixed_fee else 0,
-            'min_distance_km': float(self.min_distance_km) if self.min_distance_km else 4.0,
-            'min_delivery_fee': float(self.price_per_km * (self.min_distance_km or 4.0)),
-            'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
-            'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 65.0,
-            'gamification_percentage': float(self.gamification_percentage) if self.gamification_percentage else 5.0,
+            'default_pricing_table_id': self.default_pricing_table_id,
+            'price_per_km': price_per_km,
+            'fixed_fee': fixed_fee,
+            'min_distance_km': min_distance_km,
+            'min_delivery_fee': price_per_km * min_distance_km,
+            'max_delivery_fee': max_delivery_fee,
+            'driver_percentage': driver_percentage,
+            'gamification_percentage': gamification_percentage,
             'pricing_tables': [t.to_dict() for t in self.pricing_tables] if self.pricing_tables else [],
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()

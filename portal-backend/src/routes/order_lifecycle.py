@@ -724,42 +724,20 @@ def create_order():
         delivery_fee = float(data.get('delivery_fee', 0))
 
         # Se o frontend não enviou frete, calcular com haversine como fallback
+        # Fonte única de preços: tabela do estabelecimento → tabela padrão da praça
         if delivery_fee <= 0:
-            if restaurant.pricing_table_id:
-                from src.models.portal_models import PricingTable
-                pt = PricingTable.query.get(restaurant.pricing_table_id)
-                if pt and pt.price_per_km:
-                    price_per_km = float(pt.price_per_km)
-                    min_km = float(pt.min_distance_km or 4.0)
-
-                    km_total = min_km
-                    if address.latitude and address.longitude and restaurant.latitude and restaurant.longitude:
-                        km_total = haversine_distance(
-                            float(restaurant.latitude), float(restaurant.longitude),
-                            float(address.latitude), float(address.longitude)
-                        )
-                        km_total = max(km_total, min_km)
-
-                    delivery_fee = round(km_total * price_per_km, 2)
-
-                    if pt.min_delivery_fee:
-                        delivery_fee = max(delivery_fee, float(pt.min_delivery_fee))
-                    if pt.max_delivery_fee:
-                        delivery_fee = min(delivery_fee, float(pt.max_delivery_fee))
-            elif restaurant.square_id:
-                from src.models.portal_models import Square
-                sq = Square.query.get(restaurant.square_id)
-                if sq and sq.price_per_km:
-                    price_per_km = float(sq.price_per_km)
-                    min_km = float(sq.min_distance_km or 4.0)
-                    km_total = min_km
-                    if address.latitude and address.longitude and restaurant.latitude and restaurant.longitude:
-                        km_total = haversine_distance(
-                            float(restaurant.latitude), float(restaurant.longitude),
-                            float(address.latitude), float(address.longitude)
-                        )
-                        km_total = max(km_total, min_km)
-                    delivery_fee = round(km_total * price_per_km, 2)
+            from src.services.order_helpers import calcular_frete_tabela, resolve_pricing_table
+            pt = resolve_pricing_table(restaurant)
+            if pt:
+                price_per_km = float(pt.price_per_km or 2.95)
+                min_km = float(pt.min_distance_km or 4.0)
+                km_total = min_km
+                if address.latitude and address.longitude and restaurant.latitude and restaurant.longitude:
+                    km_total = haversine_distance(
+                        float(restaurant.latitude), float(restaurant.longitude),
+                        float(address.latitude), float(address.longitude)
+                    )
+                delivery_fee, price_per_km, min_km = calcular_frete_tabela(pt, km_total)
 
         # Aplicar taxas dinâmicas (chuva, alta demanda, feriado)
         square_id = restaurant.square_id

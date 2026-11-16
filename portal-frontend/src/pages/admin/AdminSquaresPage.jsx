@@ -35,7 +35,9 @@ const AdminSquaresPage = () => {
 
   const openCreateForm = () => {
     setEditing(null);
-    setFormData({ name: '', city: '', state: '', price_per_km: '2.95', min_distance_km: '4.0', max_delivery_fee: '50.00', driver_percentage: '65.0', gamification_percentage: '5.0' });
+    // Preços NÃO ficam na praça — a tabela padrão é criada junto e editada
+    // em "Tabelas de Preço" (Fase 1 da consolidação de preços)
+    setFormData({ name: '', city: '', state: '' });
     setFormError('');
     setShowForm(true);
   };
@@ -44,11 +46,7 @@ const AdminSquaresPage = () => {
     setEditing(sq);
     setFormData({
       name: sq.name, city: sq.city, state: sq.state,
-      price_per_km: sq.price_per_km || '2.95',
-      min_distance_km: sq.min_distance_km || '4.0',
-      max_delivery_fee: sq.max_delivery_fee || '50.00',
-      driver_percentage: sq.driver_percentage || '65.0',
-      gamification_percentage: sq.gamification_percentage || '5.0'
+      default_pricing_table_id: sq.default_pricing_table_id || ''
     });
     setFormError('');
     setShowForm(true);
@@ -170,7 +168,13 @@ const AdminSquaresPage = () => {
                 </div>
                 {/* Tabela de Precos */}
                 <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
-                  <p style={{ fontSize: '0.625rem', fontWeight: 600, color: '#0d9488', marginBottom: '0.375rem', textTransform: 'uppercase' }}>Tabela de Preços</p>
+                  <p style={{ fontSize: '0.625rem', fontWeight: 600, color: '#0d9488', marginBottom: '0.375rem', textTransform: 'uppercase' }}>
+                    Tabela de Preços
+                    {(() => {
+                      const padrao = (sq.pricing_tables || []).find(t => t.id === sq.default_pricing_table_id);
+                      return padrao ? <span style={{ textTransform: 'none', fontWeight: 500 }}> — padrão: {padrao.name}</span> : null;
+                    })()}
+                  </p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem', fontSize: '0.75rem' }}>
                     <span style={{ color: '#64748b' }}>Preço/KM:</span>
                     <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.price_per_km || '2,95'}</span>
@@ -233,34 +237,38 @@ const AdminSquaresPage = () => {
                 </div>
               </div>
 
-              {/* Tabela de Precos */}
+              {/* Tabela de Preços — valores vivem na tabela, a praça só INDICA qual vale */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', marginBottom: '1rem' }}>
                 <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0d9488', marginBottom: '0.75rem' }}>Tabela de Preços</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Preço por KM (R$)</label>
-                    <input type="number" step="0.01" value={formData.price_per_km || '2.95'} onChange={e => setFormData(p => ({ ...p, price_per_km: e.target.value }))} style={inputStyle} placeholder="2.95" />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Distância Mínima (km)</label>
-                    <input type="number" step="0.5" value={formData.min_distance_km || '4.0'} onChange={e => setFormData(p => ({ ...p, min_distance_km: e.target.value }))} style={inputStyle} placeholder="4.0" />
-                    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Mínimo cobrado: R$ {((parseFloat(formData.price_per_km) || 2.95) * (parseFloat(formData.min_distance_km) || 4)).toFixed(2)}</p>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Taxa Máxima (R$)</label>
-                    <input type="number" step="0.01" value={formData.max_delivery_fee || '50.00'} onChange={e => setFormData(p => ({ ...p, max_delivery_fee: e.target.value }))} style={inputStyle} placeholder="50.00" />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Entregador (%)</label>
-                    <input type="number" step="1" min="0" max="100" value={formData.driver_percentage || '65'} onChange={e => setFormData(p => ({ ...p, driver_percentage: e.target.value }))} style={inputStyle} placeholder="65" />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Gamificação (%)</label>
-                    <input type="number" step="1" min="0" max="30" value={formData.gamification_percentage || '5'} onChange={e => setFormData(p => ({ ...p, gamification_percentage: e.target.value }))} style={inputStyle} placeholder="5" />
-                  </div>
-                </div>
+                {!editing ? (
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.6, background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '0.5rem', padding: '0.75rem' }}>
+                    Os valores de preço (R$/km, taxas, percentuais) ficam nas <strong>Tabelas de Preço</strong>.
+                    Ao criar a praça, a tabela <strong>“Padrão — {formData.name || 'nome da praça'}”</strong> será criada automaticamente.
+                    Depois, ajuste os valores em <strong>Financeiro → Tabelas de Preço</strong>.
+                  </p>
+                ) : (
+                  <>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                      Tabela padrão da praça (vale para estabelecimentos sem tabela própria)
+                    </label>
+                    <select
+                      value={formData.default_pricing_table_id || ''}
+                      onChange={e => setFormData(p => ({ ...p, default_pricing_table_id: e.target.value ? parseInt(e.target.value) : '' }))}
+                      style={inputStyle}
+                    >
+                      <option value="">— Nenhuma (pedidos ficarão sem frete) —</option>
+                      {(editing.pricing_tables || []).map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} — R$ {Number(t.price_per_km).toFixed(2)}/km · entregador {Number(t.driver_percentage).toFixed(0)}%
+                        </option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.375rem' }}>
+                      Para editar os valores ou criar outra tabela, use{' '}
+                      <a href="/admin/pricing" style={{ color: '#2563eb', fontWeight: 600 }}>Financeiro → Tabelas de Preço</a>.
+                    </p>
+                  </>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>

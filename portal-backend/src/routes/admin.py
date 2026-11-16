@@ -460,29 +460,9 @@ def assign_order_to_driver(order_id):
 
 
 
-        # Calcula ganhos (% configurável)
-
-        driver_pct = 0.70
-
-        if order.restaurant and order.restaurant.pricing_table_id:
-
-            from src.models.portal_models import PricingTable
-
-            pt = PricingTable.query.get(order.restaurant.pricing_table_id)
-
-            if pt and pt.driver_percentage:
-
-                driver_pct = float(pt.driver_percentage) / 100.0
-
-        elif order.restaurant and order.restaurant.square_id:
-
-            from src.models.portal_models import Square
-
-            sq = Square.query.get(order.restaurant.square_id)
-
-            if sq and sq.driver_percentage:
-
-                driver_pct = float(sq.driver_percentage) / 100.0
+        # Calcula ganhos (% configurável) — fonte única de preços
+        from src.services.order_helpers import get_driver_percentage
+        driver_pct = get_driver_percentage(order)
 
         base_earning = float(order.delivery_fee) * driver_pct
 

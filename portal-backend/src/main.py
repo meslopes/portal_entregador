@@ -375,6 +375,60 @@ with app.app_context():
         print(f"Migração external_merchant_id: {e}")
         db.session.rollback()
 
+    # Migration FASE 1 DE PREÇOS (2026-11-16): valores vivem só em pricing_tables;
+    # a praça apenas INDICA a tabela padrão (default_pricing_table_id)
+    try:
+        dialect = db.engine.dialect.name
+        if dialect == 'sqlite':
+            result = db.session.execute(db.text("PRAGMA table_info(squares)"))
+            columns = [row[1] for row in result.fetchall()]
+        else:
+            result = db.session.execute(db.text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = 'squares'"
+            ))
+            columns = [row[0] for row in result.fetchall()]
+
+        if 'default_pricing_table_id' not in columns:
+            db.session.execute(db.text("ALTER TABLE squares ADD COLUMN default_pricing_table_id INTEGER"))
+            db.session.commit()
+            print("Coluna default_pricing_table_id adicionada à tabela squares")
+
+        # Data-fix idempotente: praça sem tabela padrão ganha "Padrão — <nome>"
+        # copiando os valores LEGADOS da praça (preço observado não muda).
+        # min/max_delivery_fee NULL de propósito: o caminho antigo (praça) nunca
+        # aplicou piso/teto — manter sem clamp preserva o frete observado.
+        if dialect != 'sqlite':
+            db.session.execute(db.text("""
+                INSERT INTO pricing_tables
+                    (tenant_id, square_id, name, description, price_per_km, fixed_fee,
+                     min_distance_km, min_delivery_fee, max_delivery_fee,
+                     driver_percentage, gamification_percentage, is_active, created_at, updated_at)
+                SELECT s.tenant_id, s.id, 'Padrão — ' || s.name,
+                       'Tabela padrão criada na consolidação de preços (2026-11-16)',
+                       COALESCE(s.price_per_km, 2.95), COALESCE(s.fixed_fee, 0),
+                       COALESCE(s.min_distance_km, 4.0), NULL, NULL,
+                       COALESCE(s.driver_percentage, 65.0), COALESCE(s.gamification_percentage, 5.0),
+                       TRUE, NOW(), NOW()
+                FROM squares s
+                WHERE s.default_pricing_table_id IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM pricing_tables p
+                      WHERE p.square_id = s.id AND p.name = 'Padrão — ' || s.name
+                  )
+            """))
+            db.session.execute(db.text("""
+                UPDATE squares s SET default_pricing_table_id = p.id
+                FROM pricing_tables p
+                WHERE p.square_id = s.id
+                  AND p.name = 'Padrão — ' || s.name
+                  AND s.default_pricing_table_id IS NULL
+            """))
+            db.session.commit()
+            print("Tabelas padrão de preços criadas/ligadas para as praças")
+    except Exception as e:
+        print(f"Migração Fase 1 de preços: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

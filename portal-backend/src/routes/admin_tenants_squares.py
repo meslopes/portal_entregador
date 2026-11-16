@@ -297,6 +297,8 @@ def create_square():
 
 
 
+        # Praça = região + indicação da tabela de preços. Os valores de preço
+        # NÃO ficam mais na praça: criamos a tabela padrão junto (Fase 1, 2026-11-16)
         square = Square(
 
             name=data['name'],
@@ -307,7 +309,30 @@ def create_square():
 
             is_active=data.get('is_active', True),
 
+            tenant_id=tenant_id
+
+        )
+
+        db.session.add(square)
+
+        db.session.flush()
+
+        # Tabela padrão da praça — recebe os valores que antes ficavam na praça
+        from src.models.portal_models import PricingTable
+
+        tabela_padrao = PricingTable(
+
+            tenant_id=tenant_id,
+
+            square_id=square.id,
+
+            name=f"Padrão — {square.name}",
+
+            description='Tabela padrão da praça (os valores de preço vivem nas tabelas)',
+
             price_per_km=data.get('price_per_km', 2.95),
+
+            fixed_fee=data.get('fixed_fee', 0),
 
             min_distance_km=data.get('min_distance_km', 4.0),
 
@@ -317,11 +342,15 @@ def create_square():
 
             gamification_percentage=data.get('gamification_percentage', 5.0),
 
-            tenant_id=tenant_id
+            is_active=True
 
         )
 
-        db.session.add(square)
+        db.session.add(tabela_padrao)
+
+        db.session.flush()
+
+        square.default_pricing_table_id = tabela_padrao.id
 
         db.session.commit()
 
@@ -379,25 +408,62 @@ def update_square(square_id):
 
             square.is_active = data['is_active']
 
-        if data.get('price_per_km') is not None:
+        # Indicação da tabela padrão da praça (Fase 1 de preços)
+        if 'default_pricing_table_id' in data:
 
-            square.price_per_km = data['price_per_km']
+            from src.models.portal_models import PricingTable
 
-        if data.get('min_distance_km') is not None:
+            novo_id = data['default_pricing_table_id'] or None
 
-            square.min_distance_km = data['min_distance_km']
+            if novo_id:
 
-        if data.get('max_delivery_fee') is not None:
+                tabela = PricingTable.query.get(novo_id)
 
-            square.max_delivery_fee = data['max_delivery_fee']
+                if not tabela or tabela.square_id != square.id:
 
-        if data.get('driver_percentage') is not None:
+                    return jsonify({'error': 'Tabela de preços inválida para esta praça'}), 400
 
-            square.driver_percentage = data['driver_percentage']
+            square.default_pricing_table_id = novo_id
 
-        if data.get('gamification_percentage') is not None:
+        # Campos de preço: passam a gravar na TABELA PADRÃO da praça (não mais
+        # na praça). Mantido por compatibilidade com telas/payloads antigos.
+        campos_preco = ('price_per_km', 'min_distance_km', 'max_delivery_fee',
+                        'driver_percentage', 'gamification_percentage', 'fixed_fee')
 
-            square.gamification_percentage = data['gamification_percentage']
+        if any(data.get(c) is not None for c in campos_preco):
+
+            from src.models.portal_models import PricingTable
+
+            tabela = (PricingTable.query.get(square.default_pricing_table_id)
+                      if square.default_pricing_table_id else None)
+
+            if not tabela:
+
+                # Praça antiga ainda sem tabela padrão — cria agora
+
+                tabela = PricingTable(
+
+                    tenant_id=square.tenant_id, square_id=square.id,
+
+                    name=f"Padrão — {square.name}",
+
+                    description='Tabela padrão da praça (os valores de preço vivem nas tabelas)',
+
+                    is_active=True
+
+                )
+
+                db.session.add(tabela)
+
+                db.session.flush()
+
+                square.default_pricing_table_id = tabela.id
+
+            for campo in campos_preco:
+
+                if data.get(campo) is not None:
+
+                    setattr(tabela, campo, data[campo])
 
 
 

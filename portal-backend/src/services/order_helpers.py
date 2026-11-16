@@ -26,17 +26,57 @@ from src.utils.geo import haversine_distance
 logger = logging.getLogger(__name__)
 
 
-def get_driver_percentage(order):
-    """Retorna o percentual do entregador (0.0 a 1.0) baseado na configuração do restaurante"""
+def resolve_pricing_table(restaurant):
+    """
+    Fonte ÚNICA de preços de entrega (Fase 1 da consolidação de preços):
+    tabela do estabelecimento → tabela padrão da praça → None.
+
+    Antes essa cadeia estava copiada em 6 arquivos (order_queries,
+    order_lifecycle, order_acceptance, admin.py, webhooks_whatsapp e aqui)
+    com pequenas divergências entre as cópias.
+    """
     from src.models.portal_models import PricingTable, Square
-    if order.restaurant and order.restaurant.pricing_table_id:
-        pt = PricingTable.query.get(order.restaurant.pricing_table_id)
-        if pt and pt.driver_percentage:
-            return float(pt.driver_percentage) / 100.0
-    if order.restaurant and order.restaurant.square_id:
-        sq = Square.query.get(order.restaurant.square_id)
-        if sq and sq.driver_percentage:
-            return float(sq.driver_percentage) / 100.0
+    if restaurant and restaurant.pricing_table_id:
+        pt = PricingTable.query.get(restaurant.pricing_table_id)
+        if pt:
+            return pt
+    if restaurant and restaurant.square_id:
+        sq = Square.query.get(restaurant.square_id)
+        if sq and sq.default_pricing_table_id:
+            pt = PricingTable.query.get(sq.default_pricing_table_id)
+            if pt:
+                return pt
+    return None
+
+
+def calcular_frete_tabela(pt, distance_km):
+    """
+    Calcula o frete a partir de uma tabela de preços.
+    Regras:
+      - fixed_fee > 0 → frete fixo (independe da distância)
+      - senão → max(distância, min_distance_km) × price_per_km,
+        com piso/teto quando a tabela definir min/max_delivery_fee.
+    Retorna (delivery_fee, price_per_km, min_distance_km).
+    """
+    fixed_fee = float(pt.fixed_fee or 0)
+    if fixed_fee > 0:
+        return fixed_fee, float(pt.price_per_km or 2.95), float(pt.min_distance_km or 4.0)
+    price_per_km = float(pt.price_per_km or 2.95)
+    min_km = float(pt.min_distance_km or 4.0)
+    km_total = max(distance_km, min_km)
+    fee = round(km_total * price_per_km, 2)
+    if pt.min_delivery_fee:
+        fee = max(fee, float(pt.min_delivery_fee))
+    if pt.max_delivery_fee:
+        fee = min(fee, float(pt.max_delivery_fee))
+    return fee, price_per_km, min_km
+
+
+def get_driver_percentage(order):
+    """Retorna o percentual do entregador (0.0 a 1.0) da tabela de preços resolvida"""
+    pt = resolve_pricing_table(order.restaurant if order else None)
+    if pt and pt.driver_percentage:
+        return float(pt.driver_percentage) / 100.0
     return 0.70
 
 

@@ -214,6 +214,52 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration FASE 1 DE PREÇOS (2026-11-16): valores (R$/km, taxas, percentuais)
+    # passam a viver SÓ em pricing_tables; a praça apenas INDICA a tabela padrão.
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'squares' AND column_name = 'default_pricing_table_id') "
+            "THEN ALTER TABLE squares ADD COLUMN default_pricing_table_id INTEGER; END IF; END $$"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # Data-fix idempotente: praça sem tabela padrão ganha a tabela
+    # "Padrão — <nome>" copiando os valores LEGADOS da praça (preço não muda).
+    # min/max_delivery_fee ficam NULL de propósito: o caminho antigo (praça)
+    # nunca aplicou piso/teto — manter sem clamp preserva o frete observado.
+    try:
+        db.session.execute(db.text("""
+            INSERT INTO pricing_tables
+                (tenant_id, square_id, name, description, price_per_km, fixed_fee,
+                 min_distance_km, min_delivery_fee, max_delivery_fee,
+                 driver_percentage, gamification_percentage, is_active, created_at, updated_at)
+            SELECT s.tenant_id, s.id, 'Padrão — ' || s.name,
+                   'Tabela padrão criada na consolidação de preços (2026-11-16)',
+                   COALESCE(s.price_per_km, 2.95), COALESCE(s.fixed_fee, 0),
+                   COALESCE(s.min_distance_km, 4.0), NULL, NULL,
+                   COALESCE(s.driver_percentage, 65.0), COALESCE(s.gamification_percentage, 5.0),
+                   TRUE, NOW(), NOW()
+            FROM squares s
+            WHERE s.default_pricing_table_id IS NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM pricing_tables p
+                  WHERE p.square_id = s.id AND p.name = 'Padrão — ' || s.name
+              )
+        """))
+        db.session.execute(db.text("""
+            UPDATE squares s SET default_pricing_table_id = p.id
+            FROM pricing_tables p
+            WHERE p.square_id = s.id
+              AND p.name = 'Padrão — ' || s.name
+              AND s.default_pricing_table_id IS NULL
+        """))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Migration: carteira do entregador (balance, locked_balance, pix_key)
     try:
         db.session.execute(db.text(
