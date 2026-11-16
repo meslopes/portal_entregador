@@ -294,6 +294,16 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration FASE 2b (2026-11-16): teto de frete nas tabelas sem teto —
+    # verdade = display = comportamento (ajustável por tabela no formulário)
+    try:
+        db.session.execute(db.text(
+            "UPDATE pricing_tables SET max_delivery_fee = 50 WHERE max_delivery_fee IS NULL"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Migration: carteira do entregador (balance, locked_balance, pix_key)
     try:
         db.session.execute(db.text(

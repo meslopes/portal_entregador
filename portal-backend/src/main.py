@@ -459,6 +459,20 @@ with app.app_context():
         print(f"Migração Fase 2 de preços: {e}")
         db.session.rollback()
 
+    # Migration FASE 2b (2026-11-16): teto de frete nas tabelas sem teto.
+    # As tabelas migradas da praça ficaram com max_delivery_fee NULL (sem teto);
+    # o teto agora vive e VALE dentro da tabela de preços — aplica o padrão 50
+    # para verdade = display = comportamento (ajustável por tabela no formulário).
+    try:
+        db.session.execute(db.text(
+            "UPDATE pricing_tables SET max_delivery_fee = 50 WHERE max_delivery_fee IS NULL"
+        ))
+        db.session.commit()
+        print("Teto de frete (R$ 50) aplicado em tabelas sem teto")
+    except Exception as e:
+        print(f"Migração Fase 2b de preços: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

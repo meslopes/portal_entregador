@@ -166,28 +166,25 @@ const AdminSquaresPage = () => {
                     <p style={{ fontSize: '0.625rem', color: '#64748b' }}>Pedidos</p>
                   </div>
                 </div>
-                {/* Tabela de Precos */}
-                <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
-                  <p style={{ fontSize: '0.625rem', fontWeight: 600, color: '#0d9488', marginBottom: '0.375rem', textTransform: 'uppercase' }}>
-                    Tabela de Preços
-                    {(() => {
-                      const padrao = (sq.pricing_tables || []).find(t => t.id === sq.default_pricing_table_id);
-                      return padrao ? <span style={{ textTransform: 'none', fontWeight: 500 }}> — padrão: {padrao.name}</span> : null;
-                    })()}
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem', fontSize: '0.75rem' }}>
-                    <span style={{ color: '#64748b' }}>Preço/KM:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.price_per_km || '2,95'}</span>
-                    <span style={{ color: '#64748b' }}>Dist. Mínima:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.min_distance_km || '4'} km</span>
-                    <span style={{ color: '#64748b' }}>Frete Mínimo:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.min_delivery_fee || ((sq.price_per_km || 0) * 4).toFixed(2)}</span>
-                    <span style={{ color: '#64748b' }}>Frete Máximo:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {sq.max_delivery_fee || '50,00'}</span>
-                    <span style={{ color: '#64748b' }}>Entregador recebe:</span>
-                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{sq.driver_percentage || '65'}%</span>
-                  </div>
-                </div>
+                {/* Tabela de Preços — SÓ a indicação da tabela padrão.
+                    Os valores ficam em Financeiro → Tabelas de Preço (regra do Mauro:
+                    a praça não exibe informações de valores) */}
+                {(() => {
+                  const padrao = (sq.pricing_tables || []).find(t => t.id === sq.default_pricing_table_id);
+                  return (
+                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                      <div>
+                        <p style={{ fontSize: '0.625rem', fontWeight: 600, color: '#0d9488', textTransform: 'uppercase' }}>Tabela de Preços</p>
+                        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#1e293b', marginTop: '0.125rem' }}>
+                          {padrao ? padrao.name : '— sem tabela padrão —'}
+                        </p>
+                      </div>
+                      <a href="/admin/pricing" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0d9488', whiteSpace: 'nowrap' }}>
+                        Ver valores →
+                      </a>
+                    </div>
+                  );
+                })()}
               </div>
               <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                 <button onClick={() => handleToggleActive(sq)} style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: sq.is_active ? '#22c55e' : '#e2e8f0', color: sq.is_active ? 'white' : '#64748b', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>

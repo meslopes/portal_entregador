@@ -337,11 +337,11 @@ cd portal-backend && python -c "from src.main import app; print('OK')"
 ## Lembre-se de registrar na memoria do projeto toda modificação ou ajuste que fizer, mesmo que não seja ainda a hora de fazer um commit, pra ter certeza que a sua memoria vai estar sempre atualizada.
 
 #### 9. RACIOCÍNIO DO MODELO (REASONING EFFORT)
-- **Padrão:** Medium (raciocínio moderado) — configurado em `~/.config/mimocode/mimocode.jsonc`
-- **Quando usar High:** Alterações em lógica de pagamento, state machine, autenticação, modelos de dados
-- **Quando usar Low/Medium:** Ajustes de UI, textos, correções simples
-- **Economia burra:** Usar low o tempo todo gasta mais créditos no total por causa do retrabalho
-- **Objetivo:** Menos erros = menos retrabalho = menos créditos gastos = mais eficiência
+- **Padrão: HIGH (preferência do Mauro, 2026-11-16)** — usar o modo de raciocínio alto em todas as sessões de trabalho
+- **Por quê:** o que mais consome tokens no projeto são os ciclos de teste/deploy e o retrabalho por diagnóstico errado — não o raciocínio do modelo. High reduz erros e retrabalho; no total, sai mais barato ("economia burra" = economizar no modo e pagar depois com correções)
+- **Como ativar:** o seletor é o comando **`/variants`** no TUI (só aparece quando o modelo tem variantes). Situação em 2026-11-16: `MiMo-V2.6-Pro` NÃO tem variantes e o `UltraSpeed` deu 400 "Not supported model" (falta `/login`/disponibilidade) — **reavaliar no início de cada nova sessão** (tentar `/login` + seletor; se o trabalho parecer "low/medium", o Mauro reinicia a sessão). OBS: o `mimocode.jsonc` NÃO tem campo de esforço de raciocínio — esta é a fonte de verdade, não o config
+- **Reforço da IA:** em todo início de sessão ("restore history"), lembrar o Mauro de verificar o modo de raciocínio (e reportar se algo parecer mais lento/raso que o habitual)
+- **Exceção opcional:** para ajustes triviais de texto/UI, o Mauro pode optar por medium/low naquela sessão — decisão dele, não da IA
 
 #### 10. FONTE DE VERDADE
 - **Este documento + `MEMORY.md`** são a fonte oficial de regras e procedimentos
