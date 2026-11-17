@@ -14,6 +14,7 @@ import EstablishmentDriversPage from '@/pages/client/EstablishmentDriversPage';
 import EstablishmentRoutesPage from '@/pages/client/EstablishmentRoutesPage';
 import OwnDriverFinancialPage from '@/pages/client/OwnDriverFinancialPage';
 import OwnDriverMetricsPage from '@/pages/client/OwnDriverMetricsPage';
+import MyPricesPage from '@/pages/client/MyPricesPage';
 import PaymentReportsPage from '@/pages/PaymentReportsPage';
 
 // Rotas exclusivas de estabelecimentos — exige user_type=CLIENT
@@ -53,6 +54,7 @@ export const clientRoutes = (
       <Route path="/client/drivers" element={<WrappedRoute><EstablishmentDriversPage /></WrappedRoute>} />
       <Route path="/client/drivers/financial" element={<WrappedRoute><OwnDriverFinancialPage /></WrappedRoute>} />
       <Route path="/client/drivers/metrics" element={<WrappedRoute><OwnDriverMetricsPage /></WrappedRoute>} />
+      <Route path="/client/pricing" element={<WrappedRoute><MyPricesPage /></WrappedRoute>} />
       <Route path="/client/profile" element={<WrappedRoute><ClientProfilePage /></WrappedRoute>} />
       <Route path="/client/routes" element={<WrappedRoute><EstablishmentRoutesPage /></WrappedRoute>} />
     </>

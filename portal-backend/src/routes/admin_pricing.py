@@ -22,6 +22,158 @@ from src.utils.tenant import get_current_tenant_id, get_current_user
 admin_pricing_bp = Blueprint('pricing', __name__)
 
 
+def _meu_restaurante(user):
+    """Restaurante do usuário logado (portal do cliente "Meus Preços").
+
+    CLIENT: vínculo pelo nome (Customer.name ≈ Restaurant.name — mesmo padrão
+    de user.py e admin_est_drivers_pay.py). ADMIN: ?restaurant_id.
+    """
+    from src.models.portal_models import Customer, Restaurant, UserType
+    from src.utils.restaurant import find_restaurant_by_name
+
+    if user is None:
+        return None
+    if user.user_type == UserType.CLIENT:
+        customer = Customer.query.filter_by(user_id=user.id).first()
+        return find_restaurant_by_name(customer.name) if customer else None
+    rid = request.args.get('restaurant_id', type=int)
+    return Restaurant.query.get(rid) if rid else None
+
+
+def _num(data, campo, minimo, maximo):
+    """Converte e valida um campo numérico do payload (lança ValueError)."""
+    val = data.get(campo)
+    if val is None or val == '':
+        raise ValueError(f"Campo '{campo}' é obrigatório")
+    try:
+        val = float(val)
+    except (TypeError, ValueError):
+        raise ValueError(f"Campo '{campo}' deve ser numérico")
+    if not (minimo <= val <= maximo):
+        raise ValueError(f"Campo '{campo}' deve estar entre {minimo} e {maximo}")
+    return val
+
+
+@admin_pricing_bp.route('/my-pricing-table', methods=['GET'])
+
+@jwt_required()
+
+@client_or_admin_required
+
+def get_my_pricing_table():
+
+    """Preços de entrega do estabelecimento logado (tela "Meus Preços")."""
+
+    try:
+
+        restaurant = _meu_restaurante(get_current_user())
+
+        if not restaurant:
+
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        from src.services.order_helpers import resolve_pricing_table
+
+        pt = resolve_pricing_table(restaurant)
+
+        return jsonify({
+            'restaurant_id': restaurant.id,
+            'has_own_drivers': bool(restaurant.has_own_drivers),
+            'pricing_table': pt.to_dict() if pt else None,
+        }), 200
+
+    except Exception as e:
+
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_pricing_bp.route('/my-pricing-table', methods=['PUT'])
+
+@jwt_required()
+
+@client_or_admin_required
+
+def update_my_pricing_table():
+
+    """Atualiza os preços de FRETE do estabelecimento (entregas próprias).
+
+    Só campos de frete do cliente — sem campos de custo (princípio da
+    independência, docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md).
+    """
+
+    try:
+
+        restaurant = _meu_restaurante(get_current_user())
+
+        if not restaurant:
+
+            return jsonify({'error': 'Estabelecimento não encontrado'}), 404
+
+        # Preço self-service é das entregas próprias; na plataforma, os preços
+        # são definidos pelo administrador
+        if not restaurant.has_own_drivers:
+
+            return jsonify({'error': 'Os preços deste estabelecimento são definidos pelo administrador'}), 403
+
+        from src.services.order_helpers import resolve_pricing_table
+
+        pt = resolve_pricing_table(restaurant)
+
+        if not pt:
+
+            return jsonify({'error': 'Nenhuma tabela de preços vinculada ao estabelecimento'}), 400
+
+        data = request.get_json() or {}
+
+        try:
+
+            price_per_km = _num(data, 'price_per_km', 0.01, 100)
+
+            fixed_fee = _num(data, 'fixed_fee', 0, 10000)
+
+            min_distance_km = _num(data, 'min_distance_km', 0.1, 100)
+
+            min_delivery_fee = None
+
+            if data.get('min_delivery_fee') not in (None, ''):
+
+                min_delivery_fee = _num(data, 'min_delivery_fee', 0, 10000)
+
+            max_delivery_fee = None
+
+            if data.get('max_delivery_fee') not in (None, ''):
+
+                max_delivery_fee = _num(data, 'max_delivery_fee', 0, 10000)
+
+        except ValueError as e:
+
+            return jsonify({'error': str(e)}), 400
+
+        if min_delivery_fee is not None and max_delivery_fee is not None and min_delivery_fee > max_delivery_fee:
+
+            return jsonify({'error': 'O frete mínimo não pode ser maior que o máximo'}), 400
+
+        pt.price_per_km = price_per_km
+
+        pt.fixed_fee = fixed_fee
+
+        pt.min_distance_km = min_distance_km
+
+        pt.min_delivery_fee = min_delivery_fee
+
+        pt.max_delivery_fee = max_delivery_fee
+
+        db.session.commit()
+
+        return jsonify({'message': 'Preços atualizados com sucesso', 'pricing_table': pt.to_dict()}), 200
+
+    except Exception as e:
+
+        db.session.rollback()
+
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_pricing_bp.route('/settings', methods=['GET'])
 
 @jwt_required()
