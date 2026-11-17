@@ -183,6 +183,20 @@ Solução planejada:
   servidor com restrição por IP OU geocodificar só no cliente) **reduz a frequência**; o campo manual é
   a rede de segurança final.
 
+### 7.4 Expansão futura das tabelas — modelo PLATAFORMA (pedido do Mauro, 2026-11-17)
+
+**Esclarecimento:** as tabelas de plataforma **não ficaram para trás** — faixas de km e frete grátis
+são do MOTOR de tabelas e valem para ambos os modelos (o admin edita em Tabelas de Preço). O que é
+exclusivo dos próprios é o autosserviço "Meus Preços".
+
+Acrescentar às tabelas (futuro, útil ao modelo plataforma):
+
+| Recurso | Motivo (regra de domínio do Mauro) |
+|---------|-------------------------------------|
+| **"Considerar a volta" como opção da tabela** (padrão DESLIGADO) | Entregador de PLATAFORMA que sai para serviço extra (troco, máquina de cartão) **não retorna** ao estabelecimento — cobra-se a volta. Nos próprios fica sempre desligado (entregador sempre retorna) |
+| **Taxa de deslocamento até a coleta** | Na plataforma o motoboy corre até o estabelecimento — hoje o frete cobre só estab → cliente |
+| Tabela por tipo de veículo (moto/bike) | Útil com frota mista |
+
 Fases A–C não decidem dinheiro. D–E implementam as decisões da seção 5.
 
 ## 7. Decisões registradas (histórico)

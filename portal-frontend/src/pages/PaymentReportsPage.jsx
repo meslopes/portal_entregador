@@ -7,6 +7,7 @@ import PaymentFilters from './payment-reports/PaymentFilters';
 import PaymentStats from './payment-reports/PaymentStats';
 import PaymentList from './payment-reports/PaymentList';
 import WithdrawalsList from './payment-reports/WithdrawalsList';
+import PaymentsTabs from '@/components/PaymentsTabs';
 
 const PAYMENT_FREQUENCY_LABELS = {
   DAILY: { label: 'Diário', icon: '📅', color: '#2563eb' },
@@ -15,7 +16,7 @@ const PAYMENT_FREQUENCY_LABELS = {
   ON_DEMAND: { label: 'Sob Demanda', icon: '⚡', color: '#d97706' }
 };
 
-const PaymentReportsPage = () => {
+const PaymentReportsPage = ({ clientTabs = false }) => {
   const [reports, setReports] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -198,6 +199,8 @@ const PaymentReportsPage = () => {
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Menu "Pagamentos" unificado — só no portal do estabelecimento (Fase C) */}
+      {clientTabs && <PaymentsTabs active="reports" />}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>

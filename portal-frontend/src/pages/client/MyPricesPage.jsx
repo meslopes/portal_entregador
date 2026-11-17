@@ -7,7 +7,7 @@ import TierBandsField from '@/components/TierBandsField';
 /**
  * Meus Preços — o estabelecimento define os preços de entrega que cobra do seu cliente.
  * Só campos de frete (princípio da independência: custos de entregador ficam em
- * "Pagamentos Entregadores" — ver docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md).
+ * "Pagamentos" — ver docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md).
  */
 const MyPricesPage = () => {
   const [form, setForm] = useState({
@@ -246,7 +246,7 @@ const MyPricesPage = () => {
 
       <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '1rem', lineHeight: 1.6 }}>
         <DollarSign size={12} style={{ verticalAlign: 'middle' }} /> O pagamento que você faz aos seus entregadores é
-        configurado em <strong>Pagamentos Entregadores</strong> — os dois são independentes.
+        configurado em <strong>Pagamentos</strong> — os dois são independentes.
       </p>
     </div>
   );

@@ -6,6 +6,7 @@ import FinancialStats from './own-driver-financial/FinancialStats';
 import PaymentHistory from './own-driver-financial/PaymentHistory';
 import PaymentConfigForm from './own-driver-financial/PaymentConfigForm';
 import ComparisonView from './own-driver-financial/ComparisonView';
+import PaymentsTabs from '@/components/PaymentsTabs';
 
 const OwnDriverFinancialPage = () => {
   const [activeTab, setActiveTab] = useState('earnings');
@@ -175,6 +176,8 @@ const OwnDriverFinancialPage = () => {
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Menu "Pagamentos" unificado (Fase C) — abas entre as telas de pagamento */}
+      <PaymentsTabs active="config" />
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>

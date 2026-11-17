@@ -115,9 +115,10 @@ const Layout = ({ children }) => {
       children: [
         { name: 'Visão Geral', href: '/admin/finance', icon: BarChart3 },
         { name: 'Pagamentos Próprios', href: '/admin/payment-reports', icon: Wallet },
+        { name: 'Pagamentos Plataforma', href: '/admin/driver-payments', icon: CreditCard },
         { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
         { name: 'Inadimplência', href: '/admin/overdue-report', icon: AlertTriangle },
-        { name: 'Saques', href: '/admin/withdrawals', icon: CreditCard },
+        { name: 'Saques Plataforma', href: '/admin/withdrawals', icon: CreditCard },
         { name: 'Faturas', href: '/admin/invoices', icon: FileText },
       ]
     },

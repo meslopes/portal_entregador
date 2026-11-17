@@ -57,8 +57,11 @@ const ClientLayout = ({ children }) => {
     { name: 'Meus Preços', href: '/client/pricing', icon: Tag },
     { name: 'Meus Entregadores', href: '/client/drivers', icon: Users },
     { name: 'Rotas', href: '/client/routes', icon: Route },
-    { name: 'Pagamentos Entregadores', href: '/client/drivers/financial', icon: DollarSign },
-    { name: 'Pagamentos Próprios', href: '/client/payment-reports', icon: Wallet },
+    // Menu "Pagamentos" UNIFICADO (Fase C): configuração/ganhos + relatórios/saques
+    {
+      name: 'Pagamentos', href: '/client/drivers/financial', icon: Wallet,
+      activePaths: ['/client/drivers/financial', '/client/payment-reports']
+    },
     { name: 'Desempenho Entregadores', href: '/client/drivers/metrics', icon: BarChart3 },
   ];
 
@@ -66,7 +69,8 @@ const ClientLayout = ({ children }) => {
     ? [...baseNavigation, ...ownDriverNavigation]
     : baseNavigation;
 
-  const isActive = (href) => location.pathname === href;
+  const isActive = (item) =>
+    item.activePaths ? item.activePaths.includes(location.pathname) : location.pathname === item.href;
 
   const userInitials = user?.first_name && user?.last_name
     ? `${user.first_name[0]}${user.last_name[0]}`
@@ -104,7 +108,7 @@ const ClientLayout = ({ children }) => {
             <nav style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto' }}>
               {navigation.map((item) => {
                 const Icon = item.icon;
-                const active = isActive(item.href);
+                const active = isActive(item);
                 return (
                   <Link
                     key={item.name}
@@ -186,7 +190,7 @@ const ClientLayout = ({ children }) => {
           <div style={{ borderTop: '1px solid #e2e8f0', padding: '0.5rem' }} className="mobile-nav">
             {navigation.map((item) => {
               const Icon = item.icon;
-              const active = isActive(item.href);
+              const active = isActive(item);
               return (
                 <Link
                   key={item.name}

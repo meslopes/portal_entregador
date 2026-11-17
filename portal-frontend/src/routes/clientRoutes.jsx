@@ -48,7 +48,7 @@ export const clientRoutes = (
       <Route path="/client/new-order" element={<WrappedRoute><NewOrderPage /></WrappedRoute>} />
       <Route path="/client/orders" element={<WrappedRoute><ClientOrdersPage /></WrappedRoute>} />
       <Route path="/client/financial" element={<WrappedRoute><ClientFinancialPage /></WrappedRoute>} />
-      <Route path="/client/payment-reports" element={<WrappedRoute><PaymentReportsPage /></WrappedRoute>} />
+      <Route path="/client/payment-reports" element={<WrappedRoute><PaymentReportsPage clientTabs /></WrappedRoute>} />
       <Route path="/client/invoices" element={<WrappedRoute><ClientInvoicePage /></WrappedRoute>} />
       <Route path="/client/integrations" element={<WrappedRoute><ClientIntegrationsPage /></WrappedRoute>} />
       <Route path="/client/drivers" element={<WrappedRoute><EstablishmentDriversPage /></WrappedRoute>} />
