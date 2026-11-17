@@ -94,6 +94,11 @@ const SubscriptionCards = ({ subscriptions, onGenerateInvoice }) => {
                   + {formatCurrency(sub.fixed_price)} fixo
                 </p>
               )}
+              {sub.price_per_order > 0 && (
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  + {formatCurrency(sub.price_per_order)}/pedido
+                </p>
+              )}
             </div>
           </div>
 

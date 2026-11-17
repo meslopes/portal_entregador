@@ -118,6 +118,25 @@ const CreateSubscriptionModal = ({
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={labelStyle}>
+              Preço por Pedido entregue (R${' '}
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(opcional)</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={createForm.price_per_order ?? 0}
+              onChange={(e) =>
+                setCreateForm({ ...createForm, price_per_order: parseFloat(e.target.value) || 0 })
+              }
+              style={inputStyle}
+            />
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+              Cobrado por pedido entregue no ciclo — os 3 termos são independentes (0 = não cobrar)
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>
               Preço Fixo por Estabelecimento (R${' '}
               <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(opcional)</span>
             </label>

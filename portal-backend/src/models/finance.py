@@ -236,9 +236,13 @@ class EstablishmentSubscription(db.Model):
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
 
-    # Configuração da assinatura
+    # Configuração da assinatura — 3 termos independentes (plano §5.1):
+    # total = FIXO + (R$/entregador × ativos) + (R$/pedido × entregues no ciclo)
+    # Qualquer termo pode ser zero: a combinação é o modelo comercial que o
+    # admin negocia com cada estabelecimento (argumento de venda).
     billing_cycle = db.Column(db.String(20), default='WEEKLY')  # WEEKLY, MONTHLY
     price_per_driver = db.Column(db.Numeric(10, 2), default=50.00)  # Preço por entregador por ciclo
+    price_per_order = db.Column(db.Numeric(10, 2), default=0)  # Preço por pedido entregue no ciclo
     fixed_price = db.Column(db.Numeric(10, 2), default=0)  # Preço fixo por estabelecimento (opcional)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -295,6 +299,8 @@ class SubscriptionInvoice(db.Model):
     # Valores
     drivers_count = db.Column(db.Integer, default=0)  # Quantidade de entregadores no período
     price_per_driver = db.Column(db.Numeric(10, 2))
+    orders_count = db.Column(db.Integer, default=0)  # Pedidos entregues no período
+    price_per_order = db.Column(db.Numeric(10, 2))
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
 
     # Status

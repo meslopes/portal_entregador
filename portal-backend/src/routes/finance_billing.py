@@ -1,4 +1,4 @@
-﻿"""Módulo finance_billing — extraído de src/routes/finance.py no refactor de arquivos grandes.
+"""Módulo finance_billing — extraído de src/routes/finance.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import logging
@@ -11,6 +11,8 @@ from src.models.portal_models import (
     Customer,
     EstablishmentDriver,
     EstablishmentSubscription,
+    Order,
+    OrderStatus,
     OwnDriverEarning,
     Restaurant,
     SubscriptionInvoice,
@@ -23,6 +25,51 @@ logger = logging.getLogger(__name__)
 
 
 finance_billing_bp = Blueprint('finance_billing', __name__, url_prefix='/api/finance')
+
+
+def calcular_assinatura(subscription, inicio, fim):
+    """
+    Fórmula ÚNICA da assinatura de entregadores próprios (3 termos — plano de
+    monetização §5.1, docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md):
+
+        total = FIXO + (R$/entregador × entregadores ativos)
+                + (R$/pedido × pedidos ENTREGUES no ciclo)
+
+    Qualquer termo pode ser zero — a combinação é o modelo comercial que o admin
+    negocia com cada estabelecimento (argumento de venda). Nunca % do frete
+    (princípio da independência).
+
+    ATENÇÃO: esta é a ÚNICA função que calcula o total — preview de tela e
+    geração de fatura devem chamá-la (a fórmula estava duplicada em 3 lugares).
+    """
+    drivers_count = EstablishmentDriver.query.filter(
+        EstablishmentDriver.restaurant_id == subscription.restaurant_id,
+        EstablishmentDriver.is_active,
+    ).count()
+    orders_count = Order.query.filter(
+        Order.restaurant_id == subscription.restaurant_id,
+        Order.status == OrderStatus.DELIVERED,
+        Order.created_at >= inicio,
+        Order.created_at <= fim,
+    ).count()
+
+    price_per_driver = float(subscription.price_per_driver or 0)
+    price_per_order = float(subscription.price_per_order or 0)
+    fixed_total = float(subscription.fixed_price or 0)
+    drivers_total = round(drivers_count * price_per_driver, 2)
+    orders_total = round(orders_count * price_per_order, 2)
+    total = round(fixed_total + drivers_total + orders_total, 2)
+
+    return {
+        'drivers_count': drivers_count,
+        'orders_count': orders_count,
+        'price_per_driver': price_per_driver,
+        'price_per_order': price_per_order,
+        'fixed_total': fixed_total,
+        'drivers_total': drivers_total,
+        'orders_total': orders_total,
+        'total': total,
+    }
 
 
 @finance_billing_bp.route('/establishment-subscription', methods=['GET'])
@@ -47,24 +94,27 @@ def get_establishment_subscription():
             if not restaurant:
                 return jsonify({'error': 'Restaurante não encontrado'}), 404
 
-        # Contar entregadores próprios
-        own_drivers_count = EstablishmentDriver.query.filter_by(
-            restaurant_id=restaurant.id,
-            is_active=True
-        ).count()
-
-        # Calcular valor da assinatura (exemplo: R$50/mês por entregador próprio)
-        # Isso pode ser configurável por tenant/pracinha
-        base_price_per_driver = 50.00
-        monthly_total = own_drivers_count * base_price_per_driver
+        # Valor da assinatura — fórmula ÚNICA (calcular_assinatura, 3 termos)
+        now = datetime.now(timezone.utc)
+        subscription = EstablishmentSubscription.query.filter_by(
+            restaurant_id=restaurant.id, is_active=True
+        ).first()
+        if not subscription:
+            # Sem assinatura registrada: simula com os valores padrão
+            subscription = EstablishmentSubscription(
+                restaurant_id=restaurant.id, price_per_driver=50.00, price_per_order=0, fixed_price=0
+            )
+        inicio = now - timedelta(days=7 if subscription.billing_cycle == 'WEEKLY' else 30)
+        valores = calcular_assinatura(subscription, inicio, now)
 
         return jsonify({
             'restaurant_id': restaurant.id,
             'restaurant_name': restaurant.name,
             'has_own_drivers': restaurant.has_own_drivers,
-            'own_drivers_count': own_drivers_count,
-            'base_price_per_driver': base_price_per_driver,
-            'monthly_total': monthly_total,
+            'own_drivers_count': valores['drivers_count'],
+            'base_price_per_driver': valores['price_per_driver'],
+            'monthly_total': valores['total'],
+            'assinatura': valores,
             'subscription_type': restaurant.subscription_type or 'NONE',
             'subscription_expires_at': restaurant.subscription_expires_at.isoformat() if restaurant.subscription_expires_at else None
         }), 200
@@ -115,6 +165,7 @@ def create_subscription():
         restaurant_id = data.get('restaurant_id')
         billing_cycle = data.get('billing_cycle', 'WEEKLY')
         price_per_driver = data.get('price_per_driver', 50.00)
+        price_per_order = data.get('price_per_order', 0)
         fixed_price = data.get('fixed_price', 0)
 
         if not restaurant_id:
@@ -150,6 +201,7 @@ def create_subscription():
             tenant_id=restaurant.tenant_id,
             billing_cycle=billing_cycle,
             price_per_driver=price_per_driver,
+            price_per_order=price_per_order,
             fixed_price=fixed_price,
             is_active=True,
             next_billing_at=next_billing
@@ -188,6 +240,8 @@ def update_subscription(subscription_id):
             subscription.billing_cycle = data['billing_cycle']
         if 'price_per_driver' in data:
             subscription.price_per_driver = data['price_per_driver']
+        if 'price_per_order' in data:
+            subscription.price_per_order = data['price_per_order']
         if 'fixed_price' in data:
             subscription.fixed_price = data['fixed_price']
         if 'is_active' in data:
@@ -215,22 +269,15 @@ def generate_invoice(subscription_id):
         if not subscription:
             return jsonify({'error': 'Assinatura não encontrada'}), 404
 
-        # Contar entregadores ativos no período
+        # Contar entregadores/pedidos e calcular — fórmula ÚNICA (3 termos)
         now = datetime.now(timezone.utc)
         period_start = now - timedelta(days=7) if subscription.billing_cycle == 'WEEKLY' else now - timedelta(days=30)
 
-        drivers_count = EstablishmentDriver.query.filter(
-            EstablishmentDriver.restaurant_id == subscription.restaurant_id,
-            EstablishmentDriver.is_active
-        ).count()
+        valores = calcular_assinatura(subscription, period_start, now)
+        drivers_count = valores['drivers_count']
 
-        if drivers_count == 0 and not subscription.fixed_price:
-            return jsonify({'error': 'Nenhum entregador ativo encontrado e sem preço fixo'}), 400
-
-        # Calcular valor: (preço por entregador * quantidade) + preço fixo
-        drivers_total = drivers_count * float(subscription.price_per_driver or 0)
-        fixed_total = float(subscription.fixed_price or 0)
-        total_amount = drivers_total + fixed_total
+        if valores['total'] <= 0:
+            return jsonify({'error': 'Nada a cobrar: configure preço por entregador, por pedido ou fixo'}), 400
 
         # Gerar número da fatura
         invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription_id).count()
@@ -246,9 +293,11 @@ def generate_invoice(subscription_id):
             invoice_number=invoice_number,
             period_start=period_start,
             period_end=now,
-            drivers_count=drivers_count,
+            drivers_count=valores['drivers_count'],
             price_per_driver=subscription.price_per_driver,
-            total_amount=total_amount,
+            orders_count=valores['orders_count'],
+            price_per_order=subscription.price_per_order,
+            total_amount=valores['total'],
             status='PENDING',
             due_date=due_date
         )
@@ -278,14 +327,16 @@ def generate_invoice(subscription_id):
             # Criar cobrança no Asaas
             if restaurant.asaas_customer_id:
                 description = f"Assinatura muv.log - {restaurant.name} - {invoice_number}"
-                if drivers_count > 0:
-                    description += f" ({drivers_count} entregador(es) x R${subscription.price_per_driver})"
-                if fixed_total > 0:
-                    description += f" + taxa fixa R${fixed_total}"
+                if valores['drivers_total'] > 0:
+                    description += f" ({valores['drivers_count']} entregador(es) x R${valores['price_per_driver']})"
+                if valores['orders_total'] > 0:
+                    description += f" ({valores['orders_count']} pedido(s) x R${valores['price_per_order']})"
+                if valores['fixed_total'] > 0:
+                    description += f" + taxa fixa R${valores['fixed_total']}"
 
                 charge_result = create_charge(
                     customer_id=restaurant.asaas_customer_id,
-                    value=total_amount,
+                    value=valores['total'],
                     billing_type='PIX',
                     due_date=due_date.strftime('%Y-%m-%d'),
                     description=description,
@@ -306,7 +357,7 @@ def generate_invoice(subscription_id):
 
         # Atualizar assinatura
         subscription.last_billed_at = now
-        subscription.total_billed = float(subscription.total_billed or 0) + total_amount
+        subscription.total_billed = float(subscription.total_billed or 0) + valores['total']
 
         if subscription.billing_cycle == 'WEEKLY':
             subscription.next_billing_at = now + timedelta(days=7)
@@ -424,26 +475,20 @@ def generate_all_invoices():
 
         generated = []
         for subscription in subscriptions:
-            # Contar entregadores
-            drivers_count = EstablishmentDriver.query.filter(
-                EstablishmentDriver.restaurant_id == subscription.restaurant_id,
-                EstablishmentDriver.is_active
-            ).count()
-
-            # Pular se não tem entregadores E não tem preço fixo
-            if drivers_count == 0 and not subscription.fixed_price:
-                continue
-
             # Calcular período
             if subscription.billing_cycle == 'WEEKLY':
                 period_start = now - timedelta(days=7)
             else:
                 period_start = now - timedelta(days=30)
 
-            # Calcular valor: (preço por entregador * quantidade) + preço fixo
-            drivers_total = drivers_count * float(subscription.price_per_driver or 0)
-            fixed_total = float(subscription.fixed_price or 0)
-            total_amount = drivers_total + fixed_total
+            # Contar entregadores/pedidos e calcular — fórmula ÚNICA (3 termos)
+            valores = calcular_assinatura(subscription, period_start, now)
+
+            # Pular se não há nada a cobrar
+            if valores['total'] <= 0:
+                continue
+
+            drivers_count = valores['drivers_count']
 
             # Gerar número da fatura
             invoice_count = SubscriptionInvoice.query.filter_by(subscription_id=subscription.id).count()
@@ -459,9 +504,11 @@ def generate_all_invoices():
                 invoice_number=invoice_number,
                 period_start=period_start,
                 period_end=now,
-                drivers_count=drivers_count,
+                drivers_count=valores['drivers_count'],
                 price_per_driver=subscription.price_per_driver,
-                total_amount=total_amount,
+                orders_count=valores['orders_count'],
+                price_per_order=subscription.price_per_order,
+                total_amount=valores['total'],
                 status='PENDING',
                 due_date=due_date
             )
@@ -486,7 +533,7 @@ def generate_all_invoices():
                     description = f"Assinatura muv.log - {restaurant.name} - {invoice_number}"
                     charge_result = create_charge(
                         customer_id=restaurant.asaas_customer_id,
-                        value=total_amount,
+                        value=valores['total'],
                         billing_type='PIX',
                         due_date=due_date.strftime('%Y-%m-%d'),
                         description=description,
@@ -498,7 +545,7 @@ def generate_all_invoices():
 
             # Atualizar assinatura
             subscription.last_billed_at = now
-            subscription.total_billed = float(subscription.total_billed or 0) + total_amount
+            subscription.total_billed = float(subscription.total_billed or 0) + valores['total']
 
             if subscription.billing_cycle == 'WEEKLY':
                 subscription.next_billing_at = now + timedelta(days=7)

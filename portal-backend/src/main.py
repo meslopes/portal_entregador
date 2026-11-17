@@ -493,6 +493,25 @@ with app.app_context():
         print(f"Migração tipos de tabela: {e}")
         db.session.rollback()
 
+    # Migration Fase D (2026-11-17): assinatura de 3 termos (fixo + entregador + pedido)
+    try:
+        for tabela, col_sql in (
+            ("establishment_subscriptions", "price_per_order NUMERIC(10,2) DEFAULT 0"),
+            ("subscription_invoices", "orders_count INTEGER DEFAULT 0"),
+            ("subscription_invoices", "price_per_order NUMERIC(10,2)"),
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = '{tabela}' AND column_name = '{col}') "
+                f"THEN ALTER TABLE {tabela} ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas de assinatura de 3 termos adicionadas")
+    except Exception as e:
+        print(f"Migração assinatura 3 termos: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:
