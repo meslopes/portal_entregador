@@ -929,8 +929,16 @@ def delete_establishment(establishment_id):
             if customer.user_id:
                 user = User.query.get(customer.user_id)
                 if user and user.user_type == UserType.CLIENT:
-                    # Deletar notificações do user
+                    # Dados pessoais do user — mesma semântica de
+                    # admin_users_softdelete._excluir_referencias_do_usuario:
+                    # push_tokens/notificações saem; convites só desvinculam.
+                    # (push_tokens.user_id é NOT NULL — apagar o user sem limpar
+                    # os tokens estourava 500 na exclusão do estabelecimento)
+                    from src.models.portal_models import AdminInvite, PushToken
+
                     Notification.query.filter_by(user_id=user.id).delete()
+                    PushToken.query.filter_by(user_id=user.id).delete()
+                    AdminInvite.query.filter_by(used_by_user_id=user.id).update({'used_by_user_id': None})
                     db.session.delete(user)
             db.session.delete(customer)
 

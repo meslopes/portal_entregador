@@ -120,6 +120,7 @@ Implementação: coluna `price_per_order` na assinatura + fórmula **centralizad
 | **C** | Unificar menus de pagamento (cliente: "Pagamentos Entregadores" + "Pagamentos Próprios" → um só; admin: organizar "Pagamentos Próprios"/"Saques"/página órfã) | Planejada |
 | **D** | Assinatura flexível de 3 termos (fixo + R$/entregador + R$/pedido) configurável por estabelecimento + fórmula centralizada | Planejada |
 | **E** | Cobrança MUV → admin (por estabelecimento ativo) reusando assinaturas/faturas + Asaas nas duas pontas + credencial por tenant preparada | Planejada |
+| **F — Guias e checklists (SÓ AO FINAL)** | "Menu 5/5" do processo de entregas próprias nos **dois lados**: portal do estabelecimento (preços, pagamentos, assinatura) e painel do admin (assinaturas, cobrança) — no espírito do guia Primeiros Passos/checklist do dashboard | Planejada (pedido do Mauro) |
 
 Fases A–C não decidem dinheiro. D–E implementam as decisões da seção 5.
 
