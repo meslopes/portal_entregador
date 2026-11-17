@@ -102,6 +102,8 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         phone: formData.phone || null,
         email: formData.email || null,
         address: fullAddress,
+        address_city: formData.address_city,
+        address_state: formData.address_state,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         square_id: formData.square_id || null,
@@ -263,10 +265,10 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
             border: '1px solid #93c5fd', marginBottom: '1rem'
           }}>
             <p style={{ fontSize: '0.75rem', color: '#1e40af', lineHeight: 1.6, margin: 0 }}>
-              <strong>Praça e Tabela de Preços serão configuradas depois.</strong> Use
-              <strong> Editar</strong> neste estabelecimento quando quiser defini-las.
-              Sem elas, o frete do cliente usa o valor padrão do sistema — configure antes
-              de receber pedidos.
+              <strong>Praça e Tabela de Preços próprias serão criadas automaticamente</strong> com o
+              nome do estabelecimento. Os preços podem ser ajustados depois em
+              <strong> Financeiro → Tabelas de Preço</strong> — e a operação de entrega fica
+              100% do estabelecimento.
             </p>
           </div>
         ) : (

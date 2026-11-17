@@ -396,6 +396,39 @@ def create_establishment():
         if not isinstance(has_own_drivers, bool):
             return jsonify({'error': 'has_own_drivers deve ser booleano'}), 400
 
+        square_id = data.get('square_id') or None
+        pricing_table_id = data.get('pricing_table_id') or None
+
+        # Entregas PRÓPRIAS sem praça definida: cria praça e tabela PRIVADAS
+        # automaticamente (com o nome do estabelecimento) — a operação é autônoma
+        # e preenche seus próprios preços depois (Fase A do plano de monetização,
+        # ver docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md)
+        if has_own_drivers and not square_id:
+            from src.models.portal_models import PricingTable, Square
+
+            praca_propria = Square(
+                name=data['name'],
+                city=data.get('address_city') or '—',
+                state=(data.get('address_state') or 'RS')[:2].upper(),
+                tenant_id=tenant_id,
+                is_active=True,
+            )
+            db.session.add(praca_propria)
+            db.session.flush()
+
+            tabela_propria = PricingTable(
+                tenant_id=tenant_id,
+                square_id=praca_propria.id,
+                name=f"Padrão — {data['name']}",
+                description='Tabela de preços própria do estabelecimento (entregas próprias)',
+                is_active=True,
+            )
+            db.session.add(tabela_propria)
+            db.session.flush()
+
+            square_id = praca_propria.id
+            pricing_table_id = tabela_propria.id
+
         establishment = Restaurant(
 
             name=data['name'],
@@ -418,7 +451,9 @@ def create_establishment():
 
             has_own_drivers=has_own_drivers,
 
-            square_id=data.get('square_id') or None,
+            square_id=square_id,
+
+            pricing_table_id=pricing_table_id,
 
             bank_name=data.get('bank_name') or None,
 
