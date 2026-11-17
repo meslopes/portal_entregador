@@ -310,6 +310,50 @@ const AdminGuidePage = () => {
         </p>
       </div>
 
+      {/* Operação com Entregadores Próprios — Fase F do plano de monetização */}
+      <div
+        style={{
+          background: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: 12,
+          padding: 20,
+          marginTop: 24,
+        }}
+      >
+        <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: '#111827' }}>
+          Operação com Entregadores Próprios — passo a passo
+        </h3>
+        <p style={{ margin: '0 0 12px', fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
+          O caminho completo quando o estabelecimento opera com equipe própria — do cadastro à cobrança:
+        </p>
+        <ul style={{ margin: '0 0 12px', paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.9 }}>
+          <li>
+            <strong>1. Criar o estabelecimento como Próprios</strong> — em Estabelecimentos, escolha
+            "Tipo de entrega: Próprios" (praça e tabela próprias nascem automaticamente)
+          </li>
+          <li>
+            <strong>2. Estabelecimento define os preços</strong> — pelo menu <em>Meus Preços</em> dele
+            (por km, tarifa fixa ou faixas; frete grátis opcional)
+          </li>
+          <li>
+            <strong>3. Estabelecimento cadastra seus entregadores</strong> — menu <em>Meus Entregadores</em>
+          </li>
+          <li>
+            <strong>4. Configurar o pagamento dos próprios</strong> — menu <em>Pagamentos</em> do
+            estabelecimento (por entrega/km/percentual/fixo — independente do frete)
+          </li>
+          <li>
+            <strong>5. Assinatura e cobrança</strong> — <em>Financeiro → Assinaturas</em> para cobrar o
+            estabelecimento (fixo + por entregador + por pedido); a aba <em>Cobrança</em> do painel
+            plataforma cuida do que a MUV cobra do admin
+          </li>
+        </ul>
+        <p style={{ margin: 0, fontSize: 13.5, color: '#6b7280', lineHeight: 1.7 }}>
+          O estabelecimento também tem o guia <strong>"Primeiros Passos"</strong> no próprio portal
+          (menu dele) — cada um vê o caminho do seu lado.
+        </p>
+      </div>
+
       {/* Rodapé */}
       <div
         style={{
