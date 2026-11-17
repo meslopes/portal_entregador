@@ -104,7 +104,9 @@ const NewOrderPage = () => {
         delivery_address: fullAddress,
         delivery_city: form.delivery_city,
         delivery_state: form.delivery_state,
-        restaurant_id: isAdmin ? form.selected_establishment : undefined
+        restaurant_id: isAdmin ? form.selected_establishment : undefined,
+        // Valor dos produtos — usado pelo frete grátis da tabela de preços
+        order_value: orderItems.reduce((sum, it) => sum + (it.price * it.quantity), 0) || undefined
       };
       if (customLat && customLng) {
         payload.latitude = customLat;

@@ -473,6 +473,26 @@ with app.app_context():
         print(f"Migração Fase 2b de preços: {e}")
         db.session.rollback()
 
+    # Migration: tipos de tabela (2026-11-17) — faixas de km (sem volta) e
+    # frete grátis (ver docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md §7.1)
+    try:
+        for col_sql in (
+            "pricing_mode VARCHAR(20) DEFAULT 'PER_KM'",
+            "tier_bands JSONB",
+            "free_delivery_min_order NUMERIC(10,2)",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'pricing_tables' AND column_name = '{col}') "
+                f"THEN ALTER TABLE pricing_tables ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas de tipo de tabela adicionadas (pricing_mode/tier_bands/free_delivery_min_order)")
+    except Exception as e:
+        print(f"Migração tipos de tabela: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

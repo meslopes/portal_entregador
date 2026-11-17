@@ -54,6 +54,69 @@ def _num(data, campo, minimo, maximo):
     return val
 
 
+def _validar_faixas(val):
+    """Valida as faixas de km do modo TIERS — lista [{to_km, price}].
+
+    'to_km': None = faixa aberta ("a partir de X km"), no máximo uma, por último.
+    Retorna a lista normalizada. Lança ValueError com mensagem amigável.
+    """
+    if not isinstance(val, list) or not (1 <= len(val) <= 10):
+        raise ValueError('Faixas devem ser uma lista de 1 a 10 itens')
+    faixas = []
+    for b in val:
+        if not isinstance(b, dict):
+            raise ValueError('Cada faixa deve ser um objeto com to_km e price')
+        try:
+            price = float(b.get('price'))
+        except (TypeError, ValueError):
+            raise ValueError('O preço da faixa deve ser numérico')
+        if not (0 <= price <= 10000):
+            raise ValueError('O preço da faixa deve estar entre 0 e 10000')
+        to_km = b.get('to_km')
+        if to_km is not None:
+            try:
+                to_km = float(to_km)
+            except (TypeError, ValueError):
+                raise ValueError('O limite da faixa deve ser numérico ou nulo')
+            if not (0 < to_km <= 200):
+                raise ValueError('O limite da faixa deve estar entre 0 e 200 km')
+        faixas.append({'to_km': to_km, 'price': price})
+    fechadas = [f['to_km'] for f in faixas if f['to_km'] is not None]
+    if len(fechadas) != len(set(fechadas)):
+        raise ValueError('Faixas com limites de km duplicados')
+    if sum(1 for f in faixas if f['to_km'] is None) > 1:
+        raise ValueError('No máximo uma faixa aberta (to_km nulo)')
+    return faixas
+
+
+def _validar_novos_campos_tabela(data):
+    """Valida pricing_mode/tier_bands/free_delivery_min_order (opcionais).
+
+    Retorna dict com os valores prontos (só as chaves presentes no payload).
+    """
+    novos = {}
+    if 'pricing_mode' in data:
+        modo = data.get('pricing_mode') or 'PER_KM'
+        if modo not in ('PER_KM', 'TIERS'):
+            raise ValueError("pricing_mode deve ser 'PER_KM' ou 'TIERS'")
+        novos['pricing_mode'] = modo
+    if 'tier_bands' in data and data.get('tier_bands') is not None:
+        novos['tier_bands'] = _validar_faixas(data['tier_bands'])
+    if 'free_delivery_min_order' in data:
+        val = data.get('free_delivery_min_order')
+        if val in (None, ''):
+            novos['free_delivery_min_order'] = None
+        else:
+            try:
+                val = float(val)
+            except (TypeError, ValueError):
+                raise ValueError('O valor para frete grátis deve ser numérico')
+            if not (0 < val <= 100000):
+                raise ValueError('O valor para frete grátis deve estar entre 0 e 100000')
+            novos['free_delivery_min_order'] = val
+    return novos
+
+
 @admin_pricing_bp.route('/my-pricing-table', methods=['GET'])
 
 @jwt_required()
@@ -162,6 +225,19 @@ def update_my_pricing_table():
         pt.min_delivery_fee = min_delivery_fee
 
         pt.max_delivery_fee = max_delivery_fee
+
+        # Tipos de tabela (2026-11-17): modo de precificação, faixas, frete grátis
+        try:
+
+            novos_campos = _validar_novos_campos_tabela(data)
+
+        except ValueError as e:
+
+            return jsonify({'error': str(e)}), 400
+
+        for campo, valor in novos_campos.items():
+
+            setattr(pt, campo, valor)
 
         db.session.commit()
 
@@ -566,9 +642,18 @@ def create_pricing_table():
 
         min_delivery_fee = safe_float(data.get('min_delivery_fee'), price_per_km * min_distance_km)
 
+        # Tipos de tabela (2026-11-17): modo de precificação, faixas, frete grátis
+        try:
 
+            novos_campos = _validar_novos_campos_tabela(data)
+
+        except ValueError as e:
+
+            return jsonify({'error': str(e)}), 400
 
         table = PricingTable(
+
+            **novos_campos,
 
             tenant_id=tenant_id,
 
@@ -749,6 +834,19 @@ def update_pricing_table(table_id):
             if val is not None:
 
                 table.driver_percentage = val
+
+        # Tipos de tabela (2026-11-17): modo de precificação, faixas, frete grátis
+        try:
+
+            novos_campos = _validar_novos_campos_tabela(data)
+
+        except ValueError as e:
+
+            return jsonify({'error': str(e)}), 400
+
+        for campo, valor in novos_campos.items():
+
+            setattr(table, campo, valor)
 
         if 'is_active' in data:
 

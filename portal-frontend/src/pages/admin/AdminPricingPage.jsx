@@ -3,6 +3,7 @@ import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
+import TierBandsField from '@/components/TierBandsField';
 
 const AdminPricingPage = () => {
   const [tables, setTables] = useState([]);
@@ -15,7 +16,8 @@ const AdminPricingPage = () => {
   const [form, setForm] = useState({
     name: '', description: '', square_id: '', price_per_km: '2.95',
     min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50',
-    driver_percentage: '65', is_active: true
+    driver_percentage: '65', is_active: true,
+    pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: ''
   });
 
   useEffect(() => { loadData(); }, []);
@@ -37,7 +39,7 @@ const AdminPricingPage = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true });
+    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '' });
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -52,7 +54,10 @@ const AdminPricingPage = () => {
       min_delivery_fee: String(table.min_delivery_fee || ''),
       max_delivery_fee: String(table.max_delivery_fee || '50'),
       driver_percentage: String(table.driver_percentage || '65'),
-      is_active: table.is_active !== false
+      is_active: table.is_active !== false,
+      pricing_mode: table.pricing_mode || 'PER_KM',
+      tier_bands: (table.tier_bands || []).map(b => ({ to_km: b.to_km ?? '', price: String(b.price ?? '') })),
+      free_delivery_min_order: table.free_delivery_min_order != null ? String(table.free_delivery_min_order) : ''
     });
     setEditingId(table.id);
     setShowForm(true);
@@ -70,8 +75,15 @@ const AdminPricingPage = () => {
         min_delivery_fee: form.min_delivery_fee ? parseFloat(form.min_delivery_fee) : null,
         max_delivery_fee: parseFloat(form.max_delivery_fee) || 50,
         driver_percentage: parseFloat(form.driver_percentage) || 65,
-        is_active: form.is_active
+        is_active: form.is_active,
+        pricing_mode: form.pricing_mode,
+        free_delivery_min_order: form.free_delivery_min_order || null
       };
+      if (form.pricing_mode === 'TIERS') {
+        data.tier_bands = form.tier_bands
+          .filter(b => b.price !== '' && b.price != null)
+          .map(b => ({ to_km: b.to_km === '' ? null : parseFloat(b.to_km), price: parseFloat(b.price) }));
+      }
       if (editingId) {
         await adminService.updatePricingTable(editingId, data);
         setSuccess('Tabela atualizada!');
@@ -196,18 +208,42 @@ const AdminPricingPage = () => {
                 <input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Descrição opcional" style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>R$ por km *</label>
-                  <input type="number" step="0.01" value={form.price_per_km} onChange={e => setForm(p => ({ ...p, price_per_km: e.target.value }))} required style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Distância mín. (km)</label>
-                  <input type="number" step="0.5" value={form.min_distance_km} onChange={e => setForm(p => ({ ...p, min_distance_km: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+              {/* Tipo de precificação (2026-11-17): faixas de km sem volta + frete grátis */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Tipo de precificação</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  {[['PER_KM', 'Por km / tarifa fixa'], ['TIERS', 'Por faixa de km']].map(([modo, rotulo]) => (
+                    <button key={modo} type="button" onClick={() => setForm(p => ({ ...p, pricing_mode: modo }))}
+                      style={{
+                        padding: '0.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
+                        border: `1.5px solid ${form.pricing_mode === modo ? '#2563eb' : '#e2e8f0'}`,
+                        background: form.pricing_mode === modo ? '#2563eb' : 'white',
+                        color: form.pricing_mode === modo ? 'white' : '#475569'
+                      }}>
+                      {rotulo}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              {form.pricing_mode === 'TIERS' ? (
+                <div style={{ marginBottom: '1rem' }}>
+                  <TierBandsField value={form.tier_bands} onChange={bands => setForm(p => ({ ...p, tier_bands: bands }))} />
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>R$ por km *</label>
+                    <input type="number" step="0.01" value={form.price_per_km} onChange={e => setForm(p => ({ ...p, price_per_km: e.target.value }))} required style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Distância mín. (km)</label>
+                    <input type="number" step="0.5" value={form.min_distance_km} onChange={e => setForm(p => ({ ...p, min_distance_km: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Frete mínimo (R$)</label>
                   <input type="number" step="0.01" value={form.min_delivery_fee} onChange={e => setForm(p => ({ ...p, min_delivery_fee: e.target.value }))} placeholder="Auto (R$/km × mín km)" style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
@@ -215,6 +251,10 @@ const AdminPricingPage = () => {
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Frete máximo (R$)</label>
                   <input type="number" step="0.01" value={form.max_delivery_fee} onChange={e => setForm(p => ({ ...p, max_delivery_fee: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Frete grátis acima de (R$)</label>
+                  <input type="number" step="0.01" min="0" value={form.free_delivery_min_order} onChange={e => setForm(p => ({ ...p, free_delivery_min_order: e.target.value }))} placeholder="Opcional — valor dos produtos" style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
 

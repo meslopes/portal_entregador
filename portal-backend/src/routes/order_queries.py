@@ -196,8 +196,15 @@ def estimate_fee():
 
         from src.services.order_helpers import calcular_frete_tabela, resolve_pricing_table
         pt = resolve_pricing_table(restaurant)
+        # Valor dos produtos (opcional) — usado pelo frete grátis da tabela
+        order_value = None
+        try:
+            if data.get('order_value') not in (None, ''):
+                order_value = float(data.get('order_value'))
+        except (TypeError, ValueError):
+            pass
         if pt:
-            delivery_fee, price_per_km, min_km = calcular_frete_tabela(pt, distance_km)
+            delivery_fee, price_per_km, min_km = calcular_frete_tabela(pt, distance_km, order_value=order_value)
             logger.info(f"[FRETE] Tabela '{pt.name}' (id {pt.id}): price_per_km={price_per_km}, min_km={min_km}, fee={delivery_fee}")
         else:
             logger.warning(f"[FRETE] Estabelecimento {restaurant.id} SEM tabela de preços — usando padrão 2.95")

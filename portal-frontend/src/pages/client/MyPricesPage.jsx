@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
+import TierBandsField from '@/components/TierBandsField';
 
 /**
  * Meus Preços — o estabelecimento define os preços de entrega que cobra do seu cliente.
@@ -12,6 +13,7 @@ const MyPricesPage = () => {
   const [form, setForm] = useState({
     price_per_km: '', fixed_fee: '', min_distance_km: '',
     min_delivery_fee: '', max_delivery_fee: '',
+    pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,6 +35,9 @@ const MyPricesPage = () => {
         min_distance_km: String(t.min_distance_km ?? '4'),
         min_delivery_fee: t.min_delivery_fee != null ? String(t.min_delivery_fee) : '',
         max_delivery_fee: t.max_delivery_fee != null ? String(t.max_delivery_fee) : '',
+        pricing_mode: t.pricing_mode || 'PER_KM',
+        tier_bands: (t.tier_bands || []).map(b => ({ to_km: b.to_km ?? '', price: String(b.price ?? '') })),
+        free_delivery_min_order: t.free_delivery_min_order != null ? String(t.free_delivery_min_order) : '',
       });
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao carregar os preços');
@@ -45,16 +50,31 @@ const MyPricesPage = () => {
 
   // Mesma regra do cálculo do sistema (calcular_frete_tabela)
   const calcularFrete = (km) => {
+    const aplicarLimites = (v) => {
+      let fee = v;
+      const minFee = parseFloat(form.min_delivery_fee);
+      if (!isNaN(minFee)) fee = Math.max(fee, minFee);
+      const maxFee = parseFloat(form.max_delivery_fee);
+      if (!isNaN(maxFee)) fee = Math.min(fee, maxFee);
+      return fee;
+    };
+    // Modo faixas (sem volta): preço da faixa que contém a distância
+    if (form.pricing_mode === 'TIERS' && form.tier_bands.length) {
+      const faixas = form.tier_bands
+        .map(b => ({ to_km: b.to_km === '' ? null : parseFloat(b.to_km), price: parseFloat(b.price) || 0 }))
+        .sort((a, b) => (a.to_km === null) - (b.to_km === null) || (a.to_km || 0) - (b.to_km || 0));
+      let ultimo = 0;
+      for (const f of faixas) {
+        ultimo = f.price;
+        if (f.to_km === null || km <= f.to_km) return aplicarLimites(f.price);
+      }
+      return aplicarLimites(ultimo);
+    }
     const fixed = parseFloat(form.fixed_fee) || 0;
     if (fixed > 0) return fixed;
     const price = parseFloat(form.price_per_km) || 0;
     const minKm = parseFloat(form.min_distance_km) || 4;
-    let fee = Math.max(km, minKm) * price;
-    const minFee = parseFloat(form.min_delivery_fee);
-    if (!isNaN(minFee)) fee = Math.max(fee, minFee);
-    const maxFee = parseFloat(form.max_delivery_fee);
-    if (!isNaN(maxFee)) fee = Math.min(fee, maxFee);
-    return fee;
+    return aplicarLimites(Math.max(km, minKm) * price);
   };
 
   const handleSubmit = async (e) => {
@@ -68,7 +88,14 @@ const MyPricesPage = () => {
         min_distance_km: form.min_distance_km,
         min_delivery_fee: form.min_delivery_fee || null,
         max_delivery_fee: form.max_delivery_fee || null,
+        pricing_mode: form.pricing_mode,
+        free_delivery_min_order: form.free_delivery_min_order || null,
       };
+      if (form.pricing_mode === 'TIERS') {
+        payload.tier_bands = form.tier_bands
+          .filter(b => b.price !== '' && b.price != null)
+          .map(b => ({ to_km: b.to_km === '' ? null : parseFloat(b.to_km), price: parseFloat(b.price) }));
+      }
       const res = await api.put('/api/admin/my-pricing-table', payload);
       showToast(res.data.message || 'Preços salvos!', 'success');
     } catch (err) {
@@ -115,26 +142,58 @@ const MyPricesPage = () => {
       )}
 
       <form onSubmit={handleSubmit} style={{ background: 'white', borderRadius: '0.75rem', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label style={labelStyle}>Preço por KM (R$)</label>
-            <input type="number" step="0.01" min="0.01" value={form.price_per_km} required
-              onChange={e => setForm(p => ({ ...p, price_per_km: e.target.value }))} style={inputStyle} placeholder="2.95" />
+        {/* Tipo de precificação */}
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={labelStyle}>Tipo de precificação</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            {[['PER_KM', 'Por km / tarifa fixa'], ['TIERS', 'Por faixa de km']].map(([modo, rotulo]) => (
+              <button key={modo} type="button" onClick={() => setForm(p => ({ ...p, pricing_mode: modo }))}
+                style={{
+                  padding: '0.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
+                  border: `1.5px solid ${form.pricing_mode === modo ? '#2563eb' : '#e2e8f0'}`,
+                  background: form.pricing_mode === modo ? '#2563eb' : 'white',
+                  color: form.pricing_mode === modo ? 'white' : '#475569'
+                }}>
+                {rotulo}
+              </button>
+            ))}
           </div>
-          <div>
-            <label style={labelStyle}>Distância Mínima (km)</label>
-            <input type="number" step="0.5" min="0.1" value={form.min_distance_km} required
-              onChange={e => setForm(p => ({ ...p, min_distance_km: e.target.value }))} style={inputStyle} placeholder="4" />
-          </div>
+          <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.375rem' }}>
+            {form.pricing_mode === 'TIERS'
+              ? 'Cada faixa tem um preço fixo até X km — sem contar a volta (seu entregador sempre retorna).'
+              : 'Cobrança por km rodado, com opção de tarifa fixa por entrega.'}
+          </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label style={labelStyle}>Tarifa Fixa (R$)</label>
-            <input type="number" step="0.01" min="0" value={form.fixed_fee} required
-              onChange={e => setForm(p => ({ ...p, fixed_fee: e.target.value }))} style={inputStyle} placeholder="0" />
-            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Acima de zero, vale sempre este valor</p>
+        {form.pricing_mode === 'TIERS' ? (
+          <div style={{ marginBottom: '1rem' }}>
+            <TierBandsField value={form.tier_bands} onChange={bands => setForm(p => ({ ...p, tier_bands: bands }))} />
           </div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={labelStyle}>Preço por KM (R$)</label>
+                <input type="number" step="0.01" min="0.01" value={form.price_per_km} required
+                  onChange={e => setForm(p => ({ ...p, price_per_km: e.target.value }))} style={inputStyle} placeholder="2.95" />
+              </div>
+              <div>
+                <label style={labelStyle}>Distância Mínima (km)</label>
+                <input type="number" step="0.5" min="0.1" value={form.min_distance_km} required
+                  onChange={e => setForm(p => ({ ...p, min_distance_km: e.target.value }))} style={inputStyle} placeholder="4" />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={labelStyle}>Tarifa Fixa (R$)</label>
+              <input type="number" step="0.01" min="0" value={form.fixed_fee} required
+                onChange={e => setForm(p => ({ ...p, fixed_fee: e.target.value }))} style={inputStyle} placeholder="0" />
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Acima de zero, vale sempre este valor</p>
+            </div>
+          </>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={labelStyle}>Frete Mínimo (R$)</label>
             <input type="number" step="0.01" min="0" value={form.min_delivery_fee}
@@ -144,6 +203,12 @@ const MyPricesPage = () => {
             <label style={labelStyle}>Frete Máximo (R$)</label>
             <input type="number" step="0.01" min="0" value={form.max_delivery_fee}
               onChange={e => setForm(p => ({ ...p, max_delivery_fee: e.target.value }))} style={inputStyle} placeholder="Opcional" />
+          </div>
+          <div>
+            <label style={labelStyle}>Frete Grátis acima de (R$)</label>
+            <input type="number" step="0.01" min="0" value={form.free_delivery_min_order}
+              onChange={e => setForm(p => ({ ...p, free_delivery_min_order: e.target.value }))} style={inputStyle} placeholder="Opcional" />
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>Valor dos produtos</p>
           </div>
         </div>
 
@@ -160,6 +225,11 @@ const MyPricesPage = () => {
               </div>
             ))}
           </div>
+          {form.free_delivery_min_order && (
+            <p style={{ fontSize: '0.75rem', color: '#0d9488', margin: '0.5rem 0 0' }}>
+              ✓ Frete grátis para pedidos com produtos acima de R$ {parseFloat(form.free_delivery_min_order).toFixed(2)}
+            </p>
+          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

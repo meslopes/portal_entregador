@@ -737,7 +737,10 @@ def create_order():
                         float(restaurant.latitude), float(restaurant.longitude),
                         float(address.latitude), float(address.longitude)
                     )
-                delivery_fee, price_per_km, min_km = calcular_frete_tabela(pt, km_total)
+                delivery_fee, price_per_km, min_km = calcular_frete_tabela(
+                    pt, km_total,
+                    order_value=float(data.get('subtotal') or 0) or None
+                )
 
         # Aplicar taxas dinâmicas (chuva, alta demanda, feriado)
         square_id = restaurant.square_id

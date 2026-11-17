@@ -304,6 +304,23 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration: tipos de tabela (2026-11-17) — faixas de km e frete grátis
+    try:
+        for col_sql in (
+            "pricing_mode VARCHAR(20) DEFAULT 'PER_KM'",
+            "tier_bands JSONB",
+            "free_delivery_min_order NUMERIC(10,2)",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'pricing_tables' AND column_name = '{col}') "
+                f"THEN ALTER TABLE pricing_tables ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Migration: carteira do entregador (balance, locked_balance, pix_key)
     try:
         db.session.execute(db.text(

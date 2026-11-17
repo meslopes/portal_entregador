@@ -49,20 +49,54 @@ def resolve_pricing_table(restaurant):
     return None
 
 
-def calcular_frete_tabela(pt, distance_km):
+def _frete_faixas(bands, distance_km):
+    """
+    Preço da faixa de km que contém a distância (sem volta — o entregador
+    próprio sempre retorna ao estabelecimento). Faixa com 'to_km': None é
+    aberta ("a partir de X km"); além de todas as fechadas, vale a última.
+    """
+    ordenadas = sorted(bands, key=lambda b: (b.get('to_km') is None, float(b.get('to_km') or 0)))
+    ultimo = None
+    for b in ordenadas:
+        preco = float(b.get('price') or 0)
+        to_km = b.get('to_km')
+        ultimo = preco
+        if to_km is None or distance_km <= float(to_km):
+            return preco
+    return ultimo if ultimo is not None else 0.0
+
+
+def calcular_frete_tabela(pt, distance_km, order_value=None):
     """
     Calcula o frete a partir de uma tabela de preços.
     Regras:
+      - frete grátis: order_value (valor dos produtos) >= free_delivery_min_order → 0
+      - pricing_mode 'TIERS': preço da faixa que contém a distância (sem volta)
       - fixed_fee > 0 → frete fixo (independe da distância)
       - senão → max(distância, min_distance_km) × price_per_km,
         com piso/teto quando a tabela definir min/max_delivery_fee.
     Retorna (delivery_fee, price_per_km, min_distance_km).
     """
-    fixed_fee = float(pt.fixed_fee or 0)
-    if fixed_fee > 0:
-        return fixed_fee, float(pt.price_per_km or 2.95), float(pt.min_distance_km or 4.0)
     price_per_km = float(pt.price_per_km or 2.95)
     min_km = float(pt.min_distance_km or 4.0)
+
+    # Frete grátis acima do valor dos produtos (prêmio de venda do estabelecimento)
+    if (getattr(pt, 'free_delivery_min_order', None) and order_value is not None
+            and float(order_value) >= float(pt.free_delivery_min_order)):
+        return 0.0, price_per_km, min_km
+
+    # Faixas de km (modo TIERS)
+    if getattr(pt, 'pricing_mode', None) == 'TIERS' and getattr(pt, 'tier_bands', None):
+        fee = _frete_faixas(pt.tier_bands, distance_km)
+        if pt.min_delivery_fee:
+            fee = max(fee, float(pt.min_delivery_fee))
+        if pt.max_delivery_fee:
+            fee = min(fee, float(pt.max_delivery_fee))
+        return round(fee, 2), price_per_km, min_km
+
+    fixed_fee = float(pt.fixed_fee or 0)
+    if fixed_fee > 0:
+        return fixed_fee, price_per_km, min_km
     km_total = max(distance_km, min_km)
     fee = round(km_total * price_per_km, 2)
     if pt.min_delivery_fee:

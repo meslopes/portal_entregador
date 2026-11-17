@@ -122,6 +122,67 @@ Implementação: coluna `price_per_order` na assinatura + fórmula **centralizad
 | **E** | Cobrança MUV → admin (por estabelecimento ativo) reusando assinaturas/faturas + Asaas nas duas pontas + credencial por tenant preparada | Planejada |
 | **F — Guias e checklists (SÓ AO FINAL)** | "Menu 5/5" do processo de entregas próprias nos **dois lados**: portal do estabelecimento (preços, pagamentos, assinatura) e painel do admin (assinaturas, cobrança) — no espírito do guia Primeiros Passos/checklist do dashboard | Planejada (pedido do Mauro) |
 
+### 7.1 Tipos de tabela de preços (análise comparada com a Entregas Expressas, 2026-11-17)
+
+Decisões do Mauro após analisar o form "Nova tabela de preços" da referência:
+
+| Opção | Decisão | Motivo |
+|-------|---------|--------|
+| Por km / Valor fixo por pedido | ✅ Já temos | — |
+| **Por faixa de km (SEM volta)** | ✅ **Prioridade 1** | Modelo mais usado em delivery; era gap histórico ("Alta") |
+| **Frete grátis acima de R$ X** | ✅ **Prioridade 2** | Barato; argumento de venda |
+| Por bairro/local | ✅ Prioridade 3 | Alto valor em cidades como Capão da Canoa |
+| "Considerar a volta" | ❌ **Fora** | Regra de domínio: entregador PRÓPRIO sempre volta ao estabelecimento — a volta só faz sentido no modelo PLATAFORMA (ex.: máquina de cartão/troco após a entrega; cobrar do estab. o retorno). |
+| Área desenhada no mapa / tipo de serviço na tabela | ❌ **Fora por ora** | Cria conflito de negociação ("estou no bairro vizinho mais barato"); só se cliente real pedir após operação |
+| Simulador estilo deles | ❌ Fora | Não interessa ao Mauro |
+| Comissão do app (% do pedido) | ❌ **Nunca** | Cobrança por transação — viola o princípio da independência; nossa monetização é assinatura (fases D/E) |
+
+**Princípio anti-inchaço (decisão de produto):** a referência é eficiente, mas **peca pelo excesso** de configurações. Copiamos o que resolve problema real do nosso cliente; o resto fica de fora — menos knobs, defaults sensatos, guia claro (regra "auto-explicitivo").
+
+### 7.2 Backlog de Melhorias (referência Entregas Expressas — análise dos cards de configuração)
+
+Contexto: a EE tem ~60 cards de configuração + IA para configurar + 50+ integrações — crescimento por
+acréscimo. Nós adotamos curadoria: copiar o que resolve problema real, portas fechadas para o resto.
+
+| Melhoria | Modelo | Valor | Esforço | Quando |
+|----------|--------|-------|---------|--------|
+| **Nomenclaturas** (renomear termos do sistema) | Ambos | Alto (white-label) | Baixo | Curto |
+| **Link de Pedido Rápido** (pedido por link/WhatsApp) | Próprio/Plataforma | Alto | Baixo | Curto |
+| **Chegada na Entrega** ("cheguei") + status do local de coleta | Ambos | Médio-alto | Baixo | Médio |
+| **Registro de Atividades** (log de ações do admin/equipe) | Ambos | Alto (suporte/auditoria) | Médio | Médio |
+| **Valores Transportados / Taxa de Deslocamento** (troco, deslocamento até a coleta) | **Plataforma** | Médio-alto | Baixo/Médio | Depois |
+| **Punição e Desafios dos entregadores** (rédea + gamificação do contingente) | **Plataforma** | Médio (temos MuvScore/penalties no modelo — falta superfície) | Médio | Depois |
+| **Agrupamento Inteligente** (1 motoboy, vários pedidos) | **Plataforma** | Médio (rotas multi-parada só p/ próprios hoje) | Alto | Futuro |
+| **Perfis de Acesso (RBAC)** | Ambos | Médio (equipe do tenant) | Médio | Depois |
+| **Notas Fiscais** | Ambos | Alto p/ compliance BR | Alto | Operação real |
+| **Domínio Próprio** | Ambos | Médio (premium) | Baixo/Médio | Depois |
+| **Financeiro: insights e limiares** (alertas) | Ambos | Médio | Baixo | Depois |
+| 50+ integrações de mercado, seguradoras, marketing, IAGo | — | — | — | **FORA** (sob demanda) |
+| Configuração para tudo (estilo EE) | — | — | — | **FORA** (anti-inchaço) |
+
+**Modelo plataforma × próprio:** o modelo PLATAFORMA da EE vive de comissão por transação e gestão de
+contingente (troco, agrupamento, punição) — nós cobrimos comissão via `driver_percentage` e monetizamos
+por assinatura; os picks acima marcam onde cada melhoria brilha em cada modelo.
+
+### 7.3 Ajuste futuro — distância MANUAL quando estimativa/rota ruim (pedido do Mauro, 2026-11-17)
+
+**Regra de produto:** o frete depende da distância — **ninguém sai no prejuízo por frete mal calculado.**
+
+Problema recorrente (também frequente no app atual de referência):
+1. Geolocalização do cliente não exata → sistema usa **estimativa** → frete errado.
+2. Rota calculada "fácil" porém **mais longa** que o necessário → frete inflado.
+
+Solução planejada:
+- Quando o cálculo cair em estimativa (`is_approximate` / `distance_source` ≠ rota real — **campos já
+  existem** na resposta de `estimate-fee`), abrir **imediatamente** o campo **"Distância real (km)"** para
+  o estabelecimento preencher (verifica em qualquer mapa, em segundos) — o frete recalcula com o valor
+  manual.
+- **"Corrigir distância"** sempre disponível (mesmo com rota real) — cobre rota longa demais.
+- **Raiz da frequência** (ver memória 2026-11-01): o geocoding SERVER-SIDE está quebrado (chave Google
+  Maps com restrição de referrer → fallback Photon impreciso no Brasil). Corrigir a chave (chave de
+  servidor com restrição por IP OU geocodificar só no cliente) **reduz a frequência**; o campo manual é
+  a rede de segurança final.
+
 Fases A–C não decidem dinheiro. D–E implementam as decisões da seção 5.
 
 ## 7. Decisões registradas (histórico)
