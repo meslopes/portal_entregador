@@ -13,6 +13,9 @@ const FeeCalculator = ({
   pinAdjusted,
   handleResetPin,
   onOpenPinMap,
+  manualKm,
+  onManualKmChange,
+  onApplyManualKm,
 }) => (
   <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -35,10 +38,34 @@ const FeeCalculator = ({
       </div>
       {estimatedFee ? (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Distância calculada</span>
-            <span>{estimatedFee.distance_km?.toFixed(1)} km</span>
+          {/* Distância com correção manual — regra: ninguém sai no prejuízo
+              por frete mal calculado (§7.3 do plano de monetização) */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+            <span>Distância (km)</span>
+            <span style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+              <input
+                type="number" step="0.1" min="0.1" max="200"
+                value={manualKm}
+                onChange={(e) => onManualKmChange(e.target.value)}
+                placeholder={estimatedFee.distance_km?.toFixed(1) ?? ''}
+                title="Confira no mapa e corrija se necessário"
+                style={{ width: '72px', padding: '0.25rem 0.5rem', border: '1.5px solid #99f6e4', borderRadius: '0.375rem', fontSize: '0.8125rem', textAlign: 'right', outline: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={onApplyManualKm}
+                disabled={calculatingFee}
+                style={{ padding: '0.25rem 0.625rem', borderRadius: '0.375rem', border: 'none', background: calculatingFee ? '#94a3b8' : '#0d9488', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: calculatingFee ? 'not-allowed' : 'pointer' }}
+              >
+                Aplicar
+              </button>
+            </span>
           </div>
+          {estimatedFee.is_approximate && (
+            <div style={{ padding: '0.5rem 0.625rem', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '0.375rem', fontSize: '0.75rem', color: '#92400e' }}>
+              ⚠ Distância estimada — confira no mapa ou informe a distância real acima para o frete exato.
+            </div>
+          )}
           {estimatedFee.duration_min > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Tempo estimado</span>
@@ -50,7 +77,11 @@ const FeeCalculator = ({
             <span>R$ {estimatedFee.delivery_fee?.toFixed(2).replace('.', ',')}</span>
           </div>
           <div style={{ fontSize: '0.625rem', color: '#94a3b8', textAlign: 'right', marginTop: '0.25rem' }}>
-            {estimatedFee.distance_source === 'osrm' ? 'Distância real (rota)' : 'Distância estimada (linha reta)'}
+            {estimatedFee.distance_source === 'manual'
+              ? 'Distância informada por você'
+              : estimatedFee.distance_source === 'osrm'
+                ? 'Distância real (rota)'
+                : 'Distância estimada (linha reta)'}
           </div>
           {pinLocation && (
             <div style={{ marginTop: '0.75rem' }}>

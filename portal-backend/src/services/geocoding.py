@@ -99,7 +99,17 @@ def geocode_with_google(address, city_hint=None):
         else:
             status = data.get('status', 'UNKNOWN')
             error_message = data.get('error_message', '')
-            logger.warning(f"[GOOGLE] Sem resultados: status={status}, erro={error_message}")
+            if status == 'REQUEST_DENIED':
+                # Diagnóstico rápido (2026-11-01): a chave tem restrição de referrer
+                # e chamadas de servidor não têm referrer → sempre negada.
+                # Solução: chave própria de SERVIDOR (IP/restrita) em GOOGLE_MAPS_API_KEY.
+                logger.warning(
+                    "[GOOGLE] REQUEST_DENIED — a chave é restrita a referrer (não funciona no servidor). "
+                    "Criar chave de servidor no console do Google e configurar GOOGLE_MAPS_API_KEY. "
+                    "Enquanto isso, geocodificação cai no fallback OSM."
+                )
+            else:
+                logger.warning(f"[GOOGLE] Sem resultados: status={status}, erro={error_message}")
             return None
 
     except Exception as e:

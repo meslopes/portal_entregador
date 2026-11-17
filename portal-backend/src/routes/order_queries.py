@@ -172,6 +172,18 @@ def estimate_fee():
             del_lng = geo_del['longitude'] if geo_del else None
             is_approximate = geo_del.get('is_approximate', False) if geo_del else False
 
+        # Distância MANUAL (rede de segurança — regra: ninguém sai no prejuízo por
+        # frete mal calculado; §7.3 do plano de monetização). Vale para estimativas
+        # E para rotas longas demais: o estabelecimento confere em qualquer mapa.
+        manual_km = None
+        try:
+            if data.get('manual_distance_km') not in (None, ''):
+                manual_km = float(data.get('manual_distance_km'))
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Distância manual deve ser numérica'}), 400
+        if manual_km is not None and not (0 < manual_km <= 200):
+            return jsonify({'error': 'Distância manual deve estar entre 0 e 200 km'}), 400
+
         # Calcular distância REAL (rota) com fallback para Haversine
         distance_km = 0
         duration_min = 0
@@ -188,6 +200,12 @@ def estimate_fee():
 
         # Calcular frete — fonte única: tabela do estabelecimento →
         # tabela padrão da praça → padrão global (ver order_helpers)
+        # Distância manual tem prioridade sobre rota/estimativa
+        if manual_km:
+            distance_km = manual_km
+            distance_source = 'manual'
+            is_approximate = False
+
         delivery_fee = 0
         price_per_km = 2.95
         min_km = 4.0

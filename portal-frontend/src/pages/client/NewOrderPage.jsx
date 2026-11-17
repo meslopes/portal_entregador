@@ -24,6 +24,7 @@ const NewOrderPage = () => {
   const [pricingTable, setPricingTable] = useState(null);
   const [hasOwnDrivers, setHasOwnDrivers] = useState(false);
   const [estimatedFee, setEstimatedFee] = useState(null);
+  const [manualKm, setManualKm] = useState('');
   const [calculatingFee, setCalculatingFee] = useState(false);
   const [showPinMap, setShowPinMap] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
@@ -106,11 +107,25 @@ const NewOrderPage = () => {
         delivery_state: form.delivery_state,
         restaurant_id: isAdmin ? form.selected_establishment : undefined,
         // Valor dos produtos — usado pelo frete grátis da tabela de preços
-        order_value: orderItems.reduce((sum, it) => sum + (it.price * it.quantity), 0) || undefined
+        order_value: orderItems.reduce((sum, it) => sum + (it.price * it.quantity), 0) || undefined,
+        // Distância informada pelo estabelecimento (rede de segurança do frete)
+        manual_distance_km: manualKm || undefined
       };
       if (customLat && customLng) {
         payload.latitude = customLat;
         payload.longitude = customLng;
+      } else {
+        // Geocodificação no navegador (rede de segurança): o palpite vira pino
+        // visível no mapa — erro de geocodificação fica visível e corrigível
+        try {
+          const q = encodeURIComponent(`${fullAddress}${form.delivery_city ? ', ' + form.delivery_city : ''} - ${form.delivery_state || 'RS'}, Brasil`);
+          const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${q}`);
+          const hits = await geo.json();
+          if (hits && hits[0]) {
+            payload.latitude = parseFloat(hits[0].lat);
+            payload.longitude = parseFloat(hits[0].lon);
+          }
+        } catch { /* navegador sem geocodificação — o servidor tenta */ }
       }
       const res = await api.post('/api/orders/estimate-fee', payload);
       setEstimatedFee(res.data);
@@ -302,6 +317,8 @@ const NewOrderPage = () => {
             pricingTable, pricePerKm: PRICE_PER_KM, minDistanceKm: MIN_DISTANCE_KM,
             estimatedFee, pinLocation, previewMapRef, calculatingFee,
             calculateFee, pinAdjusted, handleResetPin, onOpenPinMap: handleOpenPinMap,
+            manualKm, onManualKmChange: setManualKm,
+            onApplyManualKm: () => calculateFee(pinLocation?.lat, pinLocation?.lng),
           }}
         />
 
