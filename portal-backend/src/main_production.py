@@ -152,6 +152,10 @@ def create_app(config_name=None):
     from src.routes.platform import platform_bp
     app.register_blueprint(platform_bp, url_prefix='/api/platform')
 
+    # Cobrança MUV → admin (Fase E) — super admin
+    from src.routes.platform_billing import platform_billing_bp
+    app.register_blueprint(platform_billing_bp, url_prefix='/api/platform')
+
     from src.routes.own_driver import own_driver_bp
     app.register_blueprint(own_driver_bp)
 

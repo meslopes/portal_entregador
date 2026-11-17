@@ -239,6 +239,11 @@ from src.routes.platform import platform_bp
 
 app.register_blueprint(platform_bp, url_prefix='/api/platform')
 
+# Cobrança MUV → admin (Fase E) — super admin
+from src.routes.platform_billing import platform_billing_bp
+
+app.register_blueprint(platform_billing_bp, url_prefix='/api/platform')
+
 from src.routes.own_driver import own_driver_bp
 
 app.register_blueprint(own_driver_bp)
@@ -510,6 +515,55 @@ with app.app_context():
         print("Colunas de assinatura de 3 termos adicionadas")
     except Exception as e:
         print(f"Migração assinatura 3 termos: {e}")
+        db.session.rollback()
+
+    # Migration Fase E (2026-11-17): cobrança MUV → admin (por estabelecimento ativo)
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'tenants' AND column_name = 'asaas_customer_id') "
+            "THEN ALTER TABLE tenants ADD COLUMN asaas_customer_id VARCHAR(50); END IF; END $$"
+        ))
+        db.session.execute(db.text("""
+            CREATE TABLE IF NOT EXISTS platform_subscriptions (
+                id SERIAL PRIMARY KEY,
+                tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+                billing_cycle VARCHAR(20) DEFAULT 'MONTHLY',
+                price_per_establishment NUMERIC(10,2) DEFAULT 100.00,
+                fixed_price NUMERIC(10,2) DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE,
+                last_billed_at TIMESTAMP,
+                next_billing_at TIMESTAMP,
+                total_billed NUMERIC(10,2) DEFAULT 0,
+                total_paid NUMERIC(10,2) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        db.session.execute(db.text("""
+            CREATE TABLE IF NOT EXISTS platform_invoices (
+                id SERIAL PRIMARY KEY,
+                tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+                invoice_number VARCHAR(50) UNIQUE NOT NULL,
+                period_start TIMESTAMP NOT NULL,
+                period_end TIMESTAMP NOT NULL,
+                establishments_count INTEGER DEFAULT 0,
+                price_per_establishment NUMERIC(10,2),
+                fixed_price NUMERIC(10,2) DEFAULT 0,
+                total_amount NUMERIC(10,2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'PENDING',
+                due_date TIMESTAMP,
+                asaas_invoice_id VARCHAR(100),
+                payment_url VARCHAR(500),
+                paid_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        db.session.commit()
+        print("Tabelas de cobrança MUV→admin criadas (platform_subscriptions/platform_invoices)")
+    except Exception as e:
+        print(f"Migração cobrança plataforma: {e}")
         db.session.rollback()
 
 # Iniciar background tasks apenas em produção

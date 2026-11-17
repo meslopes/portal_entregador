@@ -3,6 +3,7 @@ export { default as TenantsTab } from './TenantsTab';
 export { default as UsersTab } from './UsersTab';
 export { default as PendingTab } from './PendingTab';
 export { default as AdminsTab } from './AdminsTab';
+export { default as PlatformBillingTab } from './PlatformBillingTab';
 export { default as TenantDetailModal } from './TenantDetailModal';
 export { default as CreateTenantModal } from './CreateTenantModal';
 export { default as EditTenantModal } from './EditTenantModal';

@@ -4,7 +4,7 @@ import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 import { isCnpjValid } from '@/lib/cnpj';
 import {
-  OverviewTab, TenantsTab, UsersTab, PendingTab, AdminsTab,
+  OverviewTab, TenantsTab, UsersTab, PendingTab, AdminsTab, PlatformBillingTab,
   PlatformHeader, TabNavigation, LoadingPage, DashboardModals
 } from './platform-tabs';
 
@@ -332,6 +332,11 @@ const PlatformDashboardPage = () => {
       {/* Pending Users Tab */}
       {activeTab === 'pending' && (
         <PendingTab pendingUsers={pendingUsers} pendingLoading={pendingLoading} onRefresh={loadPendingUsers} onApprove={handleApprove} onReject={handleReject} />
+      )}
+
+      {/* Cobrança MUV → admin (Fase E) */}
+      {activeTab === 'billing' && (
+        <PlatformBillingTab />
       )}
       <DashboardModals
         showTenantModal={showTenantModal}

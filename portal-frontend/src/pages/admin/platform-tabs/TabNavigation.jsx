@@ -1,12 +1,13 @@
 import React from 'react';
-import { Building2, Users, BarChart3, Shield } from 'lucide-react';
+import { Building2, Users, BarChart3, Shield, CreditCard } from 'lucide-react';
 
 const tabs = [
   { key: 'overview', label: 'Visão Geral', icon: BarChart3 },
   { key: 'tenants', label: 'Tenants', icon: Building2 },
   { key: 'users', label: 'Usuários', icon: Users },
   { key: 'admins', label: 'Admins', icon: Shield },
-  { key: 'pending', label: 'Pendentes', icon: Users }
+  { key: 'pending', label: 'Pendentes', icon: Users },
+  { key: 'billing', label: 'Cobrança', icon: CreditCard }
 ];
 
 const TabNavigation = ({ activeTab, onTabChange }) => (

@@ -23,6 +23,9 @@ class Tenant(db.Model):
     email = db.Column(db.String(255))
     address = db.Column(db.String(500))
     cnpj = db.Column(db.String(18))
+    # Cliente Asaas do tenant (cobrança MUV → admin). Credencial própria por
+    # tenant fica para o SaaS futuro (padrão PlatformCredential); hoje conta única
+    asaas_customer_id = db.Column(db.String(50))
     # Configurações do plano
     plan = db.Column(db.String(50), default='free')  # free, basic, premium, platinum
     max_deliveries_month = db.Column(db.Integer, default=100)

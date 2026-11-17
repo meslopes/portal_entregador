@@ -352,3 +352,61 @@ __all__ = [
     "EstablishmentSubscription",
     "SubscriptionInvoice",
 ]
+
+
+
+class PlatformSubscription(db.Model):
+    """Assinatura da MUV com o ADMIN (tenant) — cobrança por estabelecimento ativo.
+
+    Camada admin → plataforma do fluxo de monetização (§5.2 do plano):
+    total do ciclo = FIXO + (R$/estabelecimento ativo × estabelecimentos ativos).
+    Default R$ 100/estabelecimento — margem de negociação do admin (decisão do
+    Mauro, 2026-11-17). Nunca % do frete (princípio da independência).
+    """
+    __tablename__ = 'platform_subscriptions'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
+
+    billing_cycle = db.Column(db.String(20), default='MONTHLY')  # WEEKLY, MONTHLY
+    price_per_establishment = db.Column(db.Numeric(10, 2), default=100.00)
+    fixed_price = db.Column(db.Numeric(10, 2), default=0)
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Controle de cobrança
+    last_billed_at = db.Column(db.DateTime)
+    next_billing_at = db.Column(db.DateTime)
+    total_billed = db.Column(db.Numeric(10, 2), default=0)
+    total_paid = db.Column(db.Numeric(10, 2), default=0)
+
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+
+class PlatformInvoice(db.Model):
+    """Fatura da MUV para o ADMIN (tenant) — por estabelecimento ativo."""
+    __tablename__ = 'platform_invoices'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
+
+    invoice_number = db.Column(db.String(50), unique=True, nullable=False)
+    period_start = db.Column(db.DateTime, nullable=False)
+    period_end = db.Column(db.DateTime, nullable=False)
+
+    # Valores
+    establishments_count = db.Column(db.Integer, default=0)
+    price_per_establishment = db.Column(db.Numeric(10, 2))
+    fixed_price = db.Column(db.Numeric(10, 2), default=0)
+    total_amount = db.Column(db.Numeric(10, 2), nullable=False)
+
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, OVERDUE, CANCELLED
+    due_date = db.Column(db.DateTime)
+
+    # Integração pagamento (Asaas)
+    asaas_invoice_id = db.Column(db.String(100))
+    payment_url = db.Column(db.String(500))
+    paid_at = db.Column(db.DateTime)
+
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
