@@ -86,17 +86,16 @@ const AdminGuidePage = () => {
     {
       id: 'driver',
       icon: Users,
-      title: '5. Cadastrar entregadores',
+      title: '5. Cadastrar entregadores (plataforma ou próprios)',
       href: '/admin/drivers',
-      why: 'São quem fará as entregas. Cada entregador é vinculado a uma praça — assim ele recebe os pedidos da região certa.',
+      why: 'São quem fará as entregas — e existem dois caminhos, conforme o Tipo de entrega dos seus estabelecimentos (ver seção "Tipos de entrega" mais abaixo).',
       how: [
-        'Acesse Negócios → Entregadores',
-        'Clique em "Novo entregador"',
-        'Preencha nome, telefone e veículo',
-        'Vincule à praça',
+        'PLATAFORMA: acesse Negócios → Entregadores → "Novo entregador" (vinculado a uma praça)',
+        'PRÓPRIOS: abra o estabelecimento e use o menu "Meus Entregadores" (cadastra e gerencia a sua equipe)',
+        'Preencha nome, telefone e veículo em qualquer um dos caminhos',
         'Salve',
       ],
-      warning: null,
+      warning: 'Caminhos mistos também funcionam: um estabelecimento com Próprios e outro com Plataforma na mesma operação.',
     },
   ];
 

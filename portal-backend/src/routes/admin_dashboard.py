@@ -533,6 +533,7 @@ def get_setup_status():
     """
     try:
         from src.models.portal_models import (
+            EstablishmentDriver,
             PricingTable,
             Restaurant,
             Square,
@@ -566,6 +567,14 @@ def get_setup_status():
         pricing_tables_count = count_model(PricingTable)
         restaurants_count = count_model(Restaurant)
         drivers_count = count_model(Driver)
+        # Entregadores PRÓPRIOS (via estabelecimento do tenant) — a operação pode
+        # ser toda de próprios e não usar entregadores da plataforma
+        own_q = EstablishmentDriver.query.join(
+            Restaurant, EstablishmentDriver.restaurant_id == Restaurant.id
+        )
+        if tenant_id:
+            own_q = own_q.filter(Restaurant.tenant_id == tenant_id)
+        own_drivers_count = own_q.count()
 
         steps = [
             {
@@ -598,10 +607,10 @@ def get_setup_status():
             },
             {
                 'id': 'driver',
-                'title': 'Cadastrar entregador',
-                'description': 'Quem fará as entregas',
+                'title': 'Cadastrar entregador (plataforma ou próprios)',
+                'description': 'Quem fará as entregas — da plataforma (menu Entregadores) ou próprios do estabelecimento (menu Meus Entregadores)',
                 'href': '/admin/drivers',
-                'done': drivers_count > 0,
+                'done': drivers_count > 0 or own_drivers_count > 0,
             },
         ]
 

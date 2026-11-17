@@ -255,26 +255,44 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
           </FormField>
         )}
 
-        <FormField label="Praça">
-          <select name="square_id" value={formData.square_id} onChange={handleChange} style={inputStyle}>
-            <option value="">Selecione uma praça</option>
-            {squares.map(sq => (
-              <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
-            ))}
-          </select>
-        </FormField>
+        {/* Praça/Tabela: na criação como Próprio são configuradas DEPOIS (mesmo
+            padrão do auto-cadastro); na edição aparecem sempre */}
+        {!editing && formData.has_own_drivers ? (
+          <div style={{
+            padding: '0.75rem', background: '#eff6ff', borderRadius: '0.5rem',
+            border: '1px solid #93c5fd', marginBottom: '1rem'
+          }}>
+            <p style={{ fontSize: '0.75rem', color: '#1e40af', lineHeight: 1.6, margin: 0 }}>
+              <strong>Praça e Tabela de Preços serão configuradas depois.</strong> Use
+              <strong> Editar</strong> neste estabelecimento quando quiser defini-las.
+              Sem elas, o frete do cliente usa o valor padrão do sistema — configure antes
+              de receber pedidos.
+            </p>
+          </div>
+        ) : (
+          <>
+            <FormField label="Praça">
+              <select name="square_id" value={formData.square_id} onChange={handleChange} style={inputStyle}>
+                <option value="">Selecione uma praça</option>
+                {squares.map(sq => (
+                  <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
+                ))}
+              </select>
+            </FormField>
 
-        <FormField label="Tabela de Preços">
-          <select name="pricing_table_id" value={formData.pricing_table_id} onChange={handleChange} style={inputStyle}>
-            <option value="">Padrão da praça</option>
-            {pricingTables.map(pt => (
-              <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km || 0).toFixed(2)}/km)</option>
-            ))}
-          </select>
-          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-            Selecione uma tabela específica ou deixe vazio para usar a padrão da praça
-          </p>
-        </FormField>
+            <FormField label="Tabela de Preços">
+              <select name="pricing_table_id" value={formData.pricing_table_id} onChange={handleChange} style={inputStyle}>
+                <option value="">Padrão da praça</option>
+                {pricingTables.map(pt => (
+                  <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km || 0).toFixed(2)}/km)</option>
+                ))}
+              </select>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                Selecione uma tabela específica ou deixe vazio para usar a padrão da praça
+              </p>
+            </FormField>
+          </>
+        )}
 
         <FormField label="Tempo de Preparo (minutos)">
           <input type="number" name="preparation_minutes" value={formData.preparation_minutes} onChange={handleChange} style={inputStyle} placeholder="10" min="1" max="120" />
