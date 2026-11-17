@@ -390,6 +390,12 @@ def create_establishment():
 
 
 
+        # Tipo de entrega: Plataforma (padrão) ou Próprios — pode nascer pronto,
+        # sem precisar criar e depois trocar (pedido do Mauro, 2026-11-16)
+        has_own_drivers = data.get('has_own_drivers', False)
+        if not isinstance(has_own_drivers, bool):
+            return jsonify({'error': 'has_own_drivers deve ser booleano'}), 400
+
         establishment = Restaurant(
 
             name=data['name'],
@@ -409,6 +415,8 @@ def create_establishment():
             opening_hours=data.get('opening_hours'),
 
             is_active=data.get('is_active', True),
+
+            has_own_drivers=has_own_drivers,
 
             square_id=data.get('square_id') or None,
 
@@ -554,6 +562,14 @@ def update_establishment(establishment_id):
                     return jsonify({'error': 'CNPJ já cadastrado'}), 400
 
             est.cnpj = cnpj
+
+        # Tipo de entrega (Plataforma ↔ Próprios) — também editável pelo formulário
+        if 'has_own_drivers' in data:
+
+            has = data['has_own_drivers']
+            if not isinstance(has, bool):
+                return jsonify({'error': 'has_own_drivers deve ser booleano'}), 400
+            est.has_own_drivers = has
 
         if 'phone' in data:
 

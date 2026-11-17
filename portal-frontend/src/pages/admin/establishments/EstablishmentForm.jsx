@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, Bike, Users } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
 import { generateStrongPassword } from '@/lib/utils';
@@ -15,7 +15,8 @@ const EMPTY_FORM = {
   address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
   latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
   preparation_minutes: '10',
-  pickup_confirmation_type: 'code', delivery_confirmation_type: 'code'
+  pickup_confirmation_type: 'code', delivery_confirmation_type: 'code',
+  has_own_drivers: false
 };
 
 const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, onSave }) => {
@@ -50,7 +51,8 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         pricing_table_id: editing.pricing_table_id || '',
         preparation_minutes: editing.preparation_minutes || '10',
         pickup_confirmation_type: editing.pickup_confirmation_type || 'code',
-        delivery_confirmation_type: editing.delivery_confirmation_type || 'code'
+        delivery_confirmation_type: editing.delivery_confirmation_type || 'code',
+        has_own_drivers: !!editing.has_own_drivers
       });
       if (editing.square_id) loadPricingTables(editing.square_id);
     } else {
@@ -107,6 +109,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         preparation_minutes: parseInt(formData.preparation_minutes) || 10,
         pickup_confirmation_type: formData.pickup_confirmation_type || 'code',
         delivery_confirmation_type: formData.delivery_confirmation_type || 'code',
+        has_own_drivers: !!formData.has_own_drivers,
       };
 
       if (isSuperAdmin && formData.tenant_id) {
@@ -189,6 +192,43 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
             <input type="text" name="phone" value={formData.phone} onChange={handleChange} style={inputStyle} placeholder="(53) 99999-9999" />
           </FormField>
         </div>
+
+        {/* Tipo de entrega — pode nascer como Próprio, sem criar e depois trocar */}
+        <FormField label="Tipo de entrega">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, has_own_drivers: false }))}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+                padding: '0.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
+                border: `1.5px solid ${!formData.has_own_drivers ? '#16a34a' : '#e2e8f0'}`,
+                background: !formData.has_own_drivers ? '#16a34a' : 'white',
+                color: !formData.has_own_drivers ? 'white' : '#475569'
+              }}
+            >
+              <Bike size={14} /> Plataforma
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, has_own_drivers: true }))}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+                padding: '0.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
+                border: `1.5px solid ${formData.has_own_drivers ? '#2563eb' : '#e2e8f0'}`,
+                background: formData.has_own_drivers ? '#2563eb' : 'white',
+                color: formData.has_own_drivers ? 'white' : '#475569'
+              }}
+            >
+              <Users size={14} /> Próprios
+            </button>
+          </div>
+          <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.375rem' }}>
+            {formData.has_own_drivers
+              ? 'O estabelecimento cadastra seus entregadores pelo menu "Meus Entregadores". O pagamento dos próprios é configurado depois.'
+              : 'As entregas são feitas pelos entregadores da plataforma MUV.'}
+          </p>
+        </FormField>
 
         <FormField label="E-mail">
           <input type="email" name="email" value={formData.email} onChange={handleChange} style={inputStyle} placeholder="contato@estabelecimento.com" />

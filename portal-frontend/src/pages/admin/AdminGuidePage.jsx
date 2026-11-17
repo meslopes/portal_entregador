@@ -293,9 +293,12 @@ const AdminGuidePage = () => {
           próprias (por entrega, por km, percentual...).
         </p>
         <p style={{ margin: '0 0 8px', fontSize: 14, color: '#374151', lineHeight: 1.7 }}>
-          <strong>Como trocar:</strong> no menu <strong>Estabelecimentos</strong>, cada linha tem
-          um selo com o modo atual (<em>Plataforma</em> ou <em>Próprios</em>). Clique no ícone de
-          troca na coluna <strong>Ações</strong> — ou abra os detalhes e use o botão{" "}
+          <strong>Como escolher/trocar:</strong> na <strong>criação do estabelecimento</strong>, o
+          formulário já tem o campo <strong>Tipo de entrega</strong> — dá para nascer como
+          Plataforma ou Próprios, sem precisar trocar depois. Para mudar depois: no menu{" "}
+          <strong>Estabelecimentos</strong>, cada linha tem um selo com o modo atual
+          (<em>Plataforma</em> ou <em>Próprios</em>); clique no ícone de troca na coluna{" "}
+          <strong>Ações</strong> — ou abra os detalhes e use o botão{" "}
           <strong>"Mudar p/ Próprios / Plataforma"</strong> no card "Tipo de Entregador".
           O sistema pede confirmação antes de aplicar.
         </p>
