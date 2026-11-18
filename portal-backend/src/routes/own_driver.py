@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import os
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -189,6 +189,74 @@ def register_pin():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Erro ao registrar PIN: {str(e)}'}), 500
+
+
+# ==================== ATIVAÇÃO (Opção 2 do Enviar Acesso) ====================
+
+
+@own_driver_bp.route('/activation/<token>', methods=['GET'])
+def get_activation(token):
+    """Consulta pública do link de ativação (sem dados sensíveis)."""
+    try:
+        driver = EstablishmentDriver.query.filter_by(activation_token=token).first()
+        if not driver:
+            return jsonify({'error': 'Link de ativação não encontrado'}), 404
+        status = driver.activation_status()
+        return jsonify({
+            'valid': status == 'PENDING',
+            'status': status,
+            'driver_name': driver.name,
+            'restaurant_name': driver.restaurant.name if driver.restaurant else None,
+            'expires_at': driver.activation_expires_at.isoformat() if driver.activation_expires_at else None,
+        }), 200
+    except Exception as e:
+        logger.error(f"Erro ao consultar ativação: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@own_driver_bp.route('/activation/<token>', methods=['POST'])
+def activate_driver(token):
+    """Ativação: o entregador define o PRÓPRIO PIN e entra logado no app.
+
+    Body: {'pin': '1234'}. Uso único — reutilizar o link retorna 410.
+    """
+    try:
+        data = request.get_json() or {}
+        pin = (data.get('pin') or '').strip()
+        if len(pin) != 4 or not pin.isdigit():
+            return jsonify({'error': 'PIN deve ter 4 dígitos numéricos'}), 400
+
+        driver = EstablishmentDriver.query.filter_by(activation_token=token).first()
+        if not driver:
+            return jsonify({'error': 'Link de ativação não encontrado'}), 404
+
+        status = driver.activation_status()
+        if status == 'USED':
+            return jsonify({'error': 'Este link já foi utilizado. Peça um novo ao estabelecimento.'}), 410
+        if status == 'EXPIRED':
+            return jsonify({'error': 'Este link expirou. Peça um novo ao estabelecimento.'}), 410
+
+        if not driver.is_active:
+            return jsonify({'error': 'Entregador inativo. Entre em contato com o estabelecimento.'}), 403
+
+        driver.set_pin(pin)
+        driver.activation_used_at = EstablishmentDriver.now_naive()
+        db.session.commit()
+
+        # Auto-login (mesmo formato do /login) — o entregador cai direto no app
+        token_jwt = create_own_driver_token(driver.id, driver.restaurant_id)
+        return jsonify({
+            'token': token_jwt,
+            'driver': driver.to_dict(),
+            'restaurant': {
+                'id': driver.restaurant.id if driver.restaurant else None,
+                'name': driver.restaurant.name if driver.restaurant else None,
+            },
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 # ==================== STATUS ====================

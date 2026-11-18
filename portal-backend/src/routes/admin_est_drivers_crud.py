@@ -285,6 +285,49 @@ def set_establishment_driver_pin(driver_id):
         return jsonify({'error': str(e)}), 500
 
 
+@admin_est_drivers_crud_bp.route('/establishment-drivers/<int:driver_id>/activation-link', methods=['POST'])
+@jwt_required()
+@client_or_admin_required
+def create_activation_link(driver_id):
+    """Gera o link de ativação do entregador (Opção 2 do Enviar Acesso).
+
+    O entregador abre o link e define o PRÓPRIO PIN — nenhum segredo é
+    transmitido. Um link por vez: gerar um novo invalida o anterior.
+    """
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador não encontrado'}), 404
+
+        # Ownership: CLIENT só gera link para entregadores do seu restaurante
+        current_user = get_current_user()
+        if current_user and current_user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=current_user.id).first()
+            if customer:
+                user_restaurant = find_restaurant_by_name(customer.name)
+                if user_restaurant and driver.restaurant_id != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado: você só pode gerar links para entregadores do seu próprio estabelecimento'}), 403
+
+        import secrets
+        from datetime import timedelta
+        driver.activation_token = secrets.token_urlsafe(32)
+        driver.activation_expires_at = EstablishmentDriver.now_naive() + timedelta(days=7)
+        driver.activation_used_at = None
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Link de ativação gerado',
+            'token': driver.activation_token,
+            'activation_path': f'/own-driver/activate/{driver.activation_token}',
+            'expires_at': driver.activation_expires_at.isoformat(),
+            'driver': driver.to_dict(),
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_est_drivers_crud_bp.route('/establishment-drivers/<int:driver_id>', methods=['PUT'])
 
 @jwt_required()

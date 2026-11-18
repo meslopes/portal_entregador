@@ -1,4 +1,4 @@
-"""Pessoas e acesso: organização, usuários, entregadores e cadastros próprios.
+﻿"""Pessoas e acesso: organização, usuários, entregadores e cadastros próprios.
 
 Extraído de portal_models.py no refactor de arquivos grandes (2026-11-01).
 Importe via src.models.portal_models (fachada) — comportamento idêntico.
@@ -293,6 +293,11 @@ class EstablishmentDriver(db.Model):
     name = db.Column(db.String(200), nullable=False)
     phone = db.Column(db.String(20))
     pin_hash = db.Column(db.String(512))  # Hash do PIN de 4 dígitos para login no PWA
+    # Link de ativação (Opção 2 do Enviar Acesso): o entregador abre o link e
+    # define o PRÓPRIO PIN — nenhum segredo é transmitido. Uso único, com expiração.
+    activation_token = db.Column(db.String(64), unique=True, index=True)
+    activation_expires_at = db.Column(db.DateTime)
+    activation_used_at = db.Column(db.DateTime)
     vehicle_type = db.Column(db.String(20))  # MOTO, BIKE, CAR
     vehicle_plate = db.Column(db.String(10))
     vehicle_model = db.Column(db.String(100))
@@ -311,6 +316,22 @@ class EstablishmentDriver(db.Model):
 
     # Relacionamentos
     restaurant = db.relationship('Restaurant', backref='own_drivers')
+
+    @staticmethod
+    def now_naive():
+        """UTC sem fuso — as colunas TIMESTAMP do banco são naive (mesma armadilha do AdminInvite)."""
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+    def activation_status(self):
+        """Status do link de ativação: NONE / PENDING / USED / EXPIRED."""
+        if not self.activation_token:
+            return 'NONE'
+        if self.activation_used_at:
+            return 'USED'
+        if self.activation_expires_at and self.activation_expires_at <= EstablishmentDriver.now_naive():
+            return 'EXPIRED'
+        return 'PENDING'
 
     def set_pin(self, pin):
         from werkzeug.security import generate_password_hash
@@ -340,6 +361,7 @@ class EstablishmentDriver(db.Model):
             'total_deliveries': self.total_deliveries or 0,
             'total_ratings': self.total_ratings or 0,
             'has_pin': bool(self.pin_hash),
+            'activation_pending': self.activation_status() == 'PENDING',
             'driver_type': 'OWN',
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()

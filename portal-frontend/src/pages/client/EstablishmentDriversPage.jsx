@@ -27,6 +27,8 @@ const EstablishmentDriversPage = () => {
   const [sendDriver, setSendDriver] = useState(null);
   const [sendPin, setSendPin] = useState('');
   const [sendError, setSendError] = useState('');
+  const [sendMode, setSendMode] = useState('pin'); // 'pin' | 'link'
+  const [activationLink, setActivationLink] = useState(null); // dados do link de ativacao
 
   useEffect(() => { loadDrivers(); }, []);
 
@@ -131,6 +133,8 @@ const EstablishmentDriversPage = () => {
     setSendDriver(driver);
     setSendPin(pinFromForm || '');
     setSendError('');
+    setSendMode('pin');
+    setActivationLink(null);
   };
 
   /** Fecha o modal sem enviar. */
@@ -159,6 +163,47 @@ const EstablishmentDriversPage = () => {
       linhas.push('Abra o link no celular e faça o login com o PIN combinado. Recomendamos adicionar o app à tela inicial.');
     }
     return linhas.join('\n');
+  };
+
+  /** Monta a mensagem do link de ativação (o entregador define o próprio PIN). */
+  const buildLinkMessage = (driver) => {
+    const url = window.location.origin + (activationLink?.activation_path || '');
+    return [
+      'Olá, ' + driver.name + '! Seu acesso ao app do muv.log está pronto.',
+      '',
+      'Use este link para definir seu PIN e entrar:',
+      url,
+      '',
+      'Guarde o PIN que você escolher — é com ele que você entra no app.',
+    ].join('\n');
+  };
+
+  /** Gera o link de ativação (uso único, expira em 7 dias). */
+  const handleGenerateLink = async () => {
+    if (!sendDriver) return;
+    try {
+      setSendError('');
+      const res = await api.post('/api/admin/establishment-drivers/' + sendDriver.id + '/activation-link');
+      setActivationLink(res.data);
+    } catch (err) {
+      setSendError(err.response?.data?.error || 'Erro ao gerar o link de ativação');
+    }
+  };
+
+  /** Envia a mensagem com o link de ativação (WhatsApp ou cópia). */
+  const handleSendLink = (channel) => {
+    if (!sendDriver || !activationLink) return;
+    const mensagem = buildLinkMessage(sendDriver);
+    const telefone = (sendDriver.phone || '').replace(/\D/g, '');
+    if (channel === 'whatsapp') {
+      window.open('https://wa.me/55' + telefone + '?text=' + encodeURIComponent(mensagem), '_blank');
+    } else {
+      navigator.clipboard.writeText(mensagem).then(() => {
+        showToast('Link copiado! Envie ao entregador.', 'success');
+      }).catch(() => showToast('Erro ao copiar', 'error'));
+    }
+    closeSendModal();
+    loadDrivers();
   };
 
   /**
@@ -363,30 +408,78 @@ const EstablishmentDriversPage = () => {
               <button onClick={closeSendModal} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
             <div style={{ padding: '1.5rem' }}>
-              <p style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '1rem' }}>
+              <p style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.75rem' }}>
                 <strong>{sendDriver.name}</strong>
                 {sendDriver.phone ? ' · ' + sendDriver.phone : ''}
               </p>
 
-              <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#0f766e', marginBottom: '0.5rem' }}>
-                  PIN que será enviado (4 dígitos)
-                </label>
-                <input
-                  type="text"
-                  value={sendPin}
-                  onChange={e => { setSendPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setSendError(''); }}
-                  style={{ ...inputStyle, maxWidth: '150px', textAlign: 'center', letterSpacing: '0.5rem', fontFamily: 'monospace', fontSize: '1.25rem' }}
-                  placeholder="0000"
-                  maxLength={4}
-                  inputMode="numeric"
-                />
-                <p style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.5rem', lineHeight: 1.6 }}>
-                  {sendDriver.has_pin
-                    ? 'O PIN atual não pode ser recuperado. Digite um novo para incluir na mensagem (será redefinido), ou deixe em branco se o entregador já sabe o PIN.'
-                    : 'Sem PIN o entregador não consegue entrar no app. Defina o PIN que será enviado.'}
-                </p>
+              {/* Escolha do modo de envio (Opção 1 = PIN na mensagem / Opção 2 = link de ativação) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                {[['pin', 'Com PIN'], ['link', 'Link de ativação']].map(([modo, rotulo]) => (
+                  <button key={modo} type="button" onClick={() => { setSendMode(modo); setSendError(''); }}
+                    style={{
+                      padding: '0.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600,
+                      border: `1.5px solid ${sendMode === modo ? '#0d9488' : '#e2e8f0'}`,
+                      background: sendMode === modo ? '#0d9488' : 'white',
+                      color: sendMode === modo ? 'white' : '#475569'
+                    }}>
+                    {rotulo}
+                  </button>
+                ))}
               </div>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+                {sendMode === 'pin'
+                  ? 'A mensagem vai com o PIN que você definir abaixo.'
+                  : 'O entregador abre o link e define o PRÓPRIO PIN — nenhum segredo na mensagem.'}
+              </p>
+
+              {sendMode === 'pin' && (
+                <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#0f766e', marginBottom: '0.5rem' }}>
+                    PIN que será enviado (4 dígitos)
+                  </label>
+                  <input
+                    type="text"
+                    value={sendPin}
+                    onChange={e => { setSendPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setSendError(''); }}
+                    style={{ ...inputStyle, maxWidth: '150px', textAlign: 'center', letterSpacing: '0.5rem', fontFamily: 'monospace', fontSize: '1.25rem' }}
+                    placeholder="0000"
+                    maxLength={4}
+                    inputMode="numeric"
+                  />
+                  <p style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.5rem', lineHeight: 1.6 }}>
+                    {sendDriver.has_pin
+                      ? 'O PIN atual não pode ser recuperado. Digite um novo para incluir na mensagem (será redefinido), ou deixe em branco se o entregador já sabe o PIN.'
+                      : 'Sem PIN o entregador não consegue entrar no app. Defina o PIN que será enviado.'}
+                  </p>
+                </div>
+              )}
+
+              {sendMode === 'link' && (
+                <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
+                  {!activationLink ? (
+                    <>
+                      <p style={{ fontSize: '0.8125rem', color: '#0f766e', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                        O link é de uso único e expira em 7 dias. Serve também para o entregador
+                        redefinir o PIN caso esqueça — é só gerar um link novo.
+                      </p>
+                      <button type="button" onClick={handleGenerateLink}
+                        style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#0d9488', color: 'white', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' }}>
+                        Gerar link de ativação
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.6, marginBottom: '0.5rem' }}>
+                        Link gerado (uso único, expira em 7 dias):
+                      </p>
+                      <p style={{ fontSize: '0.75rem', color: '#0f766e', fontFamily: 'monospace', wordBreak: 'break-all', background: 'white', border: '1px solid #99f6e4', borderRadius: '0.375rem', padding: '0.5rem' }}>
+                        {window.location.origin + activationLink.activation_path}
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
 
               {sendError && (
                 <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -398,17 +491,23 @@ const EstablishmentDriversPage = () => {
                 Mensagem que será enviada
               </label>
               <pre style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '0.875rem', fontSize: '0.8125rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0, marginBottom: '1.25rem' }}>
-                {buildAccessMessage(sendDriver, sendPin.trim())}
+                {sendMode === 'pin'
+                  ? buildAccessMessage(sendDriver, sendPin.trim())
+                  : (activationLink ? buildLinkMessage(sendDriver) : 'Gere o link de ativação para ver a mensagem.')}
               </pre>
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={closeSendModal} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>
                   Cancelar
                 </button>
-                <button type="button" onClick={() => handleSendAccess('copy')} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <button type="button" disabled={sendMode === 'link' && !activationLink}
+                  onClick={() => sendMode === 'pin' ? handleSendAccess('copy') : handleSendLink('copy')}
+                  style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: (sendMode === 'link' && !activationLink) ? 'not-allowed' : 'pointer', opacity: (sendMode === 'link' && !activationLink) ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                   <Copy size={14} /> Copiar
                 </button>
-                <button type="button" onClick={() => handleSendAccess('whatsapp')} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#25d366', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                <button type="button" disabled={sendMode === 'link' && !activationLink}
+                  onClick={() => sendMode === 'pin' ? handleSendAccess('whatsapp') : handleSendLink('whatsapp')}
+                  style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#25d366', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: (sendMode === 'link' && !activationLink) ? 'not-allowed' : 'pointer', opacity: (sendMode === 'link' && !activationLink) ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                   <MessageCircle size={14} /> WhatsApp
                 </button>
               </div>

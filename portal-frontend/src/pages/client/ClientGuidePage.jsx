@@ -39,8 +39,9 @@ const ETAPAS = [
     why: 'Sua equipe aparece aqui: cada entregador tem acesso ao app pelo telefone + PIN.',
     how: [
       'Abra "Meus Entregadores" e clique em novo',
-      'Preencha nome, telefone, veículo e o PIN de acesso',
-      'Ao cadastrar, o modal "Enviar Acesso" abre pronto — envie pelo WhatsApp ou copie a mensagem com o link do app, o telefone (login) e o PIN',
+      'Preencha nome, telefone e veículo',
+      'No modal "Enviar Acesso" escolha o modo: "Com PIN" (você define o PIN e ele vai na mensagem) ou "Link de ativação" (o entregador abre o link e define o próprio PIN)',
+      'Envie pelo WhatsApp ou copie a mensagem — nela vão o link do app e o telefone (login)',
     ],
     href: '/client/drivers',
   },
