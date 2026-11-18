@@ -68,6 +68,8 @@ from src.utils.cors import init_cors
 init_cors(app, flask_env)
 # Registra blueprints
 from src.routes.admin_activity import admin_activity_bp
+from src.routes.admin_avoidances import admin_avoidances_bp
+app.register_blueprint(admin_avoidances_bp, url_prefix='/api/admin')
 from src.routes.order_link import order_link_bp
 app.register_blueprint(order_link_bp, url_prefix='/api')
 app.register_blueprint(admin_activity_bp, url_prefix='/api/admin')
@@ -568,6 +570,26 @@ with app.app_context():
         print("Coluna do Link de Pedido Rapido adicionada (restaurants.order_link_token)")
     except Exception as e:
         print(f"Migração link de pedido: {e}")
+        db.session.rollback()
+    # Migration: colunas de evitamento em driver_restaurants (2026-11-18) — G-08
+    try:
+        for col_sql in (
+            "avoidance_active BOOLEAN DEFAULT FALSE",
+            "avoidance_source VARCHAR(20)",
+            "avoidance_reason VARCHAR(200)",
+            "avoidance_created_at TIMESTAMP",
+            "avoidance_revoked_at TIMESTAMP",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'driver_restaurants' AND column_name = '{col}') "
+                f"THEN ALTER TABLE driver_restaurants ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas de evitamento adicionadas (driver_restaurants G-08)")
+    except Exception as e:
+        print(f"Migração evitamento: {e}")
         db.session.rollback()
 
     # Migration Fase D (2026-11-17): assinatura de 3 termos (fixo + entregador + pedido)

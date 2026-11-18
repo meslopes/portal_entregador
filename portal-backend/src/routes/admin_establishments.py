@@ -130,6 +130,22 @@ def get_establishments():
                     'today_orders': int(r.today_orders),
                 }
 
+        # Qualidade percebida pelos entregadores (G-08 A+B): média das notas
+        # entregador→estabelecimento, em lote (anti N+1)
+        if establishments.items:
+            from src.models.portal_models import Delivery
+            for rid, media, qtd in db.session.query(
+                Order.restaurant_id,
+                _func.avg(Delivery.driver_rating),
+                _func.count(Delivery.driver_rating),
+            ).join(Delivery, Delivery.order_id == Order.id).filter(
+                Order.restaurant_id.in_(est_ids),
+                Delivery.driver_rating.isnot(None),
+            ).group_by(Order.restaurant_id):
+                if rid in stats:
+                    stats[rid]['driver_avg_rating'] = round(float(media), 2)
+                    stats[rid]['driver_ratings_count'] = int(qtd)
+
         for est in establishments.items:
 
             est_dict = est.to_dict(include_sensitive=True)
@@ -145,6 +161,10 @@ def get_establishments():
             est_dict['week_orders'] = s['week_orders']
 
             est_dict['today_orders'] = s['today_orders']
+
+            # G-08: qualidade percebida pelos entregadores (ranking de estabelecimentos)
+            est_dict['driver_avg_rating'] = s.get('driver_avg_rating')
+            est_dict['driver_ratings_count'] = s.get('driver_ratings_count', 0)
 
             establishments_data.append(est_dict)
         return jsonify({

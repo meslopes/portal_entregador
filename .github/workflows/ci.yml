@@ -1,0 +1,43 @@
+﻿# CI dos subprojetos (F-23): valida backend e frontend em cada push/PR.
+# Os projetos ficam em subpastas (portal-backend, portal-frontend) — por isso
+# o working-directory em cada job. Substitui o antigo template de publicação
+# npm (npm ci na raiz falhava: não há package.json na raiz).
+name: CI
+
+on:
+  push:
+    branches: [main, branch-mauro]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (Flask)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: portal-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+      - name: Compilar (import do app)
+        run: python -c "from src.main import app; print('backend OK')"
+
+  frontend:
+    name: Frontend (React)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: portal-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar dependências
+        run: npm ci
+      - name: Build de produção
+        run: npm run build

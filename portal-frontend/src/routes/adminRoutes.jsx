@@ -12,6 +12,7 @@ import AdminWithdrawalsPage from '@/pages/admin/AdminWithdrawalsPage';
 import AdminInvoicesPage from '@/pages/admin/AdminInvoicesPage';
 import AdminPricingPage from '@/pages/admin/AdminPricingPage';
 import AdminActivityPage from '@/pages/admin/AdminActivityPage';
+import AdminAvoidancesPage from '@/pages/admin/AdminAvoidancesPage';
 import AdminDynamicPricingPage from '@/pages/admin/AdminDynamicPricingPage';
 import AdminIntegrationsPage from '@/pages/admin/AdminIntegrationsPage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
@@ -48,6 +49,7 @@ export const adminRoutes = (
       <Route path="/admin/overdue-report" element={<AdminRoute><OverdueReportPage /></AdminRoute>} />
       <Route path="/admin/pricing" element={<AdminRoute><AdminPricingPage /></AdminRoute>} />
       <Route path="/admin/activity" element={<AdminRoute><AdminActivityPage /></AdminRoute>} />
+      <Route path="/admin/avoidances" element={<AdminRoute><AdminAvoidancesPage /></AdminRoute>} />
       <Route path="/admin/dynamic-pricing" element={<AdminRoute><AdminDynamicPricingPage /></AdminRoute>} />
       <Route path="/admin/integrations" element={<AdminRoute><AdminIntegrationsPage /></AdminRoute>} />
       <Route path="/admin/withdrawals" element={<AdminRoute><AdminWithdrawalsPage /></AdminRoute>} />

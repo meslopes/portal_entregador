@@ -1,4 +1,4 @@
-"""
+﻿"""
 Rotas do sistema de bonus e ranking de entregadores.
 """
 from datetime import datetime, timedelta, timezone
@@ -18,6 +18,31 @@ from src.models.portal_models import (
 )
 
 bonus_bp = Blueprint('bonus', __name__)
+
+
+def _pool_valor(config_key, padrao):
+    """Pool de premiação configurável (G-04) — SystemConfig, com padrão.
+
+    Chaves: bonus_weekly_pool (padrão 75.00) e bonus_monthly_pool (padrão 750.00).
+    O admin define em Configurações (PUT /api/admin/pricing/settings aceita
+    qualquer chave). Sem configuração, vale o padrão.
+    """
+    try:
+        from src.models.portal_models import SystemConfig
+        from src.utils.tenant import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        query = SystemConfig.query.filter_by(config_key=config_key)
+        if tenant_id:
+            query = query.filter(
+                (SystemConfig.tenant_id == tenant_id) | (SystemConfig.tenant_id.is_(None))
+            )
+        cfg = query.first()
+        if cfg and cfg.config_value not in (None, ''):
+            return float(cfg.config_value)
+    except Exception:
+        pass
+    return padrao
+
 
 
 def admin_required(f):
@@ -262,8 +287,8 @@ def process_weekly_bonuses():
 
         ranking.sort(key=lambda x: x['deliveries'], reverse=True)
 
-        # Pool da semana (estimativa: 100 entregas x R$15 x 5%)
-        weekly_pool = 100 * 15 * 0.05  # R$ 75,00
+        # Pool da semana — configurável em SystemConfig (G-04): bonus_weekly_pool
+        weekly_pool = _pool_valor('bonus_weekly_pool', 75.0)
 
         # Distribui para top 3
         distribution = [
@@ -334,8 +359,8 @@ def process_monthly_bonuses():
 
         ranking.sort(key=lambda x: x['deliveries'], reverse=True)
 
-        # Pool do mes (estimativa: 1000 entregas x R$15 x 5%)
-        monthly_pool = 1000 * 15 * 0.05  # R$ 750,00
+        # Pool do mês — configurável em SystemConfig (G-04): bonus_monthly_pool
+        monthly_pool = _pool_valor('bonus_monthly_pool', 750.0)
 
         # Distribui para top 5
         distribution = [

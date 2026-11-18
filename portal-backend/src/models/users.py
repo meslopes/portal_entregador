@@ -234,7 +234,15 @@ class DriverRestaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     driver_id = db.Column(db.Integer, db.ForeignKey('drivers.id'), nullable=False)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
-    is_priority = db.Column(db.Boolean, default=False)  # Se True, entregador tem prioridade neste restaurante
+    is_priority = db.Column(db.Boolean, default=False)  # Se True, entregador tem prioridade neste resta
+    # Evitamento (G-08): entregador que avalia mal o estabelecimento passa a ser
+    # despriorizado nas ofertas dele ("punição silenciosa"). Controle do admin:
+    # revogável a qualquer momento (avoidance_active=False + revoked_at).
+    avoidance_active = db.Column(db.Boolean, default=False)
+    avoidance_source = db.Column(db.String(20))  # AUTO (reciprocidade) | MANUAL (admin)
+    avoidance_reason = db.Column(db.String(200))
+    avoidance_created_at = db.Column(db.DateTime)
+    avoidance_revoked_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=utcnow)
 
     # Relacionamentos
@@ -250,6 +258,9 @@ class DriverRestaurant(db.Model):
             'driver_id': self.driver_id,
             'restaurant_id': self.restaurant_id,
             'is_priority': self.is_priority,
+            'avoidance_active': bool(self.avoidance_active),
+            'avoidance_source': self.avoidance_source,
+            'avoidance_reason': self.avoidance_reason,
             'driver_name': f"{self.driver.user.first_name} {self.driver.user.last_name}" if self.driver and self.driver.user else None,
             'restaurant_name': self.restaurant.name if self.restaurant else None,
             'created_at': self.created_at.isoformat()

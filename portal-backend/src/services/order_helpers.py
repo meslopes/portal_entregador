@@ -860,6 +860,14 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         if not available_drivers:
             return None
 
+        # Punição silenciosa (G-08): entregadores com evitamento ATIVO para este
+        # estabelecimento vão para o fim da fila (preferencialmente não atendem)
+        try:
+            from src.services.avoidance_service import evitamentos_ativos
+            _evitados = evitamentos_ativos(order.restaurant_id, [d['driver'].id for d in available_drivers])
+        except Exception:
+            _evitados = set()
+
         # Ordena por distância, mas com prioridade para níveis MuvScore mais altos
         # Bônus de prioridade: Diamante=30%, Ouro=20%, Prata=10%, Bronze=0%
         level_priority = {'diamante': 0.7, 'ouro': 0.8, 'prata': 0.9, 'bronze': 1.0}
@@ -878,7 +886,8 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
             except Exception:
                 level = 'bronze'
             multiplier = level_priority.get(level, 1.0)
-            return distance * multiplier  # Menor distância × prioridade = melhor posição
+            penalty = 5.0 if driver.id in _evitados else 1.0  # G-08: evitamento = fim da fila
+            return distance * multiplier * penalty  # Menor distância × prioridade = melhor posição
 
         available_drivers.sort(key=sort_key)
 

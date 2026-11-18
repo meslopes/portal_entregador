@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { DollarSign } from 'lucide-react';
 import { SettingsCard, FormField } from './shared';
 import { inputStyle } from './shared.constants';
@@ -25,6 +25,14 @@ const PricingSettings = ({ config, onChange }) => (
     <FormField label="Gamificação (%)">
       <input type="number" min="0" max="30" value={config.gamification_percentage || '5'} onChange={e => onChange('gamification_percentage', e.target.value)} style={inputStyle} />
       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Percentual destinado ao pool de gamificação/ranking (padrão: 5%)</p>
+    </FormField>
+    <FormField label="Pool de Bônus Semanal (R$)">
+      <input type="number" step="0.01" min="0" value={config.bonus_weekly_pool || '75'} onChange={e => onChange('bonus_weekly_pool', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Valor total distribuído entre o top 3 da semana (padrão: R$ 75)</p>
+    </FormField>
+    <FormField label="Pool de Bônus Mensal (R$)">
+      <input type="number" step="0.01" min="0" value={config.bonus_monthly_pool || '750'} onChange={e => onChange('bonus_monthly_pool', e.target.value)} style={inputStyle} />
+      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Valor total distribuído entre o top 5 do mês (padrão: R$ 750)</p>
     </FormField>
     <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe', marginTop: '0.5rem' }}>
       <p style={{ fontSize: '0.75rem', color: '#1e40af' }}>

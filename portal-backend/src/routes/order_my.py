@@ -1,4 +1,4 @@
-"""Rotas de pedido: área do usuário (meus pedidos, rastreio e avaliação).
+﻿"""Rotas de pedido: área do usuário (meus pedidos, rastreio e avaliação).
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -680,6 +680,14 @@ def rate_restaurant(order_id):
         # Atualiza a avaliacao na entrega
         order.delivery.driver_rating = rating
         order.delivery.driver_feedback = feedback
+
+        # G-08: avaliação negativa (<=2) dispara o mecanismo de evitamento
+        # (punição silenciosa / alerta de conflito recíproco — ver avoidance_service)
+        try:
+            from src.services.avoidance_service import registrar_avaliacao_negativa
+            registrar_avaliacao_negativa(order.driver_id, order.restaurant_id, order.id, rating)
+        except Exception as _e:
+            logger.warning(f"[EVITAMENTO] hook falhou: {_e}")
         order.delivery.updated_at = datetime.now(timezone.utc)
 
         db.session.commit()

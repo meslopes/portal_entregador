@@ -394,6 +394,24 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration: colunas de evitamento em driver_restaurants (2026-11-18) — G-08
+    try:
+        for col_sql in (
+            "avoidance_active BOOLEAN DEFAULT FALSE",
+            "avoidance_source VARCHAR(20)",
+            "avoidance_reason VARCHAR(200)",
+            "avoidance_created_at TIMESTAMP",
+            "avoidance_revoked_at TIMESTAMP",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'driver_restaurants' AND column_name = '{col}') "
+                f"THEN ALTER TABLE driver_restaurants ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
     # Migration Fase D (2026-11-17): assinatura de 3 termos
     try:
         for tabela, col_sql in (

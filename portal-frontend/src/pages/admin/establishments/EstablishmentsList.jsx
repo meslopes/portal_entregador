@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Store, Search, Phone, Mail, MapPin, Edit, Trash2, Users, Bike } from 'lucide-react';
 import { utils } from '@/lib/api';
 import { maskPii } from '@/lib/utils';
@@ -109,6 +109,16 @@ const EstablishmentsList = ({
                       background: '#fef3c7', color: '#92400e'
                     }}>
                       Sem Praça
+                    </span>
+                  )}
+                  {est.driver_avg_rating != null && (
+                    <span title={`Qualidade percebida pelos entregadores (${est.driver_ratings_count || 0} avaliações)`} style={{
+                      padding: '0.0625rem 0.375rem', borderRadius: '9999px',
+                      fontSize: '0.5625rem', fontWeight: 600,
+                      background: est.driver_avg_rating >= 4 ? '#dcfce7' : est.driver_avg_rating >= 3 ? '#fef3c7' : '#fee2e2',
+                      color: est.driver_avg_rating >= 4 ? '#15803d' : est.driver_avg_rating >= 3 ? '#92400e' : '#b91c1c'
+                    }}>
+                      ★ {Number(est.driver_avg_rating).toFixed(1)} ({est.driver_ratings_count || 0})
                     </span>
                   )}
                 </div>
