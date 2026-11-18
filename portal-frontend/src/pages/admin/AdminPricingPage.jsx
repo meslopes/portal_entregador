@@ -4,6 +4,7 @@ import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckC
 import { adminService } from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 import TierBandsField from '@/components/TierBandsField';
+import FeePreview from '@/components/FeePreview';
 
 const AdminPricingPage = () => {
   const [tables, setTables] = useState([]);
@@ -14,7 +15,7 @@ const AdminPricingPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [form, setForm] = useState({
-    name: '', description: '', square_id: '', price_per_km: '2.95',
+    name: '', description: '', square_id: '', price_per_km: '2.95', fixed_fee: '0',
     min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50',
     driver_percentage: '65', is_active: true,
     pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '',
@@ -41,7 +42,7 @@ const AdminPricingPage = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '', round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '', vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1' });
+    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', fixed_fee: '0', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '', round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '', vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1' });
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -52,6 +53,7 @@ const AdminPricingPage = () => {
       name: table.name || '', description: table.description || '',
       square_id: String(table.square_id || ''),
       price_per_km: String(table.price_per_km || '2.95'),
+      fixed_fee: String(table.fixed_fee ?? '0'),
       min_distance_km: String(table.min_distance_km || '4'),
       min_delivery_fee: String(table.min_delivery_fee || ''),
       max_delivery_fee: String(table.max_delivery_fee || '50'),
@@ -79,6 +81,7 @@ const AdminPricingPage = () => {
         name: form.name, description: form.description || null,
         square_id: parseInt(form.square_id),
         price_per_km: parseFloat(form.price_per_km) || 2.95,
+        fixed_fee: parseFloat(form.fixed_fee) || 0,
         min_distance_km: parseFloat(form.min_distance_km) || 4,
         min_delivery_fee: form.min_delivery_fee ? parseFloat(form.min_delivery_fee) : null,
         max_delivery_fee: parseFloat(form.max_delivery_fee) || 50,
@@ -245,10 +248,14 @@ const AdminPricingPage = () => {
                   <TierBandsField value={form.tier_bands} onChange={bands => setForm(p => ({ ...p, tier_bands: bands }))} />
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>R$ por km *</label>
                     <input type="number" step="0.01" value={form.price_per_km} onChange={e => setForm(p => ({ ...p, price_per_km: e.target.value }))} required style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Tarifa fixa (R$)</label>
+                    <input type="number" step="0.01" min="0" value={form.fixed_fee} onChange={e => setForm(p => ({ ...p, fixed_fee: e.target.value }))} placeholder="0 = usar R$/km" style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Distância mín. (km)</label>
@@ -334,6 +341,9 @@ const AdminPricingPage = () => {
                   </label>
                 </div>
               </div>
+
+              {/* Prévia — mesma regra do sistema (compartilhada com Meus Preços) */}
+              <FeePreview form={form} />
 
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button type="button" onClick={resetForm} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>Cancelar</button>

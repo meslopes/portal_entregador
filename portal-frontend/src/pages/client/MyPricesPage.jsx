@@ -3,6 +3,7 @@ import { DollarSign, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 import TierBandsField from '@/components/TierBandsField';
+import FeePreview from '@/components/FeePreview';
 
 /**
  * Meus Preços — o estabelecimento define os preços de entrega que cobra do seu cliente.
@@ -55,35 +56,6 @@ const MyPricesPage = () => {
   };
 
   useEffect(() => { loadTable(); }, []);
-
-  // Mesma regra do cálculo do sistema (calcular_frete_tabela)
-  const calcularFrete = (km) => {
-    const aplicarLimites = (v) => {
-      let fee = v;
-      const minFee = parseFloat(form.min_delivery_fee);
-      if (!isNaN(minFee)) fee = Math.max(fee, minFee);
-      const maxFee = parseFloat(form.max_delivery_fee);
-      if (!isNaN(maxFee)) fee = Math.min(fee, maxFee);
-      return fee;
-    };
-    // Modo faixas (sem volta): preço da faixa que contém a distância
-    if (form.pricing_mode === 'TIERS' && form.tier_bands.length) {
-      const faixas = form.tier_bands
-        .map(b => ({ to_km: b.to_km === '' ? null : parseFloat(b.to_km), price: parseFloat(b.price) || 0 }))
-        .sort((a, b) => (a.to_km === null) - (b.to_km === null) || (a.to_km || 0) - (b.to_km || 0));
-      let ultimo = 0;
-      for (const f of faixas) {
-        ultimo = f.price;
-        if (f.to_km === null || km <= f.to_km) return aplicarLimites(f.price);
-      }
-      return aplicarLimites(ultimo);
-    }
-    const fixed = parseFloat(form.fixed_fee) || 0;
-    if (fixed > 0) return fixed;
-    const price = parseFloat(form.price_per_km) || 0;
-    const minKm = parseFloat(form.min_distance_km) || 4;
-    return aplicarLimites(Math.max(km, minKm) * price);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -272,30 +244,8 @@ const MyPricesPage = () => {
           1,0 = preço cheio · 0,8 = 20% mais barato · 1,3 = 30% mais caro. Vale sobre o valor base do frete (volta e deslocamento não mudam).
         </p>
 
-        {/* Prévia — mesma regra de cálculo do sistema */}
-        <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1.25rem' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0d9488', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-            Prévia do frete que o cliente verá
-          </p>
-          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.875rem' }}>
-            {[2, 5, 10].map(km => (
-              <div key={km}>
-                <p style={{ color: '#64748b', margin: 0 }}>{km} km</p>
-                <p style={{ fontWeight: 700, color: '#1e293b', margin: 0 }}>R$ {calcularFrete(km).toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
-          {form.pickup_rate_per_km && parseFloat(form.pickup_rate_per_km) > 0 && (
-            <p style={{ fontSize: '0.75rem', color: '#0d9488', margin: '0.5rem 0 0' }}>
-              + taxa de deslocamento (varia conforme a posição do motorista no momento do pedido)
-            </p>
-          )}
-          {form.free_delivery_min_order && (
-            <p style={{ fontSize: '0.75rem', color: '#0d9488', margin: '0.5rem 0 0' }}>
-              ✓ Frete grátis para pedidos com produtos acima de R$ {parseFloat(form.free_delivery_min_order).toFixed(2)}
-            </p>
-          )}
-        </div>
+        {/* Prévia — mesma regra de cálculo do sistema (compartilhada com o admin) */}
+        <FeePreview form={form} />
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button type="submit" disabled={saving} style={{

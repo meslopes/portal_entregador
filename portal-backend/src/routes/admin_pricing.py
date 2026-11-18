@@ -697,6 +697,8 @@ def create_pricing_table():
 
             price_per_km=price_per_km,
 
+            fixed_fee=safe_float(data.get('fixed_fee'), 0) or 0,
+
             min_distance_km=min_distance_km,
 
             min_delivery_fee=min_delivery_fee,
@@ -834,6 +836,20 @@ def update_pricing_table(table_id):
             if val is not None:
 
                 table.price_per_km = val
+
+        if 'fixed_fee' in data:
+
+            # Tarifa fixa (paridade com Meus Preços) — 0 = usar preço por km
+
+            val = safe_float(data.get('fixed_fee'), 0)
+
+            if val is not None:
+
+                if not (0 <= val <= 10000):
+
+                    return jsonify({'error': 'A tarifa fixa deve estar entre 0 e 10000'}), 400
+
+                table.fixed_fee = val
 
         if 'min_distance_km' in data:
 
