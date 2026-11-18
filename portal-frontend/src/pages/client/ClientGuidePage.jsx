@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { Tag, Users, Wallet, Receipt, CheckCircle, ArrowRight, BookOpen, Bike } from 'lucide-react';
 
@@ -39,8 +39,8 @@ const ETAPAS = [
     why: 'Sua equipe aparece aqui: cada entregador tem acesso ao app pelo telefone + PIN.',
     how: [
       'Abra "Meus Entregadores" e clique em novo',
-      'Preencha nome, telefone e veículo',
-      'Compartilhe o acesso (PIN) com cada entregador',
+      'Preencha nome, telefone, veículo e o PIN de acesso',
+      'Ao cadastrar, o modal "Enviar Acesso" abre pronto — envie pelo WhatsApp ou copie a mensagem com o link do app, o telefone (login) e o PIN',
     ],
     href: '/client/drivers',
   },

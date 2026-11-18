@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, Bike, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
+﻿import React, { useState, useEffect } from 'react';
+import { Users, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, Bike, MapPin, ToggleLeft, ToggleRight, MessageCircle, Copy } from 'lucide-react';
 import api from '@/lib/api';
 import { maskPii } from '@/lib/utils';
 import { showToast } from '@/components/Toast.utils';
@@ -23,6 +23,10 @@ const EstablishmentDriversPage = () => {
     vehicle_plate: '', vehicle_model: '', pin: '',
     payment_frequency: 'WEEKLY'
   });
+  // Estado do modal "Enviar Acesso" (entregador + PIN que sera incluido na mensagem)
+  const [sendDriver, setSendDriver] = useState(null);
+  const [sendPin, setSendPin] = useState('');
+  const [sendError, setSendError] = useState('');
 
   useEffect(() => { loadDrivers(); }, []);
 
@@ -77,11 +81,13 @@ const EstablishmentDriversPage = () => {
       const driverData = { ...form };
       delete driverData.pin; // PIN é tratado separadamente
 
+      let createdDriver = null;
       if (editingId) {
         await api.put(`/api/admin/establishment-drivers/${editingId}`, driverData);
         setSuccess('Entregador atualizado!');
       } else {
-        await api.post('/api/admin/establishment-drivers', { ...driverData, restaurant_id: restaurantId });
+        const createRes = await api.post('/api/admin/establishment-drivers', { ...driverData, restaurant_id: restaurantId });
+        createdDriver = createRes.data.driver;
         setSuccess('Entregador cadastrado!');
       }
 
@@ -100,12 +106,107 @@ const EstablishmentDriversPage = () => {
         }
       }
 
+      // PIN digitado no form precisa ser capturado antes do resetForm limpar o estado
+      const pinDoForm = form.pin || '';
       resetForm();
       loadDrivers();
       setTimeout(() => setSuccess(''), 5000);
+
+      // Fluxo cadastrar -> enviar: abre o modal "Enviar Acesso" ja com o PIN digitado,
+      // para mandar o link do app ao entregador recem-cadastrado
+      if (createdDriver) {
+        openSendModal(createdDriver, pinDoForm);
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao salvar');
     }
+  };
+
+  // ===== ENVIAR ACESSO =====
+  // Ferramenta para o estabelecimento mandar ao entregador o link do app,
+  // o telefone (login) e o PIN — tudo em uma unica mensagem.
+
+  /** Abre o modal de envio de acesso. pinFromForm = PIN recem-digitado no cadastro. */
+  const openSendModal = (driver, pinFromForm = '') => {
+    setSendDriver(driver);
+    setSendPin(pinFromForm || '');
+    setSendError('');
+  };
+
+  /** Fecha o modal sem enviar. */
+  const closeSendModal = () => {
+    setSendDriver(null);
+    setSendPin('');
+    setSendError('');
+  };
+
+  /** Monta a mensagem pronta com link do app, telefone (login) e PIN. */
+  const buildAccessMessage = (driver, pin) => {
+    const origin = window.location.origin;
+    const phone = driver.phone || '';
+    const linhas = [
+      'Olá, ' + driver.name + '! Seu acesso ao app do muv.log está pronto.',
+      '',
+      'Link do app: ' + origin + '/own-driver/login',
+      'Login: seu telefone (' + phone + ')',
+    ];
+    if (pin) {
+      linhas.push('PIN: ' + pin);
+      linhas.push('');
+      linhas.push('Abra o link no celular e faça o login. Recomendamos adicionar o app à tela inicial.');
+    } else {
+      linhas.push('');
+      linhas.push('Abra o link no celular e faça o login com o PIN combinado. Recomendamos adicionar o app à tela inicial.');
+    }
+    return linhas.join('\n');
+  };
+
+  /**
+   * Envia o acesso ao entregador: valida e grava o PIN (se informado),
+   * monta a mensagem e abre o WhatsApp ou copia para a area de transferencia.
+   */
+  const handleSendAccess = async (channel) => {
+    if (!sendDriver) return;
+    const pin = (sendPin || '').trim();
+
+    // Sem PIN o entregador nao entra no app — exigir definicao antes de enviar
+    if (!sendDriver.has_pin && pin.length !== 4) {
+      setSendError('Defina o PIN — sem PIN o entregador não consegue entrar no app.');
+      return;
+    }
+    if (pin && pin.length !== 4) {
+      setSendError('PIN deve ter 4 dígitos numéricos');
+      return;
+    }
+
+    // Grava o PIN antes de montar a mensagem. O banco guarda apenas o hash;
+    // o valor aparece na mensagem somente no momento do envio.
+    if (pin) {
+      try {
+        await api.post('/api/admin/establishment-drivers/' + sendDriver.id + '/pin', { pin });
+      } catch (err) {
+        setSendError(err.response?.data?.error || 'Erro ao definir PIN');
+        return;
+      }
+    }
+
+    const mensagem = buildAccessMessage(sendDriver, pin);
+    const telefone = (sendDriver.phone || '').replace(/\D/g, '');
+
+    if (channel === 'whatsapp') {
+      // Mesmo padrao do pedido (OrderInfoSection): wa.me com texto pre-preenchido
+      window.open('https://wa.me/55' + telefone + '?text=' + encodeURIComponent(mensagem), '_blank');
+    } else {
+      try {
+        await navigator.clipboard.writeText(mensagem);
+        showToast('Mensagem copiada! Envie ao entregador.', 'success');
+      } catch {
+        showToast('Erro ao copiar mensagem', 'error');
+      }
+    }
+
+    closeSendModal();
+    loadDrivers(); // atualiza os selos de PIN apos gravar
   };
 
   const handleDelete = async (id) => {
@@ -252,6 +353,70 @@ const EstablishmentDriversPage = () => {
         </>
       )}
 
+      {/* Modal Enviar Acesso — manda link do app + login (telefone) + PIN ao entregador */}
+      {sendDriver && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999 }} onClick={closeSendModal} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', borderRadius: '0.75rem', width: '90%', maxWidth: '520px', zIndex: 100000, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Enviar Acesso</h2>
+              <button onClick={closeSendModal} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '1rem' }}>
+                <strong>{sendDriver.name}</strong>
+                {sendDriver.phone ? ' · ' + sendDriver.phone : ''}
+              </p>
+
+              <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#0f766e', marginBottom: '0.5rem' }}>
+                  PIN que será enviado (4 dígitos)
+                </label>
+                <input
+                  type="text"
+                  value={sendPin}
+                  onChange={e => { setSendPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setSendError(''); }}
+                  style={{ ...inputStyle, maxWidth: '150px', textAlign: 'center', letterSpacing: '0.5rem', fontFamily: 'monospace', fontSize: '1.25rem' }}
+                  placeholder="0000"
+                  maxLength={4}
+                  inputMode="numeric"
+                />
+                <p style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.5rem', lineHeight: 1.6 }}>
+                  {sendDriver.has_pin
+                    ? 'O PIN atual não pode ser recuperado. Digite um novo para incluir na mensagem (será redefinido), ou deixe em branco se o entregador já sabe o PIN.'
+                    : 'Sem PIN o entregador não consegue entrar no app. Defina o PIN que será enviado.'}
+                </p>
+              </div>
+
+              {sendError && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <AlertCircle size={15} /> {sendError}
+                </div>
+              )}
+
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                Mensagem que será enviada
+              </label>
+              <pre style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '0.875rem', fontSize: '0.8125rem', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.6, margin: 0, marginBottom: '1.25rem' }}>
+                {buildAccessMessage(sendDriver, sendPin.trim())}
+              </pre>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={closeSendModal} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button type="button" onClick={() => handleSendAccess('copy')} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: '1.5px solid #e2e8f0', background: 'white', fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <Copy size={14} /> Copiar
+                </button>
+                <button type="button" onClick={() => handleSendAccess('whatsapp')} style={{ padding: '0.625rem 1.25rem', borderRadius: '0.5rem', border: 'none', background: '#25d366', color: 'white', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <MessageCircle size={14} /> WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Lista de entregadores */}
       {drivers.length === 0 ? (
         <div style={{ background: 'white', borderRadius: '0.75rem', padding: '3rem', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -274,9 +439,13 @@ const EstablishmentDriversPage = () => {
                       <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: driver.is_online ? '#dcfce7' : '#f1f5f9', color: driver.is_online ? '#166534' : '#64748b' }}>
                         {driver.is_online ? 'Online' : 'Offline'}
                       </span>
-                      {driver.has_pin && (
+                      {driver.has_pin ? (
                         <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>
                           PIN ✓
+                        </span>
+                      ) : (
+                        <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>
+                          Sem PIN — acesso bloqueado
                         </span>
                       )}
                       <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.625rem', fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>
@@ -306,6 +475,10 @@ const EstablishmentDriversPage = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button onClick={() => openSendModal(driver)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#25d366', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+                    <MessageCircle size={14} /> Enviar Acesso
+                  </button>
                   <button onClick={() => handleToggleOnline(driver)}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: driver.is_online ? '#22c55e' : '#e2e8f0', color: driver.is_online ? 'white' : '#64748b', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
                     {driver.is_online ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -332,6 +505,7 @@ const EstablishmentDriversPage = () => {
         </h3>
         <ul style={{ fontSize: '0.8125rem', color: '#1e3a5f', lineHeight: 1.8, paddingLeft: '1.25rem' }}>
           <li>Cadastre seus entregadores próprios aqui</li>
+          <li>Use "Enviar Acesso" para mandar ao entregador o link do app, o telefone (login) e o PIN — tudo em uma mensagem</li>
           <li>Quando um pedido chegar, seus entregadores serão notificados primeiro</li>
           <li>Se quiser, pode chamar os entregadores da plataforma com o botão "Chamar Plataforma"</li>
           <li>Entregas feitas pelos seus próprios entregadores não têm comissão do muv.log</li>
