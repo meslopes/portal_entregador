@@ -615,6 +615,10 @@ def update_order_status(order_id):
                     proof_url = upload_proof(proof_data, order.id)
                     if proof_url:
                         order.delivery.proof_of_delivery_url = proof_url
+                except ValueError as e:
+                    # Prova rejeitada pela validação (tamanho/formato) — erro claro ao entregador
+                    db.session.rollback()
+                    return jsonify({'error': str(e)}), 400
                 except Exception as e:
                     logger.error(f"Erro ao salvar prova de entrega: {e}")
 
@@ -852,7 +856,7 @@ def _format_order_for_driver(order):
     try:
         from src.models.portal_models import Address
 
-        logger.info(f"[FORMAT] Pedido {order.order_number}: delivery_address_id={order.delivery_address_id}, delivery_address={order.delivery_address}")
+        logger.info(f"[FORMAT] Pedido {order.order_number}: delivery_address_id={order.delivery_address_id}")
 
         result = {
             'id': order.id,

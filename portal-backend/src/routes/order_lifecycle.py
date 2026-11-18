@@ -217,6 +217,10 @@ def update_order_status(order_id):
                         proof_url = upload_proof(proof_data, order.id)
                         if proof_url:
                             order.delivery.proof_of_delivery_url = proof_url
+                    except ValueError as e:
+                        # Prova rejeitada pela validação (tamanho/formato) — erro claro
+                        db.session.rollback()
+                        return jsonify({'error': str(e)}), 400
                     except Exception as e:
                         logger.error(f"Erro ao salvar prova de entrega: {e}")
 

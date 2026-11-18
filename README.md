@@ -118,6 +118,14 @@ Opcionais (integrações — ver `src/config.py`):
 
 Em produção os segredos ficam no Secret Manager do GCP — nunca commitar `.env`.
 
+### Caminho único do banco (F-16)
+
+A **única fonte de verdade do banco** é a `DATABASE_URL` do `.env` do backend
+(Supabase PostgreSQL — pooler `aws-0-sa-east-1.pooler.supabase.com:6543`).
+O SQLite (`portal-backend/instance/app.db`) é apenas **fallback de emergência**
+quando não há `DATABASE_URL` — nunca use para testes com dados reais e nunca
+confie nele para decisões de schema (as migrações rodam no PostgreSQL).
+
 **Frontend** (`.env` em `portal-frontend/`):
 ```
 VITE_API_URL=http://localhost:5000

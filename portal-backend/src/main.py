@@ -77,7 +77,12 @@ if flask_env == 'production':
         "https://portal-frontend-sepia.vercel.app",
         "https://portal-frontend-apk3ka3zx-muvy.vercel.app",
     ]
-    CORS(app, resources={r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True}})
+    # P-06 (auditoria): /uploads/* também precisa de CORS — as fotos de prova
+    # são buscadas pelo navegador a partir de outra origem (Vercel → Cloud Run)
+    CORS(app, resources={
+        r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True},
+        r"/uploads/*": {"origins": cors_origins, "methods": ["GET", "OPTIONS"], "headers": ["Authorization"], "supports_credentials": True},
+    })
 else:
     # DEV: permite qualquer origem (testes em rede local, múltiplos dispositivos)
     CORS(app, resources={r"/*": {"origins": "*"}})

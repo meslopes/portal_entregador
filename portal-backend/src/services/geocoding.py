@@ -1,4 +1,4 @@
-"""
+﻿"""
 Servico de geocodificacao multi-provider.
 Ordem: Google Maps (se configurado) -> Photon -> Nominatim -> Fallback centro da cidade.
 Servico de roteirizacao usando OSRM para distancia real.
@@ -7,6 +7,8 @@ import logging
 import os
 
 import requests
+
+from src.utils.log_utils import mask_address
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ def geocode_with_google(address, city_hint=None):
     elif 'brasil' not in full_address.lower():
         full_address = f"{full_address}, Brasil"
 
-    logger.info(f"[GOOGLE] Buscando: '{full_address}'")
+    logger.info(f"[GOOGLE] Buscando: '{mask_address(full_address)}'")
 
     try:
         url = "https://maps.googleapis.com/maps/api/geocode/json"
@@ -86,7 +88,7 @@ def geocode_with_google(address, city_hint=None):
 
             display_name = result.get('formatted_address', full_address)
 
-            logger.info(f"[GOOGLE] OK: '{full_address}' => {lat}, {lng} (tipo: {location_type}, preciso: {is_precise})")
+            logger.info(f"[GOOGLE] OK: '{mask_address(full_address)}' => {lat}, {lng} (tipo: {location_type}, preciso: {is_precise})")
 
             return {
                 'latitude': float(lat),
@@ -251,7 +253,7 @@ def geocode_with_photon(address, city_hint=None):
     if city_hint:
         query = f"{clean}, {city_hint}"
 
-    logger.info(f"[PHOTON] Buscando: '{query}' (original: '{address}')")
+    logger.info(f"[PHOTON] Buscando: '{mask_address(query)}' (original: '{mask_address(address)}')")
 
     try:
         url = "https://photon.komoot.io/api/"
@@ -335,7 +337,7 @@ def geocode_address(address, city_hint=None):
     # Remove virgulas duplas
     clean = re.sub(r',\s*,', ',', clean).strip().rstrip(',')
 
-    logger.info(f"[GEOCODE] Iniciando busca para: '{address}' (city_hint: {city_hint})")
+    logger.info(f"[GEOCODE] Iniciando busca para: '{mask_address(address)}' (city_hint: {city_hint})")
 
     # 1. TENTAR GOOGLE MAPS PRIMEIRO (mais preciso)
     google_result = geocode_with_google(address, city_hint)
@@ -411,7 +413,7 @@ def geocode_address(address, city_hint=None):
             continue
 
     # Fallback: retorna coordenadas da cidade com flag is_approximate
-    logger.warning(f"[GEOCODE] TODOS os servicos falharam para '{address}'")
+    logger.warning(f"[GEOCODE] TODOS os servicos falharam para '{mask_address(address)}'")
     city_for_fallback = city_hint
     if not city_for_fallback:
         city_match = re.search(r',\s*([^-]+?)\s*-\s*[A-Z]{2}', clean)
@@ -430,7 +432,7 @@ def geocode_address(address, city_hint=None):
                 'is_approximate': True
             }
 
-    logger.warning(f"Geocodificacao falhou para: '{address}' (sem fallback)")
+    logger.warning(f"Geocodificacao falhou para: '{mask_address(address)}' (sem fallback)")
     return None
 
 

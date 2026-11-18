@@ -1,4 +1,4 @@
-"""
+﻿"""
 Serviço de WhatsApp via Meta Cloud API
 Envia notificações para entregadores quando pedidos ficam disponíveis
 """
@@ -6,6 +6,8 @@ import logging
 import os
 
 import requests
+
+from src.utils.log_utils import mask_phone
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,7 @@ def send_whatsapp_message(phone: str, message: str) -> dict:
         data = response.json()
 
         if response.status_code == 200 and data.get('messages'):
-            logger.info(f"WhatsApp enviado para {phone}: {data['messages'][0]['id']}")
+            logger.info(f"WhatsApp enviado para {mask_phone(phone)}: {data['messages'][0]['id']}")
             return {'success': True, 'message_id': data['messages'][0]['id']}
         else:
             logger.error(f"Erro WhatsApp: {data}")

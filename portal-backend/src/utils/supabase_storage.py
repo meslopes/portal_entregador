@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utilitário para upload de arquivos no Supabase Storage.
 Usado para fotos de prova de entrega.
 """
@@ -60,6 +60,10 @@ def create_bucket_if_needed():
         return False
 
 
+# Limite de tamanho da prova de entrega (igual ao fileSizeLimit do bucket)
+PROOF_MAX_BYTES = 5 * 1024 * 1024
+
+
 def upload_proof(base64_data, order_id):
     """
     Faz upload de uma foto de prova de entrega para o Supabase Storage.
@@ -68,20 +72,36 @@ def upload_proof(base64_data, order_id):
         base64_data: string base64 da imagem (pode ter prefixo data:image/...)
         order_id: ID do pedido (usado no nome do arquivo)
 
+    Raises:
+        ValueError: imagem inválida (tamanho/formato) — o caller deve
+                    devolver 400 com a mensagem para o entregador (P-04).
+
     Returns:
-        URL pública da foto ou None em caso de erro
+        URL pública da foto ou None em caso de erro de infra (rede/storage).
     """
+    # P-04 (auditoria): valida a ENTRADA antes de tudo — payload gigante não
+    # entra em memória e a validação não depende de configuração do storage.
+    if not base64_data or not isinstance(base64_data, str):
+        raise ValueError('A imagem da prova de entrega está vazia.')
+
+    payload = base64_data.split(',', 1)[-1] if ',' in base64_data else base64_data
+    if len(payload) > PROOF_MAX_BYTES * 2:
+        raise ValueError('Prova de entrega muito grande. Tamanho máximo: 5MB.')
+
+    try:
+        image_bytes = base64.b64decode(payload)
+    except Exception:
+        raise ValueError('Não foi possível ler a imagem da prova de entrega.')
+
+    if not image_bytes:
+        raise ValueError('A imagem da prova de entrega está vazia.')
+    if len(image_bytes) > PROOF_MAX_BYTES:
+        raise ValueError('Prova de entrega muito grande. Tamanho máximo: 5MB.')
+
     try:
         if not SUPABASE_URL or not SUPABASE_KEY:
             logger.error("SUPABASE_URL ou SUPABASE_SERVICE_KEY não configurados")
             return None
-
-        # Remove prefixo data:image se presente
-        if ',' in base64_data:
-            base64_data = base64_data.split(',')[1]
-
-        # Decodifica base64
-        image_bytes = base64.b64decode(base64_data)
 
         # Nome do arquivo
         from datetime import datetime
@@ -111,7 +131,6 @@ def upload_proof(base64_data, order_id):
     except Exception as e:
         logger.error(f"Erro ao fazer upload da prova: {e}")
         return None
-
 
 # ============================================
 # LOGO DA ORGANIZAÇÃO (white-label)

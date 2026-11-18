@@ -1,4 +1,4 @@
-"""Gestão de estabelecimentos (CRUD e geocoding).
+﻿"""Gestão de estabelecimentos (CRUD e geocoding).
 
 Extraído de admin_finance.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -29,6 +29,8 @@ from src.models.portal_models import (
 )
 from src.utils.auth import admin_required
 from src.utils.tenant import get_current_tenant_id, get_current_user
+
+from src.utils.log_utils import mask_address
 
 logger = logging.getLogger(__name__)
 
@@ -795,7 +797,7 @@ def re_geocode_establishment(establishment_id):
             if len(parts) >= 3:
                 city_hint = parts[-2].strip()
 
-        logger.info(f"Re-geocodificando estabelecimento {est.id}: '{est.address}' (city_hint: {city_hint})")
+        logger.info(f"Re-geocodificando estabelecimento {est.id}: '{mask_address(est.address)}' (city_hint: {city_hint})")
 
         geo = geocode_address(est.address, city_hint=city_hint)
 
