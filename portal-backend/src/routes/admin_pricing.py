@@ -129,6 +129,19 @@ def _validar_novos_campos_tabela(data):
             if not (0 <= val <= 100):
                 raise ValueError(f'{campo_taxa} deve estar entre 0 e 100 (R$ por km)')
             novos[campo_taxa] = val
+    # Multiplicadores por veiculo (S7.4 Fase 2 — frota mista)
+    for campo_mult in ('vehicle_multiplier_bike', 'vehicle_multiplier_moto', 'vehicle_multiplier_car'):
+        if campo_mult in data:
+            val = data.get(campo_mult)
+            if val in (None, ''):
+                val = 1.0
+            try:
+                val = float(val)
+            except (TypeError, ValueError):
+                raise ValueError(f'{campo_mult} deve ser numérico')
+            if not (0.1 <= val <= 5):
+                raise ValueError(f'{campo_mult} deve estar entre 0.1 e 5.0')
+            novos[campo_mult] = val
     return novos
 
 

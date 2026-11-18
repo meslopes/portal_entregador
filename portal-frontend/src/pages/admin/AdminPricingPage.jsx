@@ -18,7 +18,8 @@ const AdminPricingPage = () => {
     min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50',
     driver_percentage: '65', is_active: true,
     pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '',
-    round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: ''
+    round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '',
+    vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1'
   });
 
   useEffect(() => { loadData(); }, []);
@@ -40,7 +41,7 @@ const AdminPricingPage = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '', round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '' });
+    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '', round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '', vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1' });
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -61,7 +62,10 @@ const AdminPricingPage = () => {
       free_delivery_min_order: table.free_delivery_min_order != null ? String(table.free_delivery_min_order) : '',
       round_trip: !!table.round_trip,
       round_trip_rate_per_km: table.round_trip_rate_per_km != null ? String(table.round_trip_rate_per_km) : '',
-      pickup_rate_per_km: table.pickup_rate_per_km != null ? String(table.pickup_rate_per_km) : ''
+      pickup_rate_per_km: table.pickup_rate_per_km != null ? String(table.pickup_rate_per_km) : '',
+      vehicle_multiplier_bike: String(table.vehicle_multiplier_bike ?? '1'),
+      vehicle_multiplier_moto: String(table.vehicle_multiplier_moto ?? '1'),
+      vehicle_multiplier_car: String(table.vehicle_multiplier_car ?? '1')
     });
     setEditingId(table.id);
     setShowForm(true);
@@ -84,7 +88,10 @@ const AdminPricingPage = () => {
         free_delivery_min_order: form.free_delivery_min_order || null,
         round_trip: !!form.round_trip,
         round_trip_rate_per_km: form.round_trip ? (form.round_trip_rate_per_km || 0) : 0,
-        pickup_rate_per_km: form.pickup_rate_per_km || 0
+        pickup_rate_per_km: form.pickup_rate_per_km || 0,
+        vehicle_multiplier_bike: form.vehicle_multiplier_bike || 1,
+        vehicle_multiplier_moto: form.vehicle_multiplier_moto || 1,
+        vehicle_multiplier_car: form.vehicle_multiplier_car || 1
       };
       if (form.pricing_mode === 'TIERS') {
         data.tier_bands = form.tier_bands
@@ -289,6 +296,31 @@ const AdminPricingPage = () => {
                     style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
+
+              {/* Multiplicadores por veiculo (S7.4 Fase 2 — frota mista) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '0.375rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Multiplicador Bike (×)</label>
+                  <input type="number" step="0.05" min="0.1" max="5" value={form.vehicle_multiplier_bike}
+                    onChange={e => setForm(p => ({ ...p, vehicle_multiplier_bike: e.target.value }))} placeholder="1.0"
+                    style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Multiplicador Moto (×)</label>
+                  <input type="number" step="0.05" min="0.1" max="5" value={form.vehicle_multiplier_moto}
+                    onChange={e => setForm(p => ({ ...p, vehicle_multiplier_moto: e.target.value }))} placeholder="1.0"
+                    style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Multiplicador Carro (×)</label>
+                  <input type="number" step="0.05" min="0.1" max="5" value={form.vehicle_multiplier_car}
+                    onChange={e => setForm(p => ({ ...p, vehicle_multiplier_car: e.target.value }))} placeholder="1.0"
+                    style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+              <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '1rem' }}>
+                1,0 = preço cheio · 0,8 = 20% mais barato · 1,3 = 30% mais caro (sobre o valor base do frete)
+              </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>

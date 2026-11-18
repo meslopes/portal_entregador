@@ -16,6 +16,8 @@ const FeeCalculator = ({
   manualKm,
   onManualKmChange,
   onApplyManualKm,
+  vehicleType,
+  onVehicleTypeChange,
 }) => (
   <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -28,6 +30,21 @@ const FeeCalculator = ({
       )}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8125rem', color: '#475569' }}>
+      {/* Veículo da entrega (§7.4 Fase 2) — multiplica a base do frete */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Veículo da entrega</span>
+        <select value={vehicleType || 'MOTO'} onChange={(e) => onVehicleTypeChange && onVehicleTypeChange(e.target.value)}
+          style={{ padding: '0.25rem 0.5rem', border: '1.5px solid #99f6e4', borderRadius: '0.375rem', fontSize: '0.8125rem', background: 'white', cursor: 'pointer' }}>
+          <option value="MOTO">🏍️ Moto</option>
+          <option value="BIKE">🚲 Bike</option>
+          <option value="CAR">🚗 Carro</option>
+        </select>
+      </div>
+      {vehicleType && vehicleType !== 'MOTO' && (
+        <p style={{ fontSize: '0.625rem', color: '#0d9488', margin: 0 }}>
+          O multiplicador do veículo será aplicado ao calcular o frete
+        </p>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span>Preço por km</span>
         <span>R$ {pricePerKm.toFixed(2).replace('.', ',')}/km</span>
@@ -70,6 +87,13 @@ const FeeCalculator = ({
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Tempo estimado</span>
               <span>{Math.round(estimatedFee.duration_min)} min</span>
+            </div>
+          )}
+          {/* Multiplicador do veículo (§7.4 Fase 2) quando diferente do preço cheio */}
+          {estimatedFee.fee_breakdown && estimatedFee.fee_breakdown.vehicle_multiplier != null && estimatedFee.fee_breakdown.vehicle_multiplier !== 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748b' }}>
+              <span>Multiplicador do veículo (×{Number(estimatedFee.fee_breakdown.vehicle_multiplier).toFixed(2).replace('.', ',')})</span>
+              <span>aplicado na entrega</span>
             </div>
           )}
           {/* Linhas da tabela (§7.4): deslocamento e volta, quando cobrados */}

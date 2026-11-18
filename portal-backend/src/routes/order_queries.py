@@ -224,11 +224,16 @@ def estimate_fee():
             pass
         # Deslocamento ate a coleta (S7.4): motorista online mais proximo (0 = nao cobra)
         displacement_km, displacement_source = estimar_km_deslocamento(restaurant)
+        # Veiculo da entrega (S7.4 Fase 2) — multiplica a base do frete
+        vehicle_type = (data.get('vehicle_type') or 'MOTO')
+        if str(vehicle_type).upper() not in ('MOTO', 'MOTORCYCLE', 'BIKE', 'BICYCLE', 'CAR', 'CARRO'):
+            return jsonify({'error': 'vehicle_type deve ser MOTO, BIKE ou CAR'}), 400
         frete_detalhes = {'base_fee': 0.0, 'round_trip_fee': 0.0, 'pickup_fee': 0.0,
                           'free_delivery': False}
         if pt:
             delivery_fee, price_per_km, min_km, frete_detalhes = calcular_frete_tabela(
-                pt, distance_km, order_value=order_value, displacement_km=displacement_km)
+                pt, distance_km, order_value=order_value, displacement_km=displacement_km,
+                vehicle_type=vehicle_type)
             logger.info(f"[FRETE] Tabela '{pt.name}' (id {pt.id}): price_per_km={price_per_km}, min_km={min_km}, fee={delivery_fee}, detalhes={frete_detalhes}")
         else:
             logger.warning(f"[FRETE] Estabelecimento {restaurant.id} SEM tabela de preços — usando padrão 2.95")
@@ -266,6 +271,7 @@ def estimate_fee():
             'longitude': del_lng,
             'displacement_km': round(displacement_km, 2),
             'displacement_source': displacement_source,
+            'vehicle_type': str(vehicle_type).upper(),
             'fee_breakdown': frete_detalhes
         }
 

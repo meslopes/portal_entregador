@@ -113,7 +113,21 @@ def estimar_km_deslocamento(restaurant):
     return round(melhor, 2), 'driver'
 
 
-def calcular_frete_tabela(pt, distance_km, order_value=None, displacement_km=0):
+def multiplicador_veiculo(pt, vehicle_type):
+    """
+    Multiplicador da tabela pelo tipo de veiculo (S7.4 Fase 2 — frota mista).
+    Aceita as duas convencoes do projeto: MOTO/MOTORCYCLE, BIKE/BICYCLE, CAR.
+    Padrao 1.0 (preco cheio).
+    """
+    vt = (vehicle_type or 'MOTO').upper()
+    if vt in ('BIKE', 'BICYCLE'):
+        return float(getattr(pt, 'vehicle_multiplier_bike', 1.0) or 1.0)
+    if vt in ('CAR', 'CARRO'):
+        return float(getattr(pt, 'vehicle_multiplier_car', 1.0) or 1.0)
+    return float(getattr(pt, 'vehicle_multiplier_moto', 1.0) or 1.0)
+
+
+def calcular_frete_tabela(pt, distance_km, order_value=None, displacement_km=0, vehicle_type=None):
     """
     Calcula o frete a partir de uma tabela de preços (fórmula ÚNICA do sistema).
     Regras:
@@ -126,6 +140,8 @@ def calcular_frete_tabela(pt, distance_km, order_value=None, displacement_km=0):
         (valor variável com a distância, taxa própria — NÃO é dobrar o frete)
       - DESLOCAMENTO (§7.4): soma displacement_km × pickup_rate_per_km
         (trecho do motorista até a coleta — ver estimar_km_deslocamento)
+      - VEICULO (S7.4 Fase 2): multiplicador da tabela (bike/moto/carro)
+        aplicado sobre a BASE — volta e deslocamento mantêm suas taxas.
       - piso/teto (min/max_delivery_fee) valem para o TOTAL do frete.
     Retorna (delivery_fee, price_per_km, min_distance_km, detalhes).
     """
@@ -149,6 +165,10 @@ def calcular_frete_tabela(pt, distance_km, order_value=None, displacement_km=0):
             km_total = max(distance_km, min_km)
             base = round(km_total * price_per_km, 2)
 
+    # Multiplicador por veiculo sobre a BASE (frota mista)
+    mult = multiplicador_veiculo(pt, vehicle_type)
+    base = round(base * mult, 2)
+
     # Volta: taxa própria em R$/km sobre o trajeto de volta (mesma distância)
     volta = 0.0
     if getattr(pt, 'round_trip', False) and float(getattr(pt, 'round_trip_rate_per_km', 0) or 0) > 0:
@@ -166,7 +186,8 @@ def calcular_frete_tabela(pt, distance_km, order_value=None, displacement_km=0):
     if pt.max_delivery_fee:
         fee = min(fee, float(pt.max_delivery_fee))
     detalhes = {'base_fee': round(base, 2), 'round_trip_fee': volta,
-                'pickup_fee': pickup, 'free_delivery': False}
+                'pickup_fee': pickup, 'free_delivery': False,
+                'vehicle_multiplier': mult}
     return fee, price_per_km, min_km, detalhes
 
 

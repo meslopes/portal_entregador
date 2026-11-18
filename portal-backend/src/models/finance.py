@@ -92,6 +92,11 @@ class PricingTable(db.Model):
     round_trip_rate_per_km = db.Column(db.Numeric(10, 2), default=0)
     # Taxa de deslocamento até a coleta: R$ por km do motorista até o estabelecimento
     pickup_rate_per_km = db.Column(db.Numeric(10, 2), default=0)
+    # Multiplicadores por tipo de veiculo (S7.4 Fase 2 — frota mista): aplicados
+    # sobre a base do frete. 1.0 = preco cheio; 0.8 = 20% mais barato.
+    vehicle_multiplier_bike = db.Column(db.Numeric(5, 2), default=1.0)
+    vehicle_multiplier_moto = db.Column(db.Numeric(5, 2), default=1.0)
+    vehicle_multiplier_car = db.Column(db.Numeric(5, 2), default=1.0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
@@ -118,6 +123,9 @@ class PricingTable(db.Model):
             'round_trip': bool(self.round_trip),
             'round_trip_rate_per_km': float(self.round_trip_rate_per_km) if self.round_trip_rate_per_km else 0,
             'pickup_rate_per_km': float(self.pickup_rate_per_km) if self.pickup_rate_per_km else 0,
+            'vehicle_multiplier_bike': float(self.vehicle_multiplier_bike) if self.vehicle_multiplier_bike else 1.0,
+            'vehicle_multiplier_moto': float(self.vehicle_multiplier_moto) if self.vehicle_multiplier_moto else 1.0,
+            'vehicle_multiplier_car': float(self.vehicle_multiplier_car) if self.vehicle_multiplier_car else 1.0,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

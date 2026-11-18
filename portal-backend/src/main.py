@@ -516,6 +516,24 @@ with app.app_context():
     except Exception as e:
         print(f"Migração volta/deslocamento: {e}")
         db.session.rollback()
+    # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
+    try:
+        for col_sql in (
+            "vehicle_multiplier_bike NUMERIC(5,2) DEFAULT 1.0",
+            "vehicle_multiplier_moto NUMERIC(5,2) DEFAULT 1.0",
+            "vehicle_multiplier_car NUMERIC(5,2) DEFAULT 1.0",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'pricing_tables' AND column_name = '{col}') "
+                f"THEN ALTER TABLE pricing_tables ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas de multiplicador por veiculo adicionadas (bike/moto/car)")
+    except Exception as e:
+        print(f"Migração multiplicadores por veículo: {e}")
+        db.session.rollback()
 
     # Migration Fase D (2026-11-17): assinatura de 3 termos (fixo + entregador + pedido)
     try:

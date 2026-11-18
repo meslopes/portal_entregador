@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, AlertCircle, Store } from 'lucide-react';
 import { orderService, adminService } from '@/lib/api';
@@ -52,6 +52,7 @@ const NewOrderPage = () => {
     product_payment_method: 'CASH',
     change_for: '',
     special_instructions: '',
+    vehicle_type: 'MOTO',
   });
 
   useEffect(() => {
@@ -109,7 +110,9 @@ const NewOrderPage = () => {
         // Valor dos produtos — usado pelo frete grátis da tabela de preços
         order_value: orderItems.reduce((sum, it) => sum + (it.price * it.quantity), 0) || undefined,
         // Distância informada pelo estabelecimento (rede de segurança do frete)
-        manual_distance_km: manualKm || undefined
+        manual_distance_km: manualKm || undefined,
+        // Veículo da entrega (S7.4 Fase 2) — multiplica a base do frete
+        vehicle_type: form.vehicle_type || 'MOTO'
       };
       if (customLat && customLng) {
         payload.latitude = customLat;
@@ -319,6 +322,8 @@ const NewOrderPage = () => {
             calculateFee, pinAdjusted, handleResetPin, onOpenPinMap: handleOpenPinMap,
             manualKm, onManualKmChange: setManualKm,
             onApplyManualKm: () => calculateFee(pinLocation?.lat, pinLocation?.lng),
+            vehicleType: form.vehicle_type,
+            onVehicleTypeChange: (v) => setForm(p => ({ ...p, vehicle_type: v })),
           }}
         />
 

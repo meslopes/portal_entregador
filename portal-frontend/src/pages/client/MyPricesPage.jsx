@@ -15,6 +15,7 @@ const MyPricesPage = () => {
     min_delivery_fee: '', max_delivery_fee: '',
     pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '',
     round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '',
+    vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,6 +43,9 @@ const MyPricesPage = () => {
         round_trip: false, // regra: entregas proprias nunca cobram volta
         round_trip_rate_per_km: t.round_trip_rate_per_km != null ? String(t.round_trip_rate_per_km) : '',
         pickup_rate_per_km: t.pickup_rate_per_km != null ? String(t.pickup_rate_per_km) : '',
+        vehicle_multiplier_bike: String(t.vehicle_multiplier_bike ?? '1'),
+        vehicle_multiplier_moto: String(t.vehicle_multiplier_moto ?? '1'),
+        vehicle_multiplier_car: String(t.vehicle_multiplier_car ?? '1'),
       });
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao carregar os preços');
@@ -96,6 +100,9 @@ const MyPricesPage = () => {
         free_delivery_min_order: form.free_delivery_min_order || null,
         pickup_rate_per_km: form.pickup_rate_per_km || 0,
         round_trip_rate_per_km: form.round_trip_rate_per_km || 0,
+        vehicle_multiplier_bike: form.vehicle_multiplier_bike || 1,
+        vehicle_multiplier_moto: form.vehicle_multiplier_moto || 1,
+        vehicle_multiplier_car: form.vehicle_multiplier_car || 1,
         round_trip: false, // regra de dominio: proprios nunca cobram volta
       };
       if (form.pricing_mode === 'TIERS') {
@@ -239,6 +246,31 @@ const MyPricesPage = () => {
             </p>
           </div>
         </div>
+
+        {/* Multiplicadores por veículo (§7.4 Fase 2 — frota mista) */}
+        <div style={{ marginBottom: '0.375rem' }}>
+          <label style={labelStyle}>Multiplicador por veículo (frota mista)</label>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <input type="number" step="0.05" min="0.1" max="5" value={form.vehicle_multiplier_bike}
+              onChange={e => setForm(p => ({ ...p, vehicle_multiplier_bike: e.target.value }))} style={inputStyle} placeholder="1.0" />
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>🚲 Bike (×)</p>
+          </div>
+          <div>
+            <input type="number" step="0.05" min="0.1" max="5" value={form.vehicle_multiplier_moto}
+              onChange={e => setForm(p => ({ ...p, vehicle_multiplier_moto: e.target.value }))} style={inputStyle} placeholder="1.0" />
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>🏍️ Moto (×)</p>
+          </div>
+          <div>
+            <input type="number" step="0.05" min="0.1" max="5" value={form.vehicle_multiplier_car}
+              onChange={e => setForm(p => ({ ...p, vehicle_multiplier_car: e.target.value }))} style={inputStyle} placeholder="1.0" />
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>🚗 Carro (×)</p>
+          </div>
+        </div>
+        <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+          1,0 = preço cheio · 0,8 = 20% mais barato · 1,3 = 30% mais caro. Vale sobre o valor base do frete (volta e deslocamento não mudam).
+        </p>
 
         {/* Prévia — mesma regra de cálculo do sistema */}
         <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1.25rem' }}>

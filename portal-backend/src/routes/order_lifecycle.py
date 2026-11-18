@@ -743,7 +743,8 @@ def create_order():
                 delivery_fee, price_per_km, min_km, _frete = calcular_frete_tabela(
                     pt, km_total,
                     order_value=float(data.get('subtotal') or 0) or None,
-                    displacement_km=displacement_km
+                    displacement_km=displacement_km,
+                    vehicle_type=data.get('vehicle_type')
                 )
 
         # Aplicar taxas dinâmicas (chuva, alta demanda, feriado)
