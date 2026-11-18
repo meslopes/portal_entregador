@@ -1,4 +1,4 @@
-# TODO - muv.log - Controle de Entregadores
+﻿# TODO - muv.log - Controle de Entregadores
 
 ## ✅ Fase 1: Analise e Planejamento (CONCLUIDA)
 - [x] Criar documento de requisitos
@@ -189,17 +189,29 @@
 - [x] Push notification Firebase para aprovacao/rejeicao de cadastro
 - [x] PendingApprovalPage com escuta de notificacao em tempo real
 
+## ✅ 2026-11 — Consolidacao, Monetizacao e Acesso do Entregador (CONCLUIDA)
+- [x] Validacao de CNPJ/senha em tempo real + aprovacao de admin pelo super admin
+- [x] Portao central de status de conta (INACTIVE/SUSPENDED bloqueia mesmo com JWT valido)
+- [x] Exclusao permanente de usuario FK-safe (preserva dados compartilhados do tenant)
+- [x] Consolidacao de precos: valores vivem so em PricingTable (Fases 1 e 2) + faixas de km sem volta + frete gratis
+- [x] Plano de monetizacao A-F: auto-criacao praca/tabela, Meus Precos, menus de pagamentos, assinatura 3 termos, cobranca MUV-admin, guias Primeiros Passos
+- [x] Distancia manual no frete (rede de seguranca) + geocodificacao no navegador
+- [x] **Enviar Acesso ao entregador proprio** — modal com link do app + telefone (login) + PIN, WhatsApp/copia, selo "Sem PIN — acesso bloqueado", modal auto-abre apos cadastrar
+
 ## 📋 Pendencias Futuras
+- [ ] Geocoding do servidor (chave Google por IP no Cloud Run) + revalidar o caso dos 156 km
+- [ ] Enviar Acesso Opcao 2: link de ativacao /own-driver/activate/<token> (entregador define o proprio PIN)
+- [ ] §7.4 tabelas da plataforma: "considerar a volta" (opcao desligada), taxa de deslocamento, tabela por veiculo
+- [ ] Backlog EE §7.2: Nomenclaturas, Link de Pedido Rapido, Registro de Atividades
 - [ ] Testes manuais completos
 - [ ] Integracao iFood - testar webhook com estabelecimento correto
 - [ ] Integracao WhatsApp Business API (depende de custos)
-- [ ] Migrações versionadas (Alembic)
-- [ ] Máquina de estados central para pedidos
-- [ ] Ledger financeiro imutável
-- [ ] Merge main no branch-mauro (sincronizar commit Cloud Run)
+- [ ] Hardening backlog: backup restore testado, alerta 5xx, indices/N+1, timeouts, migracoes versionadas (Alembic), RLS (ver MEMORY.md)
+- [ ] Maquina de estados central para pedidos
+- [ ] Ledger financeiro imutavel
 
 ## 📊 Metricas do Projeto
-- **Total de commits:** 100+
+- **Total de commits:** 1111
 - **Arquivos frontend:** 40+
 - **Arquivos backend:** 20+
 - **Endpoints API:** 60+

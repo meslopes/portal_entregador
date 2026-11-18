@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -630,6 +630,7 @@
           <ul class="activity-list">
             <li><strong>Listar entregadores próprios</strong> — por estabelecimento <span class="route">GET /api/admin/establishment-drivers</span></li>
             <li><strong>Criar entregador próprio</strong> — vincula a estabelecimento <span class="route">POST /api/admin/establishment-drivers</span></li>
+            <li><strong>Definir/Resetar PIN</strong> — PIN de 4 dígitos para o login no app próprio <span class="route">POST /api/admin/establishment-drivers/:id/pin</span></li>
             <li><strong>Gerenciar ganhos</strong> — registrar e pagar <span class="route">POST /api/admin/establishment-drivers/earnings/:id/pay</span></li>
           </ul>
         </div>
@@ -783,8 +784,10 @@
         <div class="flow-group">
           <div class="flow-group-title"><span class="flow-group-icon">🚴</span> Entregadores Próprios</div>
           <ul class="activity-list">
-            <li><strong>Cadastrar entregador</strong> — nome, telefone, veículo <span class="route">POST /api/own-driver/register</span></li>
-            <li><strong>Listar entregadores</strong> — seus entregadores próprios <span class="route">GET /api/establishment-drivers</span></li>
+            <li><strong>Cadastrar entregador</strong> — nome, telefone, veículo e PIN <span class="route">POST /api/admin/establishment-drivers</span></li>
+            <li><strong>Enviar Acesso</strong> — manda o link do app + telefone (login) + PIN ao entregador por WhatsApp ou cópia (modal na lista)</li>
+            <li><strong>Definir PIN</strong> — 4 dígitos do login do entregador <span class="route">POST /api/admin/establishment-drivers/:id/pin</span></li>
+            <li><strong>Listar entregadores</strong> — seus próprios, com selo "Sem PIN — acesso bloqueado" <span class="route">GET /api/admin/establishment-drivers</span></li>
             <li><strong>Ativar/Desativar</strong> — habilitar entregador próprio para entregas</li>
             <li><strong>Atribuir a pedido</strong> — designar entregador próprio a um pedido específico <span class="route">POST /api/orders/:id/assign-own</span></li>
             <li><strong>Monitorar entregas</strong> — acompanhar entregadores em tempo real</li>

@@ -1,4 +1,4 @@
-# muv.log — Portal Entregador
+﻿# muv.log — Portal Entregador
 
 Sistema SaaS multi-tenant de delivery e gestão de entregadores.
 
@@ -8,7 +8,7 @@ Sistema SaaS multi-tenant de delivery e gestão de entregadores.
 - **6 perfis de usuário**: Super Admin, Admin, Praça, Estabelecimento, Entregador Plataforma, Entregador Próprio
 - **Gestão de pedidos**: criação, distribuição automática, rastreamento em tempo real
 - **Gamificação (MuvScore)**: ranking semanal, níveis (Bronze a Diamante), premiação por desempenho
-- **Entregadores próprios**: estabelecimentos podem ter seus próprios entregadores (login por telefone + PIN)
+- **Entregadores próprios**: estabelecimentos podem ter seus próprios entregadores (login por telefone + PIN) — com botão **Enviar Acesso** que manda o link do app + PIN por WhatsApp/cópia
 - **Prova de entrega**: foto com upload para Supabase Storage
 - **Financeiro**: controle de ganhos, saques, faturas, tabelas de preço configuráveis
 - **Relatórios**: pedidos, performance, financeiro, cancelamentos, horários de pico
@@ -165,6 +165,7 @@ Supabase (PostgreSQL) — pooler `aws-0-sa-east-1.pooler.supabase.com`
 - `docs/fluxograma-sistema.html` — Hierarquia de perfis e rotas da API
 - `docs/Plano_MuvScore pdf.pdf` — Plano do sistema de gamificação
 - `docs/REGRAS_TRABALHO_EQUIPE.md` — Regras de trabalho da equipe
+- `docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md` — Plano de monetização (entregas próprias)
 - `docs/ROTEIRO_TESTES_MANUAIS.md` — Roteiro de testes manuais
 - `docs/mapa-muvlog-2026-11-01-final.html` — Mapa do código-fonte (floorplan)
 
