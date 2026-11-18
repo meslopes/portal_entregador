@@ -61,7 +61,7 @@ const PlatformRoutesList = ({ routes, onMoveStop, onRemoveOrder }) => {
                     </div>
                     <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
                       {stop.stop_type === 'PICKUP'
-                        ? `${stop.restaurant_name || 'Restaurante'} • Pedido #${stop.order_number}`
+                        ? `${stop.restaurant_name || 'Estabelecimento'} • Pedido #${stop.order_number}`
                         : `${stop.customer_name || 'Cliente'} • Pedido #${stop.order_number}`
                       }
                     </p>

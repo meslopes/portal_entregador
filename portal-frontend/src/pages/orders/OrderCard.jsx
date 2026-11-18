@@ -31,7 +31,7 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.125rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coletar em</p>
-            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.name || 'Restaurante'}</p>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.name || 'Estabelecimento'}</p>
             <p style={{ fontSize: '0.8125rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.address || 'Endereço não informado'}</p>
             {order.distance_to_restaurant_km && <p style={{ fontSize: '0.75rem', color: '#2563eb', marginTop: '0.125rem' }}>📍 {order.distance_to_restaurant_km} km de você</p>}
           </div>

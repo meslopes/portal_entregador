@@ -240,10 +240,10 @@ const DatabaseMapPage = () => {
   };
 
   const handleDeleteRestaurant = async (restaurant) => {
-    if (!(await confirmAsync(`Excluir restaurante "${restaurant.name}"?\n\nPedidos e entregadores vinculados serão desvinculados automaticamente.`))) return;
+    if (!(await confirmAsync(`Excluir estabelecimento "${restaurant.name}"?\n\nPedidos e entregadores vinculados serão desvinculados automaticamente.`))) return;
     try {
       await api.delete(`/api/admin/restaurants/${restaurant.id}?force=true`);
-      showMsg(`Restaurante ${restaurant.name} excluído`);
+      showMsg(`Estabelecimento ${restaurant.name} excluído`);
       loadData();
     } catch (err) {
       showMsg(err.response?.data?.error || 'Erro ao excluir', true);
@@ -298,7 +298,7 @@ const DatabaseMapPage = () => {
           try {
             const preview = await api.post('/api/admin/cleanup-test-data', { action: 'preview' });
             const p = preview.data.deleted || {};
-            const ok = await confirmAsync(`Prévia: ${p.usuarios_teste || 0} usuário(s) de teste, ${p.restaurantes_teste || 0} restaurante(s) de teste.\n\nExecutar limpeza?`);
+            const ok = await confirmAsync(`Prévia: ${p.usuarios_teste || 0} usuário(s) de teste, ${p.restaurantes_teste || 0} estabelecimento(s) de teste.\n\nExecutar limpeza?`);
             if (!ok) return;
             const res = await api.post('/api/admin/cleanup-test-data', { action: 'all', confirm: true });
             showMsg('Limpeza concluída: ' + JSON.stringify(res.data.deleted));

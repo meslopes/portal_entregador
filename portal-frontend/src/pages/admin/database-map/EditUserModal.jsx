@@ -86,7 +86,7 @@ const EditUserModal = ({ editingUser, editForm, setEditForm, saving, tenants, sq
             </div>
             {editingUser.user_type === 'CLIENT' && editingUser.restaurant_id && (
               <div>
-                <label style={labelStyle}>Restaurante Vinculado</label>
+                <label style={labelStyle}>Estabelecimento Vinculado</label>
                 <input value={`${editingUser.restaurant_name} (ID:${editingUser.restaurant_id})`} disabled style={{ ...inputStyle, background: '#f8fafc', color: '#64748b' }} />
               </div>
             )}
@@ -124,7 +124,7 @@ const EditUserModal = ({ editingUser, editForm, setEditForm, saving, tenants, sq
                 <Field label="Nome do Estabelecimento (Customer)" value={editForm.customer_name} onChange={v => setEditForm(p => ({ ...p, customer_name: v }))} />
                 {editingUser.restaurant_id && (
                   <div style={{ fontSize: '0.75rem', color: '#64748b', padding: '0.5rem', background: '#f8fafc', borderRadius: '0.375rem' }}>
-                    Restaurante vinculado: ID:{editingUser.restaurant_id} — {editingUser.restaurant_name}
+                    Estabelecimento vinculado: ID:{editingUser.restaurant_id} — {editingUser.restaurant_name}
                   </div>
                 )}
               </div>

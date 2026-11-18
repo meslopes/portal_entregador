@@ -165,7 +165,7 @@ const PaymentReportsPage = ({ clientTabs = false }) => {
     if (activeTab === 'reports') {
       if (!reports.length) return;
 
-      let csv = 'Entregador,Restaurante,Frequência,Total Ganhos,Total Pago,Pendente\n';
+      let csv = 'Entregador,Estabelecimento,Frequência,Total Ganhos,Total Pago,Pendente\n';
 
       reports.forEach(r => {
         csv += `"${r.driver_name}","${r.restaurant_name}","${r.payment_frequency}",${r.total_earning.toFixed(2)},${r.total_paid.toFixed(2)},${r.total_pending.toFixed(2)}\n`;
@@ -181,7 +181,7 @@ const PaymentReportsPage = ({ clientTabs = false }) => {
     } else if (activeTab === 'withdrawals') {
       if (!withdrawals.length) return;
 
-      let csv = 'Entregador,Restaurante,PIX,Pendente,Pago,Frequência\n';
+      let csv = 'Entregador,Estabelecimento,PIX,Pendente,Pago,Frequência\n';
 
       withdrawals.forEach(d => {
         csv += `"${d.driver_name}","${d.restaurant_name}","${d.pix_key || '-'}",${d.pending_amount.toFixed(2)},${d.paid_amount.toFixed(2)},"${d.payment_frequency}"\n`;

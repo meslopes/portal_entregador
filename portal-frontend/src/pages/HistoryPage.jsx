@@ -90,7 +90,7 @@ const HistoryPage = () => {
           }} />
           <input
             type="text"
-            placeholder="Buscar por pedido, restaurante ou endereço..."
+            placeholder="Buscar por pedido, estabelecimento ou endereço..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -258,7 +258,7 @@ const HistoryCard = ({ order }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Store size={14} style={{ color: '#d97706', flexShrink: 0 }} />
             <span style={{ fontSize: '0.8125rem', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {order.restaurant?.name || 'Restaurante'}
+              {order.restaurant?.name || 'Estabelecimento'}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

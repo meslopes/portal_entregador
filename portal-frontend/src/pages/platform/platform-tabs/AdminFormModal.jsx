@@ -74,7 +74,7 @@ const AdminFormModal = ({ isEdit, formData, setFormData, onSubmit, onClose, load
               value={formData.company_name}
               onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
               style={inputStyle}
-              placeholder="Restaurante XYZ"
+              placeholder="Estabelecimento XYZ"
             />
           </div>
 

@@ -70,7 +70,7 @@ const RouteSettingsForm = ({ settings, handleChange, saving, handleSave, loadSet
         checked={settings.include_ready} onChange={e => handleChange('include_ready', e.target.checked)} />
       <ToggleRow label="Em Preparo (PREPARING)" description="Pedidos sendo preparados"
         checked={settings.include_preparing} onChange={e => handleChange('include_preparing', e.target.checked)} />
-      <ToggleRow label="Aceitos (ACCEPTED)" description="Pedidos aceitos pelo restaurante"
+      <ToggleRow label="Aceitos (ACCEPTED)" description="Pedidos aceitos pelo estabelecimento"
         checked={settings.include_accepted} onChange={e => handleChange('include_accepted', e.target.checked)} />
       <ToggleRow label="Pendentes (PENDING)" description="Pedidos aguardando aceite"
         checked={settings.include_pending} onChange={e => handleChange('include_pending', e.target.checked)} />

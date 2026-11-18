@@ -84,7 +84,7 @@ const MapModal = ({ showMap, mapTarget, order, mapRef, onClose, onNavigate, onCa
         background: 'white'
       }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>
-          {mapTarget === 'restaurant' ? 'Restaurante' : 'Cliente'}
+          {mapTarget === 'restaurant' ? 'Estabelecimento' : 'Cliente'}
         </h3>
         <button onClick={onClose}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>

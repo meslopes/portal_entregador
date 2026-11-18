@@ -109,7 +109,7 @@ function buildReportHtml(data) {
   html += `</table>`;
 
   // RESTAURANTES
-  html += `<h2>🏪 Restaurantes (${(d.restaurants||[]).length})</h2>
+  html += `<h2>🏪 Estabelecimentos (${(d.restaurants||[]).length})</h2>
   <table><tr><th>ID</th><th>Nome</th><th>Endereço</th><th>Tenant</th><th>Praça</th><th>Próprios</th><th>Status</th></tr>`;
   (d.restaurants || []).forEach(r => {
     html += `<tr><td>${r.id}</td><td><strong>${escapeHtml(r.name)}</strong></td><td style="font-size:9px">${escapeHtml(r.address) || '-'}</td><td>${r.tenant_id ? escapeHtml(tenantMap[r.tenant_id] || r.tenant_id) : '-'}</td><td>${r.square_id ? escapeHtml(squareMap[r.square_id] || r.square_id) : '-'}</td><td>${r.has_own_drivers ? '<span class="badge b-own">Sim</span>' : 'Não'}</td><td>${r.is_active ? '<span class="badge b-active">Ativo</span>' : '<span class="badge b-inactive">Inativo</span>'}</td></tr>`;
@@ -126,7 +126,7 @@ function buildReportHtml(data) {
 
   // ENTREGADORES PRÓPRIOS
   html += `<h2>🏍️ Entregadores Próprios (${(d.own_drivers||[]).length})</h2>
-  <table><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Veículo</th><th>Placa</th><th>Restaurante</th><th>Tenant</th><th>Praça</th><th>Online</th><th>PIN</th><th>Entregas</th></tr>`;
+  <table><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Veículo</th><th>Placa</th><th>Estabelecimento</th><th>Tenant</th><th>Praça</th><th>Online</th><th>PIN</th><th>Entregas</th></tr>`;
   (d.own_drivers || []).forEach(o => {
     html += `<tr><td>${o.id}</td><td><strong>${escapeHtml(o.name)}</strong></td><td>${escapeHtml(o.phone) || '-'}</td><td>${escapeHtml(o.vehicle_type) || '-'}</td><td>${escapeHtml(o.vehicle_plate) || '-'}</td><td>${escapeHtml(o.restaurant_name)} (ID:${o.restaurant_id})</td><td>${o.tenant_id ? escapeHtml(tenantMap[o.tenant_id] || o.tenant_id) : '-'}</td><td>${escapeHtml(o.square_name) || '-'}</td><td>${o.is_online ? '<span class="badge b-online">Online</span>' : '<span class="badge b-offline">Offline</span>'}</td><td>${o.has_pin ? '<span class="badge b-pin">Sim</span>' : '<span class="badge b-nopin">Não</span>'}</td><td>${o.total_deliveries || 0}</td></tr>`;
   });

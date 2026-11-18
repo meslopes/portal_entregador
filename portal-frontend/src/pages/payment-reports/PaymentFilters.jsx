@@ -41,7 +41,7 @@ const PaymentFilters = ({
     </div>
     {isAdmin && (
       <div>
-        <label style={labelStyle}>Restaurante</label>
+        <label style={labelStyle}>Estabelecimento</label>
         <select value={restaurantFilter} onChange={e => onRestaurantChange(e.target.value)} style={selectStyle}>
           <option value="">Todos</option>
           {restaurants.map(r => (

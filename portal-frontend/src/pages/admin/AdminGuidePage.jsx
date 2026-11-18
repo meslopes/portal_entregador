@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -43,11 +43,11 @@ const AdminGuidePage = () => {
       icon: MapPin,
       title: '2. Criar uma praça',
       href: '/admin/squares',
-      why: 'A praça é a região onde você atua (ex.: "Centro", "Zona Norte"). Tudo no sistema — preços, estabelecimentos, entregadores — pertence a uma praça.',
+      why: 'A praça é a área onde você atua (ex.: "Centro", "Zona Norte"). Tudo no sistema — preços, estabelecimentos, entregadores — pertence a uma praça.',
       how: [
         'Acesse Negócios → Praças',
         'Clique em "Nova praça"',
-        'Dê um nome que identifique a região (ex.: "Canoas Centro")',
+        'Dê um nome que identifique a praça (ex.: "Canoas Centro")',
         'Defina o centro no mapa (a área de atuação)',
         'Salve',
       ],
@@ -73,7 +73,7 @@ const AdminGuidePage = () => {
       icon: Store,
       title: '4. Cadastrar estabelecimentos',
       href: '/admin/establishments',
-      why: 'São os restaurantes e lojas que recebem pedidos. Cada estabelecimento fica ligado a uma praça e a uma tabela de preço.',
+      why: 'São os estabelecimentos e lojas que recebem pedidos. Cada estabelecimento fica ligado a uma praça e a uma tabela de preço.',
       how: [
         'Acesse Negócios → Estabelecimentos',
         'Clique em "Novo estabelecimento"',

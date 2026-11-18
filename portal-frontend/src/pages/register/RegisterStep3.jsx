@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ArrowLeft, Check, Loader, MapPin } from 'lucide-react';
 
 const RegisterStep3 = ({
@@ -38,14 +38,14 @@ const RegisterStep3 = ({
         style={{ cursor: 'pointer' }}
       >
         <option value="">
-          {locationStatus === 'detecting' ? 'Detectando...' : 'Selecione sua região'}
+          {locationStatus === 'detecting' ? 'Detectando...' : 'Selecione sua praça'}
         </option>
         {squares.map(sq => (
           <option key={sq.id} value={sq.id}>{sq.name} - {sq.city}/{sq.state}</option>
         ))}
       </select>
       <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
-        Selecione a região onde pretende realizar entregas
+        Selecione a praça onde pretende realizar entregas
       </p>
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>

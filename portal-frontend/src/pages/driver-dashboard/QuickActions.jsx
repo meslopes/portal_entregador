@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Package, Bike, DollarSign, Clock } from 'lucide-react';
 import ActionCard from './ActionCard';
 
@@ -9,7 +9,7 @@ const QuickActions = ({ navigate, pendingRoutes }) => (
       iconBg="#eff6ff"
       iconColor="#2563eb"
       title="Pedidos Disponíveis"
-      description="Veja os pedidos disponíveis na sua região"
+      description="Veja os pedidos disponíveis na sua praça"
       onClick={() => navigate('/orders')}
     />
     <ActionCard

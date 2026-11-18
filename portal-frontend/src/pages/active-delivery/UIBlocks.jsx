@@ -91,7 +91,7 @@ export const WaitingMessage = ({ status }) => {
       fontSize: '0.875rem',
       color: '#92400e'
     }}>
-      <Clock size={16} /> Aguardando restaurante iniciar preparo do pedido...
+      <Clock size={16} /> Aguardando estabelecimento iniciar preparo do pedido...
     </div>
   );
 };

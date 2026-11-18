@@ -68,7 +68,7 @@ const AdminFormModal = ({ show, onClose, formData, onFormChange, onSubmit, creat
                 value={formData.company_name}
                 onChange={handleChange('company_name')}
                 style={inputStyle}
-                placeholder="Restaurante XYZ"
+                placeholder="Estabelecimento XYZ"
               />
             </div>
           )}

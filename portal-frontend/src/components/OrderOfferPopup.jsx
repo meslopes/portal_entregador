@@ -165,7 +165,7 @@ const OrderOfferPopup = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <Store size={16} style={{ color: '#64748b' }} />
             <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>
-              {offer.restaurant?.name || 'Restaurante'}
+              {offer.restaurant?.name || 'Estabelecimento'}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>

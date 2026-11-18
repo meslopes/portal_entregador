@@ -210,7 +210,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
               <Store size={14} style={{ color: '#d97706' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Restaurante</p>
+              <p style={{ fontSize: '0.625rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Estabelecimento</p>
               <p style={{ fontWeight: 500, color: '#1e293b', fontSize: '0.8125rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.restaurant?.name}</p>
             </div>
           </div>

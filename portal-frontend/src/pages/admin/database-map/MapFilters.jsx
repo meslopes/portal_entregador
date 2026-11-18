@@ -62,7 +62,7 @@ export const UsersSection = ({ users, onEdit, onDelete }) =>
   );
 
 export const RestaurantsSection = ({ restaurants, onDelete }) =>
-  section(`Restaurantes (${restaurants?.length || 0})`,
+  section(`Estabelecimentos (${restaurants?.length || 0})`,
     restaurants?.length ? restaurants.map(r => card(
       <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -77,7 +77,7 @@ export const RestaurantsSection = ({ restaurants, onDelete }) =>
           {actionBtn('Excluir', '#dc2626', '#fee2e2', () => onDelete(r))}
         </div>
       </div>
-    )) : <p style={{ color: '#64748b' }}>Nenhum restaurante</p>
+    )) : <p style={{ color: '#64748b' }}>Nenhum estabelecimento</p>
   );
 
 export const PlatformDriversSection = ({ drivers }) =>
@@ -104,7 +104,7 @@ export const OwnDriversSection = ({ drivers, onDelete, onSetPin }) =>
         <div>
           <strong>ID:{d.id}</strong> {d.name} {badge('PRÓPRIO', '#92400e', '#fef3c7')}
           {d.vehicle_type} {d.vehicle_plate ? `• ${d.vehicle_plate}` : ''}
-          <span style={{ fontWeight: 500, color: '#0d9488', marginLeft: '0.5rem' }}>Restaurante: {d.restaurant_name} (ID:{d.restaurant_id})</span>
+          <span style={{ fontWeight: 500, color: '#0d9488', marginLeft: '0.5rem' }}>Estabelecimento: {d.restaurant_name} (ID:{d.restaurant_id})</span>
           {d.square_name ? badge(d.square_name, '#0d9488', '#f0fdfa') : null}
           {d.tenant_name ? badge(d.tenant_name, '#7c3aed', '#f3e8ff') : (d.tenant_id ? badge(`tenant:${d.tenant_id}`, '#7c3aed', '#f3e8ff') : null)}
           {d.is_online ? badge('Online', '#166534', '#dcfce7') : badge('Offline', '#64748b', '#f1f5f9')}
