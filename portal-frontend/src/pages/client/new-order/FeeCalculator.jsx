@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Bike, Map } from 'lucide-react';
 
 const FeeCalculator = ({
@@ -70,6 +70,25 @@ const FeeCalculator = ({
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Tempo estimado</span>
               <span>{Math.round(estimatedFee.duration_min)} min</span>
+            </div>
+          )}
+          {/* Linhas da tabela (§7.4): deslocamento e volta, quando cobrados */}
+          {estimatedFee.fee_breakdown && (estimatedFee.fee_breakdown.pickup_fee > 0 || estimatedFee.fee_breakdown.round_trip_fee > 0) && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Entrega</span>
+              <span>R$ {Number(estimatedFee.fee_breakdown.base_fee || 0).toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
+          {estimatedFee.fee_breakdown && estimatedFee.fee_breakdown.pickup_fee > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Deslocamento até a coleta</span>
+              <span>R$ {Number(estimatedFee.fee_breakdown.pickup_fee).toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
+          {estimatedFee.fee_breakdown && estimatedFee.fee_breakdown.round_trip_fee > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Volta (ida + volta)</span>
+              <span>R$ {Number(estimatedFee.fee_breakdown.round_trip_fee).toFixed(2).replace('.', ',')}</span>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: '#0f766e', borderTop: '1px solid #99f6e4', paddingTop: '0.5rem', marginTop: '0.25rem', fontSize: '1rem' }}>

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 
 # DON'T CHANGE THIS !!!
@@ -496,6 +496,25 @@ with app.app_context():
         print("Colunas de tipo de tabela adicionadas (pricing_mode/tier_bands/free_delivery_min_order)")
     except Exception as e:
         print(f"Migração tipos de tabela: {e}")
+        db.session.rollback()
+    # Migration: volta + deslocamento (2026-11-18) — S7.4 do plano de monetizacao
+    # (round_trip = considerar a volta com taxa propria R$/km; pickup_rate = deslocamento ate a coleta)
+    try:
+        for col_sql in (
+            "round_trip BOOLEAN DEFAULT FALSE",
+            "round_trip_rate_per_km NUMERIC(10,2) DEFAULT 0",
+            "pickup_rate_per_km NUMERIC(10,2) DEFAULT 0",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'pricing_tables' AND column_name = '{col}') "
+                f"THEN ALTER TABLE pricing_tables ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas de volta/deslocamento adicionadas (round_trip/round_trip_rate_per_km/pickup_rate_per_km)")
+    except Exception as e:
+        print(f"Migração volta/deslocamento: {e}")
         db.session.rollback()
 
     # Migration Fase D (2026-11-17): assinatura de 3 termos (fixo + entregador + pedido)

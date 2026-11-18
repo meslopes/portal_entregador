@@ -1,4 +1,4 @@
-"""Configurações, tabelas de preço e preço dinâmico.
+﻿"""Configurações, tabelas de preço e preço dinâmico.
 
 Extraído de admin_finance.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -114,6 +114,21 @@ def _validar_novos_campos_tabela(data):
             if not (0 < val <= 100000):
                 raise ValueError('O valor para frete grátis deve estar entre 0 e 100000')
             novos['free_delivery_min_order'] = val
+    # Volta + deslocamento (2026-11-18, S7.4): taxas proprias em R$/km
+    if 'round_trip' in data:
+        novos['round_trip'] = bool(data.get('round_trip'))
+    for campo_taxa in ('round_trip_rate_per_km', 'pickup_rate_per_km'):
+        if campo_taxa in data:
+            val = data.get(campo_taxa)
+            if val in (None, ''):
+                val = 0
+            try:
+                val = float(val)
+            except (TypeError, ValueError):
+                raise ValueError(f'{campo_taxa} deve ser numérico')
+            if not (0 <= val <= 100):
+                raise ValueError(f'{campo_taxa} deve estar entre 0 e 100 (R$ por km)')
+            novos[campo_taxa] = val
     return novos
 
 
@@ -238,6 +253,10 @@ def update_my_pricing_table():
         for campo, valor in novos_campos.items():
 
             setattr(pt, campo, valor)
+
+        # Regra de dominio (S7.4): entregas PROPRIAS nunca cobram volta —
+        # o entregador proprio sempre retorna ao estabelecimento
+        pt.round_trip = False
 
         db.session.commit()
 

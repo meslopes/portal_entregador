@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { DollarSign, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
@@ -14,6 +14,7 @@ const MyPricesPage = () => {
     price_per_km: '', fixed_fee: '', min_distance_km: '',
     min_delivery_fee: '', max_delivery_fee: '',
     pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '',
+    round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,6 +39,9 @@ const MyPricesPage = () => {
         pricing_mode: t.pricing_mode || 'PER_KM',
         tier_bands: (t.tier_bands || []).map(b => ({ to_km: b.to_km ?? '', price: String(b.price ?? '') })),
         free_delivery_min_order: t.free_delivery_min_order != null ? String(t.free_delivery_min_order) : '',
+        round_trip: false, // regra: entregas proprias nunca cobram volta
+        round_trip_rate_per_km: t.round_trip_rate_per_km != null ? String(t.round_trip_rate_per_km) : '',
+        pickup_rate_per_km: t.pickup_rate_per_km != null ? String(t.pickup_rate_per_km) : '',
       });
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao carregar os preços');
@@ -90,6 +94,9 @@ const MyPricesPage = () => {
         max_delivery_fee: form.max_delivery_fee || null,
         pricing_mode: form.pricing_mode,
         free_delivery_min_order: form.free_delivery_min_order || null,
+        pickup_rate_per_km: form.pickup_rate_per_km || 0,
+        round_trip_rate_per_km: form.round_trip_rate_per_km || 0,
+        round_trip: false, // regra de dominio: proprios nunca cobram volta
       };
       if (form.pricing_mode === 'TIERS') {
         payload.tier_bands = form.tier_bands
@@ -179,7 +186,7 @@ const MyPricesPage = () => {
               </div>
               <div>
                 <label style={labelStyle}>Distância Mínima (km)</label>
-                <input type="number" step="0.5" min="0.1" value={form.min_distance_km} required
+                <input type="number" step="0.1" min="0.1" value={form.min_distance_km} required
                   onChange={e => setForm(p => ({ ...p, min_distance_km: e.target.value }))} style={inputStyle} placeholder="4" />
               </div>
             </div>
@@ -212,6 +219,27 @@ const MyPricesPage = () => {
           </div>
         </div>
 
+        {/* Volta + deslocamento (§7.4) — taxas próprias em R$/km */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <label style={labelStyle}>Taxa de deslocamento até a coleta (R$/km)</label>
+            <input type="number" step="0.01" min="0" max="100" value={form.pickup_rate_per_km}
+              onChange={e => setForm(p => ({ ...p, pickup_rate_per_km: e.target.value }))} style={inputStyle} placeholder="0 = não cobrar" />
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+              Por km do trajeto do motorista até pegar o pedido (estimado pela posição dos motoristas online)
+            </p>
+          </div>
+          <div>
+            <label style={labelStyle}>Considerar a volta (R$/km)</label>
+            <input type="number" step="0.01" min="0" max="100" value={form.round_trip_rate_per_km} disabled
+              onChange={e => setForm(p => ({ ...p, round_trip_rate_per_km: e.target.value }))}
+              style={{ ...inputStyle, background: '#f1f5f9', color: '#94a3b8' }} placeholder="—" />
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+              Indisponível para entregas próprias: seu entregador sempre retorna ao estabelecimento.
+            </p>
+          </div>
+        </div>
+
         {/* Prévia — mesma regra de cálculo do sistema */}
         <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1.25rem' }}>
           <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0d9488', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
@@ -225,6 +253,11 @@ const MyPricesPage = () => {
               </div>
             ))}
           </div>
+          {form.pickup_rate_per_km && parseFloat(form.pickup_rate_per_km) > 0 && (
+            <p style={{ fontSize: '0.75rem', color: '#0d9488', margin: '0.5rem 0 0' }}>
+              + taxa de deslocamento (varia conforme a posição do motorista no momento do pedido)
+            </p>
+          )}
           {form.free_delivery_min_order && (
             <p style={{ fontSize: '0.75rem', color: '#0d9488', margin: '0.5rem 0 0' }}>
               ✓ Frete grátis para pedidos com produtos acima de R$ {parseFloat(form.free_delivery_min_order).toFixed(2)}

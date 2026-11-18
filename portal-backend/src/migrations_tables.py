@@ -1,4 +1,4 @@
-"""Migrações inline — tabelas novas e baseline do Alembic.
+﻿"""Migrações inline — tabelas novas e baseline do Alembic.
 
 Extraído de migrations_inline.py (parte 2) no refactor de arquivos grandes.
 """
@@ -310,6 +310,22 @@ def run_table_migrations():
             "pricing_mode VARCHAR(20) DEFAULT 'PER_KM'",
             "tier_bands JSONB",
             "free_delivery_min_order NUMERIC(10,2)",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'pricing_tables' AND column_name = '{col}') "
+                f"THEN ALTER TABLE pricing_tables ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    # Migration: volta + deslocamento (2026-11-18) — S7.4 do plano de monetizacao
+    try:
+        for col_sql in (
+            "round_trip BOOLEAN DEFAULT FALSE",
+            "round_trip_rate_per_km NUMERIC(10,2) DEFAULT 0",
+            "pickup_rate_per_km NUMERIC(10,2) DEFAULT 0",
         ):
             col = col_sql.split()[0]
             db.session.execute(db.text(

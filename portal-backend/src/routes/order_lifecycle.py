@@ -1,4 +1,4 @@
-"""Criação e mudanças de estado do pedido.
+﻿"""Criação e mudanças de estado do pedido.
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -737,9 +737,13 @@ def create_order():
                         float(restaurant.latitude), float(restaurant.longitude),
                         float(address.latitude), float(address.longitude)
                     )
-                delivery_fee, price_per_km, min_km = calcular_frete_tabela(
+                # Deslocamento ate a coleta (S7.4): estimado pelo motorista online mais proximo
+                from src.services.order_helpers import estimar_km_deslocamento
+                displacement_km, _fonte = estimar_km_deslocamento(restaurant)
+                delivery_fee, price_per_km, min_km, _frete = calcular_frete_tabela(
                     pt, km_total,
-                    order_value=float(data.get('subtotal') or 0) or None
+                    order_value=float(data.get('subtotal') or 0) or None,
+                    displacement_km=displacement_km
                 )
 
         # Aplicar taxas dinâmicas (chuva, alta demanda, feriado)

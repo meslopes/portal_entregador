@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
@@ -17,7 +17,8 @@ const AdminPricingPage = () => {
     name: '', description: '', square_id: '', price_per_km: '2.95',
     min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50',
     driver_percentage: '65', is_active: true,
-    pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: ''
+    pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '',
+    round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: ''
   });
 
   useEffect(() => { loadData(); }, []);
@@ -39,7 +40,7 @@ const AdminPricingPage = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '' });
+    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '', round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '' });
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -57,7 +58,10 @@ const AdminPricingPage = () => {
       is_active: table.is_active !== false,
       pricing_mode: table.pricing_mode || 'PER_KM',
       tier_bands: (table.tier_bands || []).map(b => ({ to_km: b.to_km ?? '', price: String(b.price ?? '') })),
-      free_delivery_min_order: table.free_delivery_min_order != null ? String(table.free_delivery_min_order) : ''
+      free_delivery_min_order: table.free_delivery_min_order != null ? String(table.free_delivery_min_order) : '',
+      round_trip: !!table.round_trip,
+      round_trip_rate_per_km: table.round_trip_rate_per_km != null ? String(table.round_trip_rate_per_km) : '',
+      pickup_rate_per_km: table.pickup_rate_per_km != null ? String(table.pickup_rate_per_km) : ''
     });
     setEditingId(table.id);
     setShowForm(true);
@@ -77,7 +81,10 @@ const AdminPricingPage = () => {
         driver_percentage: parseFloat(form.driver_percentage) || 65,
         is_active: form.is_active,
         pricing_mode: form.pricing_mode,
-        free_delivery_min_order: form.free_delivery_min_order || null
+        free_delivery_min_order: form.free_delivery_min_order || null,
+        round_trip: !!form.round_trip,
+        round_trip_rate_per_km: form.round_trip ? (form.round_trip_rate_per_km || 0) : 0,
+        pickup_rate_per_km: form.pickup_rate_per_km || 0
       };
       if (form.pricing_mode === 'TIERS') {
         data.tier_bands = form.tier_bands
@@ -255,6 +262,31 @@ const AdminPricingPage = () => {
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>Frete grátis acima de (R$)</label>
                   <input type="number" step="0.01" min="0" value={form.free_delivery_min_order} onChange={e => setForm(p => ({ ...p, free_delivery_min_order: e.target.value }))} placeholder="Opcional — valor dos produtos" style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+
+              {/* Volta + deslocamento (§7.4) — taxas próprias em R$/km */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
+                    <input type="checkbox" checked={form.round_trip} onChange={e => setForm(p => ({ ...p, round_trip: e.target.checked }))} style={{ width: '1rem', height: '1rem' }} />
+                    Considerar a volta (ida + volta)
+                  </label>
+                  <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
+                    Para motoboy de plataforma que não retorna (troco/máquina). Em entregas próprias fica sempre desligado.
+                  </p>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>R$/km da volta</label>
+                  <input type="number" step="0.01" min="0" max="100" value={form.round_trip_rate_per_km} disabled={!form.round_trip}
+                    onChange={e => setForm(p => ({ ...p, round_trip_rate_per_km: e.target.value }))} placeholder="0"
+                    style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box', background: form.round_trip ? 'white' : '#f1f5f9' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>R$/km deslocamento até a coleta</label>
+                  <input type="number" step="0.01" min="0" max="100" value={form.pickup_rate_per_km}
+                    onChange={e => setForm(p => ({ ...p, pickup_rate_per_km: e.target.value }))} placeholder="0 = não cobrar"
+                    style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
 

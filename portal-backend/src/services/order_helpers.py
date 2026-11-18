@@ -1,4 +1,4 @@
-"""Helpers de pedidos: despacho a entregadores, filas e notificações.
+﻿"""Helpers de pedidos: despacho a entregadores, filas e notificações.
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -66,16 +66,68 @@ def _frete_faixas(bands, distance_km):
     return ultimo if ultimo is not None else 0.0
 
 
-def calcular_frete_tabela(pt, distance_km, order_value=None):
+def estimar_km_deslocamento(restaurant):
     """
-    Calcula o frete a partir de uma tabela de preços.
+    Estima a distância do motorista até a coleta (trecho de deslocamento — §7.4).
+    Usa o motorista ONLINE mais próximo com GPS (plataforma ou próprio);
+    sem motorista online, retorna 0 (não cobra — estimativa desconhecida).
+    Retorna (km, fonte) com fonte 'driver' ou 'none'.
+    """
+    if not restaurant or not restaurant.latitude or not restaurant.longitude:
+        return 0.0, 'none'
+    melhor = None
+    # Entregadores da plataforma online (com GPS) do mesmo tenant
+    try:
+        from src.models.portal_models import Driver
+        q = Driver.query.filter(
+            Driver.is_online.is_(True),
+            Driver.current_latitude.isnot(None),
+            Driver.current_longitude.isnot(None),
+        )
+        if restaurant.tenant_id:
+            q = q.filter(Driver.tenant_id == restaurant.tenant_id)
+        for d in q.limit(50).all():
+            km = haversine_distance(
+                float(restaurant.latitude), float(restaurant.longitude),
+                float(d.current_latitude), float(d.current_longitude))
+            if melhor is None or km < melhor:
+                melhor = km
+    except Exception:
+        pass
+    # Entregadores próprios online (com GPS) deste estabelecimento
+    try:
+        for d in EstablishmentDriver.query.filter(
+                EstablishmentDriver.restaurant_id == restaurant.id,
+                EstablishmentDriver.is_online.is_(True),
+                EstablishmentDriver.current_latitude.isnot(None),
+                EstablishmentDriver.current_longitude.isnot(None)).limit(50).all():
+            km = haversine_distance(
+                float(restaurant.latitude), float(restaurant.longitude),
+                float(d.current_latitude), float(d.current_longitude))
+            if melhor is None or km < melhor:
+                melhor = km
+    except Exception:
+        pass
+    if melhor is None:
+        return 0.0, 'none'
+    return round(melhor, 2), 'driver'
+
+
+def calcular_frete_tabela(pt, distance_km, order_value=None, displacement_km=0):
+    """
+    Calcula o frete a partir de uma tabela de preços (fórmula ÚNICA do sistema).
     Regras:
       - frete grátis: order_value (valor dos produtos) >= free_delivery_min_order → 0
-      - pricing_mode 'TIERS': preço da faixa que contém a distância (sem volta)
-      - fixed_fee > 0 → frete fixo (independe da distância)
-      - senão → max(distância, min_distance_km) × price_per_km,
-        com piso/teto quando a tabela definir min/max_delivery_fee.
-    Retorna (delivery_fee, price_per_km, min_distance_km).
+      - pricing_mode 'TIERS': preço da faixa que contém a distância
+      - fixed_fee > 0 → frete fixo base (independe da distância)
+      - senão → max(distância, min_distance_km) × price_per_km
+      - VOLTA (§7.4, só modelo plataforma — em próprios fica sempre desligado):
+        round_trip ligado → soma distance_km × round_trip_rate_per_km
+        (valor variável com a distância, taxa própria — NÃO é dobrar o frete)
+      - DESLOCAMENTO (§7.4): soma displacement_km × pickup_rate_per_km
+        (trecho do motorista até a coleta — ver estimar_km_deslocamento)
+      - piso/teto (min/max_delivery_fee) valem para o TOTAL do frete.
+    Retorna (delivery_fee, price_per_km, min_distance_km, detalhes).
     """
     price_per_km = float(pt.price_per_km or 2.95)
     min_km = float(pt.min_distance_km or 4.0)
@@ -83,27 +135,39 @@ def calcular_frete_tabela(pt, distance_km, order_value=None):
     # Frete grátis acima do valor dos produtos (prêmio de venda do estabelecimento)
     if (getattr(pt, 'free_delivery_min_order', None) and order_value is not None
             and float(order_value) >= float(pt.free_delivery_min_order)):
-        return 0.0, price_per_km, min_km
+        return 0.0, price_per_km, min_km, {'base_fee': 0.0, 'round_trip_fee': 0.0,
+                                           'pickup_fee': 0.0, 'free_delivery': True}
 
-    # Faixas de km (modo TIERS)
+    # Base: faixas de km (modo TIERS)
     if getattr(pt, 'pricing_mode', None) == 'TIERS' and getattr(pt, 'tier_bands', None):
-        fee = _frete_faixas(pt.tier_bands, distance_km)
-        if pt.min_delivery_fee:
-            fee = max(fee, float(pt.min_delivery_fee))
-        if pt.max_delivery_fee:
-            fee = min(fee, float(pt.max_delivery_fee))
-        return round(fee, 2), price_per_km, min_km
+        base = _frete_faixas(pt.tier_bands, distance_km)
+    else:
+        fixed_fee = float(pt.fixed_fee or 0)
+        if fixed_fee > 0:
+            base = fixed_fee
+        else:
+            km_total = max(distance_km, min_km)
+            base = round(km_total * price_per_km, 2)
 
-    fixed_fee = float(pt.fixed_fee or 0)
-    if fixed_fee > 0:
-        return fixed_fee, price_per_km, min_km
-    km_total = max(distance_km, min_km)
-    fee = round(km_total * price_per_km, 2)
+    # Volta: taxa própria em R$/km sobre o trajeto de volta (mesma distância)
+    volta = 0.0
+    if getattr(pt, 'round_trip', False) and float(getattr(pt, 'round_trip_rate_per_km', 0) or 0) > 0:
+        volta = round(distance_km * float(pt.round_trip_rate_per_km), 2)
+
+    # Deslocamento até a coleta: R$/km do motorista até o estabelecimento
+    pickup = 0.0
+    if displacement_km and float(getattr(pt, 'pickup_rate_per_km', 0) or 0) > 0:
+        pickup = round(float(displacement_km) * float(pt.pickup_rate_per_km), 2)
+
+    fee = round(base + volta + pickup, 2)
+    # Piso/teto valem para o TOTAL (o cliente vê um frete só)
     if pt.min_delivery_fee:
         fee = max(fee, float(pt.min_delivery_fee))
     if pt.max_delivery_fee:
         fee = min(fee, float(pt.max_delivery_fee))
-    return fee, price_per_km, min_km
+    detalhes = {'base_fee': round(base, 2), 'round_trip_fee': volta,
+                'pickup_fee': pickup, 'free_delivery': False}
+    return fee, price_per_km, min_km, detalhes
 
 
 def get_driver_percentage(order):

@@ -1,4 +1,4 @@
-"""Consultas de pedidos (leitura).
+﻿"""Consultas de pedidos (leitura).
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -212,7 +212,8 @@ def estimate_fee():
 
         logger.info(f"[FRETE] Distancia OSRM: {distance_km} km")
 
-        from src.services.order_helpers import calcular_frete_tabela, resolve_pricing_table
+        from src.services.order_helpers import (
+            calcular_frete_tabela, estimar_km_deslocamento, resolve_pricing_table)
         pt = resolve_pricing_table(restaurant)
         # Valor dos produtos (opcional) — usado pelo frete grátis da tabela
         order_value = None
@@ -221,13 +222,19 @@ def estimate_fee():
                 order_value = float(data.get('order_value'))
         except (TypeError, ValueError):
             pass
+        # Deslocamento ate a coleta (S7.4): motorista online mais proximo (0 = nao cobra)
+        displacement_km, displacement_source = estimar_km_deslocamento(restaurant)
+        frete_detalhes = {'base_fee': 0.0, 'round_trip_fee': 0.0, 'pickup_fee': 0.0,
+                          'free_delivery': False}
         if pt:
-            delivery_fee, price_per_km, min_km = calcular_frete_tabela(pt, distance_km, order_value=order_value)
-            logger.info(f"[FRETE] Tabela '{pt.name}' (id {pt.id}): price_per_km={price_per_km}, min_km={min_km}, fee={delivery_fee}")
+            delivery_fee, price_per_km, min_km, frete_detalhes = calcular_frete_tabela(
+                pt, distance_km, order_value=order_value, displacement_km=displacement_km)
+            logger.info(f"[FRETE] Tabela '{pt.name}' (id {pt.id}): price_per_km={price_per_km}, min_km={min_km}, fee={delivery_fee}, detalhes={frete_detalhes}")
         else:
             logger.warning(f"[FRETE] Estabelecimento {restaurant.id} SEM tabela de preços — usando padrão 2.95")
             km_total = max(distance_km, min_km)
             delivery_fee = round(km_total * price_per_km, 2)
+            frete_detalhes['base_fee'] = delivery_fee
 
         # Aplicar taxas dinâmicas (chuva, demanda alta, feriado)
         if restaurant.square_id:
@@ -256,7 +263,10 @@ def estimate_fee():
             'distance_source': distance_source,
             'is_approximate': is_approximate,
             'latitude': del_lat,
-            'longitude': del_lng
+            'longitude': del_lng,
+            'displacement_km': round(displacement_km, 2),
+            'displacement_source': displacement_source,
+            'fee_breakdown': frete_detalhes
         }
 
         if is_approximate:

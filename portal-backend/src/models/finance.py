@@ -1,4 +1,4 @@
-"""Dinheiro: pagamentos, faturas, assinaturas, tabelas de preço e credenciais.
+﻿"""Dinheiro: pagamentos, faturas, assinaturas, tabelas de preço e credenciais.
 
 Extraído de portal_models.py no refactor de arquivos grandes (2026-11-01).
 Importe via src.models.portal_models (fachada) — comportamento idêntico.
@@ -85,6 +85,13 @@ class PricingTable(db.Model):
     tier_bands = db.Column(db.JSON)
     # Frete grátis para pedidos com valor de produtos >= este (None = desligado)
     free_delivery_min_order = db.Column(db.Numeric(10, 2))
+    # Volta (ida + volta) — §7.4 do plano: só modelo PLATAFORMA (motorista que sai
+    # para run extra não retorna). Em entregas próprias fica SEMPRE desligado.
+    round_trip = db.Column(db.Boolean, default=False)
+    # Taxa da volta: R$ por km do trajeto de volta (valor variável — não é km x2)
+    round_trip_rate_per_km = db.Column(db.Numeric(10, 2), default=0)
+    # Taxa de deslocamento até a coleta: R$ por km do motorista até o estabelecimento
+    pickup_rate_per_km = db.Column(db.Numeric(10, 2), default=0)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
@@ -108,6 +115,9 @@ class PricingTable(db.Model):
             'pricing_mode': self.pricing_mode or 'PER_KM',
             'tier_bands': self.tier_bands or [],
             'free_delivery_min_order': float(self.free_delivery_min_order) if self.free_delivery_min_order else None,
+            'round_trip': bool(self.round_trip),
+            'round_trip_rate_per_km': float(self.round_trip_rate_per_km) if self.round_trip_rate_per_km else 0,
+            'pickup_rate_per_km': float(self.pickup_rate_per_km) if self.pickup_rate_per_km else 0,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
