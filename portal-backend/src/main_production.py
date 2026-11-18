@@ -47,6 +47,8 @@ def create_app(config_name=None):
     register_status_jwt_gate(jwt)
 
     # Registrar blueprints
+    from src.routes.admin_activity import admin_activity_bp
+    app.register_blueprint(admin_activity_bp, url_prefix='/api/admin')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(driver_bp, url_prefix='/api/driver')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')

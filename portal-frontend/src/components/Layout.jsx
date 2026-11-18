@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Package, DollarSign, Clock, Settings,
   LayoutDashboard, Users, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Wallet, TrendingUp, Globe, AlertTriangle, Route, Bike, BookOpen, HelpCircle
-} from 'lucide-react';
+, History } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.hooks';
 import { driverService } from '@/lib/api';
 import { sendGPS as sendGPSBroadcast, isRealtimeAvailable } from '@/lib/realtime';
@@ -128,6 +128,7 @@ const Layout = ({ children }) => {
       children: [
         { name: 'Geral', href: '/admin/settings', icon: Settings },
         { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
+  { name: 'Registro de Atividades', href: '/admin/activity', icon: History },
         { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
         { name: 'Integrações', href: '/admin/integrations', icon: Globe },
         { name: 'Relatórios', href: '/admin/reports', icon: FileText },

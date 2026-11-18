@@ -1,4 +1,4 @@
-import { Route } from 'react-router-dom';
+﻿import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
@@ -11,6 +11,7 @@ import AdminFinancePage from '@/pages/admin/AdminFinancePage';
 import AdminWithdrawalsPage from '@/pages/admin/AdminWithdrawalsPage';
 import AdminInvoicesPage from '@/pages/admin/AdminInvoicesPage';
 import AdminPricingPage from '@/pages/admin/AdminPricingPage';
+import AdminActivityPage from '@/pages/admin/AdminActivityPage';
 import AdminDynamicPricingPage from '@/pages/admin/AdminDynamicPricingPage';
 import AdminIntegrationsPage from '@/pages/admin/AdminIntegrationsPage';
 import AdminReportsPage from '@/pages/admin/AdminReportsPage';
@@ -46,6 +47,7 @@ export const adminRoutes = (
       <Route path="/admin/subscriptions" element={<AdminRoute><SubscriptionPage /></AdminRoute>} />
       <Route path="/admin/overdue-report" element={<AdminRoute><OverdueReportPage /></AdminRoute>} />
       <Route path="/admin/pricing" element={<AdminRoute><AdminPricingPage /></AdminRoute>} />
+      <Route path="/admin/activity" element={<AdminRoute><AdminActivityPage /></AdminRoute>} />
       <Route path="/admin/dynamic-pricing" element={<AdminRoute><AdminDynamicPricingPage /></AdminRoute>} />
       <Route path="/admin/integrations" element={<AdminRoute><AdminIntegrationsPage /></AdminRoute>} />
       <Route path="/admin/withdrawals" element={<AdminRoute><AdminWithdrawalsPage /></AdminRoute>} />

@@ -22,6 +22,7 @@ from src.models.portal_models import (
 from src.utils.auth import client_or_admin_required
 from src.utils.restaurant import find_restaurant_by_name
 from src.utils.tenant import get_current_user
+from src.utils.activity_log import log_activity
 
 logger = logging.getLogger(__name__)
 
@@ -246,6 +247,8 @@ def create_establishment_driver():
 
 
 
+        log_activity('CREATE', 'driver', driver.id, entity_label=driver.name, details=f'telefone {driver.phone}')
+
         return jsonify({
 
             'message': 'Entregador cadastrado com sucesso',
@@ -411,6 +414,8 @@ def update_establishment_driver(driver_id):
 
 
 
+        log_activity('UPDATE', 'driver', driver_id, entity_label=getattr(driver, 'name', None))
+
         return jsonify({
 
             'message': 'Entregador atualizado',
@@ -462,6 +467,8 @@ def delete_establishment_driver(driver_id):
         db.session.commit()
 
 
+
+        log_activity('DELETE', 'driver', driver_id, entity_label=getattr(driver, 'name', None))
 
         return jsonify({'message': 'Entregador removido'}), 200
 

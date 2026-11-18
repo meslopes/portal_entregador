@@ -1,4 +1,4 @@
-"""Operação: notificações, praças, gamificação, rotas próprias e registros de apoio.
+﻿"""Operação: notificações, praças, gamificação, rotas próprias e registros de apoio.
 
 Extraído de portal_models.py no refactor de arquivos grandes (2026-11-01).
 Importe via src.models.portal_models (fachada) — comportamento idêntico.
@@ -583,6 +583,42 @@ class PushToken(db.Model):
 
     user = db.relationship('User', backref='push_tokens')
 
+
+class ActivityLog(db.Model):
+    """Registro de atividades da equipe (§7.2 do backlog EE — suporte/auditoria).
+
+    Quem fez o quê, em qual entidade e quando. Gravação é best-effort:
+    nunca derruba a ação principal (ver utils/activity_log.py).
+    """
+    __tablename__ = 'activity_logs'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # super admin age sem tenant
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    user_email = db.Column(db.String(255))  # desnormalizado — sobrevive à exclusão do usuário
+    action = db.Column(db.String(50), nullable=False)  # CREATE / UPDATE / DELETE / APPROVE / ...
+    entity = db.Column(db.String(50), nullable=False)  # establishment / driver / user / pricing / ...
+    entity_id = db.Column(db.Integer)
+    entity_label = db.Column(db.String(200))  # nome legível para a listagem
+    details = db.Column(db.Text)  # resumo da mudança
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    __table_args__ = (db.Index('ix_activity_tenant_created', 'tenant_id', 'created_at'),)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'user_id': self.user_id,
+            'user_email': self.user_email,
+            'action': self.action,
+            'entity': self.entity,
+            'entity_id': self.entity_id,
+            'entity_label': self.entity_label,
+            'details': self.details,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
 
 __all__ = [
     "Notification",

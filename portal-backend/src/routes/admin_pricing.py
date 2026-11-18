@@ -18,6 +18,7 @@ from src.models.portal_models import (
 from src.routes.admin_finance import get_square_filter
 from src.utils.auth import admin_required, client_or_admin_required
 from src.utils.tenant import get_current_tenant_id, get_current_user
+from src.utils.activity_log import log_activity
 
 admin_pricing_bp = Blueprint('pricing', __name__)
 
@@ -717,6 +718,8 @@ def create_pricing_table():
 
 
 
+        log_activity('CREATE', 'pricing', table.id, entity_label=table.name)
+
         return jsonify({
 
             'message': 'Tabela de precos criada com sucesso',
@@ -907,6 +910,8 @@ def update_pricing_table(table_id):
         db.session.commit()
 
 
+
+        log_activity('UPDATE', 'pricing', table_id, entity_label=getattr(table, 'name', None))
 
         return jsonify({
 
