@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 
 # DON'T CHANGE: Add the project root to the Python path
@@ -35,14 +35,10 @@ def create_app(config_name=None):
     # Migrações versionadas (Alembic) — novas mudanças de schema vão em migrations/
     from flask_migrate import Migrate
     Migrate(app, db, compare_type=True)
-    # Configurar CORS (apenas Flask-CORS, sem handler manual duplicado)
-    CORS(
-        app,
-        origins=app.config['CORS_ORIGINS'],
-        supports_credentials=True,
-        allow_headers="*",
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    )
+    # CORS centralizado (F-13): fonte única em src/utils/cors.py
+    from src.utils.cors import init_cors
+
+    init_cors(app, 'production')
     jwt = JWTManager(app)
 
     # Portão central de status: bloqueia tokens de usuários INACTIVE/SUSPENDED/deletados
@@ -198,13 +194,25 @@ def create_app(config_name=None):
     from src.utils.background_tasks import start_background_tasks
     start_background_tasks(app)
 
-    # Endpoint de health check
+    # Endpoint de health check (F-14): checa o banco de verdade —
+    # 503 = degradado é o status que o alerta de monitoramento deve observar
     @app.route('/api/health', methods=['GET'])
     def health_check():
         """Endpoint de verificação de saúde da API"""
+        try:
+            db.session.execute(db.text('SELECT 1'))
+        except Exception as e:
+            app.logger.error(f"[HEALTH] Banco inacessível: {e}")
+            return jsonify({
+                'status': 'degraded',
+                'message': 'Banco de dados inacessível',
+                'db': 'down',
+                'environment': config_name
+            }), 503
         return jsonify({
             'status': 'healthy',
             'message': 'Portal API is running',
+            'db': 'ok',
             'environment': config_name
         })
 

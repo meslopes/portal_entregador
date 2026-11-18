@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
-from sqlalchemy import func, or_
+from sqlalchemy import case, func, or_
 
 from src.models.portal_models import (
     Customer,
@@ -108,66 +108,45 @@ def get_establishments():
 
         establishments_data = []
 
+        # Estatísticas em UMA consulta (GROUP BY) — antes eram 4 consultas por
+        # estabelecimento (N+1, item "Índices + N+1" da auditoria)
+        stats = {}
+        if establishments.items:
+            est_ids = [est.id for est in establishments.items]
+            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            today = datetime.now(timezone.utc).date()
+            rows = db.session.query(
+                Order.restaurant_id,
+                func.count(Order.id).label('total_orders'),
+                func.coalesce(func.sum(Order.total_amount), 0).label('total_revenue'),
+                func.coalesce(func.sum(case((Order.created_at >= week_ago, 1), else_=0)), 0).label('week_orders'),
+                func.coalesce(func.sum(case((func.date(Order.created_at) == today, 1), else_=0)), 0).label('today_orders'),
+            ).filter(Order.restaurant_id.in_(est_ids)).group_by(Order.restaurant_id).all()
+            for r in rows:
+                stats[r.restaurant_id] = {
+                    'total_orders': int(r.total_orders),
+                    'total_revenue': float(r.total_revenue),
+                    'week_orders': int(r.week_orders),
+                    'today_orders': int(r.today_orders),
+                }
+
         for est in establishments.items:
 
             est_dict = est.to_dict(include_sensitive=True)
 
-
-
-            # Estatísticas do estabelecimento
-
-            total_orders = Order.query.filter_by(restaurant_id=est.id).count()
-
-            total_revenue = db.session.query(func.sum(Order.total_amount)).filter_by(
-
-                restaurant_id=est.id
-
-            ).scalar() or 0
-
-
-
-            # Pedidos esta semana
-
-            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-
-            week_orders = Order.query.filter(
-
-                Order.restaurant_id == est.id,
-
-                Order.created_at >= week_ago
-
-            ).count()
-
-
-
-            # Pedidos hoje
-
-            today = datetime.now(timezone.utc).date()
-
-            today_orders = Order.query.filter(
-
-                Order.restaurant_id == est.id,
-
-                func.date(Order.created_at) == today
-
-            ).count()
-
-
+            s = stats.get(est.id, {'total_orders': 0, 'total_revenue': 0.0, 'week_orders': 0, 'today_orders': 0})
 
             # Ranking (baseado em total de pedidos)
 
-            est_dict['total_orders'] = total_orders
+            est_dict['total_orders'] = s['total_orders']
 
-            est_dict['total_revenue'] = float(total_revenue)
+            est_dict['total_revenue'] = s['total_revenue']
 
-            est_dict['week_orders'] = week_orders
+            est_dict['week_orders'] = s['week_orders']
 
-            est_dict['today_orders'] = today_orders
+            est_dict['today_orders'] = s['today_orders']
 
             establishments_data.append(est_dict)
-
-
-
         return jsonify({
 
             'establishments': establishments_data,

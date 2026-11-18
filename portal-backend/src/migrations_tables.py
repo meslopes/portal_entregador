@@ -368,6 +368,21 @@ def run_table_migrations():
         db.session.commit()
     except Exception:
         db.session.rollback()
+    # Migration: indices para os caminhos quentes (2026-11-18)
+    try:
+        for idx_sql in (
+            "CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)",
+            "CREATE INDEX IF NOT EXISTS idx_customers_user ON customers (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_est_drivers_restaurant ON establishment_drivers (restaurant_id)",
+            "CREATE INDEX IF NOT EXISTS idx_est_drivers_phone ON establishment_drivers (phone)",
+            "CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_payments_driver ON payments (driver_id)",
+            "CREATE INDEX IF NOT EXISTS idx_pricing_tables_square ON pricing_tables (square_id)",
+        ):
+            db.session.execute(db.text(idx_sql))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     # Migration Fase D (2026-11-17): assinatura de 3 termos
     try:

@@ -62,31 +62,10 @@ from src.utils.rate_limit import limiter
 
 limiter.init_app(app)
 
-# CORS: permissivo em desenvolvimento (testes em rede local), restritivo em produção
-if flask_env == 'production':
-    cors_origins = [
-        "http://muv.log.br",
-        "https://muv.log.br",
-        "http://www.muv.log.br",
-        "https://www.muv.log.br",
-        "http://api.muv.log.br",
-        "https://api.muv.log.br",
-        "https://muvlog.vercel.app",
-        "https://muvlog-frontend.vercel.app",
-        "https://portal-entregador-gamma.vercel.app",
-        "https://portal-frontend-sepia.vercel.app",
-        "https://portal-frontend-apk3ka3zx-muvy.vercel.app",
-    ]
-    # P-06 (auditoria): /uploads/* também precisa de CORS — as fotos de prova
-    # são buscadas pelo navegador a partir de outra origem (Vercel → Cloud Run)
-    CORS(app, resources={
-        r"/api/*": {"origins": cors_origins, "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "headers": ["Content-Type", "Authorization"], "supports_credentials": True},
-        r"/uploads/*": {"origins": cors_origins, "methods": ["GET", "OPTIONS"], "headers": ["Authorization"], "supports_credentials": True},
-    })
-else:
-    # DEV: permite qualquer origem (testes em rede local, múltiplos dispositivos)
-    CORS(app, resources={r"/*": {"origins": "*"}})
+# CORS centralizado (F-13): fonte única em src/utils/cors.py + config.CORS_ORIGINS
+from src.utils.cors import init_cors
 
+init_cors(app, flask_env)
 # Registra blueprints
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(driver_bp, url_prefix='/api/driver')
@@ -557,6 +536,23 @@ with app.app_context():
     except Exception as e:
         print(f"Migração link de ativação: {e}")
         db.session.rollback()
+    # Migration: indices para os caminhos quentes (2026-11-18) — item "Indices + N+1"
+    try:
+        for idx_sql in (
+            "CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)",
+            "CREATE INDEX IF NOT EXISTS idx_customers_user ON customers (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_est_drivers_restaurant ON establishment_drivers (restaurant_id)",
+            "CREATE INDEX IF NOT EXISTS idx_est_drivers_phone ON establishment_drivers (phone)",
+            "CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_payments_driver ON payments (driver_id)",
+            "CREATE INDEX IF NOT EXISTS idx_pricing_tables_square ON pricing_tables (square_id)",
+        ):
+            db.session.execute(db.text(idx_sql))
+        db.session.commit()
+        print("Indices de caminhos quentes criados (users.email, customers.user_id, est_drivers, notifications, payments, pricing)")
+    except Exception as e:
+        print(f"Migração de índices: {e}")
+        db.session.rollback()
 
     # Migration Fase D (2026-11-17): assinatura de 3 termos (fixo + entregador + pedido)
     try:
@@ -637,8 +633,18 @@ if flask_env == 'production':
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Endpoint de verificação de saúde da API"""
-    return {'status': 'healthy', 'message': 'Portal API is running'}, 200
+    """Verificação de saúde da API (F-14): checa o banco de verdade.
+
+    200 = saudável (db ok); 503 = degradado (db inacessível) — é o status
+    que o alerta de monitoramento deve observar (item "alerta mínimo").
+    """
+    import logging
+    try:
+        db.session.execute(db.text('SELECT 1'))
+    except Exception as e:
+        logging.getLogger(__name__).error(f"[HEALTH] Banco inacessível: {e}")
+        return {'status': 'degraded', 'message': 'Banco de dados inacessível', 'db': 'down'}, 503
+    return {'status': 'healthy', 'message': 'Portal API is running', 'db': 'ok'}, 200
 
 @app.route('/uploads/proofs/<path:filename>')
 @jwt_required()

@@ -1,4 +1,4 @@
-"""Módulo admin_users — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
+﻿"""Módulo admin_users — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import contextlib
@@ -20,6 +20,18 @@ from src.models.portal_models import (
 )
 from src.utils.auth import admin_required
 from src.utils.tenant import get_current_tenant_id
+
+
+def _carregar_relacionamentos(user_ids):
+    """Busca Driver/Customer de muitos usuários em 2 consultas (anti N+1)."""
+    drivers, customers = {}, {}
+    if not user_ids:
+        return drivers, customers
+    for d in Driver.query.filter(Driver.user_id.in_(user_ids)).all():
+        drivers[d.user_id] = d
+    for cst in Customer.query.filter(Customer.user_id.in_(user_ids)).all():
+        customers[cst.user_id] = cst
+    return drivers, customers
 
 admin_users_bp = Blueprint('admin_users', __name__)
 
@@ -72,13 +84,16 @@ def get_pending_users():
 
         users_data = []
 
+        # Relacionamentos em lote (evita N+1 — item "Índices + N+1" da auditoria)
+        _drivers, _customers = _carregar_relacionamentos([u.id for u in pending])
+
         for user in pending:
 
             user_dict = user.to_dict(include_sensitive=True)
 
             if user.user_type == UserType.DRIVER:
 
-                driver = Driver.query.filter_by(user_id=user.id).first()
+                driver = _drivers.get(user.id)
 
                 if driver:
 
@@ -86,7 +101,7 @@ def get_pending_users():
 
             elif user.user_type == UserType.CLIENT:
 
-                customer = Customer.query.filter_by(user_id=user.id).first()
+                customer = _customers.get(user.id)
 
                 if customer:
 
@@ -338,13 +353,16 @@ def get_all_users():
 
         users_data = []
 
+        # Relacionamentos em lote (evita N+1 — item "Índices + N+1" da auditoria)
+        _drivers, _customers = _carregar_relacionamentos([u.id for u in users.items])
+
         for user in users.items:
 
             user_dict = user.to_dict(include_sensitive=True)
 
             if user.user_type == UserType.DRIVER:
 
-                driver = Driver.query.filter_by(user_id=user.id).first()
+                driver = _drivers.get(user.id)
 
                 if driver:
 
@@ -356,7 +374,7 @@ def get_all_users():
 
             elif user.user_type == UserType.CLIENT:
 
-                customer = Customer.query.filter_by(user_id=user.id).first()
+                customer = _customers.get(user.id)
 
                 if customer:
 

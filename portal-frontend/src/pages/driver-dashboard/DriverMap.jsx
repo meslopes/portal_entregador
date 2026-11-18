@@ -1,4 +1,5 @@
-import React from 'react';
+﻿import React from 'react';
+import { abrirGoogleMaps } from '@/lib/maps';
 import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { MapPin, Navigation } from 'lucide-react';
 
@@ -25,10 +26,10 @@ const DriverMap = ({ location, currentOrder, getCurrentLocation }) => {
                   if (useWaze) {
                     window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
                   } else {
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
+                    abrirGoogleMaps(`${lat},${lng}`);
                   }
                 } else {
-                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
+                  abrirGoogleMaps(`${lat},${lng}`);
                 }
               }}
               style={{

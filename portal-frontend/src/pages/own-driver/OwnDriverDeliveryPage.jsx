@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
+import { abrirGoogleMaps } from '@/lib/maps';
 import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
@@ -131,14 +132,13 @@ const OwnDriverDeliveryPage = () => {
         if (useWaze) {
           window.open(`https://www.waze.com/ul?ll=${addr.latitude},${addr.longitude}&navigate=yes`, '_blank', 'noopener,noreferrer');
         } else {
-          window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank', 'noopener,noreferrer');
+          abrirGoogleMaps(`${addr.latitude},${addr.longitude}`);
         }
       } else {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr.latitude},${addr.longitude}`, '_blank', 'noopener,noreferrer');
+        abrirGoogleMaps(`${addr.latitude},${addr.longitude}`);
       }
     } else if (addr?.street) {
-      const query = encodeURIComponent(`${addr.street}, ${addr.neighborhood || ''}, ${addr.city || ''}`);
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${query}`, '_blank', 'noopener,noreferrer');
+      abrirGoogleMaps(`${addr.street}, ${addr.neighborhood || ''}, ${addr.city || ''}`);
     }
   };
 

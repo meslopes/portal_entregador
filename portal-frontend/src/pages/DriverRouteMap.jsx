@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { abrirGoogleMaps } from '@/lib/maps';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { orderService } from '@/lib/api';
@@ -239,7 +240,7 @@ const DriverRouteMap = () => {
 
   const openInGoogleMaps = (lat, lng) => {
     if (lat && lng) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank', 'noopener,noreferrer');
+      abrirGoogleMaps(`${lat},${lng}`);
     }
   };
 

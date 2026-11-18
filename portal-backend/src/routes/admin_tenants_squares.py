@@ -1,4 +1,4 @@
-"""Organizações (tenants) e praças de operação.
+﻿"""Organizações (tenants) e praças de operação.
 
 Extraído de admin_finance.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -233,17 +233,31 @@ def get_squares():
 
         squares_data = []
 
+        # Contagens em lote (evita N+1 — item "Índices + N+1" da auditoria)
+        from sqlalchemy import func as _func
+        _c = {}
+        if squares:
+            _ids = [sq.id for sq in squares]
+            for sid, n in db.session.query(Restaurant.square_id, _func.count(Restaurant.id)).filter(Restaurant.square_id.in_(_ids)).group_by(Restaurant.square_id):
+                _c.setdefault(sid, {})['restaurants_count'] = n
+            for sid, n in db.session.query(Driver.square_id, _func.count(Driver.id)).filter(Driver.square_id.in_(_ids)).group_by(Driver.square_id):
+                _c.setdefault(sid, {})['drivers_count'] = n
+            for sid, n in db.session.query(Restaurant.square_id, _func.count(Order.id)).join(Order, Order.restaurant_id == Restaurant.id).filter(Restaurant.square_id.in_(_ids)).group_by(Restaurant.square_id):
+                _c.setdefault(sid, {})['orders_count'] = n
+
         for sq in squares:
 
             try:
 
                 sq_dict = sq.to_dict()
 
-                sq_dict['restaurants_count'] = Restaurant.query.filter_by(square_id=sq.id).count()
+                _s = _c.get(sq.id, {})
 
-                sq_dict['drivers_count'] = Driver.query.filter_by(square_id=sq.id).count()
+                sq_dict['restaurants_count'] = _s.get('restaurants_count', 0)
 
-                sq_dict['orders_count'] = Order.query.join(Restaurant).filter(Restaurant.square_id == sq.id).count()
+                sq_dict['drivers_count'] = _s.get('drivers_count', 0)
+
+                sq_dict['orders_count'] = _s.get('orders_count', 0)
 
                 squares_data.append(sq_dict)
 

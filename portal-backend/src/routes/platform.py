@@ -1,4 +1,4 @@
-import contextlib
+﻿import contextlib
 import logging
 from datetime import datetime, timezone
 
@@ -373,11 +373,25 @@ def get_tenants():
         tenants = Tenant.query.all()
         result = []
 
+        # Contagens em lote (evita N+1 — item "Índices + N+1" da auditoria)
+        counts = {}
+        if tenants:
+            t_ids = [t.id for t in tenants]
+            for rotulo, campo in (
+                ('users_count', User.tenant_id),
+                ('drivers_count', Driver.tenant_id),
+                ('restaurants_count', Restaurant.tenant_id),
+                ('orders_count', Order.tenant_id),
+            ):
+                for tid, n in db.session.query(campo, func.count()).filter(campo.in_(t_ids)).group_by(campo):
+                    counts.setdefault(tid, {})[rotulo] = n
+
         for tenant in tenants:
-            users_count = User.query.filter_by(tenant_id=tenant.id).count()
-            drivers_count = Driver.query.filter_by(tenant_id=tenant.id).count()
-            restaurants_count = Restaurant.query.filter_by(tenant_id=tenant.id).count()
-            orders_count = Order.query.filter_by(tenant_id=tenant.id).count()
+            _t = counts.get(tenant.id, {})
+            users_count = _t.get('users_count', 0)
+            drivers_count = _t.get('drivers_count', 0)
+            restaurants_count = _t.get('restaurants_count', 0)
+            orders_count = _t.get('orders_count', 0)
 
             result.append({
                 'id': tenant.id,

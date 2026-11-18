@@ -1,4 +1,4 @@
-import os
+﻿import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
@@ -36,7 +36,7 @@ class Config:
         "https://muvlog.vercel.app",
         "https://muvlog-frontend.vercel.app",
         "https://portal-entregador-gamma.vercel.app",
-        "https://portal-entregador.vercel.app",
+        "https://portal-entregador.vercel.app",`n        "https://portal-frontend-sepia.vercel.app",
     ]
 
     # Configurações de logging
