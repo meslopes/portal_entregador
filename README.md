@@ -12,6 +12,7 @@ Sistema SaaS multi-tenant de delivery e gestão de entregadores.
 - **Prova de entrega**: foto com upload para Supabase Storage
 - **Financeiro**: controle de ganhos, saques, faturas, tabelas de preço configuráveis
 - **Relatórios**: pedidos, performance, financeiro, cancelamentos, horários de pico
+- **Operação**: Link de Pedido Rápido (cliente pede pelo link), Registro de Atividades (auditoria), Evitamentos com punição silenciosa (G-08)
 - **Integrações**: iFood (webhooks), WhatsApp (robô de atendimento), Asaas (pagamentos)
 - **Notificações push**: Firebase Cloud Messaging para todos os perfis
 - **GPS em tempo real**: posição dos entregadores via Supabase Realtime
@@ -173,6 +174,11 @@ Supabase (PostgreSQL) — pooler `aws-0-sa-east-1.pooler.supabase.com`
 - `docs/fluxograma-sistema.html` — Hierarquia de perfis e rotas da API
 - `docs/Plano_MuvScore pdf.pdf` — Plano do sistema de gamificação
 - `docs/REGRAS_TRABALHO_EQUIPE.md` — Regras de trabalho da equipe
+- `docs/GLOSSARIO.md` — Termos oficiais da interface (Estabelecimento, Praça, Entregador...)
+- `docs/MIGRACOES.md` — Onde colocar migrações de schema (inline + Alembic)
+- `docs/BACKUP_RESTORE.md` — Procedimento de backup/restore e limites
+- `docs/REVISAO_RLS.md` — Conclusão da revisão de RLS do banco
+- `docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md` — Plano de monetização (entregas próprias)
 - `docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md` — Plano de monetização (entregas próprias)
 - `docs/ROTEIRO_TESTES_MANUAIS.md` — Roteiro de testes manuais
 - `docs/mapa-muvlog-2026-11-01-final.html` — Mapa do código-fonte (floorplan)

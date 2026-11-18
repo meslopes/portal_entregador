@@ -198,20 +198,27 @@
 - [x] Distancia manual no frete (rede de seguranca) + geocodificacao no navegador
 - [x] **Enviar Acesso ao entregador proprio** — modal com link do app + telefone (login) + PIN, WhatsApp/copia, selo "Sem PIN — acesso bloqueado", modal auto-abre apos cadastrar
 
+## ✅ 2026-11-18 — Lotes autonomos (hardening + backlog EE + G-08) (CONCLUIDA)
+- [x] Lote 1: PII mascarada em logs · upload de prova com limite 5MB · CORS em /uploads · remove models/user.py legado · caminho unico do banco documentado
+- [x] Lote 2: CORS fonte unica · health check com dependencia de banco · deep link do app Google Maps · 7 indices + 4 listas admin sem N+1
+- [x] Backlog EE 7.2: Registro de Atividades · Link de Pedido Rapido · Nomenclaturas padronizadas (GLOSSARIO.md)
+- [x] G-08: evitamento com punicao silenciosa + regra da reciprocidade + controle do admin (revogavel) + selo de qualidade
+- [x] G-04: pools de bonus configuraveis (SystemConfig) + campos em Configuracoes
+- [x] F-23: CI real dos subprojetos (.github/workflows/ci.yml)
+- [x] Revisao RLS documentada (docs/REVISAO_RLS.md) — RLS off e correto p/ backend unico
+- [x] Backup/restore testado (5/5, contra copia descartavel) + docs/BACKUP_RESTORE.md
+- [x] Estrategia de migracoes documentada (docs/MIGRACOES.md) + Alembic 0003 em dia
 ## 📋 Pendencias Futuras
-- [ ] Geocoding do servidor (chave Google por IP no Cloud Run) + revalidar o caso dos 156 km
-- [ ] Enviar Acesso Opcao 2: link de ativacao /own-driver/activate/<token> (entregador define o proprio PIN)
-- [ ] §7.4 tabelas da plataforma: "considerar a volta" (opcao desligada), taxa de deslocamento, tabela por veiculo
-- [ ] Backlog EE §7.2: Nomenclaturas, Link de Pedido Rapido, Registro de Atividades
-- [ ] Testes manuais completos
-- [ ] Integracao iFood - testar webhook com estabelecimento correto
-- [ ] Integracao WhatsApp Business API (depende de custos)
-- [ ] Hardening backlog: backup restore testado, alerta 5xx, indices/N+1, timeouts, migracoes versionadas (Alembic), RLS (ver MEMORY.md)
-- [ ] Maquina de estados central para pedidos
-- [ ] Ledger financeiro imutavel
+- [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
+- [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
+- [ ] Alerta minimo de monitoramento (health/5xx) — o health ja retorna 503 com db down; falta o alerta externo
+- [ ] Ledger financeiro imutavel (F-11)
+- [ ] Renomeacao de termos configuravel por tenant (se Mauro quiser — glossario fixo hoje)
+- [ ] Restauracao COMPLETA de backup (hoje o restore cobre so tenants/pracas/users/estabelecimentos)
+- [ ] Testes manuais do usuario nas novas telas (Registro de Atividades, Evitamentos, Link de Pedido Rapido)
 
 ## 📊 Metricas do Projeto
-- **Total de commits:** 1111
+- **Total de commits:** 1120+
 - **Arquivos frontend:** 40+
 - **Arquivos backend:** 20+
 - **Endpoints API:** 60+

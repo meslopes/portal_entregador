@@ -577,7 +577,7 @@
         <div class="flow-group">
           <div class="flow-group-title"><span class="flow-group-icon">📍</span> Praças</div>
           <ul class="activity-list">
-            <li><strong>Criar praça</strong> — define região de atuação <span class="route">POST /api/admin/squares</span></li>
+            <li><strong>Criar praça</strong> — define área de atuação <span class="route">POST /api/admin/squares</span></li>
             <li><strong>Listar praças</strong> — apenas praças do seu tenant <span class="route">GET /api/admin/squares</span></li>
             <li><strong>Editar praça</strong> — nome, cidade, estado <span class="route">PUT /api/admin/squares/:id</span></li>
             <li><strong>Selecionar praça ativa</strong> — filtra todo o dashboard por praça</li>
@@ -632,6 +632,28 @@
             <li><strong>Criar entregador próprio</strong> — vincula a estabelecimento <span class="route">POST /api/admin/establishment-drivers</span></li>
             <li><strong>Definir/Resetar PIN</strong> — PIN de 4 dígitos para o login no app próprio <span class="route">POST /api/admin/establishment-drivers/:id/pin</span></li>
             <li><strong>Gerenciar ganhos</strong> — registrar e pagar <span class="route">POST /api/admin/establishment-drivers/earnings/:id/pay</span></li>
+          </ul>
+        </div>
+
+        <!-- Registro de Atividades -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">📜</span> Registro de Atividades</div>
+          <ul class="activity-list">
+            <li><strong>Listar atividades</strong> — quem fez o quê, em qual entidade e quando <span class="route">GET /api/admin/activity-log</span></li>
+            <li><strong>Filtrar</strong> — por entidade e ação <code>?entity=X&amp;action=Y</code></li>
+            <li><strong>Registro automático</strong> — entregadores (criar/editar/excluir) e tabelas de preços (criar/editar) gravam sozinhos</li>
+          </ul>
+        </div>
+
+        <!-- Evitamentos (G-08) -->
+        <div class="flow-group">
+          <div class="flow-group-title"><span class="flow-group-icon">🛡️</span> Evitamentos (G-08)</div>
+          <ul class="activity-list">
+            <li><strong>Listar evitamentos</strong> — pares entregador × estabelecimento <span class="route">GET /api/admin/avoidances</span></li>
+            <li><strong>Suspensão manual</strong> — entregador deixa de receber ofertas do estabelecimento <span class="route">POST /api/admin/avoidances</span></li>
+            <li><strong>Revogar</strong> — devolve o entregador à fila normal, a qualquer momento <span class="route">POST /api/admin/avoidances/:id/revoke</span></li>
+            <li><strong>Ligar/Desligar automático</strong> — config <code>avoidance_auto_enabled</code></li>
+            <li><strong>Regra da reciprocidade</strong> — avaliação ruim de um lado só = evitamento silencioso; recíproca = alerta ao admin</li>
           </ul>
         </div>
 
@@ -750,7 +772,7 @@
       <div class="user-icon">CL</div>
       <div>
         <div class="user-title">Estabelecimento (Cliente)</div>
-        <div class="user-desc">Restaurante, farmácia, loja · Cria pedidos, gerencia entregas e entregadores próprios</div>
+        <div class="user-desc">Estabelecimento (loja, farmácia, restaurante...) · Cria pedidos, gerencia entregas e entregadores próprios</div>
       </div>
       <span class="user-badge">POR ESTABELECIMENTO</span>
       <span class="toggle-icon">&#9660;</span>
@@ -773,6 +795,7 @@
           <ul class="activity-list">
             <li><strong>Criar pedido</strong> — endereço de coleta e entrega, valor, forma de pagamento <span class="route">POST /api/orders/</span></li>
             <li><strong>Listar meus pedidos</strong> — com filtros por status <span class="route">GET /api/orders/my</span></li>
+            <li><strong>Link de Pedido Rápido</strong> — gerar/regenerar o link que o cliente abre para pedir sem instalar nada <span class="route">GET/POST /api/order-link</span> (página pública <code>/order/:token</code> → <span class="route">POST /api/order-link/:token</span>)</li>
             <li><strong>Acompanhar pedido</strong> — status em tempo real (pendente → aceito → coletado → entregue)</li>
             <li><strong>Cancelar pedido</strong> — antes de ser coletado <span class="route">POST /api/orders/:id/cancel</span></li>
             <li><strong>Avaliar entregador</strong> — nota e feedback após entrega <span class="route">POST /api/orders/:id/rate</span></li>
