@@ -1,8 +1,9 @@
-import { Route } from 'react-router-dom';
+﻿import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import AdminInvitePage from '@/pages/AdminInvitePage';
+import OrderLinkPage from '@/pages/OrderLinkPage';
 import SupportPage from '@/pages/SupportPage';
 import TermsPage from '@/pages/TermsPage';
 import PrivacyPage from '@/pages/PrivacyPage';
@@ -32,6 +33,7 @@ export const publicRoutes = (
         }
       />
       <Route path="/invite/:token" element={<AdminInvitePage />} />
+      <Route path="/order/:token" element={<OrderLinkPage />} />
       <Route path="/pending-approval" element={<PendingApprovalPage />} />
     </>
   );

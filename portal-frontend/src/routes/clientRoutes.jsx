@@ -1,4 +1,4 @@
-import { Route } from 'react-router-dom';
+﻿import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ClientLayout from '@/components/ClientLayout';
 import ClientLoginPage from '@/pages/client/ClientLoginPage';
@@ -15,6 +15,7 @@ import EstablishmentRoutesPage from '@/pages/client/EstablishmentRoutesPage';
 import OwnDriverFinancialPage from '@/pages/client/OwnDriverFinancialPage';
 import OwnDriverMetricsPage from '@/pages/client/OwnDriverMetricsPage';
 import MyPricesPage from '@/pages/client/MyPricesPage';
+import ClientOrderLinkPage from '@/pages/client/ClientOrderLinkPage';
 import ClientGuidePage from '@/pages/client/ClientGuidePage';
 import PaymentReportsPage from '@/pages/PaymentReportsPage';
 
@@ -56,6 +57,7 @@ export const clientRoutes = (
       <Route path="/client/drivers/financial" element={<WrappedRoute><OwnDriverFinancialPage /></WrappedRoute>} />
       <Route path="/client/drivers/metrics" element={<WrappedRoute><OwnDriverMetricsPage /></WrappedRoute>} />
       <Route path="/client/pricing" element={<WrappedRoute><MyPricesPage /></WrappedRoute>} />
+      <Route path="/client/order-link" element={<WrappedRoute><ClientOrderLinkPage /></WrappedRoute>} />
       <Route path="/client/guide" element={<WrappedRoute><ClientGuidePage /></WrappedRoute>} />
       <Route path="/client/profile" element={<WrappedRoute><ClientProfilePage /></WrappedRoute>} />
       <Route path="/client/routes" element={<WrappedRoute><EstablishmentRoutesPage /></WrappedRoute>} />

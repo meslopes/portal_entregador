@@ -68,6 +68,8 @@ from src.utils.cors import init_cors
 init_cors(app, flask_env)
 # Registra blueprints
 from src.routes.admin_activity import admin_activity_bp
+from src.routes.order_link import order_link_bp
+app.register_blueprint(order_link_bp, url_prefix='/api')
 app.register_blueprint(admin_activity_bp, url_prefix='/api/admin')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(driver_bp, url_prefix='/api/driver')
@@ -554,6 +556,18 @@ with app.app_context():
         print("Indices de caminhos quentes criados (users.email, customers.user_id, est_drivers, notifications, payments, pricing)")
     except Exception as e:
         print(f"Migração de índices: {e}")
+        db.session.rollback()
+    # Migration: token do Link de Pedido Rapido (2026-11-18) — S7.2 backlog EE
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'restaurants' AND column_name = 'order_link_token') "
+            "THEN ALTER TABLE restaurants ADD COLUMN order_link_token VARCHAR(64) UNIQUE; END IF; END $$"
+        ))
+        db.session.commit()
+        print("Coluna do Link de Pedido Rapido adicionada (restaurants.order_link_token)")
+    except Exception as e:
+        print(f"Migração link de pedido: {e}")
         db.session.rollback()
 
     # Migration Fase D (2026-11-17): assinatura de 3 termos (fixo + entregador + pedido)

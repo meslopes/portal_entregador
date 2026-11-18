@@ -1,4 +1,4 @@
-"""Pedidos e entregas: estabelecimentos, clientes, endereços, pedidos e rotas.
+﻿"""Pedidos e entregas: estabelecimentos, clientes, endereços, pedidos e rotas.
 
 Extraído de portal_models.py no refactor de arquivos grandes (2026-11-01).
 Importe via src.models.portal_models (fachada) — comportamento idêntico.
@@ -8,6 +8,9 @@ from src.models.base import OrderStatus, PaymentMethod, db, utcnow
 
 class Restaurant(db.Model):
     __tablename__ = 'restaurants'
+    # Token do Link de Pedido Rápido (§7.2 EE): o estabelecimento compartilha
+    # o link no WhatsApp e o cliente faz o pedido sem instalar nada.
+    order_link_token = db.Column(db.String(64), unique=True, index=True)
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)

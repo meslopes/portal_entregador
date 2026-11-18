@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -57,6 +57,7 @@ const ClientLayout = ({ children }) => {
     { name: 'Primeiros Passos', href: '/client/guide', icon: BookOpen },
     { name: 'Meus Preços', href: '/client/pricing', icon: Tag },
     { name: 'Meus Entregadores', href: '/client/drivers', icon: Users },
+  { name: 'Link de Pedido Rápido', href: '/client/order-link', icon: Link2 },
     { name: 'Rotas', href: '/client/routes', icon: Route },
     // Menu "Pagamentos" UNIFICADO (Fase C): configuração/ganhos + relatórios/saques
     {
