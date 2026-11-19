@@ -320,7 +320,7 @@ def process_weekly_bonuses():
                         'CREDIT', 'DRIVER', driver.id, bonus.amount,
                         BONUS, description=bonus.criteria,
                         reference_type='bonus', reference_id=bonus.id,
-                        dedupe_key=f'bonus:{bonus.bonus_type}:{driver.id}:{week_start if bonus.bonus_type == 'weekly' else month_start}',
+                        dedupe_key=f"bonus:{bonus.bonus_type}:{driver.id}:{week_start if bonus.bonus_type == 'weekly' else month_start}",
                     )
                 except Exception as _e:
                     logger.warning(f'[LEDGER] hook bonus falhou: {_e}')
@@ -405,7 +405,7 @@ def process_monthly_bonuses():
                         'CREDIT', 'DRIVER', driver.id, bonus.amount,
                         BONUS, description=bonus.criteria,
                         reference_type='bonus', reference_id=bonus.id,
-                        dedupe_key=f'bonus:{bonus.bonus_type}:{driver.id}:{week_start if bonus.bonus_type == 'weekly' else month_start}',
+                        dedupe_key=f"bonus:{bonus.bonus_type}:{driver.id}:{week_start if bonus.bonus_type == 'weekly' else month_start}",
                     )
                 except Exception as _e:
                     logger.warning(f'[LEDGER] hook bonus falhou: {_e}')
