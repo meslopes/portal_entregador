@@ -144,7 +144,9 @@ VITE_API_URL=http://localhost:5000
 > Nunca deployar sem autorização explícita.
 
 ### Frontend (Vercel)
-O site oficial é: **https://portal-entregador-gamma.vercel.app**
+O site oficial é: **https://muv.log.br** (redireciona para `www.muv.log.br` —
+domínio próprio, DNS no Cloudflare, hospedagem Vercel). O endereço antigo
+`portal-entregador-gamma.vercel.app` continua funcionando como alias.
 
 O domínio gamma é **domínio do projeto `portal-frontend`** e aponta
 automaticamente para o deploy de produção mais recente (configuração de

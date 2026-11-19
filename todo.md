@@ -218,6 +218,7 @@
 - [ ] Testes manuais do usuario nas novas telas (Registro de Atividades, Evitamentos, Link de Pedido Rapido)
 - [ ] E-mail proprio no dominio muv.log.br (interesse do Mauro): Cloudflare Email Routing (gratis, encaminha para Gmail) ou caixa real (Google Workspace/Zoho com SPF/DKIM) — depois dos itens atuais
 - [ ] Criar cofre Bitwarden e popular com as contas do mapa docs/CREDENCIAIS.md (decidido 2026-11-19)
+- [ ] Dominio muv.log.br: (a) clicar Verify no apex muv.log.br no Vercel (cache negativo); (b) Cloudflare: toggles DNS-only (nuvem cinza) nos 3 registros A/AAAA (apex, www, wildcard) — decisao do Mauro 2026-11-19
 
 ## 📊 Metricas do Projeto
 - **Total de commits:** 1120+

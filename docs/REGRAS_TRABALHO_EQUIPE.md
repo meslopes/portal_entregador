@@ -1,4 +1,4 @@
-# Regras de Trabalho em Equipe — Portal Entregador (MuvLog)
+﻿# Regras de Trabalho em Equipe — Portal Entregador (MuvLog)
 
 ## Como Usar
 Cole este documento no início de cada nova sessão do MiMoCode para garantir que a IA siga as regras da equipe.
@@ -355,5 +355,16 @@ cd portal-backend && python -c "from src.main import app; print('OK')"
 - **Prioridade para onboarding:** quando um fluxo novo for criado ou alterado, perguntar "uma pessoa nova conseguiria seguir isso sozinha?" — se não, documentar
 - **Ferramentas preferidas (nesta ordem):** (1) guias embutidos no próprio sistema (contexto exato onde a pessoa está), (2) `docs/` com roteiros passo a passo, (3) comentários de código em português
 - **Manter atualizado:** documentação que não acompanha o código vira desinformação — atualizar junto com a mudança, não depois
+
+### 12. LIÇÕES APRENDIDAS (documento canônico — leitura e manutenção obrigatórias)
+
+- **Toda sessão deve ler `docs/LICOES_APRENDIDAS.md`** junto com estas
+  regras — é onde vivem as armadilhas e os aprendizados de todas as
+  sessões (ferramentas, testes, deploy, dados, domínio, segurança).
+- **Aprendeu algo novo hoje?** Adicionar a lição em `docs/LICOES_APRENDIDAS.md`
+  **no mesmo commit** da correção que a gerou. Assim as janelas de contexto
+  futuras nunca perdem informação.
+- **Nova janela de contexto:** usar o texto pronto em
+  `docs/PROMPT_NOVA_JANELA.md` (colar na primeira mensagem).
 
 ### FIM DAS REGRAS
