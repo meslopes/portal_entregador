@@ -1,4 +1,4 @@
-﻿# Mapa de Credenciais — muv.log (Portal Entregador)
+# Mapa de Credenciais — muv.log (Portal Entregador)
 
 > **Este documento é só o MAPA — aqui NUNCA entram senhas, chaves ou tokens.**
 > Os valores ficam no **Bitwarden** (cofre `muv.log`) e no **Secret Manager** do GCP.
@@ -14,7 +14,7 @@
 | **Supabase** (projeto `dxcjudzyotitfqcpabmi`) | banco PostgreSQL, Storage (fotos), Realtime (GPS) | Bitwarden → *Supabase* + service key no Secret Manager do GCP | Mauro |
 | **Firebase** (projeto `muv-log`) | notificações push (FCM) | Bitwarden → *Firebase* · service account no Secret Manager | Mauro |
 | **Asaas** | cobrança/pagamentos (faturas, saques) | Bitwarden → *Asaas* | Mauro |
-| **Cloudflare** (conta Meslopes) | DNS do `muv.log.br` + e-mail próprio (futuro) | Bitwarden → *Cloudflare* | Mauro |
+| **Cloudflare** (conta Meslopes) | DNS do `muv.log.br` + Email Routing (e-mail próprio ativo desde 2026-11-19) | Bitwarden → *Cloudflare* | Mauro |
 | **Registro.br** (usuário `MESLO36`) | titularidade do domínio `muv.log.br` | Bitwarden → *Registro.br* | Mauro |
 | **Google Maps Platform** | geocoding/rotas (chave de servidor) | Secret Manager do GCP (`google-maps-api-key`) | — (só o backend) |
 

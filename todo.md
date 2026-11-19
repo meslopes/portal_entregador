@@ -1,4 +1,4 @@
-﻿# TODO - muv.log - Controle de Entregadores
+# TODO - muv.log - Controle de Entregadores
 
 ## ✅ Fase 1: Analise e Planejamento (CONCLUIDA)
 - [x] Criar documento de requisitos
@@ -216,9 +216,9 @@
 - [ ] Renomeacao de termos configuravel por tenant (se Mauro quiser — glossario fixo hoje)
 - [x] Restauracao de backup estendida (11 entidades) + fix do formato _meta/data que restaurava 0 registros
 - [ ] Testes manuais do usuario nas novas telas (Registro de Atividades, Evitamentos, Link de Pedido Rapido)
-- [ ] E-mail proprio no dominio muv.log.br (interesse do Mauro): Cloudflare Email Routing (gratis, encaminha para Gmail) ou caixa real (Google Workspace/Zoho com SPF/DKIM) — depois dos itens atuais
+- [x] E-mail proprio no dominio muv.log.br (2026-11-19): Cloudflare Email Routing ATIVO — contato@/suporte@/parcerias@/meslopes@ + catch-all encaminham para meslopes@gmail.com (MX/SPF/DKIM/DMARC live, destino verificado, teste real 2/2 prova individual). Caixa real (enviar COMO @muv.log.br) = fase futura se ele quiser
 - [ ] Criar cofre Bitwarden e popular com as contas do mapa docs/CREDENCIAIS.md (decidido 2026-11-19)
-- [ ] Dominio muv.log.br: (a) clicar Verify no apex muv.log.br no Vercel (cache negativo); (b) Cloudflare: toggles DNS-only (nuvem cinza) nos 3 registros A/AAAA (apex, www, wildcard) — decisao do Mauro 2026-11-19
+- [x] Dominio muv.log.br FECHADO (2026-11-19): apex Verify passou + DNS-only (nuvem cinza) ligado nos registros A/AAAA — www.muv.log.br servindo o mesmo build do gamma (testes 7/7 em producao)
 
 ## 📊 Metricas do Projeto
 - **Total de commits:** 1120+

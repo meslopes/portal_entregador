@@ -1,4 +1,4 @@
-﻿# Lições Aprendidas — muv.log (documento canônico e cumulativo)
+# Lições Aprendidas — muv.log (documento canônico e cumulativo)
 
 > **Mecanismo de retenção (não pule):** este documento é citado em
 > `REGRAS_TRABALHO_EQUIPE.md` (regra 12) e no `PROMPT_NOVA_JANELA.md`.
@@ -108,7 +108,14 @@
     mapa sem senhas em `docs/CREDENCIAIS.md`.
 31. **Vazou = rotacionar** (histórico git antigo ainda tem chaves antigas).
 
+32. **Cloudflare Email Routing só *encaminha* e-mail autenticado** — probe
+    SMTP sintético (remetente spoofado) tem RCPT aceito mas morre em
+    `5.7.26 Cannot forward emails that are not authenticated`; teste real
+    só com envio de caixa autêntica (Gmail etc.). O wizard também cria
+    DKIM (`cf2024-1._domainkey`) além de MX+SPF; destino precisa de
+    verificação por link antes das regras funcionarem.
+
 ---
 
-_Atualizado em 2026-11-19 — 31 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-19 — 32 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._
