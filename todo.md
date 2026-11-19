@@ -216,6 +216,8 @@
 - [ ] Renomeacao de termos configuravel por tenant (se Mauro quiser — glossario fixo hoje)
 - [x] Restauracao de backup estendida (11 entidades) + fix do formato _meta/data que restaurava 0 registros
 - [ ] Testes manuais do usuario nas novas telas (Registro de Atividades, Evitamentos, Link de Pedido Rapido)
+- [ ] E-mail proprio no dominio muv.log.br (interesse do Mauro): Cloudflare Email Routing (gratis, encaminha para Gmail) ou caixa real (Google Workspace/Zoho com SPF/DKIM) — depois dos itens atuais
+- [ ] Criar cofre Bitwarden e popular com as contas do mapa docs/CREDENCIAIS.md (decidido 2026-11-19)
 
 ## 📊 Metricas do Projeto
 - **Total de commits:** 1120+
