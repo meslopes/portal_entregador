@@ -7,12 +7,21 @@
 | **Backup** | `portal-backend/scripts/_tmp_backup_before_reset.py` (e botão "Baixar Backup" no DatabaseMapPage) | exporta as tabelas para JSON — **somente leitura** |
 | **Restore** | `POST /api/admin/database-restore` (super admin) | recria **entidades centrais**: tenants, squares, users, restaurants |
 
-### ⚠️ Limite importante (cobertura)
+### Cobertura do restore (2026-11-18 — estendido)
 
-O **backup exporta tudo**; o **restore cobre só 4 entidades**
-(tenants, praças, usuários, estabelecimentos). Pedidos, pagamentos,
-entregas etc. **não são restaurados** por este endpoint — restauração
-completa exigiria extensão do endpoint (não existe hoje).
+O restore cobre **11 entidades em ordem de FK**:
+tenants → squares → pricing_tables → users → customers → restaurants →
+addresses → drivers → establishment_drivers → orders → deliveries.
+
+Ainda **fora**: payments, notifications, gamificação (MuvScore),
+push_tokens, activity_logs — dados recriáveis/regeneráveis.
+
+### Compatibilidade de formato (bug corrigido em 2026-11-18)
+
+O backup grava `{"_meta":…, "data":{…}}`; o restore original lia chaves
+no topo — ou seja, **restaurar um backup real sempre retornava
+"concluída" com 0 registros**. O endpoint agora aceita os DOIS formatos
+(embrulhado e direto).
 
 O restore de usuários gera **senha aleatória** (segurança) — o usuário
 precisa redefinir.
@@ -46,7 +55,7 @@ Ou pelo sistema: **DatabaseMapPage → Baixar Backup**.
 
 `scripts/_tmp_test_backup_restore.py` — 5/5 PASS:
 
-1. Backup real gerado (somente leitura) — 4 entidades exportadas;
+1. Backup real gerado (somente leitura) — 11 entidades exportadas;
 2. Restore em **SQLite descartável** via endpoint real;
 3. Contagens conferidas (tenants/praças/restaurantes batem; users = backup + 1 do super admin do teste);
 4. Scratch removido ao final.

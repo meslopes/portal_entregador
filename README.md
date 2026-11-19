@@ -166,6 +166,15 @@ gcloud run deploy muvlog-api --source portal-backend --region us-central1 --proj
 ```
 Health check: `GET https://muvlog-api-890250693883.us-central1.run.app/api/health` → deve retornar `200`.
 
+### Monitoramento (alerta mínimo)
+
+Cloud Monitoring com **uptime check** no `/api/health` (1 min) e alerta de
+**5xx do Cloud Run** — notificação por e-mail. Verificado: o health retorna
+503 quando o banco cai, então o alerta pega indisponibilidade real.
+
+> O canal de e-mail envia uma **confirmação** na primeira vez — clicar no
+> link do e-mail do Google para ativar os alertas.
+
 ### Banco
 Supabase (PostgreSQL) — pooler `aws-0-sa-east-1.pooler.supabase.com`
 

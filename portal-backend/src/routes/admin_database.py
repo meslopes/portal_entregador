@@ -1,4 +1,4 @@
-"""Ferramentas de banco e limpeza de dados (painel admin).
+﻿"""Ferramentas de banco e limpeza de dados (painel admin).
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -250,56 +250,100 @@ def database_map():
 @jwt_required()
 @admin_required
 def database_restore():
-    """Restaura dados de um backup JSON (cria/atualiza tenants, squares, users, restaurants)"""
+    """Restaura dados de um backup JSON (super admin).
+
+    Aceita os DOIS formatos:
+      - direto:  {"tenants": [...], "squares": [...], ...}
+      - backup:  {"_meta": {...}, "data": {"tenants": [...], ...}}  <- formato
+        gerado pelo script de backup / botao "Baixar Backup"
+
+    Cobertura: entidades centrais + fluxo de pedidos (tudo em ordem de FK).
+    Restaurar SOMENTE em banco descartavel/novo - ver docs/BACKUP_RESTORE.md.
+    """
     try:
-        # Exigir super admin para operação de restore
+        # Exigir super admin para operacao de restore
         user = get_current_user()
         if not user or not user.is_super_admin:
             return jsonify({'error': 'Apenas super admin pode restaurar dados'}), 403
 
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'Dados de backup não fornecidos'}), 400
+            return jsonify({'error': 'Dados de backup nao fornecidos'}), 400
+
+        # Compatibilidade de formato: o backup real embrulha em {"data": {...}}
+        if isinstance(data.get('data'), dict):
+            data = data['data']
+
+        def _dt(value):
+            """Converte ISO string do backup em datetime (ou None)."""
+            if not value:
+                return None
+            if hasattr(value, 'isoformat'):
+                return value
+            try:
+                from datetime import datetime as _dtm
+                return _dtm.fromisoformat(str(value).replace('Z', '+00:00')).replace(tzinfo=None)
+            except Exception:
+                return None
 
         results = {'created': 0, 'updated': 0, 'errors': []}
 
-        # Restaurar Tenants
-        for t in data.get('tenants', []):
-            existing = Tenant.query.get(t['id']) or Tenant.query.filter_by(slug=t.get('slug')).first()
+        def _upsert(model, row, **campos):
+            """Cria por id se nao existe; se existe, apenas conta como updated."""
+            existing = model.query.get(row['id'])
             if existing:
-                existing.name = t.get('name', existing.name)
-                existing.is_active = t.get('is_active', existing.is_active)
                 results['updated'] += 1
-            else:
-                tenant = Tenant(id=t['id'], name=t['name'], slug=t['slug'], is_active=t.get('is_active', True))
-                db.session.add(tenant)
-                results['created'] += 1
+                return existing
+            obj = model(id=row['id'], **campos)
+            db.session.add(obj)
+            results['created'] += 1
+            return obj
 
-        # Restaurar Squares
+        # 1) Tenants
+        for t in data.get('tenants', []):
+            try:
+                existing = Tenant.query.get(t['id']) or Tenant.query.filter_by(slug=t.get('slug')).first()
+                if existing:
+                    existing.name = t.get('name', existing.name)
+                    existing.is_active = t.get('is_active', existing.is_active)
+                    results['updated'] += 1
+                else:
+                    db.session.add(Tenant(id=t['id'], name=t['name'], slug=t['slug'], is_active=t.get('is_active', True)))
+                    results['created'] += 1
+            except Exception as e:
+                results['errors'].append(f"Tenant {t.get('slug')}: {e}")
+
+        # 2) Squares
         from src.models.portal_models import Square
         for s in data.get('squares', []):
-            existing = Square.query.get(s['id'])
-            if existing:
-                existing.name = s.get('name', existing.name)
-                existing.city = s.get('city', existing.city)
-                existing.state = s.get('state', existing.state)
-                existing.tenant_id = s.get('tenant_id', existing.tenant_id)
-                existing.is_active = s.get('is_active', existing.is_active)
-                results['updated'] += 1
-            else:
-                square = Square(id=s['id'], name=s['name'], city=s['city'], state=s['state'],
-                               tenant_id=s.get('tenant_id'), is_active=s.get('is_active', True))
-                db.session.add(square)
-                results['created'] += 1
+            try:
+                _upsert(Square, s, name=s.get('name', ''), city=s.get('city', ''),
+                        state=s.get('state', 'RS'), tenant_id=s.get('tenant_id'),
+                        is_active=s.get('is_active', True))
+            except Exception as e:
+                results['errors'].append(f"Square {s.get('name')}: {e}")
 
-        # Restaurar Users (apenas se não existirem)
+        # 3) Pricing tables (antes dos restaurants - que as referenciam)
+        from src.models.portal_models import PricingTable
+        for p in data.get('pricing_tables', []):
+            try:
+                _upsert(PricingTable, p, square_id=p.get('square_id'), name=p.get('name', ''),
+                        price_per_km=p.get('price_per_km'), fixed_fee=p.get('fixed_fee'),
+                        min_distance_km=p.get('min_distance_km'),
+                        min_delivery_fee=p.get('min_delivery_fee'),
+                        max_delivery_fee=p.get('max_delivery_fee'),
+                        driver_percentage=p.get('driver_percentage'))
+            except Exception as e:
+                results['errors'].append(f"PricingTable {p.get('name')}: {e}")
+
+        # 4) Users (apenas se nao existirem - senha aleatoria)
         for u in data.get('users', []):
             existing = User.query.filter_by(email=u['email']).first()
             if existing:
                 results['updated'] += 1
                 continue
             try:
-                user = User(
+                novo = User(
                     id=u['id'], email=u['email'],
                     first_name=u.get('first_name', ''),
                     last_name=u.get('last_name', ''),
@@ -310,33 +354,128 @@ def database_restore():
                     cpf=u.get('cpf')
                 )
                 import secrets as _secrets
-                temp_password = _secrets.token_urlsafe(16)
-                user.set_password(temp_password)  # Senha aleatória — usuário deve redefinir
-                db.session.add(user)
+                novo.set_password(_secrets.token_urlsafe(16))  # senha aleatoria - redefinir
+                db.session.add(novo)
                 results['created'] += 1
             except Exception as e:
-                results['errors'].append(f"User {u.get('email')}: {str(e)}")
+                results['errors'].append(f"User {u.get('email')}: {e}")
 
-        # Restaurar Restaurants (apenas se não existirem)
+        # 5) Customers
+        from src.models.portal_models import Customer
+        for cst in data.get('customers', []):
+            try:
+                _upsert(Customer, cst, tenant_id=cst.get('tenant_id'), user_id=cst.get('user_id'),
+                        name=cst.get('name', ''), phone=cst.get('phone'), email=cst.get('email'))
+            except Exception as e:
+                results['errors'].append(f"Customer {cst.get('name')}: {e}")
+
+        # 6) Restaurants (apenas se nao existirem)
         for r in data.get('restaurants', []):
             existing = Restaurant.query.get(r['id'])
             if existing:
                 results['updated'] += 1
                 continue
             try:
-                restaurant = Restaurant(
+                db.session.add(Restaurant(
                     id=r['id'], name=r['name'],
                     address=r.get('address', ''),
-                    latitude=-29.95, longitude=-50.45,
+                    latitude=r.get('latitude') or -29.95,
+                    longitude=r.get('longitude') or -50.45,
                     tenant_id=r.get('tenant_id'),
                     square_id=r.get('square_id'),
                     has_own_drivers=r.get('has_own_drivers', False),
                     is_active=r.get('is_active', True)
-                )
-                db.session.add(restaurant)
+                ))
                 results['created'] += 1
             except Exception as e:
-                results['errors'].append(f"Restaurant {r.get('name')}: {str(e)}")
+                results['errors'].append(f"Restaurant {r.get('name')}: {e}")
+
+        # 7) Addresses
+        from src.models.portal_models import Address
+        for a in data.get('addresses', []):
+            try:
+                _upsert(Address, a, customer_id=a.get('customer_id'),
+                        street=a.get('street', ''), neighborhood=a.get('neighborhood', ''),
+                        city=a.get('city', ''), state=a.get('state', 'RS'),
+                        zip_code=a.get('zip_code'),
+                        latitude=a.get('latitude'), longitude=a.get('longitude'))
+            except Exception as e:
+                results['errors'].append(f"Address {a.get('street')}: {e}")
+
+        # 8) Drivers (plataforma)
+        from src.models.portal_models import Driver
+        for d in data.get('drivers', []):
+            existing = Driver.query.get(d['id'])
+            if existing:
+                results['updated'] += 1
+                continue
+            try:
+                db.session.add(Driver(
+                    id=d['id'], user_id=d.get('user_id'), tenant_id=d.get('tenant_id'),
+                    vehicle_type=d.get('vehicle_type') or 'MOTORCYCLE',
+                    vehicle_plate=d.get('vehicle_plate'),
+                    vehicle_model=d.get('vehicle_model'),
+                    is_blocked=d.get('is_blocked', False),
+                ))
+                results['created'] += 1
+            except Exception as e:
+                results['errors'].append(f"Driver #{d.get('id')}: {e}")
+
+        # 9) Establishment drivers (proprios)
+        from src.models.portal_models import EstablishmentDriver
+        for ed in data.get('establishment_drivers', []):
+            try:
+                _upsert(EstablishmentDriver, ed, restaurant_id=ed.get('restaurant_id'),
+                        name=ed.get('name', ''), phone=ed.get('phone'),
+                        vehicle_type=ed.get('vehicle_type'),
+                        vehicle_plate=ed.get('vehicle_plate'),
+                        vehicle_model=ed.get('vehicle_model'),
+                        is_active=ed.get('is_active', True))
+            except Exception as e:
+                results['errors'].append(f"EstablishmentDriver {ed.get('name')}: {e}")
+
+        # 10) Orders (dependem de restaurants/customers/addresses/drivers)
+        from src.models.portal_models import Delivery, Order, OrderStatus as OS, PaymentMethod as PM
+        for o in data.get('orders', []):
+            existing = Order.query.get(o['id'])
+            if existing:
+                results['updated'] += 1
+                continue
+            try:
+                status = o.get('status', 'PENDING')
+                status = OS(status) if status in OS.__members__ else OS.PENDING
+                pm = o.get('payment_method')
+                pm = PM(pm) if pm in PM.__members__ else PM.CASH
+                db.session.add(Order(
+                    id=o['id'], restaurant_id=o.get('restaurant_id'),
+                    customer_id=o.get('customer_id'),
+                    delivery_address_id=o.get('delivery_address_id'),
+                    driver_id=o.get('driver_id'),
+                    establishment_driver_id=o.get('establishment_driver_id'),
+                    order_number=o.get('order_number', f"REST{o['id']}"),
+                    items=o.get('items') or [],
+                    subtotal=o.get('subtotal') or 0,
+                    delivery_fee=o.get('delivery_fee') or 0,
+                    total_amount=o.get('total_amount') or 0,
+                    payment_method=pm,
+                    special_instructions=o.get('special_instructions'),
+                    status=status,
+                    created_at=_dt(o.get('created_at')),
+                ))
+                results['created'] += 1
+            except Exception as e:
+                results['errors'].append(f"Order #{o.get('id')}: {e}")
+
+        # 11) Deliveries
+        for dl in data.get('deliveries', []):
+            try:
+                _upsert(Delivery, dl, order_id=dl.get('order_id'), driver_id=dl.get('driver_id'),
+                        distance_km=dl.get('distance_km'),
+                        driver_earnings=dl.get('driver_earnings'),
+                        customer_rating=dl.get('customer_rating'),
+                        driver_rating=dl.get('driver_rating'))
+            except Exception as e:
+                results['errors'].append(f"Delivery #{dl.get('id')}: {e}")
 
         db.session.commit()
         return jsonify({
@@ -350,7 +489,7 @@ def database_restore():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-
+
 @admin_database_bp.route('/cleanup-test-data', methods=['POST'])
 @jwt_required()
 @admin_required

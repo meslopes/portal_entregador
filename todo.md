@@ -211,10 +211,10 @@
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
-- [ ] Alerta minimo de monitoramento (health/5xx) — o health ja retorna 503 com db down; falta o alerta externo
+- [x] Alerta minimo de monitoramento (health/5xx) — Cloud Monitoring: uptime check + alerta 5xx + e-mail
 - [ ] Ledger financeiro imutavel (F-11)
 - [ ] Renomeacao de termos configuravel por tenant (se Mauro quiser — glossario fixo hoje)
-- [ ] Restauracao COMPLETA de backup (hoje o restore cobre so tenants/pracas/users/estabelecimentos)
+- [x] Restauracao de backup estendida (11 entidades) + fix do formato _meta/data que restaurava 0 registros
 - [ ] Testes manuais do usuario nas novas telas (Registro de Atividades, Evitamentos, Link de Pedido Rapido)
 
 ## 📊 Metricas do Projeto
