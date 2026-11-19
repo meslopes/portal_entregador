@@ -303,6 +303,23 @@ def generate_invoice(subscription_id):
         )
         db.session.add(invoice)
         db.session.flush()  # Para obter o ID da fatura
+        # Livro-caixa (F-11): assinatura — estabelecimento DEVE, plataforma RECEBE
+        try:
+            from src.services.financial_ledger import SUBSCRIPTION, registrar_lancamento
+            registrar_lancamento(
+                'DEBIT', 'ESTABLISHMENT', invoice.restaurant_id, invoice.total_amount,
+                SUBSCRIPTION, description=f'Assinatura {invoice.invoice_number}',
+                reference_type='invoice', reference_id=invoice.id,
+                dedupe_key=f'invoice:{invoice.id}:estab',
+            )
+            registrar_lancamento(
+                'CREDIT', 'PLATFORM', None, invoice.total_amount,
+                SUBSCRIPTION, description=f'Assinatura recebida {invoice.invoice_number}',
+                reference_type='invoice', reference_id=invoice.id,
+                dedupe_key=f'invoice:{invoice.id}:platform',
+            )
+        except Exception as _e:
+            logger.warning(f'[LEDGER] hook assinatura falhou: {_e}')
 
         # Integração Asaas: criar cobrança automaticamente
         asaas_result = None
@@ -514,6 +531,23 @@ def generate_all_invoices():
             )
             db.session.add(invoice)
             db.session.flush()
+            # Livro-caixa (F-11): assinatura — estabelecimento DEVE, plataforma RECEBE
+            try:
+                from src.services.financial_ledger import SUBSCRIPTION, registrar_lancamento
+                registrar_lancamento(
+                    'DEBIT', 'ESTABLISHMENT', invoice.restaurant_id, invoice.total_amount,
+                    SUBSCRIPTION, description=f'Assinatura {invoice.invoice_number}',
+                    reference_type='invoice', reference_id=invoice.id,
+                    dedupe_key=f'invoice:{invoice.id}:estab',
+                )
+                registrar_lancamento(
+                    'CREDIT', 'PLATFORM', None, invoice.total_amount,
+                    SUBSCRIPTION, description=f'Assinatura recebida {invoice.invoice_number}',
+                    reference_type='invoice', reference_id=invoice.id,
+                    dedupe_key=f'invoice:{invoice.id}:platform',
+                )
+            except Exception as _e:
+                logger.warning(f'[LEDGER] hook assinatura falhou: {_e}')
 
             # Integração Asaas
             if is_configured():

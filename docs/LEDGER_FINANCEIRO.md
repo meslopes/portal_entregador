@@ -38,12 +38,13 @@ dedupe_key    chave de idempotência
 
 | Evento | Lançamento |
 |---|---|
-| Entrega concluída (pagamento ao entregador) | CREDIT DRIVER · DRIVER_PAYOUT |
+| Entrega concluída | CREDIT DRIVER · DRIVER_PAYOUT (repasse) + CREDIT PLATFORM · ORDER_FEE (comissão = frete − repasse) |
 | Saque processado | DEBIT DRIVER · WITHDRAWAL |
-| Bônus semanal/mensal processado | CREDIT DRIVER · BONUS |
+| Bônus semanal/mensal | CREDIT DRIVER · BONUS |
+| Fatura de assinatura gerada | DEBIT ESTABLISHMENT · SUBSCRIPTION + CREDIT PLATFORM · SUBSCRIPTION |
 
-Próximos candidatos (quando precisar): repasse de comissão da plataforma,
-assinaturas (estabelecimento↔admin↔MUV), estornos de cancelamento.
+Próximos candidatos (quando precisar): estornos de cancelamento, repasse
+quando a fatura for PAGA (hoje o lançamento nasce na geração da fatura).
 
 ## Como consultar
 

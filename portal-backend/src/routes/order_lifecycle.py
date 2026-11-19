@@ -1,4 +1,4 @@
-﻿"""Criação e mudanças de estado do pedido.
+"""Criação e mudanças de estado do pedido.
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.
@@ -236,6 +236,29 @@ def update_order_status(order_id):
                         status=PaymentStatus.PENDING
                     )
                     db.session.add(payment)
+                    # Livro-caixa (F-11): repasse ao entregador + comissao da plataforma
+                    try:
+                        from decimal import Decimal as _D
+                        from src.services.financial_ledger import DRIVER_PAYOUT, ORDER_FEE, registrar_lancamento
+                        _valor = float(order.delivery.driver_earnings or 0)
+                        if _valor > 0:
+                            registrar_lancamento(
+                                'CREDIT', 'DRIVER', driver.id, _valor, DRIVER_PAYOUT,
+                                description=f'Repasse do pedido #{order.order_number}',
+                                reference_type='order', reference_id=order.id,
+                                snapshot={'delivery_fee': float(order.delivery_fee or 0), 'driver_earnings': _valor},
+                                dedupe_key=f'payout:order:{order.id}',
+                            )
+                        _comissao = float(order.delivery_fee or 0) - _valor
+                        if _comissao > 0:
+                            registrar_lancamento(
+                                'CREDIT', 'PLATFORM', None, _comissao, ORDER_FEE,
+                                description=f'Comissao do pedido #{order.order_number}',
+                                reference_type='order', reference_id=order.id,
+                                dedupe_key=f'commission:order:{order.id}',
+                            )
+                    except Exception as _e:
+                        logger.warning(f'[LEDGER] hook entrega falhou: {_e}')
 
                     # Creditar na carteira do entregador (vai para saldo bloqueado)
                     from decimal import Decimal

@@ -1,6 +1,7 @@
 ﻿"""
 Rotas do sistema de bonus e ranking de entregadores.
 """
+import logging
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
@@ -16,6 +17,8 @@ from src.models.portal_models import (
     User,
     db,
 )
+
+logger = logging.getLogger(__name__)
 
 bonus_bp = Blueprint('bonus', __name__)
 

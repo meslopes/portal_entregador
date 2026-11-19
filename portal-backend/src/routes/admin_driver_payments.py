@@ -1,4 +1,5 @@
-﻿"""Módulo driver_payments — extraído de src/routes/admin_payments.py no refactor de arquivos grandes.
+import logging
+"""Módulo driver_payments — extraído de src/routes/admin_payments.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 from datetime import datetime, timezone
@@ -17,6 +18,8 @@ from src.models.portal_models import (
 from src.routes.admin_finance import get_square_filter
 from src.utils.auth import admin_required
 from src.utils.tenant import get_current_tenant_id
+
+logger = logging.getLogger(__name__)
 
 admin_driver_payments_bp = Blueprint('admin_driver_payments', __name__)
 
