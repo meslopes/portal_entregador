@@ -1,4 +1,4 @@
-﻿"""Operação: notificações, praças, gamificação, rotas próprias e registros de apoio.
+"""Operação: notificações, praças, gamificação, rotas próprias e registros de apoio.
 
 Extraído de portal_models.py no refactor de arquivos grandes (2026-11-01).
 Importe via src.models.portal_models (fachada) — comportamento idêntico.

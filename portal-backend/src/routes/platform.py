@@ -1,4 +1,4 @@
-﻿import contextlib
+import contextlib
 import logging
 from datetime import datetime, timezone
 

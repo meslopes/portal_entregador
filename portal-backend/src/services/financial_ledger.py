@@ -1,4 +1,4 @@
-﻿"""Livro-caixa financeiro imutável (F-11) — serviços de escrita e leitura.
+"""Livro-caixa financeiro imutável (F-11) — serviços de escrita e leitura.
 
 Regras (ver docs/LEDGER_FINANCEIRO.md):
 - Linhas NUNCA são editadas/apagadas (trigger no banco + sem rotas de alteração).

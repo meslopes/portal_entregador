@@ -1,4 +1,4 @@
-﻿"""Controle admin dos evitamentos (G-08): listar, suspender manualmente, revogar."""
+"""Controle admin dos evitamentos (G-08): listar, suspender manualmente, revogar."""
 import logging
 
 from flask import Blueprint, jsonify, request

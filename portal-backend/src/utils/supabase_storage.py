@@ -1,4 +1,4 @@
-﻿"""
+"""
 Utilitário para upload de arquivos no Supabase Storage.
 Usado para fotos de prova de entrega.
 """

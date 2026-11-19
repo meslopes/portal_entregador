@@ -1,4 +1,4 @@
-﻿"""Helpers compartilhados das rotas de entrega.
+"""Helpers compartilhados das rotas de entrega.
 
 Extraido de route.py no refactor de arquivos grandes (2026-11-01).
 Otimizacao de paradas e estatisticas de rota.

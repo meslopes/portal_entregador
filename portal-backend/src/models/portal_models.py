@@ -1,4 +1,4 @@
-﻿"""Modelos de dados — fachada única de importação.
+"""Modelos de dados — fachada única de importação.
 
 Após o refactor de 2026-11-01, os modelos vivem em submódulos temáticos
 (base, users, orders, finance, ops), mas este módulo continua exportando

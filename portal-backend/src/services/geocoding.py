@@ -1,4 +1,4 @@
-﻿"""
+"""
 Servico de geocodificacao multi-provider.
 Ordem: Google Maps (se configurado) -> Photon -> Nominatim -> Fallback centro da cidade.
 Servico de roteirizacao usando OSRM para distancia real.

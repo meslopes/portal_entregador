@@ -1,4 +1,4 @@
-﻿"""Registro de atividades da equipe — consulta (§7.2 do backlog EE)."""
+"""Registro de atividades da equipe — consulta (§7.2 do backlog EE)."""
 import logging
 
 from flask import Blueprint, jsonify, request

@@ -1,4 +1,4 @@
-﻿"""Gestão de estabelecimentos (CRUD e geocoding).
+"""Gestão de estabelecimentos (CRUD e geocoding).
 
 Extraído de admin_finance.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.

@@ -1,4 +1,4 @@
-﻿"""Módulo invoices — extraído de src/routes/admin_payments.py no refactor de arquivos grandes.
+"""Módulo invoices — extraído de src/routes/admin_payments.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 from datetime import datetime, timedelta, timezone

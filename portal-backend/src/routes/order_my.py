@@ -1,4 +1,4 @@
-﻿"""Rotas de pedido: área do usuário (meus pedidos, rastreio e avaliação).
+"""Rotas de pedido: área do usuário (meus pedidos, rastreio e avaliação).
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.

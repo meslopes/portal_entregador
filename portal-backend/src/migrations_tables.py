@@ -1,4 +1,4 @@
-﻿"""Migrações inline — tabelas novas e baseline do Alembic.
+"""Migrações inline — tabelas novas e baseline do Alembic.
 
 Extraído de migrations_inline.py (parte 2) no refactor de arquivos grandes.
 """

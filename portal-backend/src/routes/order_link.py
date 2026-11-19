@@ -1,4 +1,4 @@
-﻿"""Link de Pedido Rápido (§7.2 do backlog EE): pedido por link/WhatsApp.
+"""Link de Pedido Rápido (§7.2 do backlog EE): pedido por link/WhatsApp.
 
 O estabelecimento compartilha o link; o cliente abre e faz o pedido sem
 instalar nada. Gestão (gerar/copiar) é do portal; o uso é público.

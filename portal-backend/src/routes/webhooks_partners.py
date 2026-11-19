@@ -1,4 +1,4 @@
-﻿"""Webhooks de parceiros (99Food, InstaDelivery, Saipos).
+"""Webhooks de parceiros (99Food, InstaDelivery, Saipos).
 
 Extraído de order.py no refactor de arquivos grandes (2026-11-01).
 Movimento puro de código — comportamento idêntico ao original.

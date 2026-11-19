@@ -1,4 +1,4 @@
-﻿"""Máscara de PII para logs (item F-22 da auditoria de 2026-09).
+"""Máscara de PII para logs (item F-22 da auditoria de 2026-09).
 
 Telefone e endereço nunca aparecem completos em log: o suficiente para
 diagnosticar (prefixo/últimos dígitos), sem expor dado pessoal.

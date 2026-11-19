@@ -1,4 +1,4 @@
-﻿"""Registro de atividades da equipe (§7.2 do backlog EE).
+"""Registro de atividades da equipe (§7.2 do backlog EE).
 
 Uso: from src.utils.activity_log import log_activity
      log_activity('CREATE', 'establishment', est.id, est.name)

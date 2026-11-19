@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 from functools import wraps

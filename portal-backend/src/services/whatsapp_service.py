@@ -1,4 +1,4 @@
-﻿"""
+"""
 Serviço de WhatsApp via Meta Cloud API
 Envia notificações para entregadores quando pedidos ficam disponíveis
 """

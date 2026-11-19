@@ -1,4 +1,4 @@
-﻿"""CORS centralizado (F-13 da auditoria): configuração ÚNICA para os dois
+"""CORS centralizado (F-13 da auditoria): configuração ÚNICA para os dois
 entry points (src/main.py e src/main_production.py).
 
 As origens vêm de `config.CORS_ORIGINS` — mudou a lista de domínios, mudou

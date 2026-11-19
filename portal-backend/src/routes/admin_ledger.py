@@ -1,4 +1,4 @@
-﻿"""Consulta do livro-caixa financeiro (F-11) — só LEITURA.
+"""Consulta do livro-caixa financeiro (F-11) — só LEITURA.
 
 Não existe rota de criação/alteração: lançamentos nascem apenas dos
 hooks internos (entrega, saque, bônus) — o livro é imutável por design.

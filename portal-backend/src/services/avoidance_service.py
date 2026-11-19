@@ -1,4 +1,4 @@
-﻿"""Evitamento entregador↔estabelecimento (G-08 — punição silenciosa com controle do admin).
+"""Evitamento entregador↔estabelecimento (G-08 — punição silenciosa com controle do admin).
 
 Regra da reciprocidade (desenho aprovado pelo Mauro, 2026-11-18):
 - Entregador avalia o estabelecimento mal (≤2) SEM o contrário → conflito

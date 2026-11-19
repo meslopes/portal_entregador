@@ -1,4 +1,4 @@
-﻿"""Módulo route_driver — extraído de src/routes/route.py no refactor de arquivos grandes.
+"""Módulo route_driver — extraído de src/routes/route.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import logging

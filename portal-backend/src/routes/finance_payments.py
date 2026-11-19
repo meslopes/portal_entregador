@@ -1,4 +1,4 @@
-﻿"""Módulo finance_payments — extraído de src/routes/finance.py no refactor de arquivos grandes.
+"""Módulo finance_payments — extraído de src/routes/finance.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import logging

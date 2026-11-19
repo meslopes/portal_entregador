@@ -1,4 +1,4 @@
-﻿"""Dinheiro: pagamentos, faturas, assinaturas, tabelas de preço e credenciais.
+"""Dinheiro: pagamentos, faturas, assinaturas, tabelas de preço e credenciais.
 
 Extraído de portal_models.py no refactor de arquivos grandes (2026-11-01).
 Importe via src.models.portal_models (fachada) — comportamento idêntico.

@@ -1,4 +1,4 @@
-﻿"""Módulo est_drivers_crud — extraído de src/routes/admin_establishment_drivers.py no refactor de arquivos grandes.
+"""Módulo est_drivers_crud — extraído de src/routes/admin_establishment_drivers.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import contextlib

@@ -1,4 +1,4 @@
-﻿"""Módulo admin_users — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
+"""Módulo admin_users — extraído de src/routes/admin_orders.py no refactor de arquivos grandes.
 Movimento puro de código — comportamento idêntico ao original.
 """
 import contextlib

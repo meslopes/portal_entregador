@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 
 # DON'T CHANGE: Add the project root to the Python path
