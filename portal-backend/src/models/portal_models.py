@@ -19,6 +19,7 @@ from src.models.base import (  # noqa: F401
 from src.models.finance import (  # noqa: F401
     DynamicPricing,
     EstablishmentSubscription,
+    FinancialLedger,
     Invoice,
     Payment,
     PlatformCredential,
@@ -83,6 +84,7 @@ __all__ = [
     "DynamicPricing",
     "EstablishmentDriver",
     "EstablishmentSubscription",
+    "FinancialLedger",
     "Invoice",
     "Notification",
     "NotificationType",

@@ -130,6 +130,7 @@ const Layout = ({ children }) => {
         { name: 'Preços', href: '/admin/pricing', icon: DollarSign },
   { name: 'Registro de Atividades', href: '/admin/activity', icon: History },
   { name: 'Evitamentos', href: '/admin/avoidances', icon: ShieldOff },
+  { name: 'Livro Financeiro', href: '/admin/ledger', icon: BookOpen },
         { name: 'Taxas', href: '/admin/dynamic-pricing', icon: TrendingUp },
         { name: 'Integrações', href: '/admin/integrations', icon: Globe },
         { name: 'Relatórios', href: '/admin/reports', icon: FileText },

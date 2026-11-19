@@ -69,6 +69,8 @@ init_cors(app, flask_env)
 # Registra blueprints
 from src.routes.admin_activity import admin_activity_bp
 from src.routes.admin_avoidances import admin_avoidances_bp
+from src.routes.admin_ledger import admin_ledger_bp
+app.register_blueprint(admin_ledger_bp, url_prefix='/api/admin')
 app.register_blueprint(admin_avoidances_bp, url_prefix='/api/admin')
 from src.routes.order_link import order_link_bp
 app.register_blueprint(order_link_bp, url_prefix='/api')
@@ -590,6 +592,49 @@ with app.app_context():
         print("Colunas de evitamento adicionadas (driver_restaurants G-08)")
     except Exception as e:
         print(f"Migração evitamento: {e}")
+        db.session.rollback()
+    # Migration: livro-caixa financeiro imutavel (2026-11-18) — F-11
+    try:
+        db.session.execute(db.text(
+            "CREATE TABLE IF NOT EXISTS financial_ledger ("
+            "id SERIAL PRIMARY KEY,"
+            "tenant_id INTEGER REFERENCES tenants(id),"
+            "occurred_at TIMESTAMP NOT NULL,"
+            "created_at TIMESTAMP,"
+            "entry_type VARCHAR(10) NOT NULL,"
+            "party_type VARCHAR(20) NOT NULL,"
+            "party_id INTEGER,"
+            "amount NUMERIC(12,2) NOT NULL,"
+            "reason VARCHAR(40) NOT NULL,"
+            "description VARCHAR(250),"
+            "reference_type VARCHAR(30),"
+            "reference_id INTEGER,"
+            "snapshot JSONB,"
+            "dedupe_key VARCHAR(100) UNIQUE"
+            ")"
+        ))
+        for idx_sql in (
+            "CREATE INDEX IF NOT EXISTS ix_ledger_party ON financial_ledger (party_type, party_id, occurred_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ledger_tenant ON financial_ledger (tenant_id, occurred_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ledger_reference ON financial_ledger (reference_type, reference_id)",
+        ):
+            db.session.execute(db.text(idx_sql))
+        # IMUTABILIDADE: trigger bloqueia UPDATE/DELETE (F-11).
+        # Para testes/carga, o dono da tabela pode: ALTER TABLE financial_ledger DISABLE TRIGGER trg_ledger_immutable
+        db.session.execute(db.text(
+            "CREATE OR REPLACE FUNCTION ledger_block_mutation() RETURNS trigger AS $$ "
+            "BEGIN RAISE EXCEPTION 'financial_ledger e imutavel: use lancamento de estorno'; END; "
+            "$$ LANGUAGE plpgsql"
+        ))
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_ledger_immutable') "
+            "THEN CREATE TRIGGER trg_ledger_immutable BEFORE UPDATE OR DELETE ON financial_ledger "
+            "FOR EACH ROW EXECUTE FUNCTION ledger_block_mutation(); END IF; END $$"
+        ))
+        db.session.commit()
+        print("Tabela financial_ledger criada (imutavel via trigger)")
+    except Exception as e:
+        print(f"Migração financial_ledger: {e}")
         db.session.rollback()
 
     # Migration Fase D (2026-11-17): assinatura de 3 termos (fixo + entregador + pedido)

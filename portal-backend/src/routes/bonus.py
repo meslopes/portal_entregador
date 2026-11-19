@@ -313,6 +313,17 @@ def process_weekly_bonuses():
                     status='PENDING'
                 )
                 db.session.add(bonus)
+                # Livro-caixa (F-11): bonus entra no saldo do entregador
+                try:
+                    from src.services.financial_ledger import BONUS, registrar_lancamento
+                    registrar_lancamento(
+                        'CREDIT', 'DRIVER', driver.id, bonus.amount,
+                        BONUS, description=bonus.criteria,
+                        reference_type='bonus', reference_id=bonus.id,
+                        dedupe_key=f'bonus:{bonus.bonus_type}:{driver.id}:{week_start if bonus.bonus_type == 'weekly' else month_start}',
+                    )
+                except Exception as _e:
+                    logger.warning(f'[LEDGER] hook bonus falhou: {_e}')
                 bonuses_created.append({
                     'driver': f"{driver.user.first_name} {driver.user.last_name}",
                     'amount': float(amount),
@@ -387,6 +398,17 @@ def process_monthly_bonuses():
                     status='PENDING'
                 )
                 db.session.add(bonus)
+                # Livro-caixa (F-11): bonus entra no saldo do entregador
+                try:
+                    from src.services.financial_ledger import BONUS, registrar_lancamento
+                    registrar_lancamento(
+                        'CREDIT', 'DRIVER', driver.id, bonus.amount,
+                        BONUS, description=bonus.criteria,
+                        reference_type='bonus', reference_id=bonus.id,
+                        dedupe_key=f'bonus:{bonus.bonus_type}:{driver.id}:{week_start if bonus.bonus_type == 'weekly' else month_start}',
+                    )
+                except Exception as _e:
+                    logger.warning(f'[LEDGER] hook bonus falhou: {_e}')
                 bonuses_created.append({
                     'driver': f"{driver.user.first_name} {driver.user.last_name}",
                     'amount': float(amount),

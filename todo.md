@@ -212,7 +212,7 @@
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
 - [x] Alerta minimo de monitoramento (health/5xx) — Cloud Monitoring: uptime check + alerta 5xx + e-mail
-- [ ] Ledger financeiro imutavel (F-11)
+- [x] Ledger financeiro imutavel (F-11) — financial_ledger com trigger de imutabilidade, Decimal, snapshot, idempotencia + tela Livro Financeiro
 - [ ] Renomeacao de termos configuravel por tenant (se Mauro quiser — glossario fixo hoje)
 - [x] Restauracao de backup estendida (11 entidades) + fix do formato _meta/data que restaurava 0 registros
 - [ ] Testes manuais do usuario nas novas telas (Registro de Atividades, Evitamentos, Link de Pedido Rapido)

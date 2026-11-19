@@ -360,6 +360,70 @@ class SubscriptionInvoice(db.Model):
 
 
 
+class FinancialLedger(db.Model):
+    """Livro-caixa financeiro IMUTÁVEL (F-11 da auditoria).
+
+    Cada movimento de dinheiro vira uma linha; linhas nunca são editadas
+    nem apagadas (erro = linha de estorno). Saldo = soma dos lançamentos.
+    Requisitos atendidos: imutável (trigger no banco + sem rotas de
+    alteração), Decimal (Numeric 12,2 — nunca float) e snapshot das
+    regras/preços da época (campo JSON `snapshot`).
+    """
+    __tablename__ = 'financial_ledger'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)
+    # Quando o dinheiro moveu (≠ de quando a linha foi escrita)
+    occurred_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    # CREDIT = entrou / DEBIT = saiu (o valor é sempre positivo)
+    entry_type = db.Column(db.String(10), nullable=False)
+    # Quem: DRIVER / ESTABLISHMENT / PLATFORM / TENANT
+    party_type = db.Column(db.String(20), nullable=False)
+    party_id = db.Column(db.Integer)  # None = plataforma (muvlog)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    # Motivo em categoria: ORDER_FEE / DRIVER_PAYOUT / WITHDRAWAL / BONUS /
+    # SUBSCRIPTION / REFUND / ADJUSTMENT
+    reason = db.Column(db.String(40), nullable=False)
+    description = db.Column(db.String(250))
+    # Referência do evento (pedido/pagamento/fatura/bônus)
+    reference_type = db.Column(db.String(30))
+    reference_id = db.Column(db.Integer)
+    # Fotografia das regras/preços da época (nunca recalcular o passado)
+    snapshot = db.Column(db.JSON)
+    # Idempotência: retry de webhook não pode dobrar o caixa
+    dedupe_key = db.Column(db.String(100), unique=True)
+
+    __table_args__ = (
+        db.Index('ix_ledger_party', 'party_type', 'party_id', 'occurred_at'),
+        db.Index('ix_ledger_tenant', 'tenant_id', 'occurred_at'),
+        db.Index('ix_ledger_reference', 'reference_type', 'reference_id'),
+    )
+
+    @staticmethod
+    def now_naive():
+        """UTC sem fuso — colunas TIMESTAMP são naive (ver AdminInvite)."""
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'occurred_at': self.occurred_at.isoformat() if self.occurred_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'entry_type': self.entry_type,
+            'party_type': self.party_type,
+            'party_id': self.party_id,
+            'amount': float(self.amount),
+            'reason': self.reason,
+            'description': self.description,
+            'reference_type': self.reference_type,
+            'reference_id': self.reference_id,
+            'snapshot': self.snapshot,
+        }
+
+
 __all__ = [
     "Payment",
     "SystemConfig",

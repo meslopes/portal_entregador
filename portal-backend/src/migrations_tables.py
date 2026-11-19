@@ -412,7 +412,46 @@ def run_table_migrations():
         db.session.commit()
     except Exception:
         db.session.rollback()
-    # Migration Fase D (2026-11-17): assinatura de 3 termos
+
+    # Migration: livro-caixa financeiro imutavel (2026-11-18) — F-11
+    try:
+        db.session.execute(db.text(
+            "CREATE TABLE IF NOT EXISTS financial_ledger ("
+            "id SERIAL PRIMARY KEY,"
+            "tenant_id INTEGER REFERENCES tenants(id),"
+            "occurred_at TIMESTAMP NOT NULL,"
+            "created_at TIMESTAMP,"
+            "entry_type VARCHAR(10) NOT NULL,"
+            "party_type VARCHAR(20) NOT NULL,"
+            "party_id INTEGER,"
+            "amount NUMERIC(12,2) NOT NULL,"
+            "reason VARCHAR(40) NOT NULL,"
+            "description VARCHAR(250),"
+            "reference_type VARCHAR(30),"
+            "reference_id INTEGER,"
+            "snapshot JSONB,"
+            "dedupe_key VARCHAR(100) UNIQUE"
+            ")"
+        ))
+        for idx_sql in (
+            "CREATE INDEX IF NOT EXISTS ix_ledger_party ON financial_ledger (party_type, party_id, occurred_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ledger_tenant ON financial_ledger (tenant_id, occurred_at)",
+            "CREATE INDEX IF NOT EXISTS ix_ledger_reference ON financial_ledger (reference_type, reference_id)",
+        ):
+            db.session.execute(db.text(idx_sql))
+        db.session.execute(db.text(
+            "CREATE OR REPLACE FUNCTION ledger_block_mutation() RETURNS trigger AS $$ "
+            "BEGIN RAISE EXCEPTION 'financial_ledger e imutavel: use lancamento de estorno'; END; "
+            "$$ LANGUAGE plpgsql"
+        ))
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_ledger_immutable') "
+            "THEN CREATE TRIGGER trg_ledger_immutable BEFORE UPDATE OR DELETE ON financial_ledger "
+            "FOR EACH ROW EXECUTE FUNCTION ledger_block_mutation(); END IF; END $$"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()    # Migration Fase D (2026-11-17): assinatura de 3 termos
     try:
         for tabela, col_sql in (
             ("establishment_subscriptions", "price_per_order NUMERIC(10,2) DEFAULT 0"),

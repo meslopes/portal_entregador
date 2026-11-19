@@ -360,6 +360,17 @@ def process_withdrawal(withdrawal_id):
             # Aprovar saque - descontar do locked_balance
 
             withdrawal.status = PaymentStatus.PROCESSED
+            # Livro-caixa (F-11): saque sai do saldo do entregador
+            try:
+                from src.services.financial_ledger import WITHDRAWAL, registrar_lancamento
+                registrar_lancamento(
+                    'DEBIT', 'DRIVER', withdrawal.driver_id, withdrawal.amount,
+                    WITHDRAWAL, description=f'Saque processado',
+                    reference_type='payment', reference_id=withdrawal.id,
+                    dedupe_key=f'withdrawal:{withdrawal.id}',
+                )
+            except Exception as _e:
+                logger.warning(f'[LEDGER] hook saque falhou: {_e}')
 
             driver.locked_balance = Decimal(str(float(driver.locked_balance or 0))) - Decimal(str(amount))
 
@@ -476,6 +487,17 @@ def process_withdrawal_auto(withdrawal_id):
         if result.get('success'):
 
             withdrawal.status = PaymentStatus.PROCESSED
+            # Livro-caixa (F-11): saque sai do saldo do entregador
+            try:
+                from src.services.financial_ledger import WITHDRAWAL, registrar_lancamento
+                registrar_lancamento(
+                    'DEBIT', 'DRIVER', withdrawal.driver_id, withdrawal.amount,
+                    WITHDRAWAL, description=f'Saque processado',
+                    reference_type='payment', reference_id=withdrawal.id,
+                    dedupe_key=f'withdrawal:{withdrawal.id}',
+                )
+            except Exception as _e:
+                logger.warning(f'[LEDGER] hook saque falhou: {_e}')
 
             withdrawal.updated_at = datetime.now(timezone.utc)
 

@@ -13,6 +13,7 @@ Sistema SaaS multi-tenant de delivery e gestão de entregadores.
 - **Financeiro**: controle de ganhos, saques, faturas, tabelas de preço configuráveis
 - **Relatórios**: pedidos, performance, financeiro, cancelamentos, horários de pico
 - **Operação**: Link de Pedido Rápido (cliente pede pelo link), Registro de Atividades (auditoria), Evitamentos com punição silenciosa (G-08)
+- **Financeiro**: Livro Financeiro imutável (F-11) — cada movimento de dinheiro vira linha, saldo = soma, histórico nunca muda
 - **Integrações**: iFood (webhooks), WhatsApp (robô de atendimento), Asaas (pagamentos)
 - **Notificações push**: Firebase Cloud Messaging para todos os perfis
 - **GPS em tempo real**: posição dos entregadores via Supabase Realtime
@@ -187,6 +188,7 @@ Supabase (PostgreSQL) — pooler `aws-0-sa-east-1.pooler.supabase.com`
 - `docs/MIGRACOES.md` — Onde colocar migrações de schema (inline + Alembic)
 - `docs/BACKUP_RESTORE.md` — Procedimento de backup/restore e limites
 - `docs/REVISAO_RLS.md` — Conclusão da revisão de RLS do banco
+- `docs/LEDGER_FINANCEIRO.md` — Livro-caixa imutável: modelo, regras e consulta
 - `docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md` — Plano de monetização (entregas próprias)
 - `docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md` — Plano de monetização (entregas próprias)
 - `docs/ROTEIRO_TESTES_MANUAIS.md` — Roteiro de testes manuais
