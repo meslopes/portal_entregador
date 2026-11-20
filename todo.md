@@ -213,6 +213,7 @@
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
 - [x] Alerta minimo de monitoramento (health/5xx) — Cloud Monitoring: uptime check + alerta 5xx + e-mail
 - [x] Ledger financeiro imutavel (F-11) — financial_ledger com trigger de imutabilidade, Decimal, snapshot, idempotencia + tela Livro Financeiro
+- [ ] Enviar e-mails COMO `@muv.log.br` (remetente do dominio no Gmail) — "enviar como"/SMTP (futuro, decidido 2026-11-19: adiado). Opcoes mapeadas: Gmail "Enviar como" se aceitar sem SMTP (R$0) / Cloudflare Email Sending (Workers Paid US$5/mes, 3k e-mails, destrava email transacional do sistema) / Zoho (grátis = webmail sozinho; Lite pago = caixa real). Hoje: responder e-mails do Gmail responde do meslopes@gmail.com (ok com assinatura MuvLog)
 - [ ] Renomeacao de termos configuravel por tenant (se Mauro quiser — glossario fixo hoje)
 - [x] Restauracao de backup estendida (11 entidades) + fix do formato _meta/data que restaurava 0 registros
 - [ ] Testes manuais do usuario nas novas telas (Registro de Atividades, Evitamentos, Link de Pedido Rapido)

@@ -1,9 +1,9 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Package, DollarSign, Clock, Settings,
   LayoutDashboard, Users, Store, BarChart3, FileText, CreditCard, MapPin, Trophy, Wallet, TrendingUp, Globe, AlertTriangle, Route, Bike, BookOpen, HelpCircle
-, History } from 'lucide-react';
+, History, ShieldOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.hooks';
 import { driverService } from '@/lib/api';
 import { sendGPS as sendGPSBroadcast, isRealtimeAvailable } from '@/lib/realtime';
