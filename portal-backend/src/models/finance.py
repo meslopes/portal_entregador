@@ -470,6 +470,12 @@ class PlatformSubscription(db.Model):
     min_orders_per_establishment = db.Column(db.Integer, default=1)  # N do modo USO
     price_per_order = db.Column(db.Numeric(10, 2), default=0)  # 0 = componente de pedido desligado
     orders_included = db.Column(db.Integer, default=0)  # cota de pedidos inclusa no ciclo
+    # Escalonamento por faixas (2026-11-22) — componente de pedido em faixas
+    # MARGINAIS (cada faixa cobra só os pedidos que entram nela, como conta de
+    # luz): lista de {"upto": int|null, "price": float} — a última faixa tem
+    # "upto": null (sem limite). Se presente, substitui price_per_order/
+    # orders_included no cálculo (mantidos como resumo/compat).
+    order_price_tiers = db.Column(db.JSON)
 
     # Controle de cobrança
     last_billed_at = db.Column(db.DateTime)
@@ -506,9 +512,10 @@ class PlatformInvoice(db.Model):
     establishment_count_mode = db.Column(db.String(20))  # SNAPSHOT, USO, PRO_RATA_USO
     min_orders_per_establishment = db.Column(db.Integer, default=1)
     orders_count = db.Column(db.Integer, default=0)  # pedidos do ciclo
-    orders_billed = db.Column(db.Integer, default=0)  # pedidos cobráveis (acima da cota)
-    price_per_order = db.Column(db.Numeric(10, 2), default=0)
-    orders_included = db.Column(db.Integer, default=0)
+    orders_billed = db.Column(db.Integer, default=0)  # pedidos cobráveis (fora de faixas gratuitas)
+    price_per_order = db.Column(db.Numeric(10, 2), default=0)  # resumo (última faixa)
+    orders_included = db.Column(db.Integer, default=0)  # resumo (1ª faixa)
+    order_price_tiers = db.Column(db.JSON)  # snapshot das faixas cobradas (auditoria)
     calculation_detail = db.Column(db.Text)  # JSON com o detalhamento do cálculo
 
     status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, OVERDUE, CANCELLED

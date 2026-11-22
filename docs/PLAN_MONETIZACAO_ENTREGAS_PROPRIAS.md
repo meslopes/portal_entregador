@@ -107,7 +107,7 @@ total do ciclo = [FIXO] + [R$/estab × contagem(modo, N)] + [R$/pedido × máx(0
 |---|---|---|
 | Fixo | valor por ciclo | 0 = desligado |
 | Por estabelecimento | R$/estab + **modo de contagem** + N mínimo | `SNAPSHOT` = ativos no instante (legado) · `USO` = ≥N pedidos no ciclo · `PRO_RATA_USO` = proporcional a dias com pedido |
-| Por pedido | R$/pedido + cota inclusa | 0 = desligado; cota = pedidos inclusos no ciclo |
+| Por pedido | **faixas marginais** (escalonamento por volume, 2026-11-22) | Cada faixa cobra só os pedidos que entram nela (como conta de luz): ex. 200 inclusos (R$0) → até 500 a R$0,80 → até 1.000 a R$0,70 → ∞ a R$0,60. Quem vende mais paga mais no total com pedido mais barato; mês fraco = fatura menor. A fatura/simulação traz a **quebra por faixa** |
 
 **Por que os modos (cenários levantados pelo Mauro):** teste sem venda não conta (modo `USO`);
 "ativou só pra uma venda" cobra fração (`PRO_RATA_USO`); "desativou na véspera" não zera a conta

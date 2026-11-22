@@ -516,12 +516,14 @@ def run_table_migrations():
         db.session.rollback()
 
     # Migration motor de cobrança por componentes (2026-11-20) — MUV→admin
+    # + escalonamento por faixas (2026-11-22)
     try:
         for col_sql in (
             "establishment_count_mode VARCHAR(20) DEFAULT 'SNAPSHOT'",
             "min_orders_per_establishment INTEGER DEFAULT 1",
             "price_per_order NUMERIC(10,2) DEFAULT 0",
             "orders_included INTEGER DEFAULT 0",
+            "order_price_tiers JSON",
         ):
             col = col_sql.split()[0]
             db.session.execute(db.text(
@@ -536,6 +538,7 @@ def run_table_migrations():
             "orders_billed INTEGER DEFAULT 0",
             "price_per_order NUMERIC(10,2) DEFAULT 0",
             "orders_included INTEGER DEFAULT 0",
+            "order_price_tiers JSON",
             "calculation_detail TEXT",
         ):
             col = col_sql.split()[0]
@@ -547,6 +550,13 @@ def run_table_migrations():
         db.session.execute(db.text(
             "ALTER TABLE platform_invoices ALTER COLUMN establishments_count "
             "TYPE NUMERIC(10,2) USING establishments_count::NUMERIC"
+        ))
+        db.session.execute(db.text(
+            "UPDATE platform_subscriptions SET order_price_tiers = json_build_array("
+            "json_build_object('upto', COALESCE(orders_included,0), 'price', 0), "
+            "json_build_object('upto', NULL, 'price', COALESCE(price_per_order,0))) "
+            "WHERE order_price_tiers IS NULL "
+            "AND (COALESCE(price_per_order,0) > 0 OR COALESCE(orders_included,0) > 0)"
         ))
         db.session.commit()
     except Exception:

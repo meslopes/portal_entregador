@@ -214,6 +214,11 @@
 - [x] Smoke 6/6 (_tmp_smoke_billing_components.py) + UI test PASS (aba Cobrança + form de componentes)
 - [x] Docs no mesmo commit: PLAN_MONETIZACAO 5.2, fluxograma (grupo Cobranca da Plataforma), este todo
 
+## ✅ 2026-11-22 — Escalonamento por faixas no componente de pedidos (CONCLUIDA)
+- [x] Faixas MARGINAIS (conta de luz) no componente de pedido: cada faixa cobra so os pedidos que entram nela — ex. 200 inclusos (R$0) -> 500 a R$0,80 -> 1.000 a R$0,70 -> infinito a R$0,60. Quem cresce paga mais no total com pedido mais barato; mes fraco = fatura menor
+- [x] order_price_tiers (JSON validado) + calcular_faixas_pedidos (funcao pura) + snapshot por faixa na fatura; contratos legados (cota+preco) convertidos em 2 faixas automaticamente
+- [x] UI: editor de faixas na aba Cobrança + Simular com quebra por faixa; smoke 8/8 (matematica marginal = tabela do plano); docs no mesmo commit
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)

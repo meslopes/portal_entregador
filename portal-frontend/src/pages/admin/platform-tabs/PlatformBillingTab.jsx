@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, FileText, CheckCircle, RefreshCw, Loader2, AlertCircle, Calculator, Pencil, X } from 'lucide-react';
+import { Plus, FileText, CheckCircle, RefreshCw, Loader2, AlertCircle, Calculator, Pencil, X, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 
 /**
- * Cobrança MUV → admin (tenant) — motor por COMPONENTES (2026-11-20).
+ * Cobrança MUV → admin (tenant) — motor por COMPONENTES (2026-11-20/22).
  *
- * total = [FIXO] + [R$/estab × contagem(modo, N)] + [R$/pedido × máx(0, pedidos − cota)]
+ * total = [FIXO] + [R$/estab × contagem(modo, N)] + [pedidos em faixas MARGINAIS]
  *
- * Cada componente é ligável (preço 0 = desligado) e o modo de contagem do
- * estabelecimento muda o que é "estabelecimento do ciclo":
- *   SNAPSHOT     = ativos no instante (legado)
- *   USO          = estab. com ≥N pedidos no ciclo
- *   PRO_RATA_USO = proporcional aos dias com pedido no ciclo
- * Contratos diferentes para admins diferentes — tudo configurável aqui.
+ * O componente de pedidos usa FAIXAS como conta de luz: cada faixa cobra só
+ * os pedidos que entram nela (ex.: 200 inclusos → R$0,80 até 500 → R$0,70...).
+ * Assim o cliente que cresce paga mais no total, mas cada pedido fica mais
+ * barato — e num mês fraco a fatura cai junto.
  */
 const MODOS = [
   { value: 'SNAPSHOT', label: 'Ativos no instante', ajuda: 'Conta is_active no momento da fatura (comportamento antigo)' },
@@ -21,11 +19,13 @@ const MODOS = [
   { value: 'PRO_RATA_USO', label: 'Proporcional (dias)', ajuda: 'Proporcional aos dias com pedido no ciclo — ativação relâmpago cobra fração' },
 ];
 
+const FAIXA_VAZIA = { upto: '', price: '0' };
+
 const FORM_VAZIO = {
   tenant_id: '', billing_cycle: 'MONTHLY',
   fixed_price: '0',
   price_per_establishment: '100', establishment_count_mode: 'SNAPSHOT', min_orders_per_establishment: '1',
-  price_per_order: '0', orders_included: '0',
+  order_price_tiers: [{ upto: '200', price: '0' }, { upto: '', price: '0.80' }],
 };
 
 const PlatformBillingTab = () => {
@@ -34,9 +34,9 @@ const PlatformBillingTab = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState(null); // id da assinatura em edição
+  const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(FORM_VAZIO);
-  const [preview, setPreview] = useState(null); // { tenant_name, breakdown, ... }
+  const [preview, setPreview] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -64,8 +64,10 @@ const PlatformBillingTab = () => {
     price_per_establishment: parseFloat(form.price_per_establishment) || 0,
     establishment_count_mode: form.establishment_count_mode,
     min_orders_per_establishment: parseInt(form.min_orders_per_establishment) || 1,
-    price_per_order: parseFloat(form.price_per_order) || 0,
-    orders_included: parseInt(form.orders_included) || 0,
+    order_price_tiers: form.order_price_tiers.map(t => ({
+      upto: t.upto === '' ? null : parseInt(t.upto, 10),
+      price: parseFloat(t.price) || 0,
+    })),
   });
 
   const handleCreate = async (e) => {
@@ -100,6 +102,12 @@ const PlatformBillingTab = () => {
   const abrirEdicao = (s) => {
     setEditId(s.id);
     setShowForm(false);
+    let faixas = s.order_price_tiers;
+    if (!faixas || !faixas.length) {
+      // converte o par legado em faixas para edição
+      faixas = [{ upto: s.orders_included ? String(s.orders_included) : '', price: '0' }];
+      if (Number(s.price_per_order) > 0) faixas.push({ upto: '', price: String(s.price_per_order) });
+    }
     setForm({
       tenant_id: String(s.tenant_id),
       billing_cycle: s.billing_cycle || 'MONTHLY',
@@ -107,10 +115,26 @@ const PlatformBillingTab = () => {
       price_per_establishment: String(s.price_per_establishment ?? 0),
       establishment_count_mode: s.establishment_count_mode || 'SNAPSHOT',
       min_orders_per_establishment: String(s.min_orders_per_establishment ?? 1),
-      price_per_order: String(s.price_per_order ?? 0),
-      orders_included: String(s.orders_included ?? 0),
+      order_price_tiers: faixas.map(f => ({ upto: f.upto == null ? '' : String(f.upto), price: String(f.price ?? 0) })),
     });
   };
+
+  const setFaixa = (idx, campo, valor) => {
+    setForm(f => {
+      const faixas = f.order_price_tiers.map((t, i) => i === idx ? { ...t, [campo]: valor } : t);
+      return { ...f, order_price_tiers: faixas };
+    });
+  };
+  const addFaixa = () => setForm(f => {
+    const faixas = [...f.order_price_tiers];
+    // nova faixa "sem limite" vira a última; a anterior ganha um limite implícito
+    faixas.splice(faixas.length - 1, 0, { ...FAIXA_VAZIA, upto: '' });
+    return { ...f, order_price_tiers: faixas };
+  });
+  const delFaixa = (idx) => setForm(f => {
+    if (f.order_price_tiers.length <= 1) return f;
+    return { ...f, order_price_tiers: f.order_price_tiers.filter((_, i) => i !== idx) };
+  });
 
   const handlePreview = async (s) => {
     try {
@@ -143,14 +167,23 @@ const PlatformBillingTab = () => {
 
   const nomeModo = (m) => MODOS.find(x => x.value === (m || 'SNAPSHOT'))?.label || m;
 
-  // resumo da composição da assinatura (o "contrato" em uma linha)
+  const faixasDoForm = form.order_price_tiers;
+
+  const resumoFaixas = (faixas) => {
+    if (!faixas || !faixas.length) return '';
+    return faixas.map(f => (f.upto == null || f.upto === '') ? `∞ × R$ ${Number(f.price || 0).toFixed(2)}` : `${f.upto} × R$ ${Number(f.price || 0).toFixed(2)}`).join(' → ');
+  };
+
   const resumoComponentes = (s) => {
     const partes = [];
     if (Number(s.fixed_price) > 0) partes.push(`R$ ${Number(s.fixed_price).toFixed(2)} fixo`);
     if (Number(s.price_per_establishment) > 0) {
       partes.push(`R$ ${Number(s.price_per_establishment).toFixed(2)}/estab (${nomeModo(s.establishment_count_mode)}${s.establishment_count_mode === 'USO' ? `, N=${s.min_orders_per_establishment}` : ''})`);
     }
-    if (Number(s.price_per_order) > 0) {
+    const faixas = s.order_price_tiers;
+    if (faixas && faixas.length) {
+      partes.push(`pedidos: ${resumoFaixas(faixas)}`);
+    } else if (Number(s.price_per_order) > 0) {
       partes.push(`R$ ${Number(s.price_per_order).toFixed(2)}/pedido${Number(s.orders_included) > 0 ? ` (cota ${s.orders_included})` : ''}`);
     }
     return partes.length ? partes.join(' + ') : 'Nenhum componente ligado';
@@ -177,7 +210,7 @@ const PlatformBillingTab = () => {
         <div>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>Cobrança da Plataforma</h2>
           <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>
-            O que a MUV cobra dos admins — fórmula por componentes: fixo + por estabelecimento + por pedido (cada contrato configura o seu)
+            O que a MUV cobra dos admins — fixo + por estabelecimento + pedidos em faixas (quanto mais vende, mais barato o pedido)
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -220,7 +253,7 @@ const PlatformBillingTab = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
             {/* Componente 1 — Fixo */}
             <div style={blocoStyle}>
               <label style={labelStyle}>1. Fixo por ciclo (R$) — 0 = desligado</label>
@@ -245,17 +278,39 @@ const PlatformBillingTab = () => {
                 </>
               )}
             </div>
+          </div>
 
-            {/* Componente 3 — Por pedido */}
-            <div style={blocoStyle}>
-              <label style={labelStyle}>3. Por pedido (R$) — 0 = desligado</label>
-              <input type="number" step="0.01" min="0" value={form.price_per_order} onChange={e => setForm(f => ({ ...f, price_per_order: e.target.value }))} style={inputStyle} />
-              <label style={{ ...labelStyle, marginTop: '0.5rem' }}>Cota de pedidos inclusa</label>
-              <input type="number" min="0" max="1000000" value={form.orders_included} onChange={e => setForm(f => ({ ...f, orders_included: e.target.value }))} style={inputStyle} />
-              <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0.375rem 0 0' }}>
-                Só cobra pedidos acima da cota no ciclo
-              </p>
-            </div>
+          {/* Componente 3 — Pedidos em faixas (escalonamento) */}
+          <div style={blocoStyle}>
+            <label style={labelStyle}>3. Por pedido — faixas (escalonamento por volume)</label>
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
+              Cada faixa cobra só os pedidos que entram nela (como a conta de luz): quem vende mais paga mais no total, mas cada pedido fica mais barato. A última faixa é sempre "sem limite".
+            </p>
+            {faixasDoForm.map((f, i) => {
+              const ultima = i === faixasDoForm.length - 1;
+              return (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr auto', gap: '0.5rem', alignItems: 'end', marginBottom: '0.5rem' }}>
+                  <div>
+                    <label style={labelStyle}>{ultima ? 'Acima de ' + (i > 0 ? (faixasDoForm[i - 1].upto || '...') + ' pedidos' : '0') + ' (sem limite)' : (i === 0 ? 'Até (pedidos)' : `Faixa ${i + 1} — até (pedidos)`)}</label>
+                    <input type="number" min="1" max="10000000" value={f.upto} disabled={ultima}
+                      placeholder={ultima ? 'sem limite' : ''}
+                      onChange={e => setFaixa(i, 'upto', e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Preço (R$/pedido)</label>
+                    <input type="number" step="0.01" min="0" value={f.price} onChange={e => setFaixa(i, 'price', e.target.value)} style={inputStyle} />
+                  </div>
+                  {!ultima && faixasDoForm.length > 1 && (
+                    <button type="button" onClick={() => delFaixa(i)} title="Remover faixa" style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', color: '#dc2626', cursor: 'pointer' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            <button type="button" onClick={addFaixa} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px dashed #94a3b8', background: 'transparent', color: '#2563eb', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+              <Plus size={12} /> Adicionar faixa
+            </button>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
@@ -300,10 +355,10 @@ const PlatformBillingTab = () => {
         </div>
       )}
 
-      {/* Modal de simulação (prévia) */}
+      {/* Modal de simulação (prévia) — com quebra por faixa */}
       {preview && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }} onClick={() => setPreview(null)}>
-          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.5rem', width: 'min(420px, 92vw)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.5rem', width: 'min(460px, 92vw)' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>Simulação — {preview.tenant_name}</h3>
             <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '1rem' }}>
               Ciclo atual ({preview.billing_cycle === 'WEEKLY' ? 'semanal' : 'mensal'}) — prévia, nada foi cobrado
@@ -318,12 +373,6 @@ const PlatformBillingTab = () => {
                   `${b.establishments_count} × R$ ${Number(b.price_per_establishment).toFixed(2)} = R$ ${Number(b.establishments_total).toFixed(2)}`,
                 ]);
               }
-              if (Number(b.price_per_order) > 0) {
-                linhas.push([
-                  `Pedidos (${b.orders_count} no ciclo${Number(b.orders_included) > 0 ? `, cota ${b.orders_included}` : ''})`,
-                  `${b.orders_billed} × R$ ${Number(b.price_per_order).toFixed(2)} = R$ ${Number(b.orders_total).toFixed(2)}`,
-                ]);
-              }
               return (
                 <>
                   {linhas.map(([rot, val]) => (
@@ -332,6 +381,25 @@ const PlatformBillingTab = () => {
                       <span style={{ fontWeight: 600, color: '#1e293b' }}>{val}</span>
                     </div>
                   ))}
+                  {(b.orders_tiers || []).length > 0 && (
+                    <div style={{ padding: '0.5rem 0', borderBottom: '1px solid #f1f5f9' }}>
+                      <p style={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>
+                        Pedidos — {b.orders_count} no ciclo (faixas como conta de luz)
+                      </p>
+                      {b.orders_tiers.map((t, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748b', padding: '0.125rem 0' }}>
+                          <span>
+                            {t.from}–{t.to == null ? '∞' : t.to} pedidos: {t.orders} × R$ {Number(t.price).toFixed(2)}
+                          </span>
+                          <span style={{ fontWeight: 600, color: '#1e293b' }}>R$ {Number(t.total).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                        <span style={{ color: '#64748b' }}>Subtotal pedidos</span>
+                        <span style={{ fontWeight: 700, color: '#1e293b' }}>R$ {Number(b.orders_total).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0 0' }}>
                     <span style={{ fontWeight: 600, color: '#374151' }}>Total do ciclo</span>
                     <span style={{ fontWeight: 700, color: '#16a34a', fontSize: '1rem' }}>R$ {Number(b.total || 0).toFixed(2)}</span>
@@ -364,8 +432,8 @@ const PlatformBillingTab = () => {
                 <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>{i.tenant_name}</td>
                 <td style={{ padding: '0.75rem 1rem', color: '#64748b', fontSize: '0.75rem' }}>
                   {Number(i.price_per_establishment) > 0 && `${i.establishments_count} × R$ ${Number(i.price_per_establishment).toFixed(2)} (${nomeModo(i.establishment_count_mode)})`}
-                  {Number(i.price_per_establishment) > 0 && Number(i.price_per_order) > 0 && ' + '}
-                  {Number(i.price_per_order) > 0 && `${i.orders_billed} ped. × R$ ${Number(i.price_per_order).toFixed(2)}`}
+                  {Number(i.price_per_establishment) > 0 && (i.orders_billed > 0 || Number(i.price_per_order) > 0) && ' + '}
+                  {(i.orders_billed > 0 || Number(i.price_per_order) > 0) && `${i.orders_billed} ped. (faixas)`}
                   {Number(i.price_per_establishment) === 0 && Number(i.price_per_order) === 0 && Number(i.fixed_price) > 0 && 'Somente fixo'}
                 </td>
                 <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#1e293b' }}>R$ {Number(i.total_amount).toFixed(2)}</td>

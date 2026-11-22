@@ -505,7 +505,7 @@
         <div class="flow-group">
           <div class="flow-group-title"><span class="flow-group-icon">💳</span> Cobrança da Plataforma (MUV → admin)</div>
           <ul class="activity-list">
-            <li><strong>Motor por componentes (2026-11-20)</strong> — total = FIXO + R$/estab × contagem(modo, N) + R$/pedido × máx(0, pedidos − cota); modos de contagem: SNAPSHOT (ativos no instante) · USO (≥N pedidos no ciclo) · PRO_RATA_USO (proporcional a dias com pedido)</li>
+            <li><strong>Motor por componentes (2026-11-20/22)</strong> — total = FIXO + R$/estab × contagem(modo, N) + pedidos em FAIXAS MARGINAIS (escalonamento como conta de luz: 200 inclusos → R$0,80 até 500 → R$0,70 até 1.000 → R$0,60 ∞); modos de contagem do estab.: SNAPSHOT · USO (≥N pedidos no ciclo) · PRO_RATA_USO (dias com pedido)</li>
             <li><strong>Assinaturas por tenant</strong> — componentes configuráveis por contrato <span class="route">GET/POST/PUT /api/platform/billing/subscriptions</span></li>
             <li><strong>Simular fatura (prévia)</strong> — calcula o ciclo sem emitir <span class="route">GET /api/platform/billing/subscriptions/:id/preview</span></li>
             <li><strong>Gerar fatura</strong> — snapshot do cálculo (auditoria) + cobrança Asaas <span class="route">POST /api/platform/billing/subscriptions/:id/generate-invoice</span></li>

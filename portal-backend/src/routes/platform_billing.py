@@ -29,6 +29,92 @@ logger = logging.getLogger(__name__)
 platform_billing_bp = Blueprint('platform_billing', __name__, url_prefix='/api/platform')
 
 
+def calcular_faixas_pedidos(pedidos, faixas):
+    """
+    Cálculo MARGINAL por faixas (como conta de luz): cada faixa cobra somente
+    os pedidos que entram nela. `faixas` = lista ordenada de
+    {'upto': int ou None, 'price': float} — a última faixa pode ter
+    'upto': None (sem limite). Retorna (total, detalhe_por_faixa).
+
+    Ex.: 600 pedidos em [{200,0},{500,0.80},{None,0.70}]
+        = 200×0 + 300×0,80 + 100×0,70 = 310,00
+    """
+    from decimal import ROUND_HALF_UP, Decimal
+
+    def _d(v):
+        return Decimal(str(v if v is not None else 0))
+
+    total = Decimal(0)
+    detalhe = []
+    restantes = int(pedidos or 0)
+    de = 0
+    for faixa in faixas:
+        ate = faixa.get('upto')  # None = sem limite
+        preco = _d(faixa.get('price'))
+        capacidade = None if ate is None else max(0, int(ate) - de)
+        na_faixa = restantes if capacidade is None else min(restantes, capacidade)
+        custo = preco * _d(na_faixa)
+        detalhe.append({
+            'from': de,
+            'to': ate,
+            'price': float(preco),
+            'orders': int(na_faixa),
+            'total': float(custo.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
+        })
+        total += custo
+        restantes -= na_faixa
+        if ate is not None:
+            de = int(ate)
+        if restantes <= 0:
+            break
+    return float(total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)), detalhe
+
+
+def parse_order_tiers(subscription):
+    """
+    Faixas do componente de pedidos da assinatura.
+    Prioriza `order_price_tiers` (JSON validado); senão converte o par legado
+    (orders_included + price_per_order) em 2 faixas equivalentes.
+    """
+    faixas = subscription.order_price_tiers
+    if faixas:
+        return faixas
+    price = float(subscription.price_per_order or 0)
+    cota = int(subscription.orders_included or 0)
+    if price > 0 or cota > 0:
+        return [
+            {'upto': cota, 'price': 0},
+            {'upto': None, 'price': price},
+        ]
+    return []
+
+
+def validar_faixas(faixas):
+    """
+    Validação estrita do payload de faixas (regra 8 — schema strict).
+    Retorna None se válido ou mensagem de erro.
+    """
+    if not isinstance(faixas, list) or not faixas:
+        return 'order_price_tiers deve ser uma lista não vazia de faixas'
+    if len(faixas) > 20:
+        return 'máximo de 20 faixas'
+    anterior = 0
+    for i, f in enumerate(faixas):
+        if not isinstance(f, dict):
+            return f'faixa {i + 1} inválida'
+        ate = f.get('upto')
+        preco = f.get('price')
+        if ate is not None:
+            if not isinstance(ate, int) or isinstance(ate, bool) or ate <= anterior:
+                return f'faixa {i + 1}: "upto" deve ser inteiro crescente'
+        elif i != len(faixas) - 1:
+            return f'faixa {i + 1}: só a última faixa pode ser sem limite'
+        if not isinstance(preco, (int, float)) or isinstance(preco, bool) or not (0 <= preco <= 100000):
+            return f'faixa {i + 1}: "price" deve ser numérico entre 0 e 100000'
+        anterior = ate if ate is not None else anterior
+    return None
+
+
 def calcular_ciclo_plataforma(subscription, inicio, fim):
     """
     Motor ÚNICO da cobrança MUV → admin (componentes configuráveis):
@@ -111,10 +197,15 @@ def calcular_ciclo_plataforma(subscription, inicio, fim):
 
     establishments_total = _round2(price_per_estab * _d(establishments_count))
 
-    # --- Componente 3: pedidos (com cota inclusa) ---
-    orders_count = pedidos_query.count() if price_per_order > 0 else 0
-    orders_billed = max(0, orders_count - orders_included) if price_per_order > 0 else 0
-    orders_total = _round2(price_per_order * _d(orders_billed))
+    # --- Componente 3: pedidos (faixas MARGINAIS — escalonamento) ---
+    faixas = parse_order_tiers(subscription)
+    orders_count = pedidos_query.count() if faixas else 0
+    if faixas:
+        orders_total, orders_tiers = calcular_faixas_pedidos(orders_count, faixas)
+        # resumo: pedidos cobrados (fora de faixas com preço 0)
+        orders_billed = sum(t['orders'] for t in orders_tiers if t['price'] > 0)
+    else:
+        orders_total, orders_tiers, orders_billed = 0.0, [], 0
 
     total = _round2(fixed_total + _d(establishments_total) + _d(orders_total))
 
@@ -130,6 +221,8 @@ def calcular_ciclo_plataforma(subscription, inicio, fim):
         'orders_billed': orders_billed,
         'price_per_order': float(price_per_order),
         'orders_total': orders_total,
+        'orders_tiers': orders_tiers,
+        'order_price_tiers': faixas,
         'total': total,
     }
 
@@ -154,6 +247,7 @@ def get_platform_subscriptions():
                 'min_orders_per_establishment': s.min_orders_per_establishment or 1,
                 'price_per_order': float(s.price_per_order or 0),
                 'orders_included': s.orders_included or 0,
+                'order_price_tiers': s.order_price_tiers,
                 'is_active': s.is_active,
                 'last_billed_at': s.last_billed_at.isoformat() if s.last_billed_at else None,
                 'next_billing_at': s.next_billing_at.isoformat() if s.next_billing_at else None,
@@ -209,6 +303,15 @@ def create_platform_subscription():
         if not (0 <= orders_included <= 1000000):
             return jsonify({'error': 'orders_included fora da faixa'}), 400
 
+        # Escalonamento por faixas (marginal) — se vier, substitui o par legado
+        faixas = data.get('order_price_tiers')
+        if faixas is not None:
+            erro_faixa = validar_faixas(faixas)
+            if erro_faixa:
+                return jsonify({'error': erro_faixa}), 400
+            orders_included = faixas[0].get('upto') if (faixas[0].get('price') == 0 and faixas[0].get('upto') is not None) else 0
+            price_order = faixas[-1].get('price')
+
         sub = PlatformSubscription(
             tenant_id=tenant_id,
             billing_cycle=ciclo,
@@ -218,6 +321,7 @@ def create_platform_subscription():
             min_orders_per_establishment=min_orders,
             price_per_order=price_order,
             orders_included=orders_included,
+            order_price_tiers=faixas,
         )
         db.session.add(sub)
         db.session.commit()
@@ -286,6 +390,15 @@ def update_platform_subscription(sub_id):
             if not (0 <= val <= 1000000):
                 return jsonify({'error': 'orders_included fora da faixa'}), 400
             sub.orders_included = val
+        if 'order_price_tiers' in data and data['order_price_tiers'] is not None:
+            faixas = data['order_price_tiers']
+            erro_faixa = validar_faixas(faixas)
+            if erro_faixa:
+                return jsonify({'error': erro_faixa}), 400
+            sub.order_price_tiers = faixas
+            # resumo legado espelhado (exibição/compat)
+            sub.orders_included = faixas[0].get('upto') if (faixas[0].get('price') == 0 and faixas[0].get('upto') is not None) else 0
+            sub.price_per_order = faixas[-1].get('price')
         if 'is_active' in data:
             sub.is_active = bool(data['is_active'])
         db.session.commit()
@@ -356,6 +469,7 @@ def generate_platform_invoice(sub_id):
             orders_billed=valores['orders_billed'],
             price_per_order=valores['price_per_order'],
             orders_included=valores['orders_included'],
+            order_price_tiers=valores.get('order_price_tiers') or None,
             calculation_detail=json.dumps(valores, ensure_ascii=False),
             status='PENDING',
             due_date=due_date,
