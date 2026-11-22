@@ -438,12 +438,22 @@ __all__ = [
 
 
 class PlatformSubscription(db.Model):
-    """Assinatura da MUV com o ADMIN (tenant) — cobrança por estabelecimento ativo.
+    """Assinatura da MUV com o ADMIN (tenant) — cobrança por COMPONENTES (2026-11-20).
 
-    Camada admin → plataforma do fluxo de monetização (§5.2 do plano):
-    total do ciclo = FIXO + (R$/estabelecimento ativo × estabelecimentos ativos).
-    Default R$ 100/estabelecimento — margem de negociação do admin (decisão do
-    Mauro, 2026-11-17). Nunca % do frete (princípio da independência).
+    Camada admin → plataforma do fluxo de monetização (§5.2 do plano).
+    O modelo de cobrança é CONFIGURÁVEL por assinatura (contratos diferentes
+    para admins diferentes) — motor em platform_billing.calcular_ciclo_plataforma:
+
+        total = [FIXO] + [R$/estab × contagem(modo, N)] + [R$/pedido × máx(0, pedidos − cota)]
+
+    Componentes (preço 0 = desligado):
+    - Fixo: fixed_price
+    - Por estabelecimento: price_per_establishment + establishment_count_mode
+      (SNAPSHOT = is_active no instante · USO = estab com ≥N pedidos no ciclo ·
+      PRO_RATA_USO = dias-com-pedido ÷ dias do ciclo)
+    - Por pedido: price_per_order + orders_included (cota inclusa)
+
+    Nunca % do frete (princípio da independência).
     """
     __tablename__ = 'platform_subscriptions'
 
@@ -454,6 +464,12 @@ class PlatformSubscription(db.Model):
     price_per_establishment = db.Column(db.Numeric(10, 2), default=100.00)
     fixed_price = db.Column(db.Numeric(10, 2), default=0)
     is_active = db.Column(db.Boolean, default=True)
+
+    # Componentes configuráveis (2026-11-20 — motor por componentes)
+    establishment_count_mode = db.Column(db.String(20), default='SNAPSHOT')  # SNAPSHOT, USO, PRO_RATA_USO
+    min_orders_per_establishment = db.Column(db.Integer, default=1)  # N do modo USO
+    price_per_order = db.Column(db.Numeric(10, 2), default=0)  # 0 = componente de pedido desligado
+    orders_included = db.Column(db.Integer, default=0)  # cota de pedidos inclusa no ciclo
 
     # Controle de cobrança
     last_billed_at = db.Column(db.DateTime)
@@ -466,7 +482,11 @@ class PlatformSubscription(db.Model):
 
 
 class PlatformInvoice(db.Model):
-    """Fatura da MUV para o ADMIN (tenant) — por estabelecimento ativo."""
+    """Fatura da MUV para o ADMIN (tenant) — por componentes configuráveis.
+
+    Guarda o SNAPSHOT do cálculo (modo de contagem, pedidos, cota) para o
+    admin conseguir auditar/conferir o valor cobrado depois de emitida.
+    """
     __tablename__ = 'platform_invoices'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -476,11 +496,20 @@ class PlatformInvoice(db.Model):
     period_start = db.Column(db.DateTime, nullable=False)
     period_end = db.Column(db.DateTime, nullable=False)
 
-    # Valores
-    establishments_count = db.Column(db.Integer, default=0)
+    # Valores (contagem pode ser fracionária no modo PRO_RATA_USO)
+    establishments_count = db.Column(db.Numeric(10, 2), default=0)
     price_per_establishment = db.Column(db.Numeric(10, 2))
     fixed_price = db.Column(db.Numeric(10, 2), default=0)
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
+
+    # Snapshot do cálculo (motor por componentes, 2026-11-20)
+    establishment_count_mode = db.Column(db.String(20))  # SNAPSHOT, USO, PRO_RATA_USO
+    min_orders_per_establishment = db.Column(db.Integer, default=1)
+    orders_count = db.Column(db.Integer, default=0)  # pedidos do ciclo
+    orders_billed = db.Column(db.Integer, default=0)  # pedidos cobráveis (acima da cota)
+    price_per_order = db.Column(db.Numeric(10, 2), default=0)
+    orders_included = db.Column(db.Integer, default=0)
+    calculation_detail = db.Column(db.Text)  # JSON com o detalhamento do cálculo
 
     status = db.Column(db.String(20), default='PENDING')  # PENDING, PAID, OVERDUE, CANCELLED
     due_date = db.Column(db.DateTime)

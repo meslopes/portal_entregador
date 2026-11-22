@@ -208,11 +208,19 @@
 - [x] Revisao RLS documentada (docs/REVISAO_RLS.md) — RLS off e correto p/ backend unico
 - [x] Backup/restore testado (5/5, contra copia descartavel) + docs/BACKUP_RESTORE.md
 - [x] Estrategia de migracoes documentada (docs/MIGRACOES.md) + Alembic 0003 em dia
+## ✅ 2026-11-20 — Motor de cobrança por componentes (CONCLUIDA)
+- [x] Cobrança MUV→admin configuravel por contrato: total = FIXO + R$/estab x contagem(modo,N) + R$/pedido x max(0, pedidos - cota) — modos SNAPSHOT (legado), USO (>=N pedidos no ciclo), PRO_RATA_USO (dias com pedido); corrige contagem instantanea e periodo ignorado
+- [x] Assinatura editavel (PUT) + Simular fatura (preview) + snapshot do calculo na fatura (auditoria) + UI de componentes na aba Cobrança do Painel da Plataforma
+- [x] Smoke 6/6 (_tmp_smoke_billing_components.py) + UI test PASS (aba Cobrança + form de componentes)
+- [x] Docs no mesmo commit: PLAN_MONETIZACAO 5.2, fluxograma (grupo Cobranca da Plataforma), este todo
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
 - [x] Alerta minimo de monitoramento (health/5xx) — Cloud Monitoring: uptime check + alerta 5xx + e-mail
 - [x] Ledger financeiro imutavel (F-11) — financial_ledger com trigger de imutabilidade, Decimal, snapshot, idempotencia + tela Livro Financeiro
+- [ ] Auditoria de configurabilidade das RELACOES OPERACIONAIS (pedido do Mauro 2026-11-20): todas as relacoes entre participantes (plataforma<->admin, admin<->estab, estab<->entregador, admin<->entregador, e as demais que a auditoria encontrar) — o que nao precisar de config sai marcado "nao necessario" com justificativa. Entregar docs/PLAN_CONFIGURABILIDADE.md p/ aprovacao dele. PRIMEIRO a cobranca (feito) — este e o proximo
+- [ ] Extensao futura do motor de cobranca: modo PICO de ativos simultaneos (exigiria historico diario novo — nao necessario hoje)
 - [ ] Enviar e-mails COMO `@muv.log.br` (remetente do dominio no Gmail) — "enviar como"/SMTP (futuro, decidido 2026-11-19: adiado). Opcoes mapeadas: Gmail "Enviar como" se aceitar sem SMTP (R$0) / Cloudflare Email Sending (Workers Paid US$5/mes, 3k e-mails, destrava email transacional do sistema) / Zoho (grátis = webmail sozinho; Lite pago = caixa real). Hoje: responder e-mails do Gmail responde do meslopes@gmail.com (ok com assinatura MuvLog)
 - [ ] Renomeacao de termos configuravel por tenant (se Mauro quiser — glossario fixo hoje)
 - [x] Restauracao de backup estendida (11 entidades) + fix do formato _meta/data que restaurava 0 registros

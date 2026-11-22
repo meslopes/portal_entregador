@@ -515,6 +515,43 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration motor de cobrança por componentes (2026-11-20) — MUV→admin
+    try:
+        for col_sql in (
+            "establishment_count_mode VARCHAR(20) DEFAULT 'SNAPSHOT'",
+            "min_orders_per_establishment INTEGER DEFAULT 1",
+            "price_per_order NUMERIC(10,2) DEFAULT 0",
+            "orders_included INTEGER DEFAULT 0",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'platform_subscriptions' AND column_name = '{col}') "
+                f"THEN ALTER TABLE platform_subscriptions ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        for col_sql in (
+            "establishment_count_mode VARCHAR(20)",
+            "min_orders_per_establishment INTEGER DEFAULT 1",
+            "orders_count INTEGER DEFAULT 0",
+            "orders_billed INTEGER DEFAULT 0",
+            "price_per_order NUMERIC(10,2) DEFAULT 0",
+            "orders_included INTEGER DEFAULT 0",
+            "calculation_detail TEXT",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'platform_invoices' AND column_name = '{col}') "
+                f"THEN ALTER TABLE platform_invoices ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.execute(db.text(
+            "ALTER TABLE platform_invoices ALTER COLUMN establishments_count "
+            "TYPE NUMERIC(10,2) USING establishments_count::NUMERIC"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Migration: carteira do entregador (balance, locked_balance, pix_key)
     try:
         db.session.execute(db.text(

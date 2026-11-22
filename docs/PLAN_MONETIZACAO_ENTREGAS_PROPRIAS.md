@@ -93,13 +93,35 @@ total do ciclo = FIXO + (R$/entregador × entregadores ativos) + (R$/pedido × p
 Implementação: coluna `price_per_order` na assinatura + fórmula **centralizada única**
 `calcular_assinatura(subscription, inicio, fim)` + campo no modal/card/fatura.
 
-### 5.2 Admin → MUV: por estabelecimento ativo (recomendado)
+### 5.2 Admin → MUV: motor por COMPONENTES configuráveis (2026-11-20)
 
-| Modelo | Veredito |
+**Atualização (pedido do Mauro):** o modelo de cobrança em si passou a ser **configurável por
+assinatura** — cada admin/contrato monta a própria fórmula (diretriz "tudo configurável" aplicada
+às relações operacionais). Motor Único em `platform_billing.calcular_ciclo_plataforma`:
+
+```
+total do ciclo = [FIXO] + [R$/estab × contagem(modo, N)] + [R$/pedido × máx(0, pedidos − cota)]
+```
+
+| Componente | Parâmetros | Observação |
+|---|---|---|
+| Fixo | valor por ciclo | 0 = desligado |
+| Por estabelecimento | R$/estab + **modo de contagem** + N mínimo | `SNAPSHOT` = ativos no instante (legado) · `USO` = ≥N pedidos no ciclo · `PRO_RATA_USO` = proporcional a dias com pedido |
+| Por pedido | R$/pedido + cota inclusa | 0 = desligado; cota = pedidos inclusos no ciclo |
+
+**Por que os modos (cenários levantados pelo Mauro):** teste sem venda não conta (modo `USO`);
+"ativou só pra uma venda" cobra fração (`PRO_RATA_USO`); "desativou na véspera" não zera a conta
+(o olhar é o ciclo, não o instante); estabelecimento ativo sem uso não conta. Tudo por período —
+o bug de o cálculo ignorar início/fim foi corrigido. Extensão futura: modo PICO (exigiria
+histórico diário novo — não necessário hoje). A fatura guarda o **snapshot do cálculo** (modo,
+contagens, cota) para auditoria do admin. UI: aba **Cobrança** do Painel da Plataforma
+(componentes, **Simular fatura**, editar contrato).
+
+| Modelo antigo | Veredito |
 |--------|----------|
-| **(a) Por estabelecimento ativo/mês** | ✅ **Recomendado** — espelha a cadeia, previsível, sem teto que pune crescimento |
-| (b) Fixo mensal por tenant | Possível (simples), mas a MUV não participa do crescimento |
-| (c) Cota inclusa + excedente suave | ✅ Complemento futuro — evolução do modelo atual do Mauro (hoje: "fixo até X entregas" que fica caro) |
+| (a) Por estabelecimento ativo/mês | ✅ Mantido como modo `SNAPSHOT` |
+| (b) Fixo mensal por tenant | ✅ Mantido como componente Fixo |
+| (c) Cota inclusa + excedente suave | ✅ **Implementado** como componente Por pedido (cota + excedente) |
 | (d) Fixo até X entregas (padrão Entregas Expressas) | ❌ Pune o sucesso — queixa real do Mauro |
 
 ### 5.3 Pagamentos: Asaas nas duas pontas

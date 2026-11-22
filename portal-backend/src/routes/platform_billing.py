@@ -8,6 +8,7 @@ em `tenants.asaas_customer_id` (SaaS futuro; hoje conta única).
 
 Ver docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md §5.2.
 """
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -28,27 +29,107 @@ logger = logging.getLogger(__name__)
 platform_billing_bp = Blueprint('platform_billing', __name__, url_prefix='/api/platform')
 
 
-def calcular_assinatura_plataforma(subscription, inicio, fim):
+def calcular_ciclo_plataforma(subscription, inicio, fim):
     """
-    Fórmula ÚNICA da cobrança MUV → admin:
+    Motor ÚNICO da cobrança MUV → admin (componentes configuráveis):
 
-        total = FIXO + (R$/estabelecimento ativo × estabelecimentos ativos)
+        total = [FIXO] + [R$/estab × contagem(modo, N)] + [R$/pedido × máx(0, pedidos − cota)]
 
-    Espelha o padrão da assinatura de estabelecimentos (calcular_assinatura) —
-    esta função é a ÚNICA que calcula o total; preview e fatura devem chamá-la.
+    Componentes (preço 0 = desligado) — cada assinatura monta a própria
+    fórmula (contratos diferentes para admins diferentes):
+
+    - FIXO: subscription.fixed_price
+    - POR ESTABELECIMENTO: price_per_establishment × contagem, onde o modo
+      (establishment_count_mode) decide o que é "estabelecimento do ciclo":
+        · SNAPSHOT     = is_active=True no instante do cálculo (comportamento
+                         legado — mantido por compatibilidade)
+        · USO          = estabelecimentos com ≥ N pedidos no ciclo (N =
+                         min_orders_per_establishment). Olha o PERÍODO, então
+                         "desativou na véspera" ou "ativou por 1 dia" não
+                         distorcem a conta.
+        · PRO_RATA_USO = soma de (dias-com-pedido ÷ dias do ciclo) por
+                         estabelecimento — "ativou só pra uma venda" cobra
+                         proporcional. Não precisa de tabela nova: deriva
+                         dos pedidos existentes.
+    - POR PEDIDO: price_per_order × máx(0, pedidos do ciclo − orders_included)
+
+    Espelha o padrão da assinatura de estabelecimentos — esta função é a
+    ÚNICA que calcula o total; preview e fatura devem chamá-la.
     """
-    establishments_count = Restaurant.query.filter_by(
-        tenant_id=subscription.tenant_id, is_active=True
-    ).count()
-    price_per_establishment = float(subscription.price_per_establishment or 0)
-    fixed_total = float(subscription.fixed_price or 0)
-    establishments_total = round(establishments_count * price_per_establishment, 2)
-    total = round(fixed_total + establishments_total, 2)
+    from decimal import ROUND_HALF_UP, Decimal
+
+    from src.models.portal_models import Order
+
+    def _d(valor):
+        return Decimal(str(valor if valor is not None else 0))
+
+    def _round2(valor):
+        return float(Decimal(valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
+    # Consultas olham o CICLO (período real) — timestamps do banco são naive
+    inicio_n = inicio.replace(tzinfo=None) if inicio and inicio.tzinfo else inicio
+    fim_n = fim.replace(tzinfo=None) if fim and fim.tzinfo else fim
+
+    modo = (subscription.establishment_count_mode or 'SNAPSHOT').upper()
+    min_orders = int(subscription.min_orders_per_establishment or 1)
+    price_per_estab = _d(subscription.price_per_establishment)
+    fixed_total = _d(subscription.fixed_price)
+    price_per_order = _d(subscription.price_per_order)
+    orders_included = int(subscription.orders_included or 0)
+
+    pedidos_query = Order.query.filter(
+        Order.tenant_id == subscription.tenant_id,
+        Order.created_at >= inicio_n,
+        Order.created_at < fim_n,
+    )
+
+    # --- Componente 2: estabelecimentos (contagem por modo) ---
+    establishments_count = 0.0
+    if price_per_estab > 0:
+        if modo == 'USO':
+            por_estab = (
+                pedidos_query.with_entities(Order.restaurant_id, db.func.count(Order.id))
+                .group_by(Order.restaurant_id).all()
+            )
+            establishments_count = float(sum(1 for _, qtd in por_estab if qtd >= min_orders))
+        elif modo == 'PRO_RATA_USO':
+            total_dias = max(1, (fim_n - inicio_n).days)
+            por_estab = (
+                pedidos_query.with_entities(
+                    Order.restaurant_id, db.func.count(db.func.distinct(db.func.date(Order.created_at)))
+                )
+                .group_by(Order.restaurant_id).all()
+            )
+            fracao = Decimal(0)
+            for _, dias in por_estab:
+                fracao += Decimal(min(int(dias), total_dias)) / Decimal(total_dias)
+            establishments_count = float(fracao)
+        else:  # SNAPSHOT (legado)
+            establishments_count = Restaurant.query.filter_by(
+                tenant_id=subscription.tenant_id, is_active=True
+            ).count()
+
+    establishments_total = _round2(price_per_estab * _d(establishments_count))
+
+    # --- Componente 3: pedidos (com cota inclusa) ---
+    orders_count = pedidos_query.count() if price_per_order > 0 else 0
+    orders_billed = max(0, orders_count - orders_included) if price_per_order > 0 else 0
+    orders_total = _round2(price_per_order * _d(orders_billed))
+
+    total = _round2(fixed_total + _d(establishments_total) + _d(orders_total))
+
     return {
         'establishments_count': establishments_count,
-        'price_per_establishment': price_per_establishment,
-        'fixed_total': fixed_total,
+        'establishment_count_mode': modo,
+        'min_orders_per_establishment': min_orders,
+        'price_per_establishment': float(price_per_estab),
+        'fixed_total': float(fixed_total),
         'establishments_total': establishments_total,
+        'orders_count': orders_count,
+        'orders_included': orders_included,
+        'orders_billed': orders_billed,
+        'price_per_order': float(price_per_order),
+        'orders_total': orders_total,
         'total': total,
     }
 
@@ -69,6 +150,10 @@ def get_platform_subscriptions():
                 'billing_cycle': s.billing_cycle,
                 'price_per_establishment': float(s.price_per_establishment or 0),
                 'fixed_price': float(s.fixed_price or 0),
+                'establishment_count_mode': s.establishment_count_mode or 'SNAPSHOT',
+                'min_orders_per_establishment': s.min_orders_per_establishment or 1,
+                'price_per_order': float(s.price_per_order or 0),
+                'orders_included': s.orders_included or 0,
                 'is_active': s.is_active,
                 'last_billed_at': s.last_billed_at.isoformat() if s.last_billed_at else None,
                 'next_billing_at': s.next_billing_at.isoformat() if s.next_billing_at else None,
@@ -107,11 +192,32 @@ def create_platform_subscription():
         if ciclo not in ('WEEKLY', 'MONTHLY'):
             return jsonify({'error': 'billing_cycle deve ser WEEKLY ou MONTHLY'}), 400
 
+        # Componentes configuráveis do motor de cobrança (2026-11-20)
+        modo = str(data.get('establishment_count_mode', 'SNAPSHOT')).upper()
+        if modo not in ('SNAPSHOT', 'USO', 'PRO_RATA_USO'):
+            return jsonify({'error': 'establishment_count_mode deve ser SNAPSHOT, USO ou PRO_RATA_USO'}), 400
+        try:
+            min_orders = int(data.get('min_orders_per_establishment', 1))
+            price_order = float(data.get('price_per_order', 0) or 0)
+            orders_included = int(data.get('orders_included', 0) or 0)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Parâmetros dos componentes inválidos'}), 400
+        if not (1 <= min_orders <= 10000):
+            return jsonify({'error': 'min_orders_per_establishment fora da faixa (1..10000)'}), 400
+        if not (0 <= price_order <= 100000):
+            return jsonify({'error': 'price_per_order fora da faixa'}), 400
+        if not (0 <= orders_included <= 1000000):
+            return jsonify({'error': 'orders_included fora da faixa'}), 400
+
         sub = PlatformSubscription(
             tenant_id=tenant_id,
             billing_cycle=ciclo,
             price_per_establishment=price,
             fixed_price=fixed,
+            establishment_count_mode=modo,
+            min_orders_per_establishment=min_orders,
+            price_per_order=price_order,
+            orders_included=orders_included,
         )
         db.session.add(sub)
         db.session.commit()
@@ -151,6 +257,35 @@ def update_platform_subscription(sub_id):
             if data['billing_cycle'] not in ('WEEKLY', 'MONTHLY'):
                 return jsonify({'error': 'billing_cycle deve ser WEEKLY ou MONTHLY'}), 400
             sub.billing_cycle = data['billing_cycle']
+        if 'establishment_count_mode' in data:
+            modo = str(data['establishment_count_mode']).upper()
+            if modo not in ('SNAPSHOT', 'USO', 'PRO_RATA_USO'):
+                return jsonify({'error': 'establishment_count_mode deve ser SNAPSHOT, USO ou PRO_RATA_USO'}), 400
+            sub.establishment_count_mode = modo
+        if 'min_orders_per_establishment' in data:
+            try:
+                val = int(data['min_orders_per_establishment'])
+            except (TypeError, ValueError):
+                return jsonify({'error': 'min_orders_per_establishment deve ser inteiro'}), 400
+            if not (1 <= val <= 10000):
+                return jsonify({'error': 'min_orders_per_establishment fora da faixa (1..10000)'}), 400
+            sub.min_orders_per_establishment = val
+        if 'price_per_order' in data:
+            try:
+                val = float(data.get('price_per_order') or 0)
+            except (TypeError, ValueError):
+                return jsonify({'error': 'price_per_order deve ser numérico'}), 400
+            if not (0 <= val <= 100000):
+                return jsonify({'error': 'price_per_order fora da faixa'}), 400
+            sub.price_per_order = val
+        if 'orders_included' in data:
+            try:
+                val = int(data.get('orders_included') or 0)
+            except (TypeError, ValueError):
+                return jsonify({'error': 'orders_included deve ser inteiro'}), 400
+            if not (0 <= val <= 1000000):
+                return jsonify({'error': 'orders_included fora da faixa'}), 400
+            sub.orders_included = val
         if 'is_active' in data:
             sub.is_active = bool(data['is_active'])
         db.session.commit()
@@ -158,6 +293,30 @@ def update_platform_subscription(sub_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+@platform_billing_bp.route('/billing/subscriptions/<int:sub_id>/preview', methods=['GET'])
+@jwt_required()
+@platform_admin_required
+def preview_platform_subscription(sub_id):
+    """Simula a fatura do ciclo atual (prévia — não emite nada)."""
+    try:
+        sub = PlatformSubscription.query.get(sub_id)
+        if not sub:
+            return jsonify({'error': 'Assinatura não encontrada'}), 404
+
+        now = datetime.now(timezone.utc)
+        period_start = now - timedelta(days=7 if sub.billing_cycle == 'WEEKLY' else 30)
+        valores = calcular_ciclo_plataforma(sub, period_start, now)
+        return jsonify({
+            'period_start': period_start.isoformat(),
+            'period_end': now.isoformat(),
+            'billing_cycle': sub.billing_cycle,
+            'breakdown': valores,
+        }), 200
+    except Exception as e:
+        logger.error(f"Erro na prévia da assinatura: {e}")
+        return jsonify({'error': 'Erro ao simular fatura'}), 500
 
 
 @platform_billing_bp.route('/billing/subscriptions/<int:sub_id>/generate-invoice', methods=['POST'])
@@ -172,10 +331,10 @@ def generate_platform_invoice(sub_id):
 
         now = datetime.now(timezone.utc)
         period_start = now - timedelta(days=7 if sub.billing_cycle == 'WEEKLY' else 30)
-        valores = calcular_assinatura_plataforma(sub, period_start, now)
+        valores = calcular_ciclo_plataforma(sub, period_start, now)
 
         if valores['total'] <= 0:
-            return jsonify({'error': 'Nada a cobrar: configure preço por estabelecimento ou fixo'}), 400
+            return jsonify({'error': 'Nada a cobrar: habilite ao menos um componente (fixo, estab. ou pedido)'}), 400
 
         count = PlatformInvoice.query.filter_by(tenant_id=sub.tenant_id).count()
         invoice_number = f"PLAT-{sub.tenant_id:04d}-{count + 1:04d}"
@@ -190,6 +349,14 @@ def generate_platform_invoice(sub_id):
             price_per_establishment=sub.price_per_establishment,
             fixed_price=valores['fixed_total'],
             total_amount=valores['total'],
+            # snapshot do cálculo (auditoria do que foi cobrado)
+            establishment_count_mode=valores['establishment_count_mode'],
+            min_orders_per_establishment=valores['min_orders_per_establishment'],
+            orders_count=valores['orders_count'],
+            orders_billed=valores['orders_billed'],
+            price_per_order=valores['price_per_order'],
+            orders_included=valores['orders_included'],
+            calculation_detail=json.dumps(valores, ensure_ascii=False),
             status='PENDING',
             due_date=due_date,
         )
@@ -218,6 +385,8 @@ def generate_platform_invoice(sub_id):
                     )
                     if valores['fixed_total'] > 0:
                         descricao += f" + fixo R${valores['fixed_total']}"
+                    if valores['orders_billed'] > 0:
+                        descricao += f" + {valores['orders_billed']} pedidos x R${valores['price_per_order']}"
                     cobranca = create_charge(
                         customer_id=tenant.asaas_customer_id,
                         value=valores['total'],
@@ -260,10 +429,17 @@ def get_platform_invoices():
                 'invoice_number': i.invoice_number,
                 'period_start': i.period_start.isoformat(),
                 'period_end': i.period_end.isoformat(),
-                'establishments_count': i.establishments_count,
+                'establishments_count': float(i.establishments_count or 0),
                 'price_per_establishment': float(i.price_per_establishment or 0),
                 'fixed_price': float(i.fixed_price or 0),
                 'total_amount': float(i.total_amount),
+                'establishment_count_mode': i.establishment_count_mode or 'SNAPSHOT',
+                'min_orders_per_establishment': i.min_orders_per_establishment or 1,
+                'orders_count': i.orders_count or 0,
+                'orders_billed': i.orders_billed or 0,
+                'price_per_order': float(i.price_per_order or 0),
+                'orders_included': i.orders_included or 0,
+                'calculation_detail': json.loads(i.calculation_detail) if i.calculation_detail else None,
                 'status': i.status,
                 'due_date': i.due_date.isoformat() if i.due_date else None,
                 'payment_url': i.payment_url,
