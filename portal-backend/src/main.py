@@ -66,6 +66,14 @@ limiter.init_app(app)
 from src.utils.cors import init_cors
 
 init_cors(app, flask_env)
+
+# Alembic (Flask-Migrate) — `flask db ...` via FLASK_APP; migrations/env.py
+# lê current_app.extensions['migrate']. Consolidação 2026-11-24 (lição 34):
+# antes só o main_production.py (morto) registrava isto.
+from flask_migrate import Migrate
+
+Migrate(app, db, compare_type=True)
+
 # Registra blueprints
 from src.routes.admin_activity import admin_activity_bp
 from src.routes.admin_avoidances import admin_avoidances_bp

@@ -126,17 +126,28 @@
     assumir que a etapa rodou).
 
 34. **Config/handler registrado só no entry secundário não vale em produção** —
-    `main_production.py` NÃO é o entry real (Dockerfile roda `src.main:app`).
+    `main_production.py` NÃO era o entry real (Dockerfile roda `src.main:app`).
     2º incidente da classe (1º: CORS via `app.config`): os handlers JWT
     personalizados viviam só no secundário, e o Flask-JWT-Extended padrão
     devolve `msg` (não `error`) e **422** para token malformado — o frontend,
     que lê só `data.error`, mascarava tudo como erro de negócio ("Erro ao
     calcular frete", console limpo). Fix: loaders JWT 401/`error` no
     `src/main.py` + `api.js` trata 422 com `msg` de token como falha de auth.
-    Redundância main.py × main_production.py = histórica (Procfile/alembic
-    apontam o secundário) — consolidação pendente no todo.md.
+35. **Variável fora de escopo dentro de `try/catch` vira erro SILENCIOSO** —
+    `calculateFee` usava `orderItems` (local do `handleSubmit`) →
+    ReferenceError engolida pelo catch → "Erro ao calcular frete" sem
+    requisição sair (logs do Cloud Run SEM entrada = o erro é no JS antes do
+    fetch) e console limpo. Diagnóstico: 0 requisições nos logs + fallback de
+    mensagem = caçar escopo no JS. Ferramenta: `eslint` (`no-undef`) pega na
+    hora; e SEMPRE exercitar a tela de verdade (lição 8 de novo) — build e
+    testes de API não pegam erro de escopo de frontend.
+36. **Consolidação entry único (2026-11-24):** `main_production.py` virou
+    casca de compatibilidade (`from src.main import app` + `create_app`
+    legado p/ Alembic/Procfile); `Migrate(app, db)` passou a viver no
+    `main.py` (o `migrations/env.py` lê `extensions['migrate']`). Toda
+    configuração nova nasce em `src/main.py` — nunca mais duplicar entry.
 
 ---
 
-_Atualizado em 2026-11-24 — 34 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-24 — 36 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

@@ -108,7 +108,8 @@ const NewOrderPage = () => {
         delivery_state: form.delivery_state,
         restaurant_id: isAdmin ? form.selected_establishment : undefined,
         // Valor dos produtos — usado pelo frete grátis da tabela de preços
-        order_value: orderItems.reduce((sum, it) => sum + (it.price * it.quantity), 0) || undefined,
+        // (PRODUCT_VALUE vive no escopo do componente; orderItems só existe no handleSubmit)
+        order_value: PRODUCT_VALUE || undefined,
         // Distância informada pelo estabelecimento (rede de segurança do frete)
         manual_distance_km: manualKm || undefined,
         // Veículo da entrega (S7.4 Fase 2) — multiplica a base do frete
