@@ -582,7 +582,46 @@ def assign_own_driver(order_id):
 
             order.own_driver_route_id = None
 
-        # Atribuir pedido ao entregador próprio
+        # Reorganização de rota (R1/R2 — 2026-11-24): mover entre próprios.
+        # Depois de COLETADO não se move (está na rua).
+        movido_de = order.establishment_driver_id
+        status_anterior = order.status
+        if status_anterior in (OrderStatus.PICKED_UP, OrderStatus.DELIVERED, OrderStatus.CANCELLED):
+            return jsonify({'error': f'Não é possível trocar o entregador depois de "{status_anterior.value}"'}), 400
+        movendo = movido_de is not None and movido_de != est_driver.id
+
+        if movendo:
+            # MOVER: limpa o ciclo do entregador anterior (o Delivery/ganhos só
+            # vira dinheiro na entrega — nada a estornar aqui) e RE-OFERECE ao
+            # novo (decisão do Mauro: o novo entregador aceita no app).
+            if order.delivery:
+                db.session.delete(order.delivery)
+            order.assigned_to_own_driver = True
+            order.establishment_driver_id = est_driver.id
+            order.status = OrderStatus.OFFERED
+            order.accepted_at = None
+            order.offered_at = datetime.now(timezone.utc)
+            order.offer_attempts = (order.offer_attempts or 0) + 1
+            order.updated_at = datetime.now(timezone.utc)
+            try:
+                from src.services.distribution import registrar_log_distribuicao
+                antigo = EstablishmentDriver.query.get(movido_de)
+                registrar_log_distribuicao(order, {
+                    'ts': datetime.now(timezone.utc).isoformat(),
+                    'manual': True, 'movido': True,
+                    'de': antigo.name if antigo else str(movido_de),
+                    'para': est_driver.name,
+                    'status_anterior': status_anterior.value,
+                })
+            except Exception:
+                pass
+            db.session.commit()
+            return jsonify({
+                'message': f'Pedido movido para {est_driver.name} — aguardando aceite dele',
+                'moved': True,
+            }), 200
+
+        # Atribuir pedido ao entregador próprio (sem dono anterior — direto)
         order.assigned_to_own_driver = True
         order.establishment_driver_id = est_driver.id
         order.status = OrderStatus.ACCEPTED

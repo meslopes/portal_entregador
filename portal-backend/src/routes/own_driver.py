@@ -439,6 +439,20 @@ def accept_order(order_id):
             )
             db.session.add(earning)
 
+        # Registro de entrega (2026-11-24): o fluxo oferta→aceite não criava o
+        # Delivery — sem ele, o ciclo de conclusão (ganhos/ledger no DELIVERED)
+        # não achava o registro. Espelha a atribuição direta.
+        if not order.delivery:
+            from src.models.portal_models import Delivery
+            db.session.add(Delivery(
+                order_id=order.id,
+                driver_id=None,
+                pickup_latitude=order.restaurant.latitude if order.restaurant else None,
+                pickup_longitude=order.restaurant.longitude if order.restaurant else None,
+                delivery_latitude=order.delivery_address.latitude if order.delivery_address else None,
+                delivery_longitude=order.delivery_address.longitude if order.delivery_address else None,
+            ))
+
         db.session.commit()
 
         return jsonify({

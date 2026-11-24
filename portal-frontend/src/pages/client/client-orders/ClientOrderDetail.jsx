@@ -19,6 +19,7 @@ const ClientOrderDetail = ({ order, onClose, onOrderUpdated }) => {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
+  const [limiteRota, setLimiteRota] = useState(3);
 
   useEffect(() => {
     const loadOwnDrivers = async () => {
@@ -29,6 +30,7 @@ const ClientOrderDetail = ({ order, onClose, onOrderUpdated }) => {
           const res = await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`);
           const onlineDrivers = (res.data.drivers || []).filter(d => d.is_online && d.is_active);
           setOwnDrivers(onlineDrivers);
+          if (res.data.route_max_orders) setLimiteRota(res.data.route_max_orders);
         }
       } catch (err) {
         console.error('Erro ao carregar entregadores próprios:', err);
@@ -40,6 +42,19 @@ const ClientOrderDetail = ({ order, onClose, onOrderUpdated }) => {
   const handleAssignOwn = async () => {
     if (!selectedDriverId) return;
     try {
+      // Reorganização de rota (R1/R2): confirmação explícita — mover entre
+      // entregadores pode estourar o limite (decisão do estabelecimento)
+      const alvo = ownDrivers.find(d => String(d.id) === String(selectedDriverId));
+      const carga = alvo?.active_orders ?? 0;
+      const atualNome = order.own_driver?.name || order.driver?.name || null;
+      let msg = atualNome
+        ? `Mover o pedido #${order.order_number} de ${atualNome} para ${alvo?.name}?\n\nO pedido ficará AGUARDANDO ACEITE de ${alvo?.name}.`
+        : `Atribuir o pedido #${order.order_number} a ${alvo?.name}?`;
+      if (carga >= limiteRota) {
+        msg += `\n\n⚠️ ${alvo?.name} ficará com ${carga + 1}/${limiteRota} pedidos (acima do limite — decisão sua).`;
+      }
+      if (!window.confirm(msg)) return;
+
       setAssigning(true);
       setActionResult(null);
       const result = await orderService.assignOwnDriver(order.id, parseInt(selectedDriverId));
@@ -128,6 +143,7 @@ const ClientOrderDetail = ({ order, onClose, onOrderUpdated }) => {
             ownDrivers={ownDrivers}
             selectedDriverId={selectedDriverId}
             setSelectedDriverId={setSelectedDriverId}
+            limiteRota={limiteRota}
             assigning={assigning}
             callingPlatform={callingPlatform}
             actionResult={actionResult}

@@ -19,8 +19,11 @@ const DistributionSection = ({
   hasOwnDriver,
   calledPlatform,
   isPending,
+  limiteRota = 3,
 }) => {
-  const isActiveStatus = ['PENDING', 'SCHEDULED', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status);
+  // OFFERED incluído (R1, 2026-11-24): pedidos aguardando aceite do entregador
+  // também podem ser movidos entre entregadores (reorganização de rota)
+  const isActiveStatus = ['PENDING', 'SCHEDULED', 'OFFERED', 'ACCEPTED', 'PREPARING', 'READY'].includes(order.status);
 
   return (
     <>
@@ -62,7 +65,7 @@ const DistributionSection = ({
                   <option value="">Selecione um entregador...</option>
                   {ownDrivers.map(d => (
                     <option key={d.id} value={d.id}>
-                      {d.name} — {d.vehicle_type === 'MOTO' ? '🏍️' : d.vehicle_type === 'BIKE' ? '🚲' : '🚗'} {d.vehicle_plate || ''}
+                      {d.name} — {d.vehicle_type === 'MOTO' ? '🏍️' : d.vehicle_type === 'BIKE' ? '🚲' : '🚗'} {d.vehicle_plate || ''} · {d.active_orders ?? 0}/{limiteRota} pedidos
                     </option>
                   ))}
                 </select>
