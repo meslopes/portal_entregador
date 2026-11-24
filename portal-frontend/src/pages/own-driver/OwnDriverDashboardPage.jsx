@@ -18,7 +18,9 @@ const OwnDriverDashboardPage = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [pendingRoutes, setPendingRoutes] = useState(0);
+  const [pendingOffers, setPendingOffers] = useState(0);
   const prevPendingRoutes = useRef(0);
+  const prevPendingOffers = useRef(0);
   const audioContextRef = useRef(null);
   const audioEnabledRef = useRef(false);
 
@@ -47,14 +49,17 @@ const OwnDriverDashboardPage = () => {
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [statsRes, routesRes] = await Promise.all([
+      const [statsRes, routesRes, ordersRes] = await Promise.all([
         api.get('/api/own-driver/stats', { headers }),
-        api.get('/api/routes/own-driver/active', { headers })
+        api.get('/api/routes/own-driver/active', { headers }),
+        api.get('/api/own-driver/orders?status=active', { headers })
       ]);
 
       setStats(statsRes.data.stats);
       setDriver(statsRes.data.driver);
       setIsOnline(statsRes.data.driver?.is_online || false);
+      // Ofertas aguardando aceite (status OFFERED) — sinalização sonora/visual
+      setPendingOffers((ordersRes.data.orders || []).filter(o => o.status === 'OFFERED').length);
       
       // Extrair pedidos das rotas ativas e contar pendentes
       const routes = (routesRes.data.routes || []).filter(route => {
@@ -164,6 +169,36 @@ const OwnDriverDashboardPage = () => {
     prevPendingRoutes.current = pendingRoutes;
   }, [pendingRoutes]);
 
+  // Tocar som quando novas OFERTAS de pedido aparecem (2026-11-24) —
+  // espelha o beep de rotas; o banner visual cobre a primeira abertura
+  useEffect(() => {
+    if (pendingOffers > prevPendingOffers.current) {
+      try {
+        if (audioEnabledRef.current && audioContextRef.current) {
+          const ctx = audioContextRef.current;
+          [800, 1000].forEach((freq, idx) => {
+            setTimeout(() => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = freq;
+              osc.type = 'sine';
+              gain.gain.setValueAtTime(0.5, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+              osc.start(ctx.currentTime);
+              osc.stop(ctx.currentTime + 0.3);
+            }, idx * 350);
+          });
+        }
+        if (navigator.vibrate) {
+          navigator.vibrate([200, 100, 200, 100, 200]);
+        }
+      } catch { /* intentionally empty */ }
+    }
+    prevPendingOffers.current = pendingOffers;
+  }, [pendingOffers]);
+
   // Enviar localização a cada 15 segundos quando online
   useEffect(() => {
     if (!isOnline) return;
@@ -244,6 +279,28 @@ const OwnDriverDashboardPage = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+      {/* Banner de ofertas aguardando aceite (sinalização visual) */}
+      {pendingOffers > 0 && (
+        <div style={{
+          background: '#fef3c7', borderBottom: '1px solid #fde047',
+          padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '0.75rem'
+        }}>
+          <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#854d0e' }}>
+            🔔 Você tem {pendingOffers} oferta(s) de pedido aguardando aceite
+          </p>
+          <button
+            onClick={() => navigate('/own-driver/orders')}
+            style={{
+              padding: '0.375rem 0.875rem', borderRadius: '0.5rem', border: 'none',
+              background: '#d97706', color: 'white', fontWeight: 600,
+              fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap'
+            }}
+          >
+            Ver ofertas
+          </button>
+        </div>
+      )}
       {/* Header */}
       <header style={{
         background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',

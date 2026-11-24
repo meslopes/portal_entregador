@@ -2,6 +2,7 @@
 export const ORDER_STATUS = {
   SCHEDULED: { key: 'SCHEDULED', label: 'Agendado', color: '#6366f1', bg: '#e0e7ff', icon: '⏰' },
   PENDING: { key: 'PENDING', label: 'Pendente', color: '#f59e0b', bg: '#fef3c7', icon: '⏳' },
+  OFFERED: { key: 'OFFERED', label: 'Aguardando aceite', color: '#d97706', bg: '#fef3c7', icon: '🔔' },
   ACCEPTED: { key: 'ACCEPTED', label: 'Aceito', color: '#2563eb', bg: '#dbeafe', icon: '✅' },
   PREPARING: { key: 'PREPARING', label: 'Preparando', color: '#8b5cf6', bg: '#f3e8ff', icon: '👨‍🍳' },
   READY: { key: 'READY', label: 'Pronto', color: '#06b6d4', bg: '#cffafe', icon: '📦' },

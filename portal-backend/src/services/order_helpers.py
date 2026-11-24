@@ -359,6 +359,39 @@ def process_scheduled_orders():
         if scheduled_orders:
             db.session.commit()
 
+        # A (2026-11-24) — retentativa automática: pedidos PENDING de estab. com
+        # distribuição AUTO que ficaram sem oferta (ex.: sem candidato no ciclo
+        # anterior, ou fora do raio quando o raio ainda bloqueava) ganham nova
+        # tentativa a cada ciclo. Só registra log quando OFERECE (evita ruído).
+        from sqlalchemy import or_ as _or
+        pendentes = Order.query.filter(
+            Order.status == OrderStatus.PENDING,
+            _or(Order.assigned_to_own_driver.is_(False), Order.assigned_to_own_driver.is_(None)),
+            Order.establishment_driver_id.is_(None),
+        ).all()
+        for pedido in pendentes:
+            resto_p = pedido.restaurant
+            if not (resto_p and resto_p.has_own_drivers):
+                continue
+            if (resto_p.distribution_mode or 'MANUAL') != 'AUTO':
+                continue
+            try:
+                from src.services.distribution import (
+                    registrar_log_distribuicao,
+                    selecionar_entregador_proprio,
+                )
+                escolhido, info = selecionar_entregador_proprio(pedido)
+                if escolhido:
+                    registrar_log_distribuicao(pedido, info)
+                    pedido.assigned_to_own_driver = True
+                    pedido.establishment_driver_id = escolhido.id
+                    pedido.status = OrderStatus.OFFERED
+                    pedido.offered_at = now
+                    pedido.offer_attempts = (pedido.offer_attempts or 0) + 1
+                    logger.info(f"[AUTO-PROPRIO] (retentativa) Pedido {pedido.order_number} oferecido a {escolhido.name}")
+            except Exception as _e:
+                logger.error(f"[AUTO-PROPRIO] retentativa falhou: {_e}")
+
     except Exception as e:
         logger.error(f"Erro ao processar pedidos agendados: {e}")
         db.session.rollback()

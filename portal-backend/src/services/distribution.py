@@ -93,11 +93,12 @@ def selecionar_entregador_proprio(order, exclude_driver_ids=None):
     info['distancia_km'] = dist_pedido
     info['rumo_pedido'] = round(rumo_pedido, 1) if rumo_pedido is not None else None
 
-    # M3 — raio de segurança (configurável; 0 = desligado)
+    # M3 — raio de segurança (configurável; 0 = desligado). B (2026-11-24):
+    # o raio NÃO bloqueia mais a oferta automática — apenas registra o aviso
+    # (mesma filosofia do copiloto: informa, nunca trava o humano/sistema)
     raio = float(restaurant.route_max_distance_km or 0)
     if raio > 0 and dist_pedido > raio:
-        info['motivo'] = f'fora_do_raio ({dist_pedido:.1f}km > {raio:.1f}km)'
-        return None, info
+        info['aviso_raio'] = f'fora_do_raio ({dist_pedido:.1f}km > {raio:.1f}km) — oferta liberada com aviso'
 
     tolerancia = int(restaurant.route_angle_tolerance or 45)
     limite = int(restaurant.route_max_orders or 3)

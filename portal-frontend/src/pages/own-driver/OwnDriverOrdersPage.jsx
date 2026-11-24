@@ -6,6 +6,7 @@ import {
 import api from '@/lib/api';
 
 const STATUS_CONFIG = {
+  OFFERED: { color: '#d97706', bg: '#fef3c7', text: 'Aguardando aceite', icon: AlertCircle },
   ACCEPTED: { color: '#2563eb', bg: '#dbeafe', text: 'Aceito', icon: CheckCircle },
   PREPARING: { color: '#8b5cf6', bg: '#f3e8ff', text: 'Preparando', icon: Package },
   READY: { color: '#06b6d4', bg: '#cffafe', text: 'Pronto', icon: CheckCircle },
@@ -19,6 +20,19 @@ const OwnDriverOrdersPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+
+  // Aceitar/recusar oferta (status OFFERED) — sem navegar para o detalhe
+  const handleOffer = async (e, order, aceitar) => {
+    e.stopPropagation();
+    try {
+      const token = localStorage.getItem('own_driver_token');
+      const headers = { Authorization: `Bearer ${token}` };
+      await api.post(`/api/own-driver/orders/${order.id}/${aceitar ? 'accept' : 'reject'}`, {}, { headers });
+      loadOrders();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erro ao processar a oferta');
+    }
+  };
 
   const loadOrders = useCallback(async () => {
     try {
@@ -132,6 +146,31 @@ const OwnDriverOrdersPage = () => {
                       <StatusIcon size={10} /> {config.text}
                     </span>
                   </div>
+
+                  {order.status === 'OFFERED' && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', marginBottom: '0.25rem' }}>
+                      <button
+                        onClick={(e) => handleOffer(e, order, true)}
+                        style={{
+                          flex: 1, padding: '0.5rem', borderRadius: '0.5rem', border: 'none',
+                          background: '#0d9488', color: 'white', fontWeight: 700, fontSize: '0.8125rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✓ Aceitar pedido
+                      </button>
+                      <button
+                        onClick={(e) => handleOffer(e, order, false)}
+                        style={{
+                          flex: 1, padding: '0.5rem', borderRadius: '0.5rem',
+                          border: '1.5px solid #e2e8f0', background: 'white', color: '#64748b',
+                          fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer'
+                        }}
+                      >
+                        ✗ Recusar
+                      </button>
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.8125rem', color: '#64748b', marginBottom: '0.25rem' }}>
                     <MapPin size={14} style={{ color: '#64748b' }} />
