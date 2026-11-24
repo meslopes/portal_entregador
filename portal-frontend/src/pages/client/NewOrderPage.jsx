@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, AlertCircle, Store } from 'lucide-react';
 import { orderService, adminService } from '@/lib/api';
@@ -140,7 +140,7 @@ const NewOrderPage = () => {
         setError('Não foi possível calcular a distância. Use "Ajustar no Mapa" para marcar o local exato.');
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 'Erro ao calcular frete';
+      const errorMsg = err.response?.data?.error || err.response?.data?.msg || 'Erro ao calcular frete';
       if (errorMsg.includes('Estabelecimento não encontrado')) {
         setError('Estabelecimento não encontrado. Verifique se o cadastro foi aprovado pelo administrador.');
       } else {

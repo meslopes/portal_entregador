@@ -54,7 +54,17 @@ api.interceptors.response.use(
       return api.request(config);
     }
 
-    if (error.response?.status === 401 && !isRedirecting) {
+    // Falha de autenticação: 401 (padrão da casa) OU 422 do Flask-JWT-Extended
+    // em token malformado (corpo `msg`, ex.: "Signature verification failed").
+    // Sem tratar 422, sessão inválida aparecia como erro de negócio na tela
+    // (ex.: "Erro ao calcular frete") — lição 34.
+    const errStatus = error.response?.status;
+    const errAuthMsg = error.response?.data?.msg || '';
+    const isAuthFailure =
+      errStatus === 401 ||
+      (errStatus === 422 && /token|segments|signature/i.test(errAuthMsg));
+
+    if (isAuthFailure && !isRedirecting) {
       // NÃO redirecionar se o 401 veio do próprio endpoint de login
       // (auth/login e own-driver/login — senão a página recarrega e apaga a mensagem de erro)
       const isLoginRequest =

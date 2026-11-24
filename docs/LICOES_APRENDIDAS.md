@@ -125,7 +125,18 @@
     parou" = recontar executado vs pendente ANTES de seguir (nunca
     assumir que a etapa rodou).
 
+34. **Config/handler registrado só no entry secundário não vale em produção** —
+    `main_production.py` NÃO é o entry real (Dockerfile roda `src.main:app`).
+    2º incidente da classe (1º: CORS via `app.config`): os handlers JWT
+    personalizados viviam só no secundário, e o Flask-JWT-Extended padrão
+    devolve `msg` (não `error`) e **422** para token malformado — o frontend,
+    que lê só `data.error`, mascarava tudo como erro de negócio ("Erro ao
+    calcular frete", console limpo). Fix: loaders JWT 401/`error` no
+    `src/main.py` + `api.js` trata 422 com `msg` de token como falha de auth.
+    Redundância main.py × main_production.py = histórica (Procfile/alembic
+    apontam o secundário) — consolidação pendente no todo.md.
+
 ---
 
-_Atualizado em 2026-11-19 — 33 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-24 — 34 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

@@ -832,6 +832,23 @@ def serve(path):
         else:
             return "Frontend not found. Please build and place the frontend files in the static folder.", 404
 
+# Handlers JWT — 401 com campo `error` (padrão da casa) em vez do padrão do
+# Flask-JWT-Extended (`msg` + 422 em token inválido). Sem isto, sessão inválida
+# aparecia como erro de negócio na tela (ex.: "Erro ao calcular frete").
+# Também existem em main_production.py — mas o entry REAL da produção é este
+# (Dockerfile `src.main:app`); registrar SEMPRE aqui primeiro (lição 34).
+@jwt.expired_token_loader
+def _jwt_expired(jwt_header, jwt_payload):
+    return {'error': 'Sessão expirada. Faça login novamente.'}, 401
+
+@jwt.invalid_token_loader
+def _jwt_invalid(error):
+    return {'error': 'Token inválido. Faça login novamente.'}, 401
+
+@jwt.unauthorized_loader
+def _jwt_missing(error):
+    return {'error': 'Token de acesso necessário.'}, 401
+
 @app.errorhandler(404)
 def not_found(error):
     return {'error': 'Endpoint not found'}, 404
