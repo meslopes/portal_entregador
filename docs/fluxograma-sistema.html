@@ -619,6 +619,7 @@
             <li><strong>Atribuir entregador</strong> — designar entregador específico <span class="route">POST /api/admin/orders/:id/assign</span></li>
             <li><strong>Chamar entregadores da plataforma</strong> — notifica disponíveis <span class="route">POST /api/orders/:id/call-platform</span></li>
             <li><strong>Atribuir entregador próprio</strong> — do estabelecimento <span class="route">POST /api/orders/:id/assign-own</span></li>
+            <li><strong>Distribuição automática (configurável)</strong> — modo por estabelecimento (Manual=padrão · Automático=corredor angular ±graus com limite de pedidos por rota e raio); oferta ao entregador cuja rota segue o rumo do pedido · override manual sempre disponível <span class="route">config: PUT /api/user/profile · motor: services/distribution.py</span></li>
             <li><strong>Editar pedido</strong> — endereço, valor, status <span class="route">PUT /api/admin/orders/:id</span></li>
             <li><strong>Excluir pedido</strong> — remove permanentemente <span class="route">DELETE /api/admin/orders/:id</span></li>
             <li><strong>Criar pedido manual</strong> — "Lançar Pedido" <span class="route">POST /api/orders/</span></li>
@@ -821,6 +822,7 @@
             <li><strong>Link de Pedido Rápido</strong> — gerar/regenerar o link que o cliente abre para pedir sem instalar nada <span class="route">GET/POST /api/order-link</span> (página pública <code>/order/:token</code> → <span class="route">POST /api/order-link/:token</span>)</li>
             <li><strong>Acompanhar pedido</strong> — status em tempo real (pendente → aceito → coletado → entregue)</li>
             <li><strong>Cancelar pedido</strong> — antes de ser coletado <span class="route">POST /api/orders/:id/cancel</span></li>
+          <li><strong>Relançar pedido cancelado</strong> — volta à fila dos entregadores (limpa atribuições/ofertas antigas e reoferece ao mais próximo) · SOMENTE admin/super admin, nunca o estabelecimento <span class="route">POST /api/orders/:id/relaunch</span></li>
             <li><strong>Avaliar entregador</strong> — nota e feedback após entrega <span class="route">POST /api/orders/:id/rate</span></li>
             <li><strong>Pedidos agendados</strong> — criar com data/hora futura</li>
           </ul>

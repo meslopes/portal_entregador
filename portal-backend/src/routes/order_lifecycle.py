@@ -602,6 +602,136 @@ def cancel_order(order_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@order_lifecycle_bp.route('/<int:order_id>/relaunch', methods=['POST'])
+@jwt_required()
+def relaunch_order(order_id):
+    """Relança um pedido cancelado — volta para a fila dos entregadores.
+
+    SOMENTE admin/super admin pode relançar (papel 'admin' na máquina de
+    estados) — o estabelecimento NUNCA. Limpa atribuições (plataforma e
+    próprios), tempos, ofertas/rejeições antigas e reoferece ao entregador
+    mais próximo. Não dispara callback de plataforma (pedido cancelado
+    externamente não deve ser reenviado sem o canal correspondente).
+    """
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 404
+
+        # Regra de negócio: só admin (inclui super admin) — nunca estabelecimento
+        from src.models.portal_models import UserType
+        if user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Apenas administradores podem relançar pedidos'}), 403
+
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+
+        # Só pedido CANCELADO pode ser relançado (a máquina permite no-op de
+        # mesmo status — sem esta trava, relançaria um pedido em andamento)
+        if order.status != OrderStatus.CANCELLED:
+            return jsonify({'error': f'Só é possível relançar pedidos cancelados (atual: {order.status.value})'}), 400
+
+        # Máquina de estados é a fonte de verdade das transições
+        from src.utils.order_state_machine import can_transition, get_user_role
+        can_change, error_msg = can_transition(order.status, OrderStatus.PENDING, get_user_role(user))
+        if not can_change:
+            return jsonify({'error': error_msg}), 400
+
+        old_driver_id = order.driver_id
+        old_est_driver_id = order.establishment_driver_id
+
+        # Limpa TODA atribuição e histórico de oferta/rejeição do ciclo anterior
+        order.driver_id = None
+        order.establishment_driver_id = None
+        order.assigned_to_own_driver = False
+        order.accepted_at = None
+        order.offered_at = None
+        order.pickup_time = None
+        order.picked_up_at = None
+        if order.delivery:
+            db.session.delete(order.delivery)
+        # flags de sistema (OFFERED_TO/REJECTED_BY) embutidas nas instruções
+        from src.utils.order_tags import strip_system_tags
+        order.special_instructions = strip_system_tags(order.special_instructions or '')
+        order.status = OrderStatus.PENDING
+        order.updated_at = datetime.now(timezone.utc)
+
+        # Registro de Atividades (quem relançou o quê)
+        try:
+            from src.utils.activity_log import log_activity
+            log_activity('RELAUNCH', 'order', order.id,
+                         entity_label=order.order_number,
+                         details=f'pedido cancelado relançado por {user.email}')
+        except Exception as _e:
+            logger.warning(f'[ACTIVITY] log de relançamento falhou: {_e}')
+
+        # Aviso ao estabelecimento
+        try:
+            if order.customer and getattr(order.customer, 'user_id', None):
+                db.session.add(Notification(
+                    user_id=order.customer.user_id,
+                    title="Pedido relançado",
+                    message=f"O pedido #{order.order_number} foi relançado e voltou para a fila de entregas",
+                    type=NotificationType.ORDER_UPDATE,
+                    related_id=order.id
+                ))
+        except Exception:
+            pass
+
+        # Reoferta conforme a política de distribuição do estabelecimento
+        # (próprios: AUTO = corredor angular · MANUAL = fica para o modal;
+        # sem próprios: motor da plataforma, como sempre)
+        restaurante = order.restaurant
+        try:
+            if restaurante and restaurante.has_own_drivers:
+                if (restaurante.distribution_mode or 'MANUAL') == 'AUTO':
+                    from src.services.distribution import (
+                        registrar_log_distribuicao,
+                        selecionar_entregador_proprio,
+                    )
+                    excl = [old_est_driver_id] if old_est_driver_id else []
+                    escolhido, info = selecionar_entregador_proprio(order, exclude_driver_ids=excl)
+                    registrar_log_distribuicao(order, info)
+                    if escolhido:
+                        order.assigned_to_own_driver = True
+                        order.establishment_driver_id = escolhido.id
+                        order.status = OrderStatus.OFFERED
+                        order.offered_at = datetime.now(timezone.utc)
+                        order.offer_attempts = (order.offer_attempts or 0) + 1
+                # MANUAL: permanece PENDING — estabelecimento distribui pelo modal
+            else:
+                new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
+                if new_driver:
+                    offer_ts = int(datetime.now(timezone.utc).timestamp())
+                    offer_tag = f"OFFERED_TO_{new_driver.id}_{offer_ts}"
+                    current_si = order.special_instructions or ''
+                    current_si = re.sub(r'\|?OFFERED_TO_\d+(?:_\d+)?', '', current_si).strip('|')
+                    order.special_instructions = f"{current_si}|{offer_tag}" if current_si else offer_tag
+                    db.session.add(Notification(
+                        user_id=new_driver.user_id,
+                        title="Pedido disponível (reenviado)",
+                        message=f"Pedido #{order.order_number} está disponível para entrega",
+                        type=NotificationType.NEW_ORDER,
+                        related_id=order.id
+                    ))
+        except Exception:
+            pass
+
+        db.session.commit()
+        return jsonify({
+            'message': 'Pedido relançado — de volta à fila para os entregadores',
+            'order_id': order.id,
+            'status': order.status.value,
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @order_lifecycle_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_order():

@@ -589,6 +589,20 @@ def assign_own_driver(order_id):
         order.accepted_at = datetime.now(timezone.utc)
         order.updated_at = datetime.now(timezone.utc)
 
+        # Copiloto (B) — registra os avisos que o humano escolheu ignorar
+        # (auditoria do "quem foi avisado do quê"); nunca bloqueia
+        try:
+            from src.services.distribution import avaliar_atribuicao, registrar_log_distribuicao
+            avisos = avaliar_atribuicao(order, est_driver)
+            if avisos:
+                registrar_log_distribuicao(order, {
+                    'ts': datetime.now(timezone.utc).isoformat(),
+                    'manual': True, 'driver_id': est_driver.id, 'driver': est_driver.name,
+                    'avisos': avisos,
+                })
+        except Exception:
+            pass
+
         # Criar registro de entrega
         delivery = Delivery(
             order_id=order.id,

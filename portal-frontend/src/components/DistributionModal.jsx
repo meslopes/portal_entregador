@@ -7,6 +7,8 @@ import api from '@/lib/api';
 
 const DistributionModal = ({ order, onClose, onDistributed }) => {
   const [ownDrivers, setOwnDrivers] = useState([]);
+  const [limiteRota, setLimiteRota] = useState(3);
+  const [orderWarnings, setOrderWarnings] = useState([]);
   const [selectedDriverId, setSelectedDriverId] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [callingPlatform, setCallingPlatform] = useState(false);
@@ -18,9 +20,11 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
         const userRes = await api.get('/api/user/profile');
         const restaurantId = userRes.data.restaurant_id;
         if (restaurantId) {
-          const res = await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`);
+          const res = await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}&order_id=${order.id}`);
           const onlineDrivers = (res.data.drivers || []).filter(d => d.is_online && d.is_active);
           setOwnDrivers(onlineDrivers);
+          if (res.data.route_max_orders) setLimiteRota(res.data.route_max_orders);
+          setOrderWarnings(res.data.order_warnings || []);
         }
       } catch (err) {
         console.error('Erro ao carregar entregadores próprios:', err);
@@ -32,6 +36,16 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
   const handleAssignOwn = async () => {
     if (!selectedDriverId) return;
     try {
+      // R4 — o estabelecimento pode estourar o limite, mas ciente (override manual)
+      const escolhido = ownDrivers.find(d => String(d.id) === String(selectedDriverId));
+      const carga = escolhido?.active_orders ?? 0;
+      if (carga >= limiteRota) {
+        const ok = window.confirm(
+          `${escolhido?.name} já está com ${carga}/${limiteRota} pedidos em rota.\n\n` +
+          'Confirmar mesmo assim? (este limite é manual — você pode estourar por opção)'
+        );
+        if (!ok) return;
+      }
       setAssigning(true);
       setActionResult(null);
       const result = await orderService.assignOwnDriver(order.id, parseInt(selectedDriverId));
@@ -92,6 +106,15 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
           </button>
         </div>
 
+        {/* Copiloto de roteiro — avisos do pedido (informa, nunca bloqueia) */}
+        {orderWarnings.length > 0 && (
+          <div style={{ margin: '0.75rem 1.5rem 0', padding: '0.625rem 0.75rem', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '0.5rem' }}>
+            {orderWarnings.map((a, i) => (
+              <p key={i} style={{ fontSize: '0.75rem', color: '#854d0e', margin: i > 0 ? '0.25rem 0 0' : 0 }}>{a.msg}</p>
+            ))}
+          </div>
+        )}
+
         <div style={{ padding: '1.5rem' }}>
           {/* Info do pedido */}
           <div style={{
@@ -150,7 +173,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
                   <option value="">Selecione um entregador...</option>
                   {ownDrivers.map(d => (
                     <option key={d.id} value={d.id}>
-                      {d.name} — {d.vehicle_type === 'MOTO' ? '🏍️' : d.vehicle_type === 'BIKE' ? '🚲' : '🚗'} {d.vehicle_plate || ''}
+                      {d.name} — {d.vehicle_type === 'MOTO' ? '🏍️' : d.vehicle_type === 'BIKE' ? '🚲' : '🚗'} {d.vehicle_plate || ''} · {d.active_orders ?? 0}/{limiteRota} pedidos
                     </option>
                   ))}
                 </select>
@@ -175,6 +198,19 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
                 Nenhum entregador próprio online no momento.
               </p>
             )}
+            {/* Copiloto — avisos do entregador selecionado (nunca bloqueia) */}
+            {(() => {
+              const sel = ownDrivers.find(d => String(d.id) === String(selectedDriverId));
+              const avisos = sel?.alerts || [];
+              if (!avisos.length) return null;
+              return (
+                <div style={{ marginTop: '0.5rem', padding: '0.625rem 0.75rem', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '0.5rem' }}>
+                  {avisos.map((a, i) => (
+                    <p key={i} style={{ fontSize: '0.75rem', color: '#854d0e', margin: i > 0 ? '0.25rem 0 0' : 0 }}>{a.msg}</p>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Separador */}

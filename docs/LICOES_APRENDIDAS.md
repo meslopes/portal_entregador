@@ -147,7 +147,15 @@
     `main.py` (o `migrations/env.py` lê `extensions['migrate']`). Toda
     configuração nova nasce em `src/main.py` — nunca mais duplicar entry.
 
+37. **Mapa Leaflet pinta por cima de modais** — os panes internos do Leaflet
+    usam z-index 400–700 e, sem contexto de empilhamento no
+    `.leaflet-container`, escapam por cima de QUALQUER camada (modal com
+    z-index 100): tiles e o popup do entregador cobriam o modal do pedido.
+    Fix único e global: `.leaflet-container { position: relative; z-index: 0 }`
+    no `src/index.css` — cria o contexto de empilhamento e prende panes e
+    popups dentro do mapa (vale para todos os mapas do app).
+
 ---
 
-_Atualizado em 2026-11-24 — 36 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-24 — 37 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

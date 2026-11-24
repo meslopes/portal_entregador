@@ -219,11 +219,25 @@
 - [x] order_price_tiers (JSON validado) + calcular_faixas_pedidos (funcao pura) + snapshot por faixa na fatura; contratos legados (cota+preco) convertidos em 2 faixas automaticamente
 - [x] UI: editor de faixas na aba Cobrança + Simular com quebra por faixa; smoke 8/8 (matematica marginal = tabela do plano); docs no mesmo commit
 
+## ✅ 2026-11-24 — Reenviar pedido cancelado (CONCLUIDA)
+- [x] POST /api/orders/:id/relaunch — SOMENTE admin/super admin (papel admin da maquina de estados; estabelecimento recebe 403). Pedido cancelado volta a PENDING limpando atribuicao (plataforma/proprios), tempos, ofertas/rejeicoes antigas + reoferece ao entregador mais proximo + Registro de Atividades + notificacoes
+- [x] Botao "Reenviar Pedido" so no painel admin (OrderDetail/StatusActions) — portal do estabelecimento nao ganha nada; trava explicita "so cancelados" (maquina trata mesmo status como no-op)
+- [x] Smoke 5/5 (_tmp_smoke_relaunch.py): admin 200 + limpeza / nao-cancelado 400 / estabelecimento 403 / re-relançar 200
+
+## ✅ 2026-11-24 — Distribuição configurável + corredor angular (CONCLUIDA)
+- [x] Distribuicao de pedidos a proprios CONFIGURAVEL por estabelecimento (padrao MANUAL = comportamento antigo): modo AUTO = corredor angular — oferta ao entregador cuja rota segue o rumo do pedido (bearing do estabelecimento, janela ±45 graus padrao), com limite de pedidos por rota (3) e raio de seguranca (10km, 0=off) — TUDO configuravel no perfil do estabelecimento
+- [x] Prioridade: rotas compativeis (menor angulo) antes de livres; fallback fila + distribuicao manual; override manual sempre disponivel (modal mostra carga n/limite + confirma ao estourar) — "reducao temporaria do limite" = nao adicionar mais (decisao de nao criar 3 niveis de limite, ver memoria)
+- [x] Log de distribuicao por oferta (M4 — angulo/distancia/carga/motivo em Order.distribution_log); relançamento respeita a politica (AUTO→oferta, MANUAL→fila); plataforma intocada
+- [x] Smoke 7/7 (_tmp_smoke_distribution.py): bearing/wrap/config/corredor/cap/raio/log
+- [x] COPILOTO DE ROTEIRO (2026-11-24, A+B pedido do Mauro): avisos no modal de distribuicao (nunca bloqueiam) — fora do corredor (angulo), no teto, fora do raio, colega livre com sobrecarga, pedido parado >10min; avaliar_atribuicao reusa a geometria do motor; avisos ignorados na atribuicao manual vao para o distribution_log (auditoria "quem foi avisado do quê"). FUTURO: painel de saude da distribuicao (opcao C)
+- [ ] ACHADO (nao mexido): update_profile (/api/user/profile) IGNORA silenciosamente name/address/phone do estabelecimento (apenas user/driver) — o form do perfil do cliente envia e e descartado (phone cai no user.phone!). Corrigir com cuidado do vinculo Customer.name <-> Restaurant.name (busca por nome!)
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
 - [x] Alerta minimo de monitoramento (health/5xx) — Cloud Monitoring: uptime check + alerta 5xx + e-mail
 - [x] Ledger financeiro imutavel (F-11) — financial_ledger com trigger de imutabilidade, Decimal, snapshot, idempotencia + tela Livro Financeiro
+- [ ] Investigar busca AUTOMATICA do entregador proprio (relato do Mauro 2026-11-24: "temos algum problema na busca pelo entregador proprio de modo automatico" — ele ainda vai pesquisar; NAO mexer sem ele trazer detalhes)
 - [x] Consolidar main.py x main_production.py (2026-11-24, lições 34/36): entry unico = src/main.py; main_production.py virou casca de compatibilidade (app + create_app p/ Alembic/Procfile/migrate_route_settings); Migrate(app,db) movido ao main.py. Fim da duplicidade que causou 2 incidentes (CORS, handlers JWT)
 - [ ] Auditoria de configurabilidade das RELACOES OPERACIONAIS (pedido do Mauro 2026-11-20): todas as relacoes entre participantes (plataforma<->admin, admin<->estab, estab<->entregador, admin<->entregador, e as demais que a auditoria encontrar) — o que nao precisar de config sai marcado "nao necessario" com justificativa. Entregar docs/PLAN_CONFIGURABILIDADE.md p/ aprovacao dele. PRIMEIRO a cobranca (feito) — este e o proximo
 - [ ] Extensao futura do motor de cobranca: modo PICO de ativos simultaneos (exigiria historico diario novo — nao necessario hoje)

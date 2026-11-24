@@ -36,6 +36,16 @@ class Restaurant(db.Model):
     platform_pricing_table_id = db.Column(db.Integer, db.ForeignKey('pricing_tables.id'), nullable=True)  # Tabela diferenciada para plataforma
     # Roteirização para entregadores da plataforma
     enable_platform_routing = db.Column(db.Boolean, default=False)  # Se usa roteirização para plataforma
+    # Distribuição de pedidos a entregadores PRÓPRIOS (2026-11-24) — configurável
+    # por estabelecimento (diretriz "configurável sem poluir"). Padrão MANUAL =
+    # comportamento histórico (estabelecimento distribui pelo modal). AUTO = motor
+    # de corredor angular: oferta ao entregador cuja rota segue o mesmo rumo do
+    # pedido (bearing do estabelecimento, janela ±route_angle_tolerance graus),
+    # respeitando route_max_orders e o raio route_max_distance_km (0 = sem raio).
+    distribution_mode = db.Column(db.String(20), default='MANUAL')  # MANUAL, AUTO
+    route_angle_tolerance = db.Column(db.Integer, default=45)  # janela de ±graus
+    route_max_orders = db.Column(db.Integer, default=3)  # pedidos simultâneos por rota
+    route_max_distance_km = db.Column(db.Numeric(6, 2), default=10.0)  # raio de segurança (0 = off)
     # Configuração de pagamento para entregadores próprios
     own_driver_payment_type = db.Column(db.String(30), default='PER_DELIVERY')  # PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED, FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY
     own_driver_fixed_value = db.Column(db.Numeric(10, 2), default=5.00)  # Valor fixo por entrega/diária
@@ -203,6 +213,8 @@ class Order(db.Model):
     accepted_at = db.Column(db.DateTime)
     offered_at = db.Column(db.DateTime)  # Quando foi oferecido ao entregador próprio
     offer_attempts = db.Column(db.Integer, default=0)  # Quantas vezes foi oferecido
+    # Log de distribuição (M4) — JSON com cada oferta (ângulo, distância, motivo)
+    distribution_log = db.Column(db.Text)
     preparing_at = db.Column(db.DateTime)
     ready_at = db.Column(db.DateTime)
     picked_up_at = db.Column(db.DateTime)

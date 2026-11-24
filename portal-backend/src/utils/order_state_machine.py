@@ -37,6 +37,10 @@ VALID_TRANSITIONS = {
 
     # Cancelamento após coleta requer admin
     (OrderStatus.PICKED_UP, OrderStatus.CANCELLED): ['admin'],
+
+    # Relançamento de pedido cancelado — SOMENTE admin (inclui super admin;
+    # estabelecimento NUNCA). Endpoint: POST /api/orders/<id>/relaunch
+    (OrderStatus.CANCELLED, OrderStatus.PENDING): ['admin'],
 }
 
 

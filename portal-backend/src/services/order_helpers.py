@@ -240,40 +240,13 @@ INTERNAL_TO_IFOOD_MAP = {
 
 
 def find_nearest_own_driver(order, exclude_driver_id=None):
-    """Encontra o entregador próprio online mais próximo do restaurante"""
-    restaurant = order.restaurant
-    if not restaurant or not restaurant.has_own_drivers:
-        return None
-
-    online_drivers = EstablishmentDriver.query.filter(
-        EstablishmentDriver.restaurant_id == restaurant.id,
-        EstablishmentDriver.is_online,
-        EstablishmentDriver.is_active
-    ).all()
-
-    # Excluir entregador que rejeitou
-    if exclude_driver_id:
-        online_drivers = [d for d in online_drivers if d.id != exclude_driver_id]
-
-    if not online_drivers:
-        return None
-
-    # Se o restaurante tem coordenadas, encontra o mais próximo
-    if restaurant.latitude and restaurant.longitude and order.delivery_address and order.delivery_address.latitude:
-        # Ordena por distância até o restaurante (para pegada rápida)
-        # Se o entregador tem localização, usa distância real; senão, pega o primeiro disponível
-        drivers_with_location = [d for d in online_drivers if d.current_latitude and d.current_longitude]
-        if drivers_with_location:
-            def driver_distance(d):
-                return haversine_distance(
-                    float(restaurant.latitude), float(restaurant.longitude),
-                    float(d.current_latitude), float(d.current_longitude)
-                )
-            drivers_with_location.sort(key=driver_distance)
-            return drivers_with_location[0]
-
-    # Fallback: retorna o primeiro online disponível
-    return online_drivers[0]
+    """Seleciona o entregador próprio para o pedido (delega ao motor de
+    corredor angular — distribuição configurável, 2026-11-24). Mantém a
+    assinatura antiga para os chamadores existentes (reject/reoferta)."""
+    from src.services.distribution import selecionar_entregador_proprio
+    excl = [exclude_driver_id] if exclude_driver_id else []
+    driver, _info = selecionar_entregador_proprio(order, exclude_driver_ids=excl)
+    return driver
 
 
 def process_scheduled_orders():
@@ -320,8 +293,31 @@ def process_scheduled_orders():
             # Verificar se o restaurante tem entregadores próprios
             restaurant = order.restaurant
             if restaurant and restaurant.has_own_drivers:
-                logger.info(f"[OWN-DRIVER] Pedido {order.order_number} - restaurante tem entregadores próprios, aguardando rota do estabelecimento")
-                # Não faz nada - o estabelecimento vai criar rotas manualmente
+                # Distribuição configurável (2026-11-24): MANUAL (padrão) mantém
+                # o comportamento histórico — estabelecimento distribui pelo modal.
+                # AUTO = motor de corredor angular: oferta ao entregador cuja
+                # rota segue o rumo do pedido (respeitando limite e raio).
+                if (restaurant.distribution_mode or 'MANUAL') == 'AUTO':
+                    try:
+                        from src.services.distribution import (
+                            registrar_log_distribuicao,
+                            selecionar_entregador_proprio,
+                        )
+                        escolhido, info = selecionar_entregador_proprio(order)
+                        registrar_log_distribuicao(order, info)
+                        if escolhido:
+                            order.assigned_to_own_driver = True
+                            order.establishment_driver_id = escolhido.id
+                            order.status = OrderStatus.OFFERED
+                            order.offered_at = now
+                            order.offer_attempts = (order.offer_attempts or 0) + 1
+                            logger.info(f"[AUTO-PROPRIO] Pedido {order.order_number} oferecido a {escolhido.name} ({info.get('motivo')})")
+                        else:
+                            logger.info(f"[AUTO-PROPRIO] Pedido {order.order_number} sem candidato ({info.get('motivo')}) — na fila para distribuição manual")
+                    except Exception as _e:
+                        logger.error(f"[AUTO-PROPRIO] seleção falhou: {_e}")
+                else:
+                    logger.info(f"[OWN-DRIVER] Pedido {order.order_number} - restaurante tem entregadores próprios, aguardando distribuição manual")
                 continue  # Próximo pedido
 
             # === FALLBACK: Sem entregadores próprios online, distribui para plataforma ===

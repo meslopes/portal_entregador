@@ -607,6 +607,37 @@ def update_establishment(establishment_id):
                 return jsonify({'error': 'has_own_drivers deve ser booleano'}), 400
             est.has_own_drivers = has
 
+        # Distribuição de pedidos a próprios (configurável — 2026-11-24)
+        if 'distribution_mode' in data:
+            modo = str(data['distribution_mode']).upper()
+            if modo not in ('MANUAL', 'AUTO'):
+                return jsonify({'error': 'distribution_mode deve ser MANUAL ou AUTO'}), 400
+            est.distribution_mode = modo
+        if 'route_angle_tolerance' in data:
+            try:
+                val = int(data['route_angle_tolerance'])
+            except (TypeError, ValueError):
+                return jsonify({'error': 'route_angle_tolerance deve ser inteiro'}), 400
+            if not (5 <= val <= 180):
+                return jsonify({'error': 'route_angle_tolerance deve estar entre 5 e 180 graus'}), 400
+            est.route_angle_tolerance = val
+        if 'route_max_orders' in data:
+            try:
+                val = int(data['route_max_orders'])
+            except (TypeError, ValueError):
+                return jsonify({'error': 'route_max_orders deve ser inteiro'}), 400
+            if not (1 <= val <= 20):
+                return jsonify({'error': 'route_max_orders deve estar entre 1 e 20'}), 400
+            est.route_max_orders = val
+        if 'route_max_distance_km' in data:
+            try:
+                val = float(data.get('route_max_distance_km') or 0)
+            except (TypeError, ValueError):
+                return jsonify({'error': 'route_max_distance_km deve ser numérico'}), 400
+            if not (0 <= val <= 200):
+                return jsonify({'error': 'route_max_distance_km deve estar entre 0 e 200 km'}), 400
+            est.route_max_distance_km = val
+
         if 'phone' in data:
 
             est.phone = data['phone']

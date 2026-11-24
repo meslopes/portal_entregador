@@ -33,6 +33,11 @@ def get_profile():
                 user_data['restaurant_id'] = restaurant.id
                 user_data['has_own_drivers'] = restaurant.has_own_drivers or False
                 user_data['subscription_type'] = restaurant.subscription_type
+                # Distribuição de pedidos a próprios (configurável — 2026-11-24)
+                user_data['distribution_mode'] = restaurant.distribution_mode or 'MANUAL'
+                user_data['route_angle_tolerance'] = restaurant.route_angle_tolerance or 45
+                user_data['route_max_orders'] = restaurant.route_max_orders or 3
+                user_data['route_max_distance_km'] = float(restaurant.route_max_distance_km or 10)
 
         return jsonify(user_data), 200
     except Exception as e:
@@ -80,6 +85,44 @@ def update_profile():
                 driver.pix_key = data['pix_key']
             if 'bank_account' in data:
                 driver.bank_account = data['bank_account']
+
+        # Configurações do estabelecimento (perfil do cliente) — inclui a
+        # distribuição de pedidos a próprios (configurável, 2026-11-24)
+        customer = Customer.query.filter_by(user_id=user.id).first()
+        if customer:
+            restaurant = find_restaurant_by_name(customer.name)
+            if restaurant:
+                if 'has_own_drivers' in data:
+                    restaurant.has_own_drivers = bool(data['has_own_drivers'])
+                if 'distribution_mode' in data:
+                    modo = str(data['distribution_mode']).upper()
+                    if modo not in ('MANUAL', 'AUTO'):
+                        return jsonify({'error': 'distribution_mode deve ser MANUAL ou AUTO'}), 400
+                    restaurant.distribution_mode = modo
+                if 'route_angle_tolerance' in data:
+                    try:
+                        val = int(data['route_angle_tolerance'])
+                    except (TypeError, ValueError):
+                        return jsonify({'error': 'route_angle_tolerance deve ser inteiro'}), 400
+                    if not (5 <= val <= 180):
+                        return jsonify({'error': 'route_angle_tolerance deve estar entre 5 e 180 graus'}), 400
+                    restaurant.route_angle_tolerance = val
+                if 'route_max_orders' in data:
+                    try:
+                        val = int(data['route_max_orders'])
+                    except (TypeError, ValueError):
+                        return jsonify({'error': 'route_max_orders deve ser inteiro'}), 400
+                    if not (1 <= val <= 20):
+                        return jsonify({'error': 'route_max_orders deve estar entre 1 e 20'}), 400
+                    restaurant.route_max_orders = val
+                if 'route_max_distance_km' in data:
+                    try:
+                        val = float(data.get('route_max_distance_km') or 0)
+                    except (TypeError, ValueError):
+                        return jsonify({'error': 'route_max_distance_km deve ser numérico'}), 400
+                    if not (0 <= val <= 200):
+                        return jsonify({'error': 'route_max_distance_km deve estar entre 0 e 200 km'}), 400
+                    restaurant.route_max_distance_km = val
 
         db.session.commit()
 

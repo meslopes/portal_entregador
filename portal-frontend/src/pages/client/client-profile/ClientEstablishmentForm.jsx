@@ -74,6 +74,58 @@ const ClientEstablishmentForm = ({ establishmentData, setEstablishmentData, isSa
       />
     </div>
 
+    {/* Distribuição de pedidos a entregadores próprios (configurável) */}
+    <div style={{ marginBottom: '1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '0.5rem', padding: '1rem' }}>
+      <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>
+        Distribuição de pedidos (entregadores próprios)
+      </p>
+      <p style={{ fontSize: '0.6875rem', color: '#64748b', marginBottom: '0.75rem' }}>
+        Manual (padrão): você escolhe o entregador em cada pedido. Automático: o sistema oferece ao
+        entregador cuja rota segue a mesma direção do pedido (corredor angular), respeitando o limite abaixo.
+        A escolha manual continua disponível nos dois modos.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Modo</label>
+          <select
+            value={establishmentData.distribution_mode || 'MANUAL'}
+            onChange={e => setEstablishmentData({ ...establishmentData, distribution_mode: e.target.value })}
+            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+          >
+            <option value="MANUAL">Manual (padrão)</option>
+            <option value="AUTO">Automático (corredor angular)</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Janela angular (± graus)</label>
+          <input
+            type="number" min="5" max="180"
+            value={establishmentData.route_angle_tolerance ?? 45}
+            onChange={e => setEstablishmentData({ ...establishmentData, route_angle_tolerance: e.target.value })}
+            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Limite de pedidos por rota</label>
+          <input
+            type="number" min="1" max="20"
+            value={establishmentData.route_max_orders ?? 3}
+            onChange={e => setEstablishmentData({ ...establishmentData, route_max_orders: e.target.value })}
+            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Raio máximo (km — 0 = sem limite)</label>
+          <input
+            type="number" min="0" max="200" step="0.5"
+            value={establishmentData.route_max_distance_km ?? 10}
+            onChange={e => setEstablishmentData({ ...establishmentData, route_max_distance_km: e.target.value })}
+            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+          />
+        </div>
+      </div>
+    </div>
+
     <button
       onClick={onSave}
       disabled={isSaving}

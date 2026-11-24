@@ -562,6 +562,29 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration distribuição configurável de próprios (2026-11-24)
+    try:
+        for col_sql in (
+            "distribution_mode VARCHAR(20) DEFAULT 'MANUAL'",
+            "route_angle_tolerance INTEGER DEFAULT 45",
+            "route_max_orders INTEGER DEFAULT 3",
+            "route_max_distance_km NUMERIC(6,2) DEFAULT 10.0",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'restaurants' AND column_name = '{col}') "
+                f"THEN ALTER TABLE restaurants ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'orders' AND column_name = 'distribution_log') "
+            "THEN ALTER TABLE orders ADD COLUMN distribution_log TEXT; END IF; END $$"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Migration: carteira do entregador (balance, locked_balance, pix_key)
     try:
         db.session.execute(db.text(

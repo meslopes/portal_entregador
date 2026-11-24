@@ -26,6 +26,10 @@ const ClientProfilePage = () => {
     address: '',
     phone: '',
     description: '',
+    distribution_mode: 'MANUAL',
+    route_angle_tolerance: 45,
+    route_max_orders: 3,
+    route_max_distance_km: 10,
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -63,6 +67,10 @@ const ClientProfilePage = () => {
           address: data.customer.address || '',
           phone: data.customer.phone || '',
           description: data.customer.description || '',
+          distribution_mode: data.distribution_mode || 'MANUAL',
+          route_angle_tolerance: data.route_angle_tolerance ?? 45,
+          route_max_orders: data.route_max_orders ?? 3,
+          route_max_distance_km: data.route_max_distance_km ?? 10,
         });
       }
     } catch (err) {

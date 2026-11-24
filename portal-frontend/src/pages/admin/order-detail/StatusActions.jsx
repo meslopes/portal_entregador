@@ -9,7 +9,7 @@ const buttonBase = {
   fontWeight: 600,
 };
 
-const StatusActions = ({ order, statusConfig, statusDetail, onEdit, onShowMap, onChangeStatus }) => (
+const StatusActions = ({ order, statusConfig, statusDetail, onEdit, onShowMap, onChangeStatus, onRelaunch }) => (
   <div style={{ background: 'white', borderRadius: '0.75rem', padding: '1.25rem', marginBottom: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', borderLeft: `4px solid ${statusConfig.color || '#64748b'}` }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
       <span style={{ fontSize: '2rem' }}>{statusConfig.icon}</span>
@@ -31,6 +31,11 @@ const StatusActions = ({ order, statusConfig, statusDetail, onEdit, onShowMap, o
       {order.status === 'SCHEDULED' && (
         <button onClick={() => onChangeStatus('PENDING')} style={{ ...buttonBase, border: 'none', background: '#ef4444', color: 'white' }}>
           🔔 Tocar Agora
+        </button>
+      )}
+      {order.status === 'CANCELLED' && onRelaunch && (
+        <button onClick={onRelaunch} style={{ ...buttonBase, border: 'none', background: '#2563eb', color: 'white' }}>
+          🔁 Reenviar Pedido
         </button>
       )}
       {order.status === 'PENDING' && (

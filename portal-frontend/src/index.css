@@ -1,0 +1,8 @@
+/* Leaflet: o container SEMPRE cria contexto de empilhamento.
+   Sem isto, os panes internos do mapa (z-index 400-700) escapam por cima de
+   modais (z-index ~100) — o mapa e o popup do entregador cobriam o modal do
+   pedido no dashboard do cliente (lição 37). */
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+}

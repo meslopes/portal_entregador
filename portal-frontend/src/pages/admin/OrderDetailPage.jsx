@@ -97,6 +97,20 @@ const OrderDetailPage = () => {
     }
   };
 
+  const handleRelaunch = async () => {
+    try {
+      const ok = await confirmAsync(
+        'Reenviar este pedido cancelado?\n\nEle voltará para a fila dos entregadores (com as atribuições e ofertas antigas limpas).'
+      );
+      if (!ok) return;
+      await api.post(`/api/orders/${orderId}/relaunch`);
+      showToast('Pedido relançado — de volta à fila de entregas', 'success');
+      loadOrder();
+    } catch (err) {
+      showToast('Erro ao relançar: ' + (err.response?.data?.error || err.message), 'error');
+    }
+  };
+
   const handleEdit = async () => {
     try {
       setEditLoading(true);
@@ -310,6 +324,7 @@ const OrderDetailPage = () => {
         onEdit={openEditModal}
         onShowMap={handleShowMap}
         onChangeStatus={handleChangeStatus}
+        onRelaunch={handleRelaunch}
       />
 
       <OrderTimeline timeline={timeline} statusConfig={statusConfig} formatLocalDateTime={formatLocalDateTime} />

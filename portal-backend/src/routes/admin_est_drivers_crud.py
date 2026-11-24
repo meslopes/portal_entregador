@@ -66,9 +66,42 @@ def list_establishment_drivers():
 
         ).all()
 
+        # Carga atual (pedidos em rota) por entregador + limite do estabelecimento
+        # — visibilidade para o modal de distribuição (R4, 2026-11-24)
+        from src.models.portal_models import Restaurant
+        from src.services.distribution import STATUS_EM_ROTA
+        from sqlalchemy import func as _func
+        cargas = {}
+        if drivers:
+            linhas = (db.session.query(Order.establishment_driver_id, _func.count(Order.id))
+                      .filter(Order.establishment_driver_id.in_([d.id for d in drivers]),
+                              Order.status.in_(STATUS_EM_ROTA))
+                      .group_by(Order.establishment_driver_id).all())
+            cargas = {l[0]: l[1] for l in linhas}
+        restaurante = Restaurant.query.get(int(restaurant_id))
+        payload = []
+        # Copiloto de roteiro (2026-11-24): com order_id, cada entregador ganha
+        # `alerts` (avisos, nunca bloqueios) — o modal exibe ao selecionar
+        pedido_avaliado = None
+        order_id = request.args.get('order_id')
+        if order_id:
+            pedido_avaliado = Order.query.get(int(order_id))
+        for d in drivers:
+            item = d.to_dict()
+            item['active_orders'] = cargas.get(d.id, 0)
+            if pedido_avaliado is not None:
+                from src.services.distribution import avaliar_atribuicao
+                item['alerts'] = avaliar_atribuicao(pedido_avaliado, d)
+            payload.append(item)
 
-
-        return jsonify({'drivers': [d.to_dict() for d in drivers]}), 200
+        resposta = {
+            'drivers': payload,
+            'route_max_orders': int(restaurante.route_max_orders or 3) if restaurante else 3,
+        }
+        if pedido_avaliado is not None:
+            from src.services.distribution import avisos_do_pedido
+            resposta['order_warnings'] = avisos_do_pedido(pedido_avaliado)
+        return jsonify(resposta), 200
 
     except Exception as e:
 
