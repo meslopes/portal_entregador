@@ -151,9 +151,9 @@ Após autorização do Mauro, a IA executa o deploy de ponta a ponta — nunca a
 **FRONTEND (Vercel) — quando houver mudança no frontend:**
 1. `cd portal-frontend`
 2. `npx vercel --prod --yes --scope muvy` (projeto **`portal-frontend`** / equipe **`muvy`** — o `--scope` é OBRIGATÓRIO)
-3. `npx vercel inspect portal-entregador-gamma.vercel.app --scope muvy` — **obrigatório**: confirmar que o deployment exibido é o recém-criado
-4. Site oficial do usuário: **`https://www.muv.log.br`** (o gamma `portal-entregador-gamma.vercel.app` é o domínio do projeto e aponta para o mesmo deploy)
-5. O domínio gamma é **domínio do projeto** e aponta automaticamente para o deploy de produção mais recente (desde 2026-11-14). O `vercel alias set` **não é mais necessário** — se o `inspect` mostrar deployment antigo, reportar o problema em vez de reportar "no ar"
+3. `npx vercel inspect www.muv.log.br --scope muvy` — **obrigatório**: confirmar que o deployment exibido é o recém-criado (sempre pelo domínio OFICIAL, nunca pelo gamma)
+4. Site oficial do usuário: **`https://www.muv.log.br`** — é aí que se verifica e testa. O gamma `portal-entregador-gamma.vercel.app` é apenas URL de debug do projeto (aponta para o mesmo deploy — não é canal oficial)
+5. **`vercel alias set` está ABOLIDO desde 2026-11-14 — nunca recriar.** O gamma era um alias fixo que apontava para deploy velho (bug "versão antiga"); hoje os domínios são do projeto e seguem o deploy automaticamente. Se o `inspect` mostrar deployment antigo, reportar o problema em vez de reportar "no ar"
 6. Hard refresh no navegador do usuário: `Ctrl+Shift+R`
 
 **BACKEND (Cloud Run) — quando houver mudança no backend:**
@@ -166,7 +166,7 @@ Após autorização do Mauro, a IA executa o deploy de ponta a ponta — nunca a
 ```
 git push origin branch-mauro
 → deploy Vercel (--prod) [se frontend mudou]
-→ vercel inspect gamma (confirmar apontamento)
+→ vercel inspect www.muv.log.br (confirmar apontamento)
 → deploy Cloud Run [se backend mudou]
 → health check + teste no navegador EM PRODUÇÃO
 → merge branch-mauro → main + git push origin main (atualizar produção)

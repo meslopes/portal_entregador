@@ -63,8 +63,10 @@
 16. **`git diff` não lista arquivos NOVOS** — checar `git status` antes do
     commit (já esqueci `main_production.py` numa leva; commit extra corrigiu).
 17. **Fluxo de deploy oficial** (REGRAS, procedimento): push → Vercel
-    (`--scope muvy`) se frontend mudou → `vercel inspect` do gamma (ou do
-    domínio oficial) confirmando apontamento → Cloud Run se backend mudou →
+    (`--scope muvy`) se frontend mudou → `vercel inspect` **do domínio
+    oficial `www.muv.log.br`** confirmando apontamento (gamma = só debug;
+    `vercel alias set` ABOLIDO desde 2026-11-14 — o alias fixo do gamma
+    causava o bug "versão antiga") → Cloud Run se backend mudou →
     health 200 → teste em produção → merge em `main` → push.
 18. **Documentação sobe NO MESMO COMMIT do código** (regra do Mauro):
     fluxograma + todo.md + README + MEMORY.md.
