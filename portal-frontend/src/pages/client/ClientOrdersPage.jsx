@@ -4,6 +4,7 @@ import { orderService } from '@/lib/api';
 import OrderFilters from './client-orders/OrderFilters';
 import ClientOrdersList from './client-orders/ClientOrdersList';
 import ClientOrderDetail from './client-orders/ClientOrderDetail';
+import OrdersMiniMap from './client-orders/OrdersMiniMap';
 
 const ClientOrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -77,6 +78,9 @@ const ClientOrdersPage = () => {
         setFilter={setFilter}
         setPage={setPage}
       />
+
+      {/* Mapa resumido dos pedidos (R4) — pins numerados, cor por entregador */}
+      <OrdersMiniMap orders={filtered} onOpenDetails={openDetails} />
 
       {/* Lista */}
       <ClientOrdersList
