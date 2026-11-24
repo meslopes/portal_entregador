@@ -577,7 +577,9 @@ def assign_own_driver(order_id):
 
                 # Se a rota antiga fica sem paradas, excluí-la
                 remaining_stops = OwnDriverStop.query.filter_by(route_id=old_route.id).count()
-                if remaining_stops <= 1:  # <=1 porque ainda não deletamos o stop acima
+                # F1a (2026-11-24): autoflush já aplicou o delete acima antes do
+                # count — "<= 1" apagava a rota INTEIRA ao tirar 1 pedido de rota com 2
+                if remaining_stops == 0:
                     db.session.delete(old_route)
 
             order.own_driver_route_id = None
@@ -613,6 +615,13 @@ def assign_own_driver(order_id):
                     'para': est_driver.name,
                     'status_anterior': status_anterior.value,
                 })
+            except Exception:
+                pass
+            # F2 — rotas automáticas dos DOIS lados (o pedido trocou de dono)
+            try:
+                from src.services.auto_route import manter_rota_automatica
+                manter_rota_automatica(movido_de)
+                manter_rota_automatica(est_driver.id)
             except Exception:
                 pass
             db.session.commit()
@@ -714,6 +723,14 @@ def assign_own_driver(order_id):
                 )
         except Exception:
             pass  # Não falha a atribuição se WhatsApp falhar
+
+        # F2 — rota automática: 2+ pedidos => rota calculada e ativa
+        try:
+            from src.services.auto_route import manter_rota_automatica
+            manter_rota_automatica(est_driver.id)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
         return jsonify({
             'message': f'Pedido atribuído a {est_driver.name}',

@@ -453,6 +453,13 @@ def accept_order(order_id):
                 delivery_longitude=order.delivery_address.longitude if order.delivery_address else None,
             ))
 
+        # F2 — rota automática: 2+ pedidos => rota calculada e ativa
+        try:
+            from src.services.auto_route import manter_rota_automatica
+            manter_rota_automatica(driver.id)
+        except Exception as _e:
+            logger.warning(f"[ROTA AUTO] falhou: {_e}")
+
         db.session.commit()
 
         return jsonify({
@@ -503,6 +510,13 @@ def reject_order(order_id):
                 db.session.commit()
         except Exception as e:
             logger.error(f"Erro ao tentar próximo entregador: {e}")
+
+        # F2 — rota automática: pedido saiu do entregador => refaz a rota
+        try:
+            from src.services.auto_route import manter_rota_automatica
+            manter_rota_automatica(driver.id)
+        except Exception as _e:
+            logger.warning(f"[ROTA AUTO] falhou: {_e}")
 
         return jsonify({'message': 'Pedido rejeitado'}), 200
 

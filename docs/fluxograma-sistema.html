@@ -620,6 +620,7 @@
             <li><strong>Chamar entregadores da plataforma</strong> — notifica disponíveis <span class="route">POST /api/orders/:id/call-platform</span></li>
             <li><strong>Atribuir entregador próprio</strong> — do estabelecimento <span class="route">POST /api/orders/:id/assign-own</span></li>
             <li><strong>Distribuição automática (configurável)</strong> — modo por estabelecimento (Manual=padrão · Automático=corredor angular ±graus com limite de pedidos por rota e raio); oferta ao entregador cuja rota segue o rumo do pedido · override manual sempre disponível <span class="route">config: PUT /api/user/profile · motor: services/distribution.py</span></li>
+            <li><strong>Rota automática (próprios)</strong> — 2+ pedidos no entregador => rota ATIVA calculada (ordem: em andamento → vizinho mais próximo), refazida a cada mudança; botão "Abrir rota completa no Google Maps" (todas as paradas) <span class="route">services/auto_route.py</span></li>
             <li><strong>Editar pedido</strong> — endereço, valor, status <span class="route">PUT /api/admin/orders/:id</span></li>
             <li><strong>Excluir pedido</strong> — remove permanentemente <span class="route">DELETE /api/admin/orders/:id</span></li>
             <li><strong>Criar pedido manual</strong> — "Lançar Pedido" <span class="route">POST /api/orders/</span></li>

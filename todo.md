@@ -237,6 +237,8 @@
 - [x] ACESSO AO LOGIN DO PROPRIO NO APP (2026-11-24, relato do Mauro: PWA instalado so caia no login de plataforma): link cruzado nos dois logins ("Sou entregador proprio — telefone+PIN" na tela de plataforma; "Entrar como estabelecimento/plataforma" na do proprio) + aviso do modo de distribuicao no modal (LIGADA/DESLIGADA + onde configurar) — a config era dificil de achar
 - [ ] ACHADO (nao mexido): update_profile (/api/user/profile) IGNORA silenciosamente name/address/phone do estabelecimento (apenas user/driver) — o form do perfil do cliente envia e e descartado (phone cai no user.phone!). Corrigir com cuidado do vinculo Customer.name <-> Restaurant.name (busca por nome!)
 
+- [x] ROTA AUTOMATICA F1-F3 (2026-11-24, aprovado "ativa direto"): 2+ pedidos no entregador => rota ATIVA calculada (paradas ordenadas: em andamento primeiro, depois vizinho mais proximo) — nasce e se REFZ completa a cada mudanca (rebuild). F1a: mover pedido NAO apaga mais a rota (bug autoflush "<=1" apagava rota inteira de 2 paradas); F1b: OFFERED aparece na lista de pedidos para rota; F2: chamada em aceite/recusa/movimentacao/oferta/relancamento. Adendo do Mauro: botao "Abrir rota completa no Google Maps" no card da rota (origem=1a parada, destino=ultima, intermediarias=waypoints — mais etapas que o Waze). Smoke 6/6 (_tmp_smoke_autoroute.py)
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)

@@ -10,6 +10,21 @@ const statusConfig = {
 const RouteCard = ({ route, onAccept, onReject, onDeliverStop }) => {
   const status = statusConfig[route.status] || statusConfig.COMPLETED;
 
+  // Rota completa no Google Maps (F2 — 2026-11-24): suporta mais etapas que o
+  // Waze; origem = 1ª parada, destino = última, intermediárias = waypoints
+  const abrirRotaGoogleMaps = () => {
+    const pontos = (route.stops || [])
+      .filter(s => s.latitude != null && s.longitude != null)
+      .map(s => `${s.latitude},${s.longitude}`);
+    if (pontos.length < 2) return;
+    const origin = pontos[0];
+    const destination = pontos[pontos.length - 1];
+    const waypoints = pontos.slice(1, -1).join('|');
+    let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+    if (waypoints) url += `&waypoints=${waypoints}`;
+    window.open(url, '_blank', 'noopener');
+  };
+
   return (
     <div style={{
       background: 'white', borderRadius: '0.75rem', padding: '1rem',
@@ -35,6 +50,21 @@ const RouteCard = ({ route, onAccept, onReject, onDeliverStop }) => {
           </span>
         </div>
       </div>
+
+      {/* Rota completa no Google Maps — todas as paradas de uma vez */}
+      {(route.stops || []).filter(s => s.latitude != null).length >= 2 && (
+        <button
+          onClick={abrirRotaGoogleMaps}
+          style={{
+            width: '100%', padding: '0.625rem', borderRadius: '0.5rem', border: 'none',
+            background: '#2563eb', color: 'white', fontWeight: 600, fontSize: '0.8125rem',
+            cursor: 'pointer', marginBottom: '0.75rem', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+          }}
+        >
+          🗺️ Abrir rota completa no Google Maps ({(route.stops || []).length} paradas)
+        </button>
+      )}
 
       {/* Botões de aceite/rejeição para rotas pendentes */}
       {route.status === 'PENDING' && (

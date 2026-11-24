@@ -312,6 +312,11 @@ def process_scheduled_orders():
                             order.offered_at = now
                             order.offer_attempts = (order.offer_attempts or 0) + 1
                             logger.info(f"[AUTO-PROPRIO] Pedido {order.order_number} oferecido a {escolhido.name} ({info.get('motivo')})")
+                            try:
+                                from src.services.auto_route import manter_rota_automatica
+                                manter_rota_automatica(escolhido.id)
+                            except Exception as _e:
+                                logger.warning(f"[ROTA AUTO] falhou: {_e}")
                         else:
                             logger.info(f"[AUTO-PROPRIO] Pedido {order.order_number} sem candidato ({info.get('motivo')}) — na fila para distribuição manual")
                     except Exception as _e:
@@ -389,6 +394,11 @@ def process_scheduled_orders():
                     pedido.offered_at = now
                     pedido.offer_attempts = (pedido.offer_attempts or 0) + 1
                     logger.info(f"[AUTO-PROPRIO] (retentativa) Pedido {pedido.order_number} oferecido a {escolhido.name}")
+                    try:
+                        from src.services.auto_route import manter_rota_automatica
+                        manter_rota_automatica(escolhido.id)
+                    except Exception as _e:
+                        logger.warning(f"[ROTA AUTO] falhou: {_e}")
             except Exception as _e:
                 logger.error(f"[AUTO-PROPRIO] retentativa falhou: {_e}")
 

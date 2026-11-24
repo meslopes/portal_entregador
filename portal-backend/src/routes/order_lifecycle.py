@@ -701,6 +701,15 @@ def relaunch_order(order_id):
                         order.status = OrderStatus.OFFERED
                         order.offered_at = datetime.now(timezone.utc)
                         order.offer_attempts = (order.offer_attempts or 0) + 1
+                    # F2 — rotas automáticas (o pedido saiu do antigo dono)
+                    try:
+                        from src.services.auto_route import manter_rota_automatica
+                        if old_est_driver_id:
+                            manter_rota_automatica(old_est_driver_id)
+                        if escolhido:
+                            manter_rota_automatica(escolhido.id)
+                    except Exception:
+                        pass
                 # MANUAL: permanece PENDING — estabelecimento distribui pelo modal
             else:
                 new_driver = find_nearest_available_driver(order, exclude_driver_ids=[old_driver_id] if old_driver_id else [])
