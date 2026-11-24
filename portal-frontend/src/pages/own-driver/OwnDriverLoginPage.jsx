@@ -149,6 +149,14 @@ const OwnDriverLoginPage = () => {
         <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '1.5rem' }}>
           Não tem seu PIN? Peça ao estabelecimento para cadastrar.
         </p>
+        <p style={{ textAlign: 'center', fontSize: '0.75rem', marginTop: '0.75rem' }}>
+          <a
+            href="/login"
+            style={{ color: '#0d9488', textDecoration: 'none', fontWeight: 600 }}
+          >
+            Entrar como estabelecimento/plataforma →
+          </a>
+        </p>
       </div>
     </div>
   );

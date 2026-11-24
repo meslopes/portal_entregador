@@ -9,6 +9,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
   const [ownDrivers, setOwnDrivers] = useState([]);
   const [limiteRota, setLimiteRota] = useState(3);
   const [orderWarnings, setOrderWarnings] = useState([]);
+  const [modoAuto, setModoAuto] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [callingPlatform, setCallingPlatform] = useState(false);
@@ -19,6 +20,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
       try {
         const userRes = await api.get('/api/user/profile');
         const restaurantId = userRes.data.restaurant_id;
+        setModoAuto((userRes.data.distribution_mode || 'MANUAL') === 'AUTO');
         if (restaurantId) {
           const res = await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}&order_id=${order.id}`);
           const onlineDrivers = (res.data.drivers || []).filter(d => d.is_online && d.is_active);
@@ -114,6 +116,13 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
             ))}
           </div>
         )}
+
+        {/* Modo de distribuição — deixa claro onde configurar (descoberta) */}
+        <p style={{ margin: '0.5rem 1.5rem 0', fontSize: '0.6875rem', color: modoAuto ? '#0d9488' : '#94a3b8' }}>
+          {modoAuto
+            ? '✓ Distribuição automática LIGADA — o sistema oferece ao entregador da direção quando o pedido sai do preparo.'
+            : 'Distribuição automática desligada — ligue em Perfil do estabelecimento → Distribuição de pedidos.'}
+        </p>
 
         <div style={{ padding: '1.5rem' }}>
           {/* Info do pedido */}

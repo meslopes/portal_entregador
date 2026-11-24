@@ -253,6 +253,11 @@ const LoginPage = () => {
                 Cadastre-se como estabelecimento
               </Link>
             </div>
+            <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
+              <Link to="/own-driver/login" className="auth-footer-link">
+                Sou entregador próprio — entrar com telefone e PIN
+              </Link>
+            </div>
           </div>
 
           {/* Credenciais de teste - sutil */}
