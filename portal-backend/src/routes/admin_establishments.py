@@ -642,6 +642,11 @@ def update_establishment(establishment_id):
             if modo_maq not in ('PER_SHIFT', 'PER_DELIVERY'):
                 return jsonify({'error': 'machine_settlement_mode deve ser PER_SHIFT ou PER_DELIVERY'}), 400
             est.machine_settlement_mode = modo_maq
+        if 'seq_reset_mode' in data:
+            modo_seq = str(data['seq_reset_mode']).upper()
+            if modo_seq not in ('DAILY', 'CONTINUOUS'):
+                return jsonify({'error': 'seq_reset_mode deve ser DAILY ou CONTINUOUS'}), 400
+            est.seq_reset_mode = modo_seq
 
         if 'phone' in data:
 

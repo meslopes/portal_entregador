@@ -59,7 +59,7 @@ const OrdersMiniMap = ({ orders, onOpenDetails }) => {
       const lng = parseFloat(addr.longitude);
       const nome = nomeEntregador(o);
       const cor = corDoEntregador(nome);
-      const num = (o.order_number || '').slice(-4);
+      const num = o.seq_number != null ? String(o.seq_number) : (o.order_number || '').slice(-4);
       const marker = L.marker([lat, lng], {
         icon: L.divIcon({
           className: '',

@@ -239,6 +239,13 @@
 
 - [x] ROTA AUTOMATICA F1-F3 (2026-11-24, aprovado "ativa direto"): 2+ pedidos no entregador => rota ATIVA calculada (paradas ordenadas: em andamento primeiro, depois vizinho mais proximo) — nasce e se REFZ completa a cada mudanca (rebuild). F1a: mover pedido NAO apaga mais a rota (bug autoflush "<=1" apagava rota inteira de 2 paradas); F1b: OFFERED aparece na lista de pedidos para rota; F2: chamada em aceite/recusa/movimentacao/oferta/relancamento. Adendo do Mauro: botao "Abrir rota completa no Google Maps" no card da rota (origem=1a parada, destino=ultima, intermediarias=waypoints — mais etapas que o Waze). Smoke 6/6 (_tmp_smoke_autoroute.py)
 
+## ✅ 2026-11-24 — Numeração dos pedidos N1-N4 (CONCLUIDA)
+- [x] N1: sequencial curto #37 por estabelecimento (Order.seq_number/seq_date) — linguagem do dia a dia; numero completo do sistema (PED...) continua nos detalhes
+- [x] N2: reset CONFIGURAVEL por estabelecimento (Restaurant.seq_reset_mode): DAILY zera todo dia (padrao) x CONTINUOUS nunca zera — config no perfil do estabelecimento ("Numeracao dos pedidos")
+- [x] N3: embalagem 1,2,3 por rota na ordem do mapa (reusa OwnDriverStop.stop_order) — badge "Embalagem N" no StopItem + "Embalagem N" na tela de entrega do proprio
+- [x] N4: exibicao sem poluir — pins do mapa e cards = #seq; visao de rota = embalagem; detalhe = seq + data. package_number no to_dict do Order (via 1a parada da rota)
+- [x] Migrações nos 2 entries (main.py + migrations_tables.py); config em user.py profile + admin_establishments.py; smoke 4/4 (_tmp_smoke_seq.py: incremento / zera diario / continua / embalagens)
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)

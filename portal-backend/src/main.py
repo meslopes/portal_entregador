@@ -818,6 +818,29 @@ with app.app_context():
         print(f"Migração acerto de retorno: {e}")
         db.session.rollback()
 
+    # Migration numeração curta dos pedidos (N1 — 2026-11-24) — #seq do dia
+    try:
+        for col_sql in (
+            "seq_number INTEGER",
+            "seq_date DATE",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'orders' AND column_name = '{col}') "
+                f"THEN ALTER TABLE orders ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'restaurants' AND column_name = 'seq_reset_mode') "
+            "THEN ALTER TABLE restaurants ADD COLUMN seq_reset_mode VARCHAR(20) DEFAULT 'DAILY'; END IF; END $$"
+        ))
+        db.session.commit()
+        print("Colunas de numeração curta adicionadas")
+    except Exception as e:
+        print(f"Migração numeração curta: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

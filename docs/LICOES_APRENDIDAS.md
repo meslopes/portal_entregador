@@ -155,7 +155,32 @@
     no `src/index.css` — cria o contexto de empilhamento e prende panes e
     popups dentro do mapa (vale para todos os mapas do app).
 
+38. **autoflush do SQLAlchemy + funções de consulta que materializam** —
+    query depois de `session.delete()` JÁ reflete o delete (o `remaining_stops
+    <= 1` apagava a rota inteira ao tirar 1 pedido de rota com 2 — corrigido
+    para `== 0`); e funções utilitárias devolvem QUERY (não `.all()`) — o
+    consumidor escolhe `.count()/.all()`; materializar na função quebra em
+    silêncio nos consumidores (`.count()` em lista vira TypeError engolido).
+39. **Limpeza de fixtures de teste e ordem de FK** — filhos antes dos pais:
+    `own_driver_stops` → `deliveries`/`own_driver_earnings` → UPDATE
+    `orders.own_driver_route_id=NULL` → `own_driver_routes` → `orders` →
+    `addresses` → `customers`/`establishment_drivers`. Resíduos de execuções
+    anteriores (runs que abortaram) exigem filtro por `name LIKE` (não só ids
+    da execução atual); fixtures com phone/nome único por execução (pid);
+    `Address` exige `customer_id`/`zip_code` (não tem `number`).
+40. **Segredos e ambiente são POR SERVIDOR** — `OWN_DRIVER_SECRET` difere
+    entre local e produção: smoke do fluxo do entregador próprio deve fazer
+    LOGIN real (`register-pin` + `POST /api/own-driver/login`) para o próprio
+    servidor cunhar o token — mintar localmente falha em prod. E env vars do
+    shell (ex.: `MUV_API`) NÃO persistem entre chamadas de bash: setar no
+    MESMO comando que usa.
+41. **`gcloud logging read` × PowerShell e esperas de UI** — sem `~` (regex),
+    filtros de timestamp/aspas quebram no PS e `[ ]` são curinga no `-like`
+    (usar `.Contains()`); trazer `--format=json` e filtrar no PowerShell.
+    Em testes de UI, a página some durante o carregamento — asserções devem
+    usar `waitForFunction`/`waitForSelector` em vez de `waitForTimeout` curto.
+
 ---
 
-_Atualizado em 2026-11-24 — 37 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-24 — 41 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

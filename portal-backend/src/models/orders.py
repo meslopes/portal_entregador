@@ -50,6 +50,9 @@ class Restaurant(db.Model):
     # ou por ENTREGA/ROTA (uma pendência por pedido no cartão) — varia conforme
     # máquinas disponíveis × entregadores com cobrança (decisão do Mauro)
     machine_settlement_mode = db.Column(db.String(20), default='PER_SHIFT')  # PER_SHIFT, PER_DELIVERY
+    # Numeração dos pedidos (N1 — 2026-11-24): DAILY zera todo dia (#37 de hoje)
+    # ou CONTINUOUS nunca zera — a pedido do Mauro (configurável como tudo)
+    seq_reset_mode = db.Column(db.String(20), default='DAILY')  # DAILY, CONTINUOUS
     # Configuração de pagamento para entregadores próprios
     own_driver_payment_type = db.Column(db.String(30), default='PER_DELIVERY')  # PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED, FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY
     own_driver_fixed_value = db.Column(db.Numeric(10, 2), default=5.00)  # Valor fixo por entrega/diária
@@ -219,6 +222,11 @@ class Order(db.Model):
     offer_attempts = db.Column(db.Integer, default=0)  # Quantas vezes foi oferecido
     # Log de distribuição (M4) — JSON com cada oferta (ângulo, distância, motivo)
     distribution_log = db.Column(db.Text)
+    # Numeração para o dia a dia (N1 — 2026-11-24): #seq curto (ex.: #37) para
+    # estabelecimento/entregador; o PED<data> do sistema continua nos detalhes.
+    # Zera diariamente ou segue contínuo — configurável por estabelecimento.
+    seq_number = db.Column(db.Integer)
+    seq_date = db.Column(db.Date)  # dia do seq (para reset diário)
     # Acerto de retorno (A1 — 2026-11-24): pagamento no local gera pendência até
     # o estabelecimento confirmar (dinheiro / maquininha / comprovante PIX).
     # Enquanto PENDING o entregador não recebe novas ofertas (trava no motor).
@@ -308,6 +316,8 @@ class Order(db.Model):
         'settlement_kind': self.settlement_kind,
         'settlement_value': float(self.settlement_value) if self.settlement_value else None,
         'pix_proof_url': self.pix_proof_url,
+        'seq_number': self.seq_number,
+        'package_number': (self.own_driver_stops[0].stop_order if self.own_driver_stops else None),
             'establishment_driver_id': self.establishment_driver_id,
             'own_driver_route_id': self.own_driver_route_id,
             'called_platform': self.called_platform or False,

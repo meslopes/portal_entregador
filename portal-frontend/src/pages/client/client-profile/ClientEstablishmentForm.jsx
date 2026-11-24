@@ -137,6 +137,20 @@ const ClientEstablishmentForm = ({ establishmentData, setEstablishmentData, isSa
             Depende de quantas máquinas você tem × entregadores com cobrança
           </p>
         </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Numeração dos pedidos (o número curto tipo #37)</label>
+          <select
+            value={establishmentData.seq_reset_mode || 'DAILY'}
+            onChange={e => setEstablishmentData({ ...establishmentData, seq_reset_mode: e.target.value })}
+            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+          >
+            <option value="DAILY">Zerar todo dia (padrão) — "#37 de hoje"</option>
+            <option value="CONTINUOUS">Sequência contínua — nunca zera</option>
+          </select>
+          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0.375rem 0 0' }}>
+            O número completo do sistema continua existindo nos detalhes e relatórios
+          </p>
+        </div>
       </div>
     </div>
 

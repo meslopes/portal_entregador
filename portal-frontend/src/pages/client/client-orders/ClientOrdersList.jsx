@@ -53,7 +53,7 @@ const ClientOrdersList = ({ loading, filtered, search, filter, openDetails, page
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.125rem' }}>
-                      <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9375rem' }}>#{order.order_number}</span>
+                      <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9375rem' }}>#{order.seq_number ?? order.order_number}</span>
                       <span style={{ padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: config.bg, color: config.color, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                         {config.icon} {config.label}
                       </span>

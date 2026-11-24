@@ -39,6 +39,7 @@ def get_profile():
                 user_data['route_max_orders'] = restaurant.route_max_orders or 3
                 user_data['route_max_distance_km'] = float(restaurant.route_max_distance_km or 10)
                 user_data['machine_settlement_mode'] = restaurant.machine_settlement_mode or 'PER_SHIFT'
+                user_data['seq_reset_mode'] = restaurant.seq_reset_mode or 'DAILY'
 
         return jsonify(user_data), 200
     except Exception as e:
@@ -129,6 +130,11 @@ def update_profile():
                     if modo_maq not in ('PER_SHIFT', 'PER_DELIVERY'):
                         return jsonify({'error': 'machine_settlement_mode deve ser PER_SHIFT ou PER_DELIVERY'}), 400
                     restaurant.machine_settlement_mode = modo_maq
+                if 'seq_reset_mode' in data:
+                    modo_seq = str(data['seq_reset_mode']).upper()
+                    if modo_seq not in ('DAILY', 'CONTINUOUS'):
+                        return jsonify({'error': 'seq_reset_mode deve ser DAILY ou CONTINUOUS'}), 400
+                    restaurant.seq_reset_mode = modo_seq
 
         db.session.commit()
 

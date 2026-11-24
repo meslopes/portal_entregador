@@ -174,7 +174,12 @@ const OwnDriverDeliveryPage = () => {
           <ArrowLeft size={24} />
         </button>
         <div>
-          <h1 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Pedido #{order.order_number}</h1>
+          <h1 style={{ fontSize: '1.125rem', fontWeight: 700 }}>Pedido #{order.seq_number ?? order.order_number}</h1>
+        {order.package_number != null && (
+          <p style={{ fontSize: '0.8125rem', fontWeight: 700, marginTop: '0.25rem' }}>
+            📦 Embalagem {order.package_number}
+          </p>
+        )}
           <p style={{ fontSize: '0.75rem', opacity: 0.8 }}>{utils.formatDateTime(order.created_at)}</p>
         </div>
       </header>

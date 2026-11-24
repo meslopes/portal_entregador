@@ -1,4 +1,4 @@
-﻿# Regras de Trabalho em Equipe — Portal Entregador (MuvLog)
+# Regras de Trabalho em Equipe — Portal Entregador (MuvLog)
 
 ## Como Usar
 Cole este documento no início de cada nova sessão do MiMoCode para garantir que a IA siga as regras da equipe.
@@ -21,7 +21,7 @@ Isso garante que a IA saiba exatamente de onde paramos.
 - **Código local:** C:\Users\Dell\portal_entregador\portal_entregador
 - **Frontend:** portal-frontend/ (React + Vite + Leaflet)
 - **Backend:** portal-backend/ (Flask + SQLAlchemy + PostgreSQL)
-- **Deploy Frontend:** Vercel (portal-entregador-gamma.vercel.app)
+- **Deploy Frontend:** Vercel (site oficial: `https://www.muv.log.br` — domínio `muv.log.br`; gamma = domínio do projeto)
 - **Deploy Backend:** Google Cloud Run (muvlog-api-890250693883.us-central1.run.app)
 - **Equipe:** Mauro (meslopes@gmail.com) + Éverton (programador Jr.)
 - **Nível técnico:** Intermediário
@@ -150,9 +150,9 @@ Após autorização do Mauro, a IA executa o deploy de ponta a ponta — nunca a
 
 **FRONTEND (Vercel) — quando houver mudança no frontend:**
 1. `cd portal-frontend`
-2. `npx vercel --prod` (projeto **`portal-frontend`** / equipe **`muvy`**)
-3. `npx vercel inspect portal-entregador-gamma.vercel.app` — **obrigatório**: confirmar que o deployment exibido é o recém-criado
-4. Site oficial do usuário: **`https://portal-entregador-gamma.vercel.app`**
+2. `npx vercel --prod --yes --scope muvy` (projeto **`portal-frontend`** / equipe **`muvy`** — o `--scope` é OBRIGATÓRIO)
+3. `npx vercel inspect portal-entregador-gamma.vercel.app --scope muvy` — **obrigatório**: confirmar que o deployment exibido é o recém-criado
+4. Site oficial do usuário: **`https://www.muv.log.br`** (o gamma `portal-entregador-gamma.vercel.app` é o domínio do projeto e aponta para o mesmo deploy)
 5. O domínio gamma é **domínio do projeto** e aponta automaticamente para o deploy de produção mais recente (desde 2026-11-14). O `vercel alias set` **não é mais necessário** — se o `inspect` mostrar deployment antigo, reportar o problema em vez de reportar "no ar"
 6. Hard refresh no navegador do usuário: `Ctrl+Shift+R`
 
