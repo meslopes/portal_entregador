@@ -30,6 +30,11 @@ const EstablishmentDriversPage = () => {
   const [sendMode, setSendMode] = useState('pin'); // 'pin' | 'link'
   const [activationLink, setActivationLink] = useState(null); // dados do link de ativacao
   const [acertos, setAcertos] = useState([]); // acertos de retorno pendentes (A3)
+  // F1 frota compartilhada — lojas atendidas além da base
+  const [fleetEnabled, setFleetEnabled] = useState(false);
+  const [fleetStores, setFleetStores] = useState([]); // lojas com flag para vincular
+  const [expandedFleet, setExpandedFleet] = useState(null); // driver id aberto
+  const [driverStores, setDriverStores] = useState({}); // driverId -> [links]
 
   const loadAcertos = async () => {
     try {
@@ -57,7 +62,54 @@ const EstablishmentDriversPage = () => {
     }
   };
 
-  useEffect(() => { loadDrivers(); loadAcertos(); }, []);
+  useEffect(() => { loadDrivers(); loadAcertos(); loadFleet(); }, []);
+
+  // F1 — carrega flag da frota + lojas vinculáveis (só se a loja tiver o produto)
+  const loadFleet = async () => {
+    try {
+      const userRes = await api.get('/api/user/profile');
+      if (!userRes.data.fleet_sharing_enabled) return;
+      setFleetEnabled(true);
+      const res = await api.get('/api/admin/establishment-drivers/fleet-stores');
+      setFleetStores(res.data.stores || []);
+    } catch { /* apoio — nunca derruba a página */ }
+  };
+
+  // Abre/fecha o bloco "Lojas atendidas" do entregador (carrega na 1ª vez)
+  const toggleFleet = async (driverId) => {
+    if (expandedFleet === driverId) { setExpandedFleet(null); return; }
+    setExpandedFleet(driverId);
+    if (!driverStores[driverId]) {
+      try {
+        const res = await api.get(`/api/admin/establishment-drivers/${driverId}/stores`);
+        setDriverStores(prev => ({ ...prev, [driverId]: res.data.stores || [] }));
+      } catch { /* apoio */ }
+    }
+  };
+
+  const addFleetStore = async (driverId, restaurantId) => {
+    if (!restaurantId) return;
+    try {
+      await api.post(`/api/admin/establishment-drivers/${driverId}/stores`, { restaurant_id: restaurantId });
+      setSuccess('Loja adicionada ao roteiro do entregador');
+      const res = await api.get(`/api/admin/establishment-drivers/${driverId}/stores`);
+      setDriverStores(prev => ({ ...prev, [driverId]: res.data.stores || [] }));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao vincular loja');
+    }
+  };
+
+  const removeFleetStore = async (driverId, restaurantId) => {
+    if (!window.confirm('Remover esta loja do roteiro do entregador?')) return;
+    try {
+      await api.delete(`/api/admin/establishment-drivers/${driverId}/stores/${restaurantId}`);
+      setSuccess('Loja removida do roteiro');
+      const res = await api.get(`/api/admin/establishment-drivers/${driverId}/stores`);
+      setDriverStores(prev => ({ ...prev, [driverId]: res.data.stores || [] }));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao remover vínculo');
+    }
+  };
 
   const loadDrivers = async () => {
     try {
@@ -147,7 +199,9 @@ const EstablishmentDriversPage = () => {
         openSendModal(createdDriver, pinDoForm);
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao salvar');
+      // 409 = telefone já existe — mostra a oferta de vínculo (frota compartilhada)
+      const d = err.response?.data || {};
+      setError([d.error, d.link_suggestion].filter(Boolean).join(' — ') || 'Erro ao salvar');
     }
   };
 
@@ -645,6 +699,56 @@ const EstablishmentDriversPage = () => {
                   </button>
                 </div>
               </div>
+
+              {/* F1 — Lojas atendidas (frota compartilhada). Só aparece se o
+                  produto estiver habilitado — nada de poluir quem não usa. */}
+              {fleetEnabled && (
+                <div style={{ marginTop: '0.75rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
+                  <button onClick={() => toggleFleet(driver.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+                    <MapPin size={13} />
+                    Lojas atendidas ({(driverStores[driver.id] || []).length + 1})
+                    {expandedFleet === driver.id ? ' ▲' : ' ▼'}
+                  </button>
+                  <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0.25rem 0 0' }}>
+                    A base ({driver.restaurant_name || 'sua loja'}) sempre conta + lojas vinculadas
+                  </p>
+                  {expandedFleet === driver.id && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                      {(driverStores[driver.id] || []).length === 0 ? (
+                        <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>
+                          Nenhuma loja extra — este entregador atende só a base.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginBottom: '0.5rem' }}>
+                          {(driverStores[driver.id] || []).map(l => (
+                            <span key={l.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.1875rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: '#dcfce7', color: '#166534' }}>
+                              {l.restaurant_name}
+                              <button onClick={() => removeFleetStore(driver.id, l.restaurant_id)}
+                                title="Remover vínculo"
+                                style={{ border: 'none', background: 'transparent', color: '#166534', cursor: 'pointer', fontSize: '0.75rem', lineHeight: 1, padding: 0 }}>×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {fleetStores.length > 0 && (
+                        <select defaultValue="" onChange={e => { addFleetStore(driver.id, e.target.value); e.target.value = ''; }}
+                          style={{ width: '100%', padding: '0.375rem 0.5rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.75rem', background: 'white' }}>
+                          <option value="">+ Vincular outra loja…</option>
+                          {fleetStores
+                            .filter(s => !(driverStores[driver.id] || []).some(l => l.restaurant_id === s.id))
+                            .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      )}
+                      {fleetStores.length === 0 && (
+                        <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: 0 }}>
+                          Nenhuma outra loja com frota compartilhada ligada nesta organização.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

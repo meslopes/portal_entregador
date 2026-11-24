@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, AlertCircle, Bike, Users } from 'lucide-react';
+import { X, AlertCircle, Bike, Users, ToggleLeft, ToggleRight } from 'lucide-react';
 import { adminService } from '@/lib/api';
 import api from '@/lib/api';
 import { generateStrongPassword } from '@/lib/utils';
@@ -16,7 +16,8 @@ const EMPTY_FORM = {
   latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
   preparation_minutes: '10',
   pickup_confirmation_type: 'code', delivery_confirmation_type: 'code',
-  has_own_drivers: false
+  has_own_drivers: false,
+  fleet_sharing_enabled: false
 };
 
 const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, onSave }) => {
@@ -52,7 +53,8 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         preparation_minutes: editing.preparation_minutes || '10',
         pickup_confirmation_type: editing.pickup_confirmation_type || 'code',
         delivery_confirmation_type: editing.delivery_confirmation_type || 'code',
-        has_own_drivers: !!editing.has_own_drivers
+        has_own_drivers: !!editing.has_own_drivers,
+        fleet_sharing_enabled: !!editing.fleet_sharing_enabled
       });
       if (editing.square_id) loadPricingTables(editing.square_id);
     } else {
@@ -112,6 +114,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         pickup_confirmation_type: formData.pickup_confirmation_type || 'code',
         delivery_confirmation_type: formData.delivery_confirmation_type || 'code',
         has_own_drivers: !!formData.has_own_drivers,
+        fleet_sharing_enabled: !!formData.fleet_sharing_enabled,
       };
 
       if (isSuperAdmin && formData.tenant_id) {
@@ -231,6 +234,33 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
               : 'As entregas são feitas pelos entregadores da plataforma MUV.'}
           </p>
         </FormField>
+
+        {/* F1 frota compartilhada — produto vendido pela plataforma
+            ("uma loja paga uma loja, duas pagam duas") */}
+        {formData.has_own_drivers && (
+          <FormField label="Frota compartilhada (produto)">
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, fleet_sharing_enabled: !prev.fleet_sharing_enabled }))}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0.75rem', borderRadius: '0.5rem', cursor: 'pointer',
+                fontSize: '0.8125rem', fontWeight: 600,
+                border: `1.5px solid ${formData.fleet_sharing_enabled ? '#7c3aed' : '#e2e8f0'}`,
+                background: formData.fleet_sharing_enabled ? '#7c3aed' : 'white',
+                color: formData.fleet_sharing_enabled ? 'white' : '#475569'
+              }}
+            >
+              {formData.fleet_sharing_enabled ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+              {formData.fleet_sharing_enabled ? 'Habilitada — loja participa da frota' : 'Desabilitada — só entregadores próprios'}
+            </button>
+            <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.375rem' }}>
+              Produto vendido pela plataforma: esta loja pode usar e emprestar entregadores
+              de outras lojas habilitadas. Cada loja habilitada entra na cobrança
+              ("uma loja paga uma loja").
+            </p>
+          </FormField>
+        )}
 
         <FormField label="E-mail">
           <input type="email" name="email" value={formData.email} onChange={handleChange} style={inputStyle} placeholder="contato@estabelecimento.com" />

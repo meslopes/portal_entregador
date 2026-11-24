@@ -653,6 +653,28 @@ def delete_restaurant(restaurant_id):
             return jsonify({'error': f'Restaurante tem {order_count} pedido(s) e {drv_count} entregador(es) proprio(s)', 'has_data': True, 'suggestion': 'Use ?force=true para desvincular e excluir'}), 400
 
         if force:
+            # F1 frota compartilhada: NUNCA apagar a pessoa que serve outras lojas
+            # — só os vínculos desta loja. Base com vínculo externo ativo = trava.
+            from src.models.portal_models import EstablishmentDriverStore
+            # Entregador base desta loja com vínculo ativo em OUTRA loja?
+            drivers_base = EstablishmentDriver.query.filter_by(restaurant_id=restaurant_id).all()
+            for drv in drivers_base:
+                tem_fora = EstablishmentDriverStore.query.filter(
+                    EstablishmentDriverStore.establishment_driver_id == drv.id,
+                    EstablishmentDriverStore.active.is_(True),
+                    EstablishmentDriverStore.restaurant_id != restaurant_id,
+                ).first()
+                if tem_fora:
+                    return jsonify({
+                        'error': f"O entregador {drv.name} atende outra loja pela frota compartilhada. "
+                                 'Remova os vínculos dele em "Lojas atendidas" antes de excluir.',
+                        'has_data': True,
+                    }), 400
+            # Vínculos dos drivers-base (em qualquer loja, inclusive inativos)
+            for drv in drivers_base:
+                EstablishmentDriverStore.query.filter_by(establishment_driver_id=drv.id).delete()
+            # Vínculos DESTA loja (ele sendo atendida por gente de fora) somem junto
+            EstablishmentDriverStore.query.filter_by(restaurant_id=restaurant_id).delete()
             # Deletar pedidos vinculados (restaurant_id é NOT NULL)
             Order.query.filter_by(restaurant_id=restaurant_id).delete()
             EstablishmentDriver.query.filter_by(restaurant_id=restaurant_id).delete()

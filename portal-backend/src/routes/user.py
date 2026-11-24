@@ -40,6 +40,7 @@ def get_profile():
                 user_data['route_max_distance_km'] = float(restaurant.route_max_distance_km or 10)
                 user_data['machine_settlement_mode'] = restaurant.machine_settlement_mode or 'PER_SHIFT'
                 user_data['seq_reset_mode'] = restaurant.seq_reset_mode or 'DAILY'
+                user_data['fleet_sharing_enabled'] = bool(restaurant.fleet_sharing_enabled)
 
         return jsonify(user_data), 200
     except Exception as e:

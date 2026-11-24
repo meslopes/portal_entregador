@@ -151,6 +151,24 @@ const ClientEstablishmentForm = ({ establishmentData, setEstablishmentData, isSa
             O número completo do sistema continua existindo nos detalhes e relatórios
           </p>
         </div>
+        {/* F1 — visível (edição é comercial, no painel admin) */}
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Frota compartilhada</label>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+            border: '1.5px solid #e2e8f0', background: '#f8fafc',
+            fontSize: '0.8125rem', fontWeight: 600,
+            color: establishmentData.fleet_sharing_enabled ? '#7c3aed' : '#64748b'
+          }}>
+            {establishmentData.fleet_sharing_enabled
+              ? 'Habilitada — sua loja participa da frota (pode usar/emprestar entregadores)'
+              : 'Desabilitada — só seus entregadores próprios'}
+          </div>
+          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0.375rem 0 0' }}>
+            Produto vendido pela plataforma — para ativar, fale com seu administrador
+          </p>
+        </div>
       </div>
     </div>
 

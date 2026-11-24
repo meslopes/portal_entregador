@@ -30,6 +30,10 @@ from src.models.portal_models import (
 from src.utils.auth import admin_required
 from src.utils.tenant import get_current_tenant_id, get_current_user
 
+# Licao 44: o bloco G-08 da lista usa _func (import local nao viajou no
+# copy-paste e a lista de estabelecimentos dava 500 em runtime)
+from sqlalchemy import func as _func
+
 from src.utils.log_utils import mask_address
 
 logger = logging.getLogger(__name__)
@@ -647,6 +651,9 @@ def update_establishment(establishment_id):
             if modo_seq not in ('DAILY', 'CONTINUOUS'):
                 return jsonify({'error': 'seq_reset_mode deve ser DAILY ou CONTINUOUS'}), 400
             est.seq_reset_mode = modo_seq
+        if 'fleet_sharing_enabled' in data:
+            # F1 frota compartilhada — produto vendido pela plataforma
+            est.fleet_sharing_enabled = bool(data['fleet_sharing_enabled'])
 
         if 'phone' in data:
 
@@ -934,28 +941,47 @@ def delete_establishment(establishment_id):
                 Notification.query.filter_by(related_id=order.id).delete()
 
             # Deletar pedidos
-
             Order.query.filter_by(restaurant_id=establishment_id).delete()
 
             # Deletar faturas vinculadas ao estabelecimento
-
             Invoice.query.filter_by(restaurant_id=establishment_id).delete()
 
-            # Deletar ganhos de entregadores próprios vinculados
+        # Limpeza SEMPRE (inclusive loja sem pedidos) — antes ficava só dentro do
+        # `if has_orders:` e a exclusão de loja sem pedidos estourava 500 no FK
+        # NOT NULL de establishment_drivers.restaurant_id.
 
-            OwnDriverEarning.query.filter_by(restaurant_id=establishment_id).delete()
+        # Deletar ganhos de entregadores próprios vinculados
+        OwnDriverEarning.query.filter_by(restaurant_id=establishment_id).delete()
 
-            # Deletar entregadores próprios do estabelecimento
+        # Deletar entregadores próprios do estabelecimento
+        # F1 frota compartilhada: se algum deles serve OUTRA loja, trava
+        # (nunca apagar a pessoa) — e os vínculos DESTA loja somem junto.
+        from src.models.portal_models import EstablishmentDriverStore
+        drivers_base = EstablishmentDriver.query.filter_by(restaurant_id=establishment_id).all()
+        for drv in drivers_base:
+            tem_fora = EstablishmentDriverStore.query.filter(
+                EstablishmentDriverStore.establishment_driver_id == drv.id,
+                EstablishmentDriverStore.active.is_(True),
+                EstablishmentDriverStore.restaurant_id != establishment_id,
+            ).first()
+            if tem_fora:
+                return jsonify({
+                    'error': f"O entregador {drv.name} atende outra loja pela frota compartilhada. "
+                             'Remova os vínculos dele em "Lojas atendidas" antes de excluir.',
+                }), 400
+        # Vínculos dos drivers-base (em QUALQUER loja, inclusive inativos —
+        # soft delete deixa a linha e o delete do driver estouraria o FK)
+        for drv in drivers_base:
+            EstablishmentDriverStore.query.filter_by(establishment_driver_id=drv.id).delete()
+        # Vínculos onde ESTA loja é atendida (drivers de fora)
+        EstablishmentDriverStore.query.filter_by(restaurant_id=establishment_id).delete()
+        EstablishmentDriver.query.filter_by(restaurant_id=establishment_id).delete()
 
-            EstablishmentDriver.query.filter_by(restaurant_id=establishment_id).delete()
+        # Deletar vinculações entregador-estabelecimento
+        DriverRestaurant.query.filter_by(restaurant_id=establishment_id).delete()
 
-            # Deletar vinculações entregador-estabelecimento
-
-            DriverRestaurant.query.filter_by(restaurant_id=establishment_id).delete()
-
-            # Deletar credenciais de plataformas vinculadas
-
-            PlatformCredential.query.filter_by(restaurant_id=establishment_id).delete()
+        # Deletar credenciais de plataformas vinculadas
+        PlatformCredential.query.filter_by(restaurant_id=establishment_id).delete()
 
 
 

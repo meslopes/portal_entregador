@@ -32,6 +32,7 @@ const ClientProfilePage = () => {
     route_max_distance_km: 10,
     machine_settlement_mode: 'PER_SHIFT',
     seq_reset_mode: 'DAILY',
+    fleet_sharing_enabled: false,
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -75,6 +76,7 @@ const ClientProfilePage = () => {
           route_max_distance_km: data.route_max_distance_km ?? 10,
           machine_settlement_mode: data.machine_settlement_mode || 'PER_SHIFT',
           seq_reset_mode: data.seq_reset_mode || 'DAILY',
+          fleet_sharing_enabled: !!data.fleet_sharing_enabled,
         });
       }
     } catch (err) {

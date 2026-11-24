@@ -182,7 +182,48 @@
     Em testes de UI, a página some durante o carregamento — asserções devem
     usar `waitForFunction`/`waitForSelector` em vez de `waitForTimeout` curto.
 
+42. **"Servidor velho" disfarçado de bug de rota (caiu 2x no F1, 2026-11-24)**
+    — após editar backend, o restart pode AINDA estar rodando o código
+    antigo (edição feita depois do start, ou outro processo segurou a
+    porta). Sintomas enganosos: 405 em rota que o mapa de rotas mostra
+    registrada, 500 de FK que o `test_client` não reproduz. **Protocolo:**
+    (a) comparar `LastWriteTime` do arquivo editado com o `StartTime` do
+    processo que segura a porta (`Get-NetTCPConnection -LocalPort 5000`) —
+    arquivo MAIS NOVO que o processo = servidor defasado, reiniciar e
+    confirmar o NOVO pid; (b) para isolar código × servidor, reproduzir
+    com `app.test_client()` in-process: test_client passa + HTTP falha ⇒
+    servidor velho; os dois falham ⇒ bug real no código. Nunca "consertar"
+    rota que o `url_map` já mostra certa.
+
+43. **`db.session.delete(pai)` × FK NOT NULL nos filhos + soft-delete em N:N**
+    — o SQLAlchemy emite `UPDATE filho SET fk=NULL` ao deletar o pai; se a
+    coluna for NOT NULL ⇒ 500 NotNullViolation. Ex.: deletar `Restaurant`
+    exige deletar `EstablishmentDriver` antes (o delete em cascata tenta
+    anular `restaurant_id`). **Duas armadilhas no mesmo fix (F1):** (a) a
+    limpeza de filhos estava DENTRO de `if has_orders:` — loja sem pedidos
+    pulava a limpeza e estourava; limpeza de filhos roda SEMPRE, fora de
+    condicionais; (b) vínculo N:N com desvincular = `active=False` (soft)
+    continua existindo como linha — ao deletar os pais, apagar as linhas de
+    vínculo nas DUAS direções (por driver E por loja), inclusive inativas,
+    senão o delete do driver estoura o FK.
+
+44. **Import local não viaja no copy-paste de bloco** — `from sqlalchemy
+    import func as _func` existe como import LOCAL em alguns módulos; ao
+    copiar o bloco de query para outro arquivo, o import não vem junto e o
+    `NameError: name '_func' is not defined` só aparece em RUNTIME (build
+    compila). Achado em `admin_establishments.py:139` (lista de
+    estabelecimentos dava 500 — bloco G-08 copiado sem o import; pego pelo
+    teste de UI, não pelo smoke de API). Padrão: ao copiar bloco com
+    `_func`/`func`, levar o import ou usar o import no topo do arquivo.
+
+45. **Fixtures de `Restaurant`** (complemento das lições 13/39) — NOT NULL
+    sem default: `name`, `address`, `latitude`, `longitude`. Faltou
+    `address` → NotNullViolation; corrigi, faltou `latitude` → de novo.
+    Antes de criar fixture de tabela nova/estranha, listar os NOT NULLs
+    reais: `for c in Model.__table__.columns: if not c.nullable and
+    c.default is None and c.server_default is None: print(c.name)`.
+
 ---
 
-_Atualizado em 2026-11-24 — 41 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-24 — 45 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

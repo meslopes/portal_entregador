@@ -389,6 +389,42 @@ class EstablishmentDriver(db.Model):
         return data
 
 
+class EstablishmentDriverStore(db.Model):
+    """Vínculo N:N entre entregador próprio (pessoa) e lojas atendidas (F1 — frota
+    compartilhada 2026-11-24). A pessoa É `EstablishmentDriver` (loja base =
+    `EstablishmentDriver.restaurant_id`); esta tabela só registra as lojas
+    ADICIONAIS que ele também atende. NÃO leva is_base (a base é a fonte única no
+    driver) nem flag de produto (a flag vive em Restaurant.fleet_sharing_enabled).
+    """
+    __tablename__ = 'establishment_driver_stores'
+    __table_args__ = (
+        db.UniqueConstraint('establishment_driver_id', 'restaurant_id',
+                            name='uq_est_driver_store'),
+    )
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    establishment_driver_id = db.Column(db.Integer, db.ForeignKey('establishment_drivers.id'), nullable=False)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    active = db.Column(db.Boolean, default=True)  # desvincular = False (histórico preservado)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    # Relacionamentos
+    driver = db.relationship('EstablishmentDriver', backref='store_links')
+    restaurant = db.relationship('Restaurant', backref='shared_own_drivers')
+
+    def to_dict(self):
+        data = {
+            'id': self.id,
+            'establishment_driver_id': self.establishment_driver_id,
+            'restaurant_id': self.restaurant_id,
+            'active': self.active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+        if self.restaurant:
+            data['restaurant_name'] = self.restaurant.name
+        return data
+
+
 class OwnDriverEarning(db.Model):
     """Ganhos de entregadores próprios por entrega"""
     __tablename__ = 'own_driver_earnings'

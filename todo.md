@@ -246,6 +246,17 @@
 - [x] N4: exibicao sem poluir — pins do mapa e cards = #seq; visao de rota = embalagem; detalhe = seq + data. package_number no to_dict do Order (via 1a parada da rota)
 - [x] Migrações nos 2 entries (main.py + migrations_tables.py); config em user.py profile + admin_establishments.py; smoke 4/4 (_tmp_smoke_seq.py: incremento / zera diario / continua / embalagens)
 
+- [x] ACHADO E CORRIGIDO (2026-11-24, pego pelo teste de UI do F1): GET /api/admin/establishments dava 500 "name '_func' is not defined" — bloco G-08 (media de notas do entregador) copiado sem o import `from sqlalchemy import func as _func` (licao 44). Bug PRE-EXISTENTE, estava em producao. Corrigido com o import no topo do arquivo.
+
+## ✅ 2026-11-24 — F1 Frota Compartilhada (CONCLUIDA)
+- [x] Modelo loja<->entregador N:N: EstablishmentDriverStore (vinculo puro: driver, loja, active, UNIQUE par) + flag por loja Restaurant.fleet_sharing_enabled (produto vendido pela plataforma — "uma loja paga uma loja"; v1 controle manual, v2 componente de cobranca). Loja BASE = EstablishmentDriver.restaurant_id (fonte unica, sem is_base na tabela)
+- [x] Endpoints: GET /establishment-drivers/fleet-stores (lojas com flag, so mesmo tenant) + GET/POST/DELETE /establishment-drivers/<id>/stores (vincular/desvincular soft active=False; so a loja base ou admin gerencia; as DUAS pontas precisam da flag; base nunca vira vinculo)
+- [x] Telefone repetido vira oferta de vinculo: create devolve 409 + link_suggestion (nunca 2a pessoa com o mesmo telefone)
+- [x] Exclusao de loja NUNCA apaga a pessoa que serve outra loja (trava 400 com aviso) — e a limpeza de filhos passou a rodar SEMPRE (antes so dentro de `if has_orders:` — loja sem pedidos estourava 500 no FK NOT NULL); vinculos soft-delete tambem sao apagados (nas 2 direcoes) antes de deletar pais
+- [x] Gestao em "Meus Entregadores": bloco "Lojas atendidas (N)" por entregador (base + vinculos, add/remove) — so aparece se a loja tiver o produto (anti-poluicao); flag editavel no form admin (secao "Tipo de entrega" = Proprios) e visivel (so leitura) no perfil do estabelecimento
+- [x] Smoke 13/13 (_tmp_smoke_fleet.py: vinculo/base-recusada/sem-flag/cross-tenant/lista/desvincular/reativar/telefone-409/trava-exclusao/liberacao) + UI test PASS (form admin mostra "Frota compartilhada (produto)") + fix _func no mesmo ciclo
+- [x] Licoes 42-45 em LICOES_APRENDIDAS.md (servidor velho x PID/mtime, delete de pai x FK NOT NULL x soft-delete N:N, import local nao viaja no copy-paste, fixtures de Restaurant)
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)

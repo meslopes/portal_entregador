@@ -841,6 +841,28 @@ with app.app_context():
         print(f"Migração numeração curta: {e}")
         db.session.rollback()
 
+    # Migration F1 frota compartilhada (2026-11-24) — vínculo N:N loja↔entregador
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'restaurants' AND column_name = 'fleet_sharing_enabled') "
+            "THEN ALTER TABLE restaurants ADD COLUMN fleet_sharing_enabled BOOLEAN DEFAULT FALSE; END IF; END $$"
+        ))
+        db.session.execute(db.text(
+            "CREATE TABLE IF NOT EXISTS establishment_driver_stores ("
+            " id SERIAL PRIMARY KEY,"
+            " establishment_driver_id INTEGER NOT NULL REFERENCES establishment_drivers(id),"
+            " restaurant_id INTEGER NOT NULL REFERENCES restaurants(id),"
+            " active BOOLEAN DEFAULT TRUE,"
+            " created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+            " CONSTRAINT uq_est_driver_store UNIQUE (establishment_driver_id, restaurant_id))"
+        ))
+        db.session.commit()
+        print("Frota compartilhada: flag + tabela de vínculos adicionadas")
+    except Exception as e:
+        print(f"Migração frota compartilhada: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

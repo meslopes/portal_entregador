@@ -266,10 +266,22 @@ def create_establishment_driver():
         from src.utils.driver_type import find_phone_conflict
         conflict = find_phone_conflict(phone_raw)
         if conflict:
+            # F1 frota compartilhada: nunca criar 2ª pessoa com o mesmo telefone.
+            # O conflito vira OFERTA DE VÍNCULO — o entregador já existe, é só
+            # vincular à frota da loja (quem adiciona é a loja base dele ou admin).
+            sugestao = ('Este entregador já existe — edite o cadastro atual em vez de duplicar.')
+            if conflict['type'] == 'own_driver':
+                existente = EstablishmentDriver.query.get(conflict['id'])
+                base_nome = existente.restaurant.name if (existente and existente.restaurant) else '?'
+                sugestao = (f"{conflict['label']} já é entregador (base: {base_nome}). "
+                            'Para atender sua loja, peça à loja base para adicioná-lo em '
+                            '"Lojas atendidas" (frota compartilhada) — ou um admin pode vincular.')
             return jsonify({
                 'error': f"Telefone já cadastrado para: {conflict['label']}. "
-                         'Cada pessoa deve ter um telefone único.'
-            }), 400
+                         'Cada pessoa deve ter um telefone único.',
+                'conflict': conflict,
+                'link_suggestion': sugestao,
+            }), 409
 
         driver = EstablishmentDriver(
 
@@ -611,3 +623,177 @@ def toggle_establishment_driver_online(driver_id):
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================
+# F1 FROTA COMPARTILHADA (2026-11-24) — loja atendida alem da base
+# ============================================================
+
+def _loja_do_cliente():
+    """Loja do cliente logado (via Customer.name, mesmo padrao do restante)."""
+    current_user = get_current_user()
+    if not current_user or current_user.user_type != UserType.CLIENT:
+        return None
+    customer = Customer.query.filter_by(user_id=current_user.id).first()
+    if not customer:
+        return None
+    return find_restaurant_by_name(customer.name)
+
+
+def _pode_gerenciar_vinculos(driver):
+    """Quem gerencia vinculos: admin OU o dono da loja BASE do entregador."""
+    current_user = get_current_user()
+    if not current_user:
+        return False
+    if current_user.user_type == UserType.ADMIN:
+        return True
+    loja = _loja_do_cliente()
+    return bool(loja and loja.id == driver.restaurant_id)
+
+
+@admin_est_drivers_crud_bp.route('/establishment-drivers/fleet-stores', methods=['GET'])
+@jwt_required()
+@client_or_admin_required
+def list_fleet_stores():
+    """Lojas com frota compartilhada ligada (para o combo de vinculo).
+    So mesmo tenant — frota entre tenants e futuro."""
+    try:
+        current_user = get_current_user()
+        if current_user.user_type == UserType.CLIENT:
+            loja = _loja_do_cliente()
+            if not loja:
+                return jsonify({'error': 'Estabelecimento nao encontrado'}), 404
+            tenant_id = loja.tenant_id
+            base_id = loja.id
+        else:
+            tenant_id = request.args.get('tenant_id', type=int)
+            base_id = request.args.get('base_restaurant_id', type=int)
+            if not tenant_id:
+                return jsonify({'error': 'tenant_id obrigatorio para admin'}), 400
+
+        q = Restaurant.query.filter(
+            Restaurant.fleet_sharing_enabled.is_(True),
+        )
+        if tenant_id:
+            q = q.filter(Restaurant.tenant_id == tenant_id)
+        lojas = [r for r in q.order_by(Restaurant.name).all() if r.id != base_id]
+        return jsonify({'stores': [
+            {'id': r.id, 'name': r.name} for r in lojas
+        ]}), 200
+    except Exception as e:
+        logger.error(f"[FROTA] list_fleet_stores: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_est_drivers_crud_bp.route('/establishment-drivers/<int:driver_id>/stores', methods=['GET'])
+@jwt_required()
+@client_or_admin_required
+def list_driver_stores(driver_id):
+    """Lojas atendidas pelo entregador: base + vinculos ativos."""
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador nao encontrado'}), 404
+
+        ativos = [l for l in driver.store_links if l.active]
+        base = driver.restaurant
+        return jsonify({
+            'base': {'id': base.id, 'name': base.name} if base else None,
+            'stores': [l.to_dict() for l in ativos],
+        }), 200
+    except Exception as e:
+        logger.error(f"[FROTA] list_driver_stores: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_est_drivers_crud_bp.route('/establishment-drivers/<int:driver_id>/stores', methods=['POST'])
+@jwt_required()
+@client_or_admin_required
+def add_driver_store(driver_id):
+    """Vincula o entregador a uma loja extra (frota compartilhada).
+    Regras: so a loja BASE gerencia; as DUAS pontas com flag ligada; mesmo tenant;
+    a base nao entra como vinculo (ja e implicitamente atendida)."""
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador nao encontrado'}), 404
+
+        if not _pode_gerenciar_vinculos(driver):
+            return jsonify({'error': 'Apenas a loja base do entregador pode gerenciar vinculos'}), 403
+
+        data = request.get_json() or {}
+        target = Restaurant.query.get(data.get('restaurant_id'))
+        if not target:
+            return jsonify({'error': 'Loja nao encontrada'}), 404
+
+        base = driver.restaurant
+        if target.id == driver.restaurant_id:
+            return jsonify({'error': 'Esta loja ja e a base do entregador'}), 400
+        if not (base and base.fleet_sharing_enabled):
+            return jsonify({'error': 'A loja base nao tem frota compartilhada habilitada (produto nao ativado)'}), 400
+        if not target.fleet_sharing_enabled:
+            return jsonify({'error': 'A loja de destino nao tem frota compartilhada habilitada (produto nao ativado)'}), 400
+        if base.tenant_id != target.tenant_id:
+            return jsonify({'error': 'Frota entre organizacoes diferentes ainda nao e suportada'}), 400
+
+        # Reativa vinculo antigo ou cria novo (UNIQUE par driver x loja)
+        from src.models.portal_models import EstablishmentDriverStore
+        link = EstablishmentDriverStore.query.filter_by(
+            establishment_driver_id=driver.id, restaurant_id=target.id).first()
+        if link:
+            link.active = True
+            acao = 'reativado'
+        else:
+            link = EstablishmentDriverStore(
+                establishment_driver_id=driver.id,
+                restaurant_id=target.id,
+                active=True,
+            )
+            db.session.add(link)
+            acao = 'criado'
+
+        db.session.commit()
+        log_activity('CREATE', 'driver_store', driver.id,
+                     entity_label=f'{driver.name} -> {target.name}',
+                     details=f'vinculo {acao}')
+        return jsonify({
+            'message': f'{driver.name} agora tambem atende {target.name}',
+            'link': link.to_dict(),
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"[FROTA] add_driver_store: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_est_drivers_crud_bp.route('/establishment-drivers/<int:driver_id>/stores/<int:restaurant_id>', methods=['DELETE'])
+@jwt_required()
+@client_or_admin_required
+def remove_driver_store(driver_id, restaurant_id):
+    """Desvincula (soft: active=False — historico preservado)."""
+    try:
+        driver = EstablishmentDriver.query.get(driver_id)
+        if not driver:
+            return jsonify({'error': 'Entregador nao encontrado'}), 404
+
+        if not _pode_gerenciar_vinculos(driver):
+            return jsonify({'error': 'Apenas a loja base do entregador pode gerenciar vinculos'}), 403
+
+        if restaurant_id == driver.restaurant_id:
+            return jsonify({'error': 'A base nao pode ser desvinculada (e o vinculo primario do entregador)'}), 400
+
+        from src.models.portal_models import EstablishmentDriverStore
+        link = EstablishmentDriverStore.query.filter_by(
+            establishment_driver_id=driver.id, restaurant_id=restaurant_id,
+            active=True).first()
+        if not link:
+            return jsonify({'error': 'Vinculo nao encontrado'}), 404
+
+        link.active = False
+        db.session.commit()
+        log_activity('DELETE', 'driver_store', driver.id,
+                     entity_label=f'{driver.name} x loja {restaurant_id}',
+                     details='vinculo desativado')
+        return jsonify({'message': 'Vinculo removido'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"[FROTA] remove_driver_store: {e}")
+        return jsonify({'error': str(e)}), 500
