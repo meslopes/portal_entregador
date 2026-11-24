@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { abrirGoogleMaps } from '@/lib/maps';
 import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -180,6 +180,27 @@ const OwnDriverDeliveryPage = () => {
       </header>
 
       <div style={{ padding: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+        {/* Cobrança no local (acerto de retorno) — anti-esquecimento da cobrança */}
+        {!isDelivered && Number(order.total_amount) > 0 && (
+          <div style={{
+            background: '#fef3c7', border: '1px solid #fde047', borderRadius: '0.75rem',
+            padding: '0.875rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem'
+          }}>
+            <span style={{ fontSize: '1.5rem' }}>
+              {order.payment_method === 'PIX' ? '📱' : order.payment_method === 'CARD' ? '💳' : '💰'}
+            </span>
+            <div>
+              <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#854d0e' }}>
+                Cobrar R$ {Number(order.total_amount).toFixed(2)} no local
+              </p>
+              <p style={{ fontSize: '0.75rem', color: '#a16207' }}>
+                {order.payment_method === 'PIX' ? 'Pagamento via PIX — peça e envie o comprovante' :
+                  order.payment_method === 'CARD' ? 'Pagamento no cartão — leve a maquininha' :
+                  'Pagamento em dinheiro'}
+              </p>
+            </div>
+          </div>
+        )}
         {/* Erro */}
         {error && (
           <div style={{

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle, Bike, MapPin, ToggleLeft, ToggleRight, MessageCircle, Copy } from 'lucide-react';
 import api from '@/lib/api';
 import { maskPii } from '@/lib/utils';
@@ -29,8 +29,35 @@ const EstablishmentDriversPage = () => {
   const [sendError, setSendError] = useState('');
   const [sendMode, setSendMode] = useState('pin'); // 'pin' | 'link'
   const [activationLink, setActivationLink] = useState(null); // dados do link de ativacao
+  const [acertos, setAcertos] = useState([]); // acertos de retorno pendentes (A3)
 
-  useEffect(() => { loadDrivers(); }, []);
+  const loadAcertos = async () => {
+    try {
+      const userRes = await api.get('/api/user/profile');
+      const restaurantId = userRes.data.restaurant_id;
+      if (!restaurantId) return;
+      const res = await api.get(`/api/admin/establishment-drivers/settlements?restaurant_id=${restaurantId}`);
+      setAcertos(res.data.settlements || []);
+    } catch { /* apoio — nunca derruba a página */ }
+  };
+
+  const confirmarAcerto = async (a) => {
+    const ok = window.confirm(
+      `Confirmar o acerto recebido de ${a.driver}?\n\n${a.itens.map(i => i.texto).join('\n')}\n\n` +
+      'Ao confirmar, o entregador volta a receber ofertas.'
+    );
+    if (!ok) return;
+    try {
+      await api.post('/api/admin/establishment-drivers/settlements/confirm', { order_ids: a.order_ids });
+      setSuccess('Acerto confirmado — entregador liberado');
+      loadAcertos();
+      loadDrivers();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao confirmar o acerto');
+    }
+  };
+
+  useEffect(() => { loadDrivers(); loadAcertos(); }, []);
 
   const loadDrivers = async () => {
     try {
@@ -311,6 +338,33 @@ const EstablishmentDriversPage = () => {
 
       {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><AlertCircle size={16} /> {error}</div>}
       {success && <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle size={16} /> {success}</div>}
+
+      {/* Acertos de retorno pendentes (dinheiro/maquininha/PIX) — travam novas ofertas */}
+      {acertos.length > 0 && (
+        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#9a3412', marginBottom: '0.5rem' }}>
+            ⏳ Acertos de retorno pendentes — estes entregadores NÃO recebem novas ofertas até o acerto
+          </p>
+          {acertos.map(a => (
+            <div key={a.driver_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderTop: '1px solid #fed7aa', flexWrap: 'wrap' }}>
+              <div>
+                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#7c2d12' }}>{a.driver}</p>
+                <p style={{ fontSize: '0.75rem', color: '#9a3412' }}>{a.itens.map(i => i.texto).join(' · ')}</p>
+              </div>
+              <button
+                onClick={() => confirmarAcerto(a)}
+                style={{
+                  padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none',
+                  background: '#ea580c', color: 'white', fontWeight: 600,
+                  fontSize: '0.8125rem', cursor: 'pointer', whiteSpace: 'nowrap'
+                }}
+              >
+                Confirmar acerto recebido
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal de formulário */}
       {showForm && (

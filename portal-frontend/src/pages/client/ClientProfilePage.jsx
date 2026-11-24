@@ -30,6 +30,7 @@ const ClientProfilePage = () => {
     route_angle_tolerance: 45,
     route_max_orders: 3,
     route_max_distance_km: 10,
+    machine_settlement_mode: 'PER_SHIFT',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -71,6 +72,7 @@ const ClientProfilePage = () => {
           route_angle_tolerance: data.route_angle_tolerance ?? 45,
           route_max_orders: data.route_max_orders ?? 3,
           route_max_distance_km: data.route_max_distance_km ?? 10,
+          machine_settlement_mode: data.machine_settlement_mode || 'PER_SHIFT',
         });
       }
     } catch (err) {

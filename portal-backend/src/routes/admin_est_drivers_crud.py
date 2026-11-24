@@ -108,6 +108,47 @@ def list_establishment_drivers():
         return jsonify({'error': str(e)}), 500
 
 
+@admin_est_drivers_crud_bp.route('/establishment-drivers/settlements', methods=['GET'])
+@jwt_required()
+@client_or_admin_required
+def list_settlements():
+    """Acertos de retorno pendentes do estabelecimento (por entregador)."""
+    try:
+        restaurant_id = request.args.get('restaurant_id')
+        if not restaurant_id:
+            return jsonify({'error': 'restaurant_id é obrigatório'}), 400
+        restaurante = Restaurant.query.get(int(restaurant_id))
+        modo = restaurante.machine_settlement_mode if restaurante else 'PER_SHIFT'
+        from src.services.settlement import resumo_acerto
+        resultado = []
+        for d in EstablishmentDriver.query.filter_by(restaurant_id=int(restaurant_id), is_active=True).all():
+            resumo = resumo_acerto(d.id, modo)
+            if resumo['pendente']:
+                resultado.append({'driver_id': d.id, 'driver': d.name, **resumo})
+        return jsonify({'settlements': resultado, 'machine_settlement_mode': modo}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin_est_drivers_crud_bp.route('/establishment-drivers/settlements/confirm', methods=['POST'])
+@jwt_required()
+@client_or_admin_required
+def confirm_settlement():
+    """Estabelecimento confirma o acerto recebido (dinheiro/maquininha/PIX)."""
+    try:
+        data = request.get_json() or {}
+        order_ids = data.get('order_ids') or []
+        if not order_ids:
+            return jsonify({'error': 'order_ids é obrigatório'}), 400
+        from src.services.settlement import confirmar_acerto
+        confirmados = confirmar_acerto(order_ids, data.get('note'))
+        return jsonify({'message': f'Acerto confirmado em {confirmados} pedido(s) — entregador liberado',
+                        'confirmados': confirmados}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @admin_est_drivers_crud_bp.route('/establishment/orders', methods=['GET'])
 @jwt_required()
 @client_or_admin_required

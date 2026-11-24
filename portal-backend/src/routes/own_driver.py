@@ -511,6 +511,51 @@ def reject_order(order_id):
         return jsonify({'error': str(e)}), 500
 
 
+@own_driver_bp.route('/orders/<int:order_id>/pix-proof', methods=['POST'])
+@own_driver_required
+def upload_pix_proof(order_id):
+    """Comprovante de PIX (acerto de retorno) — foto enviada pelo entregador."""
+    try:
+        driver = request.own_driver
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Pedido não encontrado'}), 404
+        if order.establishment_driver_id != driver.id:
+            return jsonify({'error': 'Este pedido não é seu'}), 403
+        if order.settlement_kind != 'PIX':
+            return jsonify({'error': 'Este pedido não é de pagamento via PIX'}), 400
+        data = request.get_json() or {}
+        proof_data = data.get('proof')
+        if not proof_data:
+            return jsonify({'error': 'Imagem do comprovante é obrigatória'}), 400
+        from src.utils.supabase_storage import upload_proof
+        proof_url = upload_proof(proof_data, order.id)
+        if not proof_url:
+            return jsonify({'error': 'Falha no upload do comprovante'}), 500
+        order.pix_proof_url = proof_url
+        db.session.commit()
+        return jsonify({'message': 'Comprovante enviado — aguardando confirmação do estabelecimento',
+                        'pix_proof_url': proof_url}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@own_driver_bp.route('/settlements', methods=['GET'])
+@own_driver_required
+def get_settlements_summary():
+    """Resumo do acerto de retorno do entregador (banners do app)."""
+    try:
+        driver = request.own_driver
+        from src.services.settlement import resumo_acerto
+        modo = driver.restaurant.machine_settlement_mode if driver.restaurant else 'PER_SHIFT'
+        return jsonify(resumo_acerto(driver.id, modo)), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @own_driver_bp.route('/orders/<int:order_id>/status', methods=['PUT'])
 @own_driver_required
 def update_order_status(order_id):
@@ -602,6 +647,14 @@ def update_order_status(order_id):
             order.picked_up_at = datetime.now(timezone.utc)
         elif new_status_enum == OrderStatus.DELIVERED:
             order.delivery_time = datetime.now(timezone.utc)
+
+            # Acerto de retorno (A1 — 2026-11-24): pagamento no local gera
+            # pendência (dinheiro/maquininha/PIX) até o estabelecimento confirmar
+            try:
+                from src.services.settlement import marcar_pendente_acerto
+                marcar_pendente_acerto(order)
+            except Exception as _e:
+                logger.warning(f"[ACERTO] marcação de pendência falhou: {_e}")
 
             # Marcar parada como concluída na rota (se aplicável)
             if order.own_driver_route_id:

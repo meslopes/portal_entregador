@@ -46,6 +46,10 @@ class Restaurant(db.Model):
     route_angle_tolerance = db.Column(db.Integer, default=45)  # janela de ±graus
     route_max_orders = db.Column(db.Integer, default=3)  # pedidos simultâneos por rota
     route_max_distance_km = db.Column(db.Numeric(6, 2), default=10.0)  # raio de segurança (0 = off)
+    # Acerto da maquininha (2026-11-24): por TURNO (uma devolução por entregador)
+    # ou por ENTREGA/ROTA (uma pendência por pedido no cartão) — varia conforme
+    # máquinas disponíveis × entregadores com cobrança (decisão do Mauro)
+    machine_settlement_mode = db.Column(db.String(20), default='PER_SHIFT')  # PER_SHIFT, PER_DELIVERY
     # Configuração de pagamento para entregadores próprios
     own_driver_payment_type = db.Column(db.String(30), default='PER_DELIVERY')  # PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED, FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY
     own_driver_fixed_value = db.Column(db.Numeric(10, 2), default=5.00)  # Valor fixo por entrega/diária
@@ -215,6 +219,15 @@ class Order(db.Model):
     offer_attempts = db.Column(db.Integer, default=0)  # Quantas vezes foi oferecido
     # Log de distribuição (M4) — JSON com cada oferta (ângulo, distância, motivo)
     distribution_log = db.Column(db.Text)
+    # Acerto de retorno (A1 — 2026-11-24): pagamento no local gera pendência até
+    # o estabelecimento confirmar (dinheiro / maquininha / comprovante PIX).
+    # Enquanto PENDING o entregador não recebe novas ofertas (trava no motor).
+    settlement_status = db.Column(db.String(20), default='NONE')  # NONE, PENDING, SETTLED
+    settlement_kind = db.Column(db.String(10))  # CASH, CARD, PIX
+    settlement_value = db.Column(db.Numeric(10, 2))  # total a cobrar no local
+    pix_proof_url = db.Column(db.String(500))  # comprovante enviado pelo entregador
+    settled_at = db.Column(db.DateTime)
+    settled_note = db.Column(db.String(200))
     preparing_at = db.Column(db.DateTime)
     ready_at = db.Column(db.DateTime)
     picked_up_at = db.Column(db.DateTime)
@@ -291,6 +304,10 @@ class Order(db.Model):
             'delivery_code': self.delivery_code,
             'square_id': self.square_id,
             'assigned_to_own_driver': self.assigned_to_own_driver or False,
+        'settlement_status': self.settlement_status or 'NONE',
+        'settlement_kind': self.settlement_kind,
+        'settlement_value': float(self.settlement_value) if self.settlement_value else None,
+        'pix_proof_url': self.pix_proof_url,
             'establishment_driver_id': self.establishment_driver_id,
             'own_driver_route_id': self.own_driver_route_id,
             'called_platform': self.called_platform or False,

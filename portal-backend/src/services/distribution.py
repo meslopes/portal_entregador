@@ -112,6 +112,14 @@ def selecionar_entregador_proprio(order, exclude_driver_ids=None):
 
     compativeis, livres = [], []
     for d in candidatos:
+        # Trava de acerto de retorno (A1): com pendência (dinheiro/maquininha/
+        # PIX) o entregador não recebe novas ofertas até o acerto confirmado
+        try:
+            from src.services.settlement import tem_pendencia_acerto
+            if tem_pendencia_acerto(d.id):
+                continue
+        except Exception:
+            pass
         carga = _carga_do_entregador(d.id)
         if carga >= limite:
             continue  # no cap — respeita limite (override é manual, no modal)
@@ -209,6 +217,16 @@ def avaliar_atribuicao(order, driver, exclude_driver_ids=None):
     if carga >= limite:
         avisos.append({'tipo': 'no_teto',
                        'msg': f'⚠️ {driver.name} já está no teto ({carga}/{limite} pedidos)'})
+
+    try:
+        from src.services.settlement import resumo_acerto
+        resumo = resumo_acerto(driver.id)
+        if resumo['pendente']:
+            avisos.append({'tipo': 'aguarda_acerto',
+                           'msg': f'⚠️ {driver.name} tem acerto pendente — '
+                                  f'{"; ".join(i["texto"] for i in resumo["itens"])}'})
+    except Exception:
+        pass
 
     rumo_pedido = bearing_deg(
         float(restaurant.latitude), float(restaurant.longitude),

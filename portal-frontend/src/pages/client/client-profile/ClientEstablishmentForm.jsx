@@ -123,6 +123,20 @@ const ClientEstablishmentForm = ({ establishmentData, setEstablishmentData, isSa
             style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
           />
         </div>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Maquininha — acerto da máquina de cartão</label>
+          <select
+            value={establishmentData.machine_settlement_mode || 'PER_SHIFT'}
+            onChange={e => setEstablishmentData({ ...establishmentData, machine_settlement_mode: e.target.value })}
+            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+          >
+            <option value="PER_SHIFT">Por turno — uma devolução da maquininha por entregador</option>
+            <option value="PER_DELIVERY">Por entrega/rota — uma pendência por pedido no cartão</option>
+          </select>
+          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0.375rem 0 0' }}>
+            Depende de quantas máquinas você tem × entregadores com cobrança
+          </p>
+        </div>
       </div>
     </div>
 

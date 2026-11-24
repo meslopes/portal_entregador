@@ -19,6 +19,10 @@ const OwnDriverDashboardPage = () => {
   const [toggling, setToggling] = useState(false);
   const [pendingRoutes, setPendingRoutes] = useState(0);
   const [pendingOffers, setPendingOffers] = useState(0);
+  const [acerto, setAcerto] = useState(null);
+  const [enviandoPix, setEnviandoPix] = useState(false);
+  const fileInputRef = useRef(null);
+  const pixAlvoRef = useRef(null);
   const prevPendingRoutes = useRef(0);
   const prevPendingOffers = useRef(0);
   const audioContextRef = useRef(null);
@@ -49,15 +53,17 @@ const OwnDriverDashboardPage = () => {
       const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [statsRes, routesRes, ordersRes] = await Promise.all([
+      const [statsRes, routesRes, ordersRes, acertoRes] = await Promise.all([
         api.get('/api/own-driver/stats', { headers }),
         api.get('/api/routes/own-driver/active', { headers }),
-        api.get('/api/own-driver/orders?status=active', { headers })
+        api.get('/api/own-driver/orders?status=active', { headers }),
+        api.get('/api/own-driver/settlements', { headers }).catch(() => ({ data: null })),
       ]);
 
       setStats(statsRes.data.stats);
       setDriver(statsRes.data.driver);
       setIsOnline(statsRes.data.driver?.is_online || false);
+      setAcerto(acertoRes.data);
       // Ofertas aguardando aceite (status OFFERED) — sinalização sonora/visual
       setPendingOffers((ordersRes.data.orders || []).filter(o => o.status === 'OFFERED').length);
       
@@ -301,6 +307,58 @@ const OwnDriverDashboardPage = () => {
           </button>
         </div>
       )}
+
+      {/* Acerto de retorno pendente (dinheiro/maquininha/PIX) — trava novas ofertas */}
+      {acerto?.pendente && (
+        <div style={{
+          background: '#fee2e2', borderBottom: '1px solid #fecaca',
+          padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap'
+        }}>
+          <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#991b1b' }}>
+            ⏳ Aguardando acerto com o estabelecimento: {acerto.itens.map(i => i.texto).join(' · ')}
+          </p>
+          {acerto.itens.filter(i => i.tipo === 'PIX' && !i.proof_url && i.order_ids && i.order_ids.length > 0).map(i => (
+            <button
+              key={i.order_ids[0]}
+              disabled={enviandoPix}
+              onClick={() => { pixAlvoRef.current = i.order_ids[0]; fileInputRef.current?.click(); }}
+              style={{
+                padding: '0.375rem 0.875rem', borderRadius: '0.5rem', border: 'none',
+                background: '#0d9488', color: 'white', fontWeight: 600,
+                fontSize: '0.75rem', cursor: enviandoPix ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap'
+              }}
+            >
+              {enviandoPix ? 'Enviando...' : 'Enviar comprovante PIX'}
+            </button>
+          ))}
+        </div>
+      )}
+      <input
+        type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          try {
+            setEnviandoPix(true);
+            const b64 = await new Promise((res, rej) => {
+              const r = new FileReader();
+              r.onload = () => res(r.result);
+              r.onerror = rej;
+              r.readAsDataURL(file);
+            });
+            const token = localStorage.getItem('own_driver_token');
+            await api.post(`/api/own-driver/orders/${pixAlvoRef.current}/pix-proof`,
+              { proof: b64 }, { headers: { Authorization: `Bearer ${token}` } });
+            loadData(false);
+          } catch (err) {
+            alert(err.response?.data?.error || 'Falha ao enviar o comprovante');
+          } finally {
+            setEnviandoPix(false);
+            e.target.value = '';
+          }
+        }}
+      />
       {/* Header */}
       <header style={{
         background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',

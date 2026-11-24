@@ -790,6 +790,34 @@ with app.app_context():
         print(f"Migração distribuição configurável: {e}")
         db.session.rollback()
 
+    # Migration acerto de retorno (2026-11-24) — pagamento no local
+    # (dinheiro/maquininha/PIX) gera pendência até confirmação do estabelecimento
+    try:
+        for col_sql in (
+            "settlement_status VARCHAR(20) DEFAULT 'NONE'",
+            "settlement_kind VARCHAR(10)",
+            "settlement_value NUMERIC(10,2)",
+            "pix_proof_url VARCHAR(500)",
+            "settled_at TIMESTAMP",
+            "settled_note VARCHAR(200)",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'orders' AND column_name = '{col}') "
+                f"THEN ALTER TABLE orders ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'restaurants' AND column_name = 'machine_settlement_mode') "
+            "THEN ALTER TABLE restaurants ADD COLUMN machine_settlement_mode VARCHAR(20) DEFAULT 'PER_SHIFT'; END IF; END $$"
+        ))
+        db.session.commit()
+        print("Colunas de acerto de retorno adicionadas")
+    except Exception as e:
+        print(f"Migração acerto de retorno: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

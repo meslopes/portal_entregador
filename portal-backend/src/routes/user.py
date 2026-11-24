@@ -38,6 +38,7 @@ def get_profile():
                 user_data['route_angle_tolerance'] = restaurant.route_angle_tolerance or 45
                 user_data['route_max_orders'] = restaurant.route_max_orders or 3
                 user_data['route_max_distance_km'] = float(restaurant.route_max_distance_km or 10)
+                user_data['machine_settlement_mode'] = restaurant.machine_settlement_mode or 'PER_SHIFT'
 
         return jsonify(user_data), 200
     except Exception as e:
@@ -123,6 +124,11 @@ def update_profile():
                     if not (0 <= val <= 200):
                         return jsonify({'error': 'route_max_distance_km deve estar entre 0 e 200 km'}), 400
                     restaurant.route_max_distance_km = val
+                if 'machine_settlement_mode' in data:
+                    modo_maq = str(data['machine_settlement_mode']).upper()
+                    if modo_maq not in ('PER_SHIFT', 'PER_DELIVERY'):
+                        return jsonify({'error': 'machine_settlement_mode deve ser PER_SHIFT ou PER_DELIVERY'}), 400
+                    restaurant.machine_settlement_mode = modo_maq
 
         db.session.commit()
 

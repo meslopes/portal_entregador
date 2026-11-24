@@ -637,6 +637,11 @@ def update_establishment(establishment_id):
             if not (0 <= val <= 200):
                 return jsonify({'error': 'route_max_distance_km deve estar entre 0 e 200 km'}), 400
             est.route_max_distance_km = val
+        if 'machine_settlement_mode' in data:
+            modo_maq = str(data['machine_settlement_mode']).upper()
+            if modo_maq not in ('PER_SHIFT', 'PER_DELIVERY'):
+                return jsonify({'error': 'machine_settlement_mode deve ser PER_SHIFT ou PER_DELIVERY'}), 400
+            est.machine_settlement_mode = modo_maq
 
         if 'phone' in data:
 
