@@ -214,7 +214,12 @@ def estimate_fee():
 
         from src.services.order_helpers import (
             calcular_frete_tabela, estimar_km_deslocamento, resolve_pricing_table)
-        pt = resolve_pricing_table(restaurant, for_platform=not getattr(restaurant, 'has_own_drivers', False))
+        # Modelo de entrega (2026-11-24): 'OWN' = tabela do próprio,
+        # 'PLATFORM' = tabela da plataforma. Se não informado, usa has_own_drivers.
+        _model = data.get('delivery_model', '').upper()
+        _for_platform = (_model == 'PLATFORM') if _model in ('OWN', 'PLATFORM') \
+            else not getattr(restaurant, 'has_own_drivers', False)
+        pt = resolve_pricing_table(restaurant, for_platform=_for_platform)
         # Valor dos produtos (opcional) — usado pelo frete grátis da tabela
         order_value = None
         try:
@@ -228,7 +233,7 @@ def estimate_fee():
         # pickup_rate_per_km (0 = não cobrar, padrão).
         displacement_km, displacement_source = 0.0, 'disabled'
         _pickup_rate = float(getattr(pt, 'pickup_rate_per_km', 0) or 0) if pt else 0
-        _has_own = getattr(restaurant, 'has_own_drivers', False)
+        _has_own = _model != 'PLATFORM' and getattr(restaurant, 'has_own_drivers', False)
         if _pickup_rate > 0 and not _has_own:
             displacement_km, displacement_source = estimar_km_deslocamento(restaurant)
         # Veiculo da entrega (S7.4 Fase 2) — multiplica a base do frete

@@ -23,6 +23,7 @@ const NewOrderPage = () => {
   const [establishments, setEstablishments] = useState([]);
   const [pricingTable, setPricingTable] = useState(null);
   const [hasOwnDrivers, setHasOwnDrivers] = useState(false);
+  const [deliveryModel, setDeliveryModel] = useState(''); // '' = auto, 'OWN' = próprio, 'PLATFORM' = plataforma
   const [estimatedFee, setEstimatedFee] = useState(null);
   const [manualKm, setManualKm] = useState('');
   const [calculatingFee, setCalculatingFee] = useState(false);
@@ -113,7 +114,9 @@ const NewOrderPage = () => {
         // Distância informada pelo estabelecimento (rede de segurança do frete)
         manual_distance_km: manualKm || undefined,
         // Veículo da entrega (S7.4 Fase 2) — multiplica a base do frete
-        vehicle_type: form.vehicle_type || 'MOTO'
+        vehicle_type: form.vehicle_type || 'MOTO',
+        // Modelo de entrega — tabela de preço própria vs plataforma
+        delivery_model: deliveryModel || undefined
       };
       if (customLat && customLng) {
         payload.latitude = customLat;
@@ -324,6 +327,9 @@ const NewOrderPage = () => {
             manualKm, onManualKmChange: setManualKm,
             onApplyManualKm: () => calculateFee(pinLocation?.lat, pinLocation?.lng),
             vehicleType: form.vehicle_type,
+            deliveryModel,
+            onDeliveryModelChange: setDeliveryModel,
+            hasOwnDrivers,
             onVehicleTypeChange: (v) => setForm(p => ({ ...p, vehicle_type: v })),
           }}
         />

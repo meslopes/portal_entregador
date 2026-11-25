@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Bike, Map } from 'lucide-react';
 
 const FeeCalculator = ({
@@ -18,6 +18,9 @@ const FeeCalculator = ({
   onApplyManualKm,
   vehicleType,
   onVehicleTypeChange,
+  deliveryModel,
+  onDeliveryModelChange,
+  hasOwnDrivers,
 }) => (
   <div style={{ marginTop: '0.75rem', padding: '1rem', background: '#f0fdfa', borderRadius: '0.5rem', border: '1px solid #99f6e4' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -30,7 +33,23 @@ const FeeCalculator = ({
       )}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8125rem', color: '#475569' }}>
-      {/* Veículo da entrega (§7.4 Fase 2) — multiplica a base do frete */}
+      {/* Modelo de entrega — tabela de preço própria vs plataforma */}
+      {onDeliveryModelChange && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Modelo de entrega</span>
+          <select value={deliveryModel || ''} onChange={(e) => onDeliveryModelChange(e.target.value)}
+            style={{ padding: '0.25rem 0.5rem', border: '1.5px solid #99f6e4', borderRadius: '0.375rem', fontSize: '0.8125rem', background: 'white', cursor: 'pointer' }}>
+            <option value="">Automático</option>
+            {hasOwnDrivers && <option value="OWN">🏍️ Entregador próprio</option>}
+            <option value="PLATFORM">🚗 Motorista plataforma</option>
+          </select>
+        </div>
+      )}
+      {estimatedFee && (
+        <div style={{ fontSize: '0.625rem', color: '#0d9488', margin: 0 }}>
+          {estimatedFee.distance_source === 'manual' ? 'Distância informada por você' : estimatedFee.distance_source === 'osrm' ? 'Distância real (rota)' : 'Distância estimada (linha reta)'}
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>Veículo da entrega</span>
         <select value={vehicleType || 'MOTO'} onChange={(e) => onVehicleTypeChange && onVehicleTypeChange(e.target.value)}
