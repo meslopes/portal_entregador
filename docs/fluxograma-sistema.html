@@ -506,7 +506,7 @@
           <div class="flow-group-title"><span class="flow-group-icon">💳</span> Cobrança da Plataforma (MUV → admin)</div>
           <ul class="activity-list">
             <li><strong>Motor por componentes (2026-11-20/22)</strong> — total = FIXO + R$/estab × contagem(modo, N) + pedidos em FAIXAS MARGINAIS (escalonamento como conta de luz: 200 inclusos → R$0,80 até 500 → R$0,70 até 1.000 → R$0,60 ∞); modos de contagem do estab.: SNAPSHOT · USO (≥N pedidos no ciclo) · PRO_RATA_USO (dias com pedido)</li>
-            <li><strong>Assinaturas por tenant</strong> — componentes configuráveis por contrato <span class="route">GET/POST/PUT /api/platform/billing/subscriptions</span></li>
+            <li><strong>Assinaturas por tenant</strong> — componentes configuráveis por contrato: fixo + R$/estab (modo SNAPSHOT/USO/PRO_RATA) + R$/pedido (cota + faixas marginais) <span class="route">GET/POST/PUT /api/platform/billing/subscriptions</span></li>
             <li><strong>Simular fatura (prévia)</strong> — calcula o ciclo sem emitir <span class="route">GET /api/platform/billing/subscriptions/:id/preview</span></li>
             <li><strong>Gerar fatura</strong> — snapshot do cálculo (auditoria) + cobrança Asaas <span class="route">POST /api/platform/billing/subscriptions/:id/generate-invoice</span></li>
             <li><strong>Faturas</strong> — listar e marcar como paga <span class="route">GET /api/platform/billing/invoices · POST /api/platform/billing/invoices/:id/pay</span></li>
@@ -694,6 +694,7 @@
           <ul class="activity-list">
             <li><strong>Dashboard financeiro</strong> — receita, custos, por período <span class="route">GET /api/admin/finance</span></li>
             <li><strong>Receita por estabelecimento</strong> — ranking de faturamento <span class="route">GET /api/admin/finance/establishments</span></li>
+            <li><strong>Assinaturas (admin→estab)</strong> — cobrança configurável: fixo + R$/entregador (modo SNAPSHOT/USO/PRO_RATA) + R$/pedido (cota inclusa OU faixas marginais) + simular fatura. Nunca % do frete (§2) <span class="route">GET/POST/PUT /api/finance/subscriptions · GET /api/finance/subscriptions/:id/preview</span></li>
             <li><strong>Tabelas de preço</strong> — criar/editar por praça <span class="route">GET /api/admin/pricing-tables</span></li>
             <li><strong>Preços dinâmicos</strong> — taxas adicionais (noite, chuva, etc.) <span class="route">GET /api/admin/dynamic-pricing</span></li>
             <li><strong>Faturas</strong> — gerar, cobrar, enviar link <span class="route">POST /api/admin/invoices/:id/charge</span></li>
@@ -843,6 +844,8 @@
             <li><strong>Enviar Acesso</strong> — manda o link do app + telefone (login) + PIN ao entregador por WhatsApp ou cópia (modal na lista)</li>
             <li><strong>Definir PIN</strong> — 4 dígitos do login do entregador <span class="route">POST /api/admin/establishment-drivers/:id/pin</span></li>
             <li><strong>Listar entregadores</strong> — seus próprios, com selo "Sem PIN — acesso bloqueado" <span class="route">GET /api/admin/establishment-drivers</span></li>
+            <li><strong>Frete por modelo de entrega</strong> — toggle Próprio/Plataforma no cálculo do frete; tabelas de preço separadas (platform_pricing_table_id)</li>
+            <li><strong>Faturas de assinatura</strong> — visualizar cobranças da plataforma (acesso/uso) no portal <span class="route">GET /api/finance/invoices</span></li>
             <li><strong>Ativar/Desativar</strong> — habilitar entregador próprio para entregas</li>
             <li><strong>Atribuir a pedido</strong> — designar entregador próprio a um pedido específico <span class="route">POST /api/orders/:id/assign-own</span></li>
             <li><strong>Monitorar entregas</strong> — acompanhar entregadores em tempo real</li>
@@ -932,6 +935,7 @@
           <div class="flow-group-title"><span class="flow-group-icon">💰</span> Financeiro</div>
           <ul class="activity-list">
             <li><strong>Ver ganhos</strong> — total do dia, semana, mês <span class="route">GET /api/driver/stats</span></li>
+            <li><strong>Modelo de pagamento</strong> — 7 modelos configuráveis pelo admin em PricingTable: PERCENTAGE (padrão), PER_DELIVERY, PER_KM, DAILY, FIXED, FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY. Fórmula única <code>calcular_ganho_plataforma()</code></li>
             <li><strong>Histórico de ganhos</strong> — detalhamento por entrega <span class="route">GET /api/driver/earnings</span></li>
             <li><strong>Histórico de entregas</strong> — todas as entregas realizadas <span class="route">GET /api/driver/delivery-history</span></li>
             <li><strong>Solicitar saque</strong> — transferir para conta</li>
@@ -1018,7 +1022,7 @@
           <ul class="activity-list">
             <li><strong>Visualizar ganhos</strong> — entregas realizadas e valores <span class="route">GET /api/own-driver/earnings</span></li>
             <li><strong>Histórico</strong> — todas as entregas com detalhes</li>
-            <li><strong>Pagamento</strong> — controlado pelo estabelecimento/admin</li>
+            <li><strong>Pagamento</strong> — 7 modelos configuráveis pelo estabelecimento: PER_DELIVERY, PER_KM, PERCENTAGE, DAILY, FIXED, FIXED_PLUS_DELIVERY, FIXED_UP_TO_PLUS_DELIVERY. Frequência: DAILY/WEEKLY/MONTHLY/ON_DEMAND. Acerto: CASH/CARD/PIX + maquininha (PER_SHIFT/PER_DELIVERY)</li>
           </ul>
         </div>
 

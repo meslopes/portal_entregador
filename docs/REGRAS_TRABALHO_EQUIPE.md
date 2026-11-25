@@ -130,8 +130,9 @@ Antes de cada commit, devo executar TODOS os passos abaixo e reportar o resultad
 | 2 | Frontend build | npm run build | ✅/❌ |
 | 3 | Conflitos entre commits | git status + git diff | ✅/❌ |
 | 4 | Quebra de funcionalidade | Verificar se alterações afetam código existente | ✅/❌ |
+| 5 | Smoke em runtime | Subir backend (localhost:5000) e testar endpoints alterados com requisição real (login + GET/POST) | ✅/❌ |
 
-**Todos os 4 itens devem estar ✅ antes de commitar.**
+**Todos os 5 itens devem estar ✅ antes de commitar.**
 Se qualquer item falhar, corrijo antes de seguir.
 ```
 

@@ -274,6 +274,17 @@
 - [x] Ganhos pela loja DO PEDIDO em rotas multi-loja (cada loja paga a sua config) — corrigido em assign-driver/add-orders
 - [x] Smoke 17/17 (_tmp_smoke_f3_route.py: create multi-loja/intercalada/precedencia/embalagem/store_name/stop_seq/waypoints/assign 200+403/add-orders/loja-unica-sem-coleta/remove-limpa-coleta/auto-rota) + regressao: autoroute 6/6, reassign 7/7, fleet_f2 19/19
 
+## ✅ 2026-11-25 — Ciclo de Configurabilidade (CONCLUIDA)
+- [x] FROTA F2 refinamentos: ganhos dos meus entregadores (base ve tudo, vinculada ve o que gerou) + deslocamento OSRM + UI vinculados sem gestao + fix metrics sem @jwt_required (`46e8232b`)
+- [x] FORMULA UNICA ganho plataforma: `calcular_ganho_plataforma()` — 10 duplicacoes em 5 arquivos → 1 funcao; fix hardcoded 0.65 em order_lifecycle (`9f039896`)
+- [x] PAGAMENTO PLATAFORMA CONFIGURAVEL: 7 modelos em PricingTable (igual proprios) via AdminPricingPage; retrocompat PERCENTAGE (`ea097dec`)
+- [x] COBRANCA ADMIN→ESTAB: cota de pedidos + faixas marginais + modo de contagem (SNAPSHOT/USO/PRO_RATA) + preview/simular + UI edicao; fix to_dict (price_per_order, snapshot fixed_price) (`f12af69e`)
+- [x] FAIXAS MARGINAIS no modal de assinatura (TiersEditor como conta de luz) + commission_rate REMOVIDO (§2) + faturas de assinatura no portal do estabelecimento (`150fc26a`)
+- [x] PLATFORM_PRICING_TABLE_ID ativo: frete separado por modelo de entrega (proprio vs plataforma) + resolve_pricing_table(for_platform) (`416e0b52`)
+- [x] platform_fee visivel no acerto semanal (margem plataforma) + orders_count na tabela de faturas (`673ef518`)
+- [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
+- [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
