@@ -221,8 +221,11 @@ const AdminInvoicesPage = () => {
                   <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '1.25rem', marginBottom: '0.25rem' }}>
                     R$ {(inv.total_amount || 0).toFixed(2).replace('.', ',')}
                   </p>
-                  <p style={{ color: '#16a34a', fontSize: '0.8125rem', marginBottom: '0.75rem' }}>
+                  <p style={{ color: '#16a34a', fontSize: '0.8125rem', marginBottom: '0.25rem' }}>
                     Entregadores: R$ {(inv.driver_earnings || 0).toFixed(2).replace('.', ',')}
+                  </p>
+                  <p style={{ color: '#2563eb', fontSize: '0.8125rem', marginBottom: '0.75rem' }}>
+                    Margem plataforma: R$ {(inv.platform_fee || 0).toFixed(2).replace('.', ',')}
                   </p>
                   {inv.status === 'PENDING' && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

@@ -30,6 +30,7 @@ const InvoicesTable = ({ invoices, onPayInvoice }) => (
           <th style={th}>Estabelecimento</th>
           <th style={th}>Período</th>
           <th style={thCenter}>Entregadores</th>
+          <th style={thCenter}>Pedidos</th>
           <th style={thRight}>Valor</th>
           <th style={thCenter}>Vencimento</th>
           <th style={thCenter}>Status</th>
@@ -54,6 +55,7 @@ const InvoicesTable = ({ invoices, onPayInvoice }) => (
                 {formatDate(invoice.period_start)} - {formatDate(invoice.period_end)}
               </td>
               <td style={tdCenter}>{invoice.drivers_count}</td>
+              <td style={tdCenter}>{invoice.orders_count ?? '-'}</td>
               <td style={tdRight}>{formatCurrency(invoice.total_amount)}</td>
               <td style={{ ...tdCenter, fontSize: '0.8125rem', color: '#64748b' }}>
                 {formatDate(invoice.due_date)}
