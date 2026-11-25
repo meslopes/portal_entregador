@@ -24,12 +24,59 @@ Cada seleção gera um registro em `Order.distribution_log` (M4 — auditoria:
 import json
 from datetime import datetime, timezone
 
-from src.models.portal_models import EstablishmentDriver, Order, OrderStatus
+from src.models.portal_models import EstablishmentDriver, EstablishmentDriverStore, Order, OrderStatus
 from src.utils.geo import bearing_deg, circular_angle_diff, haversine_distance
 
 # Status que contam como "pedido em rota" (ainda não concluído/cancelado)
 STATUS_EM_ROTA = (OrderStatus.OFFERED, OrderStatus.ACCEPTED,
                   OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.PICKED_UP)
+
+
+def _vinculados_da_loja(restaurant):
+    """F2 frota compartilhada — entregadores de OUTRA base com vínculo ativo
+    com esta loja. Só contam com a flag de frota ligada nas DUAS pontas
+    (produto vendido pela plataforma)."""
+    if not (restaurant and restaurant.fleet_sharing_enabled):
+        return []
+    pares = EstablishmentDriverStore.query.with_entities(
+        EstablishmentDriverStore.establishment_driver_id).filter(
+        EstablishmentDriverStore.restaurant_id == restaurant.id,
+        EstablishmentDriverStore.active.is_(True)).all()
+    ids = [p[0] for p in pares]
+    if not ids:
+        return []
+    out = []
+    for d in EstablishmentDriver.query.filter(
+            EstablishmentDriver.id.in_(ids),
+            EstablishmentDriver.is_active.is_(True)).all():
+        if d.restaurant_id == restaurant.id:
+            continue  # a base entra pela outra via
+        if d.restaurant and d.restaurant.fleet_sharing_enabled:
+            out.append(d)
+    return out
+
+
+def candidatos_da_loja(restaurant, online_only=False):
+    """Base SEMPRE (retrocompat — loja sem o produto funciona igual a antes)
+    + vinculados ativos da frota (F2)."""
+    q = EstablishmentDriver.query.filter(
+        EstablishmentDriver.restaurant_id == restaurant.id,
+        EstablishmentDriver.is_active.is_(True))
+    if online_only:
+        q = q.filter(EstablishmentDriver.is_online.is_(True))
+    base = q.all()
+    extra = [d for d in _vinculados_da_loja(restaurant)
+             if d.is_online or not online_only]
+    return base + extra
+
+
+def pertence_a_loja(driver, restaurant):
+    """True se o entregador pode atender esta loja: base OU vínculo ativo."""
+    if not (driver and restaurant):
+        return False
+    if driver.restaurant_id == restaurant.id:
+        return True
+    return any(d.id == driver.id for d in _vinculados_da_loja(restaurant))
 
 
 def _carga_do_entregador(driver_id):
@@ -72,7 +119,8 @@ def selecionar_entregador_proprio(order, exclude_driver_ids=None):
     restaurant = order.restaurant
     exclude_driver_ids = exclude_driver_ids or []
     info = {'ts': datetime.now(timezone.utc).isoformat(), 'order_id': order.id,
-            'pedido': order.order_number, 'motivo': None}
+            'pedido': order.order_number, 'motivo': None,
+            'loja_origem': restaurant.name if restaurant else None}
 
     if not (restaurant and restaurant.has_own_drivers):
         info['motivo'] = 'sem_entregadores_proprios'
@@ -103,11 +151,8 @@ def selecionar_entregador_proprio(order, exclude_driver_ids=None):
     tolerancia = int(restaurant.route_angle_tolerance or 45)
     limite = int(restaurant.route_max_orders or 3)
 
-    candidatos = EstablishmentDriver.query.filter(
-        EstablishmentDriver.restaurant_id == restaurant.id,
-        EstablishmentDriver.is_online.is_(True),
-        EstablishmentDriver.is_active.is_(True),
-    ).all()
+    # F2 frota: base SEMPRE + vinculados ativos da loja do pedido
+    candidatos = candidatos_da_loja(restaurant, online_only=True)
     candidatos = [d for d in candidatos if d.id not in exclude_driver_ids]
 
     compativeis, livres = [], []
@@ -202,6 +247,13 @@ def avaliar_atribuicao(order, driver, exclude_driver_ids=None):
     if not (restaurant and dest and restaurant.latitude and dest.latitude):
         return avisos
 
+    # F2 — loja de origem no copiloto: vínculo externo sempre sinalizado
+    if driver.restaurant_id != restaurant.id:
+        base_nome = driver.restaurant.name if driver.restaurant else 'outra loja'
+        avisos.append({'tipo': 'vinculo_externo',
+                       'msg': f'ℹ️ {driver.name} é da {base_nome} — '
+                              f'coleta na {restaurant.name} (loja de origem)'})
+
     tolerancia = int(restaurant.route_angle_tolerance or 45)
     limite = int(restaurant.route_max_orders or 3)
     raio = float(restaurant.route_max_distance_km or 0)
@@ -242,11 +294,7 @@ def avaliar_atribuicao(order, driver, exclude_driver_ids=None):
     # Sobrecarga com colega livre ("um carregado e outro parado")
     if carga > 0:
         excl = set(exclude_driver_ids or []) | {driver.id}
-        livres = EstablishmentDriver.query.filter(
-            EstablishmentDriver.restaurant_id == restaurant.id,
-            EstablishmentDriver.is_online.is_(True),
-            EstablishmentDriver.is_active.is_(True),
-        ).all()
+        livres = candidatos_da_loja(restaurant, online_only=True)
         for outro in livres:
             if outro.id in excl:
                 continue

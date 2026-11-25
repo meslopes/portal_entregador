@@ -562,6 +562,13 @@ def assign_own_driver(order_id):
         if not est_driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
+        # F2 frota compartilhada: aceita base OU vínculo ativo com a loja do
+        # pedido (retrocompat: loja sem o produto continua aceitando só os seus)
+        from src.services.distribution import pertence_a_loja
+        if not pertence_a_loja(est_driver, order.restaurant):
+            return jsonify({'error': f'{est_driver.name} não atende esta loja '
+                                     f'(precisa ser da base ou ter vínculo ativo)'}), 403
+
         # Remover pedido da rota anterior (se existir)
         if order.own_driver_route_id:
             from src.models.portal_models import OwnDriverRoute, OwnDriverStop

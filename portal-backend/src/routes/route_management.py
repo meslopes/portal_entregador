@@ -147,12 +147,19 @@ def assign_driver_to_route(route_id):
         if not driver:
             return jsonify({'error': 'Entregador não encontrado'}), 404
 
+        # F2 frota compartilhada: a rota só aceita base OU vínculo ativo da loja
+        # (retrocompat: loja sem o produto continua aceitando só os seus)
+        from src.services.distribution import pertence_a_loja
+        restaurant = Restaurant.query.get(route.restaurant_id)
+        if not pertence_a_loja(driver, restaurant):
+            return jsonify({'error': f'{driver.name} não atende esta loja '
+                                     f'(precisa ser da base ou ter vínculo ativo)'}), 403
+
         # Atribuir entregador à rota
         route.establishment_driver_id = driver_id
         route.status = 'PENDING'  # Aguardando entregador aceitar
 
         # Atribuir entregador a todos os pedidos da rota e calcular ganhos
-        restaurant = Restaurant.query.get(route.restaurant_id)
 
         for stop in route.stops:
             order = Order.query.get(stop.order_id)

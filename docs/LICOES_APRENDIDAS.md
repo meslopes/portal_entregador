@@ -223,7 +223,15 @@
     reais: `for c in Model.__table__.columns: if not c.nullable and
     c.default is None and c.server_default is None: print(c.name)`.
 
+46. **Ordem de FK em limpeza: pedidos antes de rotas** (complemento da lição
+    43) — `orders.own_driver_route_id` referencia `own_driver_routes`;
+    apagar a rota antes do pedido estoura `ForeignKeyViolation` mesmo com
+    paradas/entregas/ganhos já removidos. Ordem completa de limpeza:
+    paradas → entregas → ganhos → **PEDIDOS** → rotas → endereços → vínculos
+    → entregadores → lojas. Achado no smoke do F2 (`_tmp_smoke_fleet_f2.py`
+    e varredura `_tmp_sweep_fleet_f2.py`).
+
 ---
 
-_Atualizado em 2026-11-24 — 45 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-24 — 46 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

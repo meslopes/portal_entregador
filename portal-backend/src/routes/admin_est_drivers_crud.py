@@ -58,19 +58,15 @@ def list_establishment_drivers():
                 if user_restaurant and int(restaurant_id) != user_restaurant.id:
                     return jsonify({'error': 'Acesso negado: você só pode ver entregadores do seu próprio estabelecimento'}), 403
 
-        drivers = EstablishmentDriver.query.filter_by(
-
-            restaurant_id=int(restaurant_id),
-
-            is_active=True
-
-        ).all()
+        # F2 frota: base SEMPRE + vinculados ativos (retrocompat sem backfill)
+        from src.models.portal_models import Restaurant
+        from src.services.distribution import STATUS_EM_ROTA, candidatos_da_loja
+        from sqlalchemy import func as _func
+        restaurante = Restaurant.query.get(int(restaurant_id))
+        drivers = candidatos_da_loja(restaurante) if restaurante else []
 
         # Carga atual (pedidos em rota) por entregador + limite do estabelecimento
         # — visibilidade para o modal de distribuição (R4, 2026-11-24)
-        from src.models.portal_models import Restaurant
-        from src.services.distribution import STATUS_EM_ROTA
-        from sqlalchemy import func as _func
         cargas = {}
         if drivers:
             linhas = (db.session.query(Order.establishment_driver_id, _func.count(Order.id))
@@ -78,7 +74,6 @@ def list_establishment_drivers():
                               Order.status.in_(STATUS_EM_ROTA))
                       .group_by(Order.establishment_driver_id).all())
             cargas = {l[0]: l[1] for l in linhas}
-        restaurante = Restaurant.query.get(int(restaurant_id))
         payload = []
         # Copiloto de roteiro (2026-11-24): com order_id, cada entregador ganha
         # `alerts` (avisos, nunca bloqueios) — o modal exibe ao selecionar

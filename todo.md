@@ -257,6 +257,14 @@
 - [x] Smoke 13/13 (_tmp_smoke_fleet.py: vinculo/base-recusada/sem-flag/cross-tenant/lista/desvincular/reativar/telefone-409/trava-exclusao/liberacao) + UI test PASS (form admin mostra "Frota compartilhada (produto)") + fix _func no mesmo ciclo
 - [x] Licoes 42-45 em LICOES_APRENDIDAS.md (servidor velho x PID/mtime, delete de pai x FK NOT NULL x soft-delete N:N, import local nao viaja no copy-paste, fixtures de Restaurant)
 
+## ✅ 2026-11-24 — F2 Ofertas pela Frota (CONCLUIDA)
+- [x] Candidatos de oferta = base SEMPRE + vinculo ativo (retrocompat sem backfill): helpers candidatos_da_loja / pertence_a_loja / _vinculados_da_loja em services/distribution.py (flag ligada nas DUAS pontas + mesmo tenant)
+- [x] Motor de distribuicao (AUTO): selecao e sobrecarga com colega livre enxergam a frota; registro de distribuicao traz loja_origem
+- [x] Atribuicao manual (assign-own) e rota (assign-driver): validam pertence_a_loja — base OU vinculo ativo; estranho = 403 com aviso claro
+- [x] Copiloto: vinculo externo sinalizado ("entregador é da loja X — coleta na loja Y (loja de origem)") — avisa, nunca bloqueia; modal de distribuicao ja renderiza alerts genericos (sem mudanca de frontend)
+- [x] Listas/mapa: Meus Entregadores + mapa de drivers mostram vinculados ativos (coleta na loja de origem)
+- [x] Smoke 19/19 (_tmp_smoke_fleet_f2.py: candidatos/flag-off/pertence/selecao+loja_origem/copiloto/assign 200+403/retrocompat/rota 200+403/alert na lista) + licao 46 na limpeza (FK pedidos→rotas)
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)

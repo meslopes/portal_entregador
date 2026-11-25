@@ -333,15 +333,12 @@ def get_my_tracking():
             if order.establishment_driver_id:
                 own_active_order_driver_ids.add(order.establishment_driver_id)
 
-        # Buscar TODOS os own drivers online e ativos do restaurante
-        from src.models.portal_models import EstablishmentDriver
-        all_own_drivers = EstablishmentDriver.query.filter(
-            EstablishmentDriver.restaurant_id == restaurant.id,
-            EstablishmentDriver.is_online,
-            EstablishmentDriver.is_active,
-            EstablishmentDriver.current_latitude.isnot(None),
-            EstablishmentDriver.current_longitude.isnot(None)
-        ).all()
+        # F2 frota compartilhada: online da base SEMPRE + vínculos ativos da
+        # loja (coleta na loja de origem) — retrocompat sem backfill
+        from src.services.distribution import candidatos_da_loja
+        all_own_drivers = [d for d in candidatos_da_loja(restaurant, online_only=True)
+                           if d.current_latitude is not None
+                           and d.current_longitude is not None]
 
         for est_driver in all_own_drivers:
             try:
