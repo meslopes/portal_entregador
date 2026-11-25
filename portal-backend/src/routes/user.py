@@ -32,6 +32,9 @@ def get_profile():
             if restaurant:
                 user_data['restaurant_id'] = restaurant.id
                 user_data['has_own_drivers'] = restaurant.has_own_drivers or False
+                user_data['restaurant_name'] = restaurant.name
+                user_data['restaurant_address'] = restaurant.address
+                user_data['restaurant_phone'] = restaurant.phone or ''
                 user_data['subscription_type'] = restaurant.subscription_type
                 # Distribuição de pedidos a próprios (configurável — 2026-11-24)
                 user_data['distribution_mode'] = restaurant.distribution_mode or 'MANUAL'
@@ -136,6 +139,21 @@ def update_profile():
                     if modo_seq not in ('DAILY', 'CONTINUOUS'):
                         return jsonify({'error': 'seq_reset_mode deve ser DAILY ou CONTINUOUS'}), 400
                     restaurant.seq_reset_mode = modo_seq
+
+                # Dados cadastrais do estabelecimento (bug #3: eram ignorados)
+                # CUIDADO: Customer.name ↔ Restaurant.name — busca por nome!
+                if 'name' in data and data['name']:
+                    novo_nome = data['name'].strip()
+                    if novo_nome != restaurant.name:
+                        # Atualiza AMBOS para manter o vínculo
+                        restaurant.name = novo_nome
+                        customer.name = novo_nome
+                if 'address' in data and data['address']:
+                    restaurant.address = data['address']
+                if 'phone' in data and data['phone']:
+                    restaurant.phone = data['phone']
+                if 'cnpj' in data and data['cnpj']:
+                    restaurant.cnpj = data['cnpj']
 
         db.session.commit()
 
