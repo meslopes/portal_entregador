@@ -275,6 +275,43 @@ def send_order_status_notification(user_id, order_number, status_text):
     )
 
 
+def send_push_to_token(fcm_token, title, body, data=None, sound='default'):
+    """Envia push direto para um token FCM (entregadores próprios — sem user_id)."""
+    if not fcm_token:
+        return False
+    sa = _load_service_account()
+    use_v1 = bool(sa)
+    server_key = os.getenv('FIREBASE_SERVER_KEY')
+    if not use_v1 and not server_key:
+        return False
+    project_id = (sa or {}).get('project_id') or os.getenv('FIREBASE_PROJECT_ID', 'muv-log')
+    access_token = _get_oauth2_token(sa) if use_v1 else None
+    if use_v1 and not access_token:
+        return False
+    try:
+        if use_v1:
+            resp = _send_fcm_v1(fcm_token, title, body, data, sound, project_id, access_token)
+        else:
+            resp = _send_fcm_legacy(fcm_token, title, body, data, sound, server_key)
+        return resp is not None
+    except Exception as e:
+        logger.error(f'[PUSH] send_push_to_token falhou: {e}')
+        return False
+
+
+def send_own_driver_offer(driver, order):
+    """Notifica entregador próprio sobre nova oferta via FCM push."""
+    if not driver or not driver.fcm_token:
+        return False
+    return send_push_to_token(
+        driver.fcm_token,
+        title='Nova oferta de entrega',
+        body=f'Pedido #{order.order_number} — toque para aceitar ou recusar',
+        data={'order_id': order.id, 'type': 'NEW_OFFER'},
+        sound='default'
+    )
+
+
 def send_admin_alert(admin_user_id, title, message):
     """Envia alerta para admin (pedido parado, entregador offline, etc)."""
     return send_notification(

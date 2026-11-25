@@ -22,6 +22,17 @@ const OwnDriverLoginPage = () => {
       setLoading(true);
       const res = await api.post('/api/own-driver/login', { phone, pin });
       localStorage.setItem('own_driver_token', res.data.token);
+
+      // Registrar FCM token para push notifications (ofertas)
+      try {
+        const { requestNotificationPermission } = await import('@/lib/firebase');
+        const fcmToken = await requestNotificationPermission();
+        if (fcmToken) {
+          await api.post('/api/own-driver/fcm-token', { fcm_token: fcmToken }, {
+            headers: { Authorization: `Bearer ${res.data.token}` }
+          });
+        }
+      } catch { /* push é opcional — nunca bloqueia login */ }
       // Persistir apenas o mínimo — sem PII do restaurante/entregador no localStorage
       localStorage.setItem('own_driver_data', JSON.stringify({
         id: res.data.driver?.id,

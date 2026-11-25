@@ -312,6 +312,7 @@ class EstablishmentDriver(db.Model):
     vehicle_type = db.Column(db.String(20))  # MOTO, BIKE, CAR
     vehicle_plate = db.Column(db.String(10))
     vehicle_model = db.Column(db.String(100))
+    fcm_token = db.Column(db.String(512))  # Token FCM para push notifications (ofertas)
     is_online = db.Column(db.Boolean, default=False)
     current_latitude = db.Column(db.Numeric(10, 8))
     current_longitude = db.Column(db.Numeric(11, 8))

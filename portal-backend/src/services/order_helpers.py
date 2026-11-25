@@ -386,6 +386,12 @@ def process_scheduled_orders():
                             order.offered_at = now
                             order.offer_attempts = (order.offer_attempts or 0) + 1
                             logger.info(f"[AUTO-PROPRIO] Pedido {order.order_number} oferecido a {escolhido.name} ({info.get('motivo')})")
+                            # Push FCM para entregador próprio
+                            try:
+                                from src.services.push_notification import send_own_driver_offer
+                                send_own_driver_offer(escolhido, order)
+                            except Exception as _pe:
+                                logger.warning(f"[PUSH] falhou: {_pe}")
                             try:
                                 from src.services.auto_route import manter_rota_automatica
                                 manter_rota_automatica(escolhido.id)
@@ -468,6 +474,12 @@ def process_scheduled_orders():
                     pedido.offered_at = now
                     pedido.offer_attempts = (pedido.offer_attempts or 0) + 1
                     logger.info(f"[AUTO-PROPRIO] (retentativa) Pedido {pedido.order_number} oferecido a {escolhido.name}")
+                    # Push FCM para entregador próprio
+                    try:
+                        from src.services.push_notification import send_own_driver_offer
+                        send_own_driver_offer(escolhido, pedido)
+                    except Exception as _pe:
+                        logger.warning(f"[PUSH] falhou: {_pe}")
                     try:
                         from src.services.auto_route import manter_rota_automatica
                         manter_rota_automatica(escolhido.id)

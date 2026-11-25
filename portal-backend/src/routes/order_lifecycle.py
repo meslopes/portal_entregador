@@ -703,6 +703,12 @@ def relaunch_order(order_id):
                         order.status = OrderStatus.OFFERED
                         order.offered_at = datetime.now(timezone.utc)
                         order.offer_attempts = (order.offer_attempts or 0) + 1
+                        # Push FCM para entregador próprio
+                        try:
+                            from src.services.push_notification import send_own_driver_offer
+                            send_own_driver_offer(escolhido, order)
+                        except Exception as _pe:
+                            logger.warning(f"[PUSH] falhou: {_pe}")
                     # F2 — rotas automáticas (o pedido saiu do antigo dono)
                     try:
                         from src.services.auto_route import manter_rota_automatica

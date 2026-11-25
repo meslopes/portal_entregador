@@ -261,6 +261,24 @@ def activate_driver(token):
 
 # ==================== STATUS ====================
 
+@own_driver_bp.route('/fcm-token', methods=['POST'])
+@own_driver_required
+def register_fcm_token():
+    """Registra token FCM para push notifications (ofertas)."""
+    try:
+        driver = request.own_driver
+        data = request.get_json() or {}
+        token = data.get('fcm_token')
+        if not token:
+            return jsonify({'error': 'fcm_token é obrigatório'}), 400
+        driver.fcm_token = token
+        db.session.commit()
+        return jsonify({'message': 'Token registrado'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @own_driver_bp.route('/status', methods=['PUT'])
 @own_driver_required
 def toggle_status():
@@ -508,6 +526,12 @@ def reject_order(order_id):
                 order.offered_at = datetime.now(timezone.utc)
                 order.offer_attempts = (order.offer_attempts or 0) + 1
                 db.session.commit()
+                # Push FCM para o próximo entregador
+                try:
+                    from src.services.push_notification import send_own_driver_offer
+                    send_own_driver_offer(next_driver, order)
+                except Exception as _pe:
+                    logger.warning(f"[PUSH] falhou: {_pe}")
         except Exception as e:
             logger.error(f"Erro ao tentar próximo entregador: {e}")
 

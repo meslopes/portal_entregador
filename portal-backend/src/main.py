@@ -537,6 +537,18 @@ with app.app_context():
     except Exception as e:
         print(f"Migração pagamento plataforma: {e}")
         db.session.rollback()
+    # Migration: FCM token para entregadores próprios (2026-11-25)
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'establishment_drivers' AND column_name = 'fcm_token') "
+            "THEN ALTER TABLE establishment_drivers ADD COLUMN fcm_token VARCHAR(512); END IF; END $$"
+        ))
+        db.session.commit()
+        print("Coluna fcm_token adicionada a establishment_drivers")
+    except Exception as e:
+        print(f"Migração fcm_token: {e}")
+        db.session.rollback()
     # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
     try:
         for col_sql in (
