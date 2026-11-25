@@ -35,6 +35,7 @@ const EstablishmentDriversPage = () => {
   const [fleetStores, setFleetStores] = useState([]); // lojas com flag para vincular
   const [expandedFleet, setExpandedFleet] = useState(null); // driver id aberto
   const [driverStores, setDriverStores] = useState({}); // driverId -> [links]
+  const [myRestaurantId, setMyRestaurantId] = useState(null); // loja do usuário logado
 
   const loadAcertos = async () => {
     try {
@@ -117,6 +118,7 @@ const EstablishmentDriversPage = () => {
       // Buscar ID do restaurante do usuário logado
       const userRes = await api.get('/api/user/profile');
       const restaurantId = userRes.data.restaurant_id;
+      setMyRestaurantId(restaurantId);
       
       if (restaurantId) {
         const res = await api.get(`/api/admin/establishment-drivers?restaurant_id=${restaurantId}`);
@@ -681,22 +683,36 @@ const EstablishmentDriversPage = () => {
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => openSendModal(driver)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#25d366', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-                    <MessageCircle size={14} /> Enviar Acesso
-                  </button>
-                  <button onClick={() => handleToggleOnline(driver)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: driver.is_online ? '#22c55e' : '#e2e8f0', color: driver.is_online ? 'white' : '#64748b', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
-                    {driver.is_online ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                    {driver.is_online ? 'Online' : 'Offline'}
-                  </button>
-                  <button onClick={() => handleEdit(driver)} style={{ padding: '0.5rem', borderRadius: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }}>
-                    <Edit size={16} />
-                  </button>
-                  <button onClick={() => handleDelete(driver.id)} style={{ padding: '0.5rem', borderRadius: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }}>
-                    <Trash2 size={16} />
-                  </button>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  {/* F2: entregador vinculado (base = outra loja) → só leitura.
+                      Apenas a loja BASE pode gerir (PIN/enviar/excluir). */}
+                  {myRestaurantId && driver.restaurant_id !== myRestaurantId ? (
+                    <span style={{
+                      padding: '0.375rem 0.75rem', borderRadius: '0.5rem',
+                      background: '#ede9fe', color: '#6d28d9',
+                      fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap'
+                    }}>
+                      🔗 Vínculo — {driver.restaurant_name || 'outra loja'}
+                    </span>
+                  ) : (
+                    <>
+                      <button onClick={() => openSendModal(driver)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: '#25d366', color: 'white', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+                        <MessageCircle size={14} /> Enviar Acesso
+                      </button>
+                      <button onClick={() => handleToggleOnline(driver)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: driver.is_online ? '#22c55e' : '#e2e8f0', color: driver.is_online ? 'white' : '#64748b', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>
+                        {driver.is_online ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                        {driver.is_online ? 'Online' : 'Offline'}
+                      </button>
+                      <button onClick={() => handleEdit(driver)} style={{ padding: '0.5rem', borderRadius: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }}>
+                        <Edit size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(driver.id)} style={{ padding: '0.5rem', borderRadius: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', color: '#dc2626' }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

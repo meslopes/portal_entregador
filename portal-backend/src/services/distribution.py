@@ -59,6 +59,8 @@ def _vinculados_da_loja(restaurant):
 def candidatos_da_loja(restaurant, online_only=False):
     """Base SEMPRE (retrocompat — loja sem o produto funciona igual a antes)
     + vinculados ativos da frota (F2)."""
+    if not restaurant:
+        return []
     q = EstablishmentDriver.query.filter(
         EstablishmentDriver.restaurant_id == restaurant.id,
         EstablishmentDriver.is_active.is_(True))

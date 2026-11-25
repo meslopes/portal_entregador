@@ -260,7 +260,19 @@ def get_own_driver_earnings():
 
 
 
-        query = OwnDriverEarning.query.filter_by(restaurant_id=restaurant.id)
+        # F2 frota — "ganhos dos meus entregadores": mostra TODOS os ganhos dos
+        # entregadores base desta loja (inclusive de lojas vinculadas) + ganhos
+        # gerados nesta loja (inclusive de entregadores vinculados de outras bases).
+        # Sem isso, a loja que PAGA o entregador não enxerga o que ele ganhou
+        # numa loja vinculada — pagamento por rota/km ficaria incompleto.
+        # Inclui inativos: ganhos passados precisam aparecer para pagamento.
+        from sqlalchemy import or_ as _or
+        from src.models.portal_models import EstablishmentDriver as _ED
+        my_base_ids = [d.id for d in _ED.query.filter_by(
+            restaurant_id=restaurant.id).all()]
+        query = OwnDriverEarning.query.filter(
+            _or(OwnDriverEarning.establishment_driver_id.in_(my_base_ids) if my_base_ids else False,
+                OwnDriverEarning.restaurant_id == restaurant.id))
 
 
 
@@ -450,11 +462,10 @@ def pay_all_earnings():
 
 
 
-        # Buscar ganhos pendentes
-
+        # Buscar ganhos pendentes — F2 frota: paga TODOS os ganhos do entregador
+        # (inclusive de lojas vinculadas). Quem paga é a base; o filtro por
+        # restaurant_id esconderia ganhos gerados em lojas vinculadas.
         pending_earnings = OwnDriverEarning.query.filter_by(
-
-            restaurant_id=restaurant.id,
 
             establishment_driver_id=int(driver_id),
 
@@ -544,7 +555,11 @@ def get_cost_comparison():
 
             return jsonify({'error': 'Restaurante não encontrado'}), 404
 
-
+        # F2 frota — "ganhos dos meus entregadores" (mesma lógica do earnings)
+        from sqlalchemy import or_ as _or_2
+        from src.models.portal_models import EstablishmentDriver as _ED2
+        my_base_ids = [d.id for d in _ED2.query.filter_by(
+            restaurant_id=restaurant.id).all()]
 
         # Parâmetros
 
@@ -608,7 +623,8 @@ def get_cost_comparison():
 
             OwnDriverEarning.query.filter(
 
-                OwnDriverEarning.restaurant_id == restaurant.id,
+                _or_2(OwnDriverEarning.establishment_driver_id.in_(my_base_ids) if my_base_ids else False,
+                      OwnDriverEarning.restaurant_id == restaurant.id),
 
                 OwnDriverEarning.created_at >= start_date
 
@@ -678,6 +694,8 @@ def get_cost_comparison():
 
 @admin_est_drivers_pay_bp.route('/establishment-drivers/metrics', methods=['GET'])
 
+@jwt_required()
+
 @client_or_admin_required
 
 def get_own_driver_metrics():
@@ -738,19 +756,13 @@ def get_own_driver_metrics():
 
 
 
-        # Buscar entregadores próprios
-
-        drivers_query = EstablishmentDriver.query.filter_by(
-
-            restaurant_id=restaurant.id, is_active=True
-
-        )
+        # Buscar entregadores próprios — F2 frota: base + vinculados ativos
+        from src.services.distribution import candidatos_da_loja
+        drivers = candidatos_da_loja(restaurant)
 
         if driver_id:
 
-            drivers_query = drivers_query.filter_by(id=int(driver_id))
-
-        drivers = drivers_query.all()
+            drivers = [d for d in drivers if d.id == int(driver_id)]
 
 
 

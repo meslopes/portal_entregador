@@ -68,15 +68,18 @@ def _frete_faixas(bands, distance_km):
 
 def estimar_km_deslocamento(restaurant):
     """
-    Estima a distância do motorista até a coleta (trecho de deslocamento — §7.4).
-    Usa o motorista ONLINE mais próximo com GPS (plataforma ou próprio);
-    sem motorista online, retorna 0 (não cobra — estimativa desconhecida).
-    Retorna (km, fonte) com fonte 'driver' ou 'none'.
+    Distância REAL do motorista até a coleta (trecho de deslocamento — §7.4).
+    Usa OSRM (rota real, nunca linha reta) — regra do Mauro: "sem estimativa,
+    só valores reais". Se o OSRM não responder, retorna 0 (não cobra) em vez
+    de estimar. F2: inclui entregadores vinculados da frota compartilhada.
+    Retorna (km, fonte) com fonte 'osrm' ou 'none'.
     """
     if not restaurant or not restaurant.latitude or not restaurant.longitude:
         return 0.0, 'none'
-    melhor = None
-    # Entregadores da plataforma online (com GPS) do mesmo tenant
+    r_lat, r_lng = float(restaurant.latitude), float(restaurant.longitude)
+
+    # 1) Coletar candidatos com GPS (plataforma + próprios/frota)
+    candidatos = []
     try:
         from src.models.portal_models import Driver
         q = Driver.query.filter(
@@ -87,30 +90,37 @@ def estimar_km_deslocamento(restaurant):
         if restaurant.tenant_id:
             q = q.filter(Driver.tenant_id == restaurant.tenant_id)
         for d in q.limit(50).all():
-            km = haversine_distance(
-                float(restaurant.latitude), float(restaurant.longitude),
-                float(d.current_latitude), float(d.current_longitude))
-            if melhor is None or km < melhor:
-                melhor = km
+            candidatos.append((float(d.current_latitude), float(d.current_longitude)))
     except Exception:
         pass
-    # Entregadores próprios online (com GPS) deste estabelecimento
     try:
-        for d in EstablishmentDriver.query.filter(
-                EstablishmentDriver.restaurant_id == restaurant.id,
-                EstablishmentDriver.is_online.is_(True),
-                EstablishmentDriver.current_latitude.isnot(None),
-                EstablishmentDriver.current_longitude.isnot(None)).limit(50).all():
-            km = haversine_distance(
-                float(restaurant.latitude), float(restaurant.longitude),
-                float(d.current_latitude), float(d.current_longitude))
-            if melhor is None or km < melhor:
-                melhor = km
+        from src.services.distribution import candidatos_da_loja
+        for d in candidatos_da_loja(restaurant, online_only=True):
+            if d.current_latitude and d.current_longitude:
+                candidatos.append((float(d.current_latitude), float(d.current_longitude)))
     except Exception:
         pass
-    if melhor is None:
+
+    if not candidatos:
         return 0.0, 'none'
-    return round(melhor, 2), 'driver'
+
+    # 2) Pré-filtrar por haversine (top 5) para limitar chamadas ao OSRM
+    candidatos.sort(key=lambda c: haversine_distance(r_lat, r_lng, c[0], c[1]))
+    top = candidatos[:5]
+
+    # 3) Calcular distância REAL (OSRM) para cada e pegar a menor
+    from src.services.geocoding import get_route_distance
+    melhor = None
+    for c_lat, c_lng in top:
+        route = get_route_distance(c_lat, c_lng, r_lat, r_lng)
+        if route and route.get('distance_km') is not None:
+            km = route['distance_km']
+            if melhor is None or km < melhor:
+                melhor = km
+
+    if melhor is None:
+        return 0.0, 'none'  # OSRM indisponível — não cobra deslocamento
+    return round(melhor, 2), 'osrm'
 
 
 def multiplicador_veiculo(pt, vehicle_type):

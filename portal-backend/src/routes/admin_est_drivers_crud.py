@@ -115,11 +115,15 @@ def list_settlements():
         restaurante = Restaurant.query.get(int(restaurant_id))
         modo = restaurante.machine_settlement_mode if restaurante else 'PER_SHIFT'
         from src.services.settlement import resumo_acerto
+        # F2 frota: base SEMPRE + vinculados ativos (loja vinculada precisa ver
+        # acertos dos entregadores que atendem ela — "ganhos dos meus entregadores")
+        from src.services.distribution import candidatos_da_loja
         resultado = []
-        for d in EstablishmentDriver.query.filter_by(restaurant_id=int(restaurant_id), is_active=True).all():
+        for d in candidatos_da_loja(restaurante):
             resumo = resumo_acerto(d.id, modo)
             if resumo['pendente']:
-                resultado.append({'driver_id': d.id, 'driver': d.name, **resumo})
+                resultado.append({'driver_id': d.id, 'driver': d.name,
+                                  'base_store': d.restaurant.name if d.restaurant else None, **resumo})
         return jsonify({'settlements': resultado, 'machine_settlement_mode': modo}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

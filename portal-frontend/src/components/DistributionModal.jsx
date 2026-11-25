@@ -182,7 +182,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
                   <option value="">Selecione um entregador...</option>
                   {ownDrivers.map(d => (
                     <option key={d.id} value={d.id}>
-                      {d.name} — {d.vehicle_type === 'MOTO' ? '🏍️' : d.vehicle_type === 'BIKE' ? '🚲' : '🚗'} {d.vehicle_plate || ''} · {d.active_orders ?? 0}/{limiteRota} pedidos
+                      {d.name}{d.restaurant_name ? ` (da ${d.restaurant_name})` : ''} — {d.vehicle_type === 'MOTO' ? '🏍️' : d.vehicle_type === 'BIKE' ? '🚲' : '🚗'} {d.vehicle_plate || ''} · {d.active_orders ?? 0}/{limiteRota} pedidos
                     </option>
                   ))}
                 </select>
