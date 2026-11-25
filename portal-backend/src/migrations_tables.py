@@ -27,7 +27,9 @@ def run_table_migrations():
                 id SERIAL PRIMARY KEY,
                 route_id INTEGER REFERENCES own_driver_routes(id),
                 order_id INTEGER REFERENCES orders(id),
-                stop_order INTEGER NOT NULL,
+                restaurant_id INTEGER REFERENCES restaurants(id),
+                stop_order INTEGER,
+                stop_seq INTEGER,
                 stop_type VARCHAR(20),
                 latitude NUMERIC(10,8),
                 longitude NUMERIC(11,8),
@@ -38,6 +40,26 @@ def run_table_migrations():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """))
+        # F3 (2026-11-24): rota multi-loja — coleta sem pedido + ordem global
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'own_driver_stops' AND column_name = 'restaurant_id') "
+            "THEN ALTER TABLE own_driver_stops ADD COLUMN restaurant_id INTEGER REFERENCES restaurants(id); END IF; END $$"
+        ))
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'own_driver_stops' AND column_name = 'stop_seq') "
+            "THEN ALTER TABLE own_driver_stops ADD COLUMN stop_seq INTEGER; END IF; END $$"
+        ))
+        db.session.execute(db.text(
+            "ALTER TABLE own_driver_stops ALTER COLUMN order_id DROP NOT NULL"
+        ))
+        db.session.execute(db.text(
+            "ALTER TABLE own_driver_stops ALTER COLUMN stop_order DROP NOT NULL"
+        ))
+        db.session.execute(db.text(
+            "UPDATE own_driver_stops SET stop_seq = stop_order WHERE stop_seq IS NULL"
+        ))
         db.session.commit()
     except Exception:
         db.session.rollback()

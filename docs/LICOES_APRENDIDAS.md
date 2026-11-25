@@ -231,7 +231,16 @@
     → entregadores → lojas. Achado no smoke do F2 (`_tmp_smoke_fleet_f2.py`
     e varredura `_tmp_sweep_fleet_f2.py`).
 
+47. **Rota multi-loja: rebuild completo vence incremento** (F3) — manter
+    paradas de coleta (PICKUP) por mutação incremental (add/remove/move)
+    deixa coleta órfã quando sai o último pedido da loja. Padrão: qualquer
+    mutação de rota refaz TODAS as paradas a partir dos pedidos
+    (`reconstruir_paradas_rota`), preservando status de paradas concluídas
+    por match (tipo, pedido/loja). Complemento: rota manual nasce SEM
+    entregador — a limpeza de fixtures não pode filtrar rotas só por
+    `establishment_driver_id` (varrer por `restaurant_id`/ids também).
+
 ---
 
-_Atualizado em 2026-11-24 — 46 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-24 — 47 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

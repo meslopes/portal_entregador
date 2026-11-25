@@ -863,6 +863,33 @@ with app.app_context():
         print(f"Migração frota compartilhada: {e}")
         db.session.rollback()
 
+    # Migration F3 rota multi-loja (2026-11-24) — coleta sem pedido + ordem global
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'own_driver_stops' AND column_name = 'restaurant_id') "
+            "THEN ALTER TABLE own_driver_stops ADD COLUMN restaurant_id INTEGER REFERENCES restaurants(id); END IF; END $$"
+        ))
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'own_driver_stops' AND column_name = 'stop_seq') "
+            "THEN ALTER TABLE own_driver_stops ADD COLUMN stop_seq INTEGER; END IF; END $$"
+        ))
+        db.session.execute(db.text(
+            "ALTER TABLE own_driver_stops ALTER COLUMN order_id DROP NOT NULL"
+        ))
+        db.session.execute(db.text(
+            "ALTER TABLE own_driver_stops ALTER COLUMN stop_order DROP NOT NULL"
+        ))
+        db.session.execute(db.text(
+            "UPDATE own_driver_stops SET stop_seq = stop_order WHERE stop_seq IS NULL"
+        ))
+        db.session.commit()
+        print("Rota multi-loja: paradas de coleta + ordem global (stop_seq) adicionadas")
+    except Exception as e:
+        print(f"Migração rota multi-loja: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

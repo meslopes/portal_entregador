@@ -99,7 +99,9 @@ def _update_route_stats(route):
     try:
         from src.services.geocoding import get_route_distance_with_fallback
 
-        stops = sorted(route.stops, key=lambda s: s.stop_order)
+        # F3: stop_seq = ordem global (coletas incluídas); fallback stop_order
+        stops = sorted(route.stops,
+                       key=lambda s: (getattr(s, 'stop_seq', None) or s.stop_order or 0))
         total_distance = 0
         total_duration = 0
 

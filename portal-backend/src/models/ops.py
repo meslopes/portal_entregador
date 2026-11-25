@@ -208,7 +208,7 @@ class OwnDriverRoute(db.Model):
     # Relacionamentos
     driver = db.relationship('EstablishmentDriver', backref='routes')
     restaurant = db.relationship('Restaurant', backref='own_driver_routes')
-    stops = db.relationship('OwnDriverStop', backref='route', order_by='OwnDriverStop.stop_order')
+    stops = db.relationship('OwnDriverStop', backref='route', order_by='OwnDriverStop.stop_seq')
 
     @property
     def name(self):
@@ -233,13 +233,21 @@ class OwnDriverRoute(db.Model):
 
 
 class OwnDriverStop(db.Model):
-    """Parada individual em uma rota de entrega de entregador próprio"""
+    """Parada individual em uma rota de entrega de entregador próprio
+
+    F3 (2026-11-24): rota multi-loja — `stop_type` PICKUP (coleta na loja,
+    `order_id` NULL) ou DELIVERY (entrega). `stop_seq` = ordem GLOBAL da rota
+    (1..N, inclui coletas); `stop_order` = NÚMERO DA EMBALAGEM (contador só
+    das entregas, zera por rota — exibição "Embalagem N · Loja X").
+    """
     __tablename__ = 'own_driver_stops'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     route_id = db.Column(db.Integer, db.ForeignKey('own_driver_routes.id'), nullable=False)
-    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
-    stop_order = db.Column(db.Integer, nullable=False)  # Ordem na rota (1, 2, 3...)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=True)  # NULL em PICKUP
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=True)  # loja da parada
+    stop_order = db.Column(db.Integer)  # embalagem (1..N entre ENTREGAS; NULL em PICKUP)
+    stop_seq = db.Column(db.Integer)  # ordem global da rota (1..N com coletas)
     stop_type = db.Column(db.String(20))  # PICKUP, DELIVERY
     latitude = db.Column(db.Numeric(10, 8))
     longitude = db.Column(db.Numeric(11, 8))
@@ -251,8 +259,17 @@ class OwnDriverStop(db.Model):
 
     # Relacionamentos
     order = db.relationship('Order', backref='own_driver_stops')
+    restaurant = db.relationship('Restaurant', backref='own_driver_pickup_stops')
 
     def to_dict(self):
+        # Loja da parada: do pedido (DELIVERY) ou da própria parada (PICKUP)
+        store_name = None
+        rid = self.restaurant_id
+        if self.order is not None and self.order.restaurant is not None:
+            store_name = self.order.restaurant.name
+            rid = rid or self.order.restaurant_id
+        elif self.restaurant is not None:
+            store_name = self.restaurant.name
         return {
             'id': self.id,
             'route_id': self.route_id,
@@ -261,7 +278,10 @@ class OwnDriverStop(db.Model):
             'order_status': self.order.status.value if self.order and self.order.status else None,
             'customer_name': self.order.customer.name if self.order and self.order.customer else None,
             'customer_phone': self.order.customer.phone if self.order and self.order.customer else None,
+            'restaurant_id': rid,
+            'store_name': store_name,
             'stop_order': self.stop_order,
+            'stop_seq': self.stop_seq,
             'stop_type': self.stop_type,
             'latitude': float(self.latitude) if self.latitude else None,
             'longitude': float(self.longitude) if self.longitude else None,

@@ -265,6 +265,15 @@
 - [x] Listas/mapa: Meus Entregadores + mapa de drivers mostram vinculados ativos (coleta na loja de origem)
 - [x] Smoke 19/19 (_tmp_smoke_fleet_f2.py: candidatos/flag-off/pertence/selecao+loja_origem/copiloto/assign 200+403/retrocompat/rota 200+403/alert na lista) + licao 46 na limpeza (FK pedidos→rotas)
 
+## ✅ 2026-11-24 — F3 Rota Multi-Loja Intercalada (CONCLUIDA)
+- [x] Rota aceita pedidos de MULTIPLAS lojas (base = loja que cria a rota / base do entregador na auto-rota); entregador precisa atender TODAS as lojas (base OU vinculo ativo) em create/assign/add/move
+- [x] Ordenacao INTERCALADA (services/auto_route.py): a cada passo a acao disponivel mais proxima = coleta de loja pendente OU entrega ja coletada — NUNCA "todas coletas antes/depois de todas entregas"; precedencia dura: entrega so depois da COLETA da propria loja; PICKED_UP primeiro (em andamento)
+- [x] Paradas de coleta reais (stop_type=PICKUP, order_id NULL) so em rota multi-loja — rota de loja unica mantem o formato antigo (anti-poluicao); coleta orfa e removida no rebuild
+- [x] Embalagem N · Loja X: stop_order = embalagem (contador so das entregas) + store_name na parada; stop_seq = ordem global (1..N com coletas); UI do app (StopItem) e do estabelecimento (RoutesList) exibem "Embalagem N · Loja X" e "Coleta — Loja X"
+- [x] Google Maps waypoints: botao "Abrir rota completa" ja monta origin/waypoints/destination de todas as paradas — coletas entram como waypoints (navegacao sai da loja base)
+- [x] Ganhos pela loja DO PEDIDO em rotas multi-loja (cada loja paga a sua config) — corrigido em assign-driver/add-orders
+- [x] Smoke 17/17 (_tmp_smoke_f3_route.py: create multi-loja/intercalada/precedencia/embalagem/store_name/stop_seq/waypoints/assign 200+403/add-orders/loja-unica-sem-coleta/remove-limpa-coleta/auto-rota) + regressao: autoroute 6/6, reassign 7/7, fleet_f2 19/19
+
 ## 📋 Pendencias Futuras
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)

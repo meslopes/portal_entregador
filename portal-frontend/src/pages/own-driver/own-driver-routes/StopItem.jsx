@@ -21,10 +21,12 @@ const StopItem = ({ stop, index, onDeliver }) => (
           background: '#2563eb', color: 'white', borderRadius: '0.375rem',
           padding: '0.125rem 0.5rem', fontSize: '0.75rem', fontWeight: 700
         }}>
-          Embalagem {stop.stop_order}
+          Embalagem {stop.stop_order}{stop.store_name ? ` · ${stop.store_name}` : ''}
         </span>
       )}{' '}
-      Pedido #{stop.seq_number ?? stop.order_number ?? stop.order_id}
+      {stop.stop_type === 'PICKUP'
+        ? (stop.store_name || '')
+        : `Pedido #${stop.seq_number ?? stop.order_number ?? stop.order_id}`}
         </span>
       </div>
       <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>

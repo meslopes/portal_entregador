@@ -17,7 +17,8 @@ from src.models.portal_models import (
     UserType,
     db,
 )
-from src.routes.route_helpers import _update_route_stats, optimize_stop_order
+from src.routes.route_helpers import _update_route_stats
+from src.services.auto_route import reconstruir_paradas_rota
 from src.utils.geo import haversine_distance
 from src.utils.tenant import get_current_user
 
@@ -50,19 +51,19 @@ def create_route():
         if len(orders) != len(order_ids):
             return jsonify({'error': 'Alguns pedidos não foram encontrados'}), 400
 
-        # Verificar se todos os pedidos são do mesmo restaurante
-        restaurant_ids = set(o.restaurant_id for o in orders)
-        if len(restaurant_ids) > 1:
-            return jsonify({'error': 'Todos os pedidos devem ser do mesmo restaurante'}), 400
-
-        # Verificar se algum pedido já está em outra rota ativa
+        # F3 rota multi-loja: pedidos podem ser de várias lojas — a BASE da
+        # rota é a loja do primeiro pedido (a loja que cria a rota); a
+        # validação "entregador atende todas as lojas" roda no assign-driver
         for order in orders:
+            # Verificar se algum pedido já está em outra rota ativa
             if order.own_driver_route_id:
                 existing_route = OwnDriverRoute.query.get(order.own_driver_route_id)
                 if existing_route and existing_route.status in ['CREATED', 'PENDING', 'ACTIVE']:
                     return jsonify({'error': f'Pedido {order.order_number} já está na rota #{existing_route.id}'}), 400
 
-        restaurant_id = restaurant_ids.pop()
+        restaurant_id = next(
+            (o.restaurant_id for o in orders if o.id == order_ids[0]),
+            orders[0].restaurant_id)
 
         # Criar rota SEM entregador (status CREATED - aguardando atribuição)
         route = OwnDriverRoute(
@@ -73,43 +74,12 @@ def create_route():
         db.session.add(route)
         db.session.flush()
 
-        # Criar APENAS paradas de delivery (sem pickup - coleta é no restaurante)
-        stops_data = []
-        for order in orders:
-            if order.delivery_address:
-                delivery_stop = OwnDriverStop(
-                    route_id=route.id,
-                    order_id=order.id,
-                    stop_order=0,  # Será otimizado depois
-                    stop_type='DELIVERY',
-                    latitude=order.delivery_address.latitude,
-                    longitude=order.delivery_address.longitude,
-                    address=order.delivery_address.street
-                )
-                db.session.add(delivery_stop)
-                stops_data.append({
-                    'order_id': order.id,
-                    'stop_type': 'DELIVERY',
-                    'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
-                    'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
-                    'address': order.delivery_address.street
-                })
-
-        # Otimizar ordem das paradas
-        optimized_stops = optimize_stop_order(stops_data)
-
-        # Atualizar ordem no banco
-        for i, stop_data in enumerate(optimized_stops):
-            stop = OwnDriverStop.query.filter_by(
-                route_id=route.id,
-                order_id=stop_data['order_id']
-            ).first()
-            if stop:
-                stop.stop_order = i + 1
-
         # Vincular pedidos à rota (sem atribuir entregador)
         for order in orders:
             order.own_driver_route_id = route.id
+
+        # F3: paradas = coletas + entregas INTERCALADAS (precedência por loja)
+        reconstruir_paradas_rota(route)
 
         db.session.commit()
 
@@ -155,20 +125,28 @@ def assign_driver_to_route(route_id):
             return jsonify({'error': f'{driver.name} não atende esta loja '
                                      f'(precisa ser da base ou ter vínculo ativo)'}), 403
 
+        # F3 rota multi-loja: o entregador precisa atender TODAS as lojas dos
+        # pedidos da rota (base OU vínculo ativo em cada uma)
+        pedidos_rota = Order.query.filter(Order.own_driver_route_id == route.id).all()
+        for pedido in pedidos_rota:
+            if not pertence_a_loja(driver, pedido.restaurant):
+                return jsonify({'error': f'{driver.name} não atende a loja do pedido '
+ f'{pedido.order_number} (precisa ser da base ou ter vínculo ativo)'}), 403
+
         # Atribuir entregador à rota
         route.establishment_driver_id = driver_id
         route.status = 'PENDING'  # Aguardando entregador aceitar
 
         # Atribuir entregador a todos os pedidos da rota e calcular ganhos
-
-        for stop in route.stops:
-            order = Order.query.get(stop.order_id)
+        # (ganhos pela loja DO PEDIDO — cada loja paga a sua config)
+        for order in pedidos_rota:
             if order:
                 order.assigned_to_own_driver = True
                 order.establishment_driver_id = driver_id
                 order.own_driver_route_id = route.id
 
                 # Calcular ganho do entregador para este pedido
+                restaurant = order.restaurant
                 if restaurant:
                     payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
                     delivery_fee = float(order.delivery_fee or 0)
@@ -252,104 +230,75 @@ def add_orders_to_route(route_id):
         if len(orders) != len(order_ids):
             return jsonify({'error': 'Alguns pedidos não foram encontrados'}), 400
 
-        # Verificar se pedidos são do mesmo restaurante da rota
+        # F3 rota multi-loja: pedidos de outras lojas são aceitos — desde que
+        # o entregador da rota atenda a loja de cada um (base OU vínculo ativo)
         for order in orders:
-            if order.restaurant_id != route.restaurant_id:
-                return jsonify({'error': f'Pedido {order.order_number} não é do mesmo restaurante da rota'}), 400
-
             # Verificar se já está em outra rota ativa
             if order.own_driver_route_id and order.own_driver_route_id != route_id:
                 existing_route = OwnDriverRoute.query.get(order.own_driver_route_id)
                 if existing_route and existing_route.status in ['CREATED', 'PENDING', 'ACTIVE']:
                     return jsonify({'error': f'Pedido {order.order_number} já está na rota #{existing_route.id}'}), 400
 
-        # Adicionar pedidos à rota
-        stops_data = []
-        for stop in route.stops:
-            stops_data.append({
-                'order_id': stop.order_id,
-                'stop_type': stop.stop_type,
-                'latitude': float(stop.latitude) if stop.latitude else None,
-                'longitude': float(stop.longitude) if stop.longitude else None,
-                'address': stop.address
-            })
+            if route.establishment_driver_id:
+                from src.services.distribution import pertence_a_loja
+                if not pertence_a_loja(route.driver, order.restaurant):
+                    return jsonify({'error': f'Entregador {route.driver.name} não atende a '
+ f'loja do pedido {order.order_number} (precisa ser da base ou ter vínculo ativo)'}), 403
 
+        # Adicionar pedidos à rota
         for order in orders:
             # Verificar se já está na rota
-            existing = OwnDriverStop.query.filter_by(route_id=route_id, order_id=order.id).first()
+            existing = OwnDriverStop.query.filter_by(
+                route_id=route_id, order_id=order.id).first()
             if existing:
                 continue
+            if not order.delivery_address:
+                continue
 
-            if order.delivery_address:
-                delivery_stop = OwnDriverStop(
-                    route_id=route.id,
-                    order_id=order.id,
-                    stop_order=0,
-                    stop_type='DELIVERY',
-                    latitude=order.delivery_address.latitude,
-                    longitude=order.delivery_address.longitude,
-                    address=order.delivery_address.street
-                )
-                db.session.add(delivery_stop)
-                stops_data.append({
-                    'order_id': order.id,
-                    'stop_type': 'DELIVERY',
-                    'latitude': float(order.delivery_address.latitude) if order.delivery_address.latitude else None,
-                    'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
-                    'address': order.delivery_address.street
-                })
+            # Vincular pedido à rota
+            order.own_driver_route_id = route.id
 
-                # Vincular pedido à rota
-                order.own_driver_route_id = route.id
+            # Se a rota já tem entregador, atribuir e calcular ganhos
+            # (ganhos pela loja DO PEDIDO — cada loja paga a sua config)
+            if route.establishment_driver_id:
+                order.assigned_to_own_driver = True
+                order.establishment_driver_id = route.establishment_driver_id
 
-                # Se a rota já tem entregador, atribuir e calcular ganhos
-                if route.establishment_driver_id:
-                    order.assigned_to_own_driver = True
-                    order.establishment_driver_id = route.establishment_driver_id
+                restaurant = order.restaurant
+                if restaurant:
+                    # Calcular ganho (mesmo cálculo do assign)
+                    payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
+                    delivery_fee = float(order.delivery_fee or 0)
+                    distance_km = 0
 
-                    restaurant = Restaurant.query.get(route.restaurant_id)
-                    if restaurant:
-                        # Calcular ganho (mesmo cálculo acima)
-                        payment_type = restaurant.own_driver_payment_type or 'PER_DELIVERY'
-                        delivery_fee = float(order.delivery_fee or 0)
-                        distance_km = 0
-
-                        if order.delivery_address and order.delivery_address.latitude and restaurant.latitude:
-                            distance_km = haversine_distance(
-                                float(restaurant.latitude), float(restaurant.longitude),
-                                float(order.delivery_address.latitude), float(order.delivery_address.longitude)
-                            )
-
-                        if payment_type == 'PER_DELIVERY':
-                            driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
-                        elif payment_type == 'PER_KM':
-                            driver_earning = distance_km * float(restaurant.own_driver_km_value or 1.50)
-                        elif payment_type == 'PERCENTAGE':
-                            driver_earning = delivery_fee * (float(restaurant.own_driver_percentage or 70.0) / 100)
-                        else:
-                            driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
-
-                        earning = OwnDriverEarning(
-                            restaurant_id=restaurant.id,
-                            establishment_driver_id=route.establishment_driver_id,
-                            order_id=order.id,
-                            delivery_fee=delivery_fee,
-                            driver_earning=driver_earning,
-                            payment_type=payment_type,
-                            distance_km=distance_km
+                    if order.delivery_address and order.delivery_address.latitude and restaurant.latitude:
+                        distance_km = haversine_distance(
+                            float(restaurant.latitude), float(restaurant.longitude),
+                            float(order.delivery_address.latitude), float(order.delivery_address.longitude)
                         )
-                        db.session.add(earning)
 
-        # Re-otimizar paradas
-        optimized_stops = optimize_stop_order(stops_data)
+                    if payment_type == 'PER_DELIVERY':
+                        driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
+                    elif payment_type == 'PER_KM':
+                        driver_earning = distance_km * float(restaurant.own_driver_km_value or 1.50)
+                    elif payment_type == 'PERCENTAGE':
+                        driver_earning = delivery_fee * (float(restaurant.own_driver_percentage or 70.0) / 100)
+                    else:
+                        driver_earning = float(restaurant.own_driver_fixed_value or 5.00)
 
-        for i, stop_data in enumerate(optimized_stops):
-            stop = OwnDriverStop.query.filter_by(
-                route_id=route.id,
-                order_id=stop_data['order_id']
-            ).first()
-            if stop:
-                stop.stop_order = i + 1
+                    earning = OwnDriverEarning(
+                        restaurant_id=restaurant.id,
+                        establishment_driver_id=route.establishment_driver_id,
+                        order_id=order.id,
+                        delivery_fee=delivery_fee,
+                        driver_earning=driver_earning,
+                        payment_type=payment_type,
+                        distance_km=distance_km
+                    )
+                    db.session.add(earning)
+
+        # F3: rebuild das paradas (coletas + entregas intercaladas)
+        reconstruir_paradas_rota(route)
 
         # Atualizar distância e tempo
         _update_route_stats(route)
@@ -449,23 +398,20 @@ def remove_order_from_route(route_id):
                     order.status = OrderStatus.PENDING
                     order.accepted_at = None
 
-        # Remover parada
-        db.session.delete(stop)
-
-        # Reordenar paradas restantes
-        remaining_stops = OwnDriverStop.query.filter_by(route_id=route_id).order_by(OwnDriverStop.stop_order).all()
-        for i, s in enumerate(remaining_stops):
-            s.stop_order = i + 1
-
-        # Se rota ficou sem paradas, excluir rota
-        if not remaining_stops:
+        # F3: rebuild das paradas (apaga/recria — inclusive coletas órfãs)
+        restam = Order.query.filter(Order.own_driver_route_id == route_id).count()
+        if not restam:
+            # Se rota ficou sem pedidos, excluir rota
+            OwnDriverStop.query.filter_by(route_id=route_id).delete()
             db.session.delete(route)
+        else:
+            reconstruir_paradas_rota(route)
 
         db.session.commit()
 
         return jsonify({
             'message': 'Pedido removido da rota',
-            'route': route.to_dict() if remaining_stops else None
+            'route': route.to_dict() if restam else None
         }), 200
 
     except Exception as e:
@@ -516,15 +462,16 @@ def move_order_between_routes(route_id):
         if existing:
             return jsonify({'error': 'Pedido já está na rota de destino'}), 400
 
-        # Verificar se o pedido é do mesmo restaurante da rota de destino
+        # F3 rota multi-loja: pedido de outra loja só entra se o entregador
+        # da rota de destino atender a loja dele (base OU vínculo ativo)
         order = Order.query.get(order_id)
-        if order and order.restaurant_id != target_route.restaurant_id:
-            return jsonify({'error': 'Pedido não é do mesmo restaurante da rota de destino'}), 400
+        if order and target_route.establishment_driver_id:
+            from src.services.distribution import pertence_a_loja
+            if not pertence_a_loja(target_route.driver, order.restaurant):
+                return jsonify({'error': f'Entregador {target_route.driver.name} não atende a '
+ f'loja do pedido (precisa ser da base ou ter vínculo ativo)'}), 403
 
-        # Mover parada para a rota de destino
-        stop.route_id = target_route_id
-
-        # Atualizar vínculo do pedido
+        # Mover: desvincula da origem e vincula ao destino (rebuild nas 2)
         if order:
             order.own_driver_route_id = target_route_id
             # Se a rota de destino tem entregador, atribuir
@@ -532,39 +479,21 @@ def move_order_between_routes(route_id):
                 order.assigned_to_own_driver = True
                 order.establishment_driver_id = target_route.establishment_driver_id
 
-        # Reordenar paradas da rota de origem
-        remaining_stops = OwnDriverStop.query.filter_by(route_id=route_id).order_by(OwnDriverStop.stop_order).all()
-        for i, s in enumerate(remaining_stops):
-            s.stop_order = i + 1
-
-        # Se rota de origem ficou sem paradas, excluir
-        if not remaining_stops:
+        # F3: rebuild das paradas nas duas rotas (coletas + intercalado)
+        restam_origem = Order.query.filter(Order.own_driver_route_id == route_id).count()
+        if not restam_origem:
+            # Se rota de origem ficou sem pedidos, excluir
+            OwnDriverStop.query.filter_by(route_id=route_id).delete()
             db.session.delete(source_route)
-
-        # Re-otimizar ordem das paradas da rota de destino
-        target_stops_data = []
-        for s in OwnDriverStop.query.filter_by(route_id=target_route_id).order_by(OwnDriverStop.stop_order).all():
-            target_stops_data.append({
-                'stop_id': s.id,
-                'order_id': s.order_id,
-                'stop_type': s.stop_type,
-                'latitude': float(s.latitude) if s.latitude else None,
-                'longitude': float(s.longitude) if s.longitude else None,
-                'address': s.address
-            })
-
-        optimized = optimize_stop_order(target_stops_data)
-        for stop_data in optimized:
-            if 'stop_id' in stop_data:
-                s = OwnDriverStop.query.get(stop_data['stop_id'])
-                if s:
-                    s.stop_order = stop_data['stop_order']
+        else:
+            reconstruir_paradas_rota(source_route)
+        reconstruir_paradas_rota(target_route)
 
         db.session.commit()
 
         return jsonify({
             'message': f'Pedido movido para {target_route.name}',
-            'source_route': source_route.to_dict() if remaining_stops else None,
+            'source_route': source_route.to_dict() if restam_origem else None,
             'target_route': target_route.to_dict()
         }), 200
 

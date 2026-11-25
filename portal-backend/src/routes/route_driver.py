@@ -18,7 +18,7 @@ from src.models.portal_models import (
     db,
 )
 from src.routes.own_driver import own_driver_required
-from src.routes.route_helpers import optimize_stop_order
+from src.services.auto_route import reconstruir_paradas_rota
 from src.utils.tenant import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -81,30 +81,12 @@ def activate_route(route_id):
         route.status = 'ACTIVE'
         route.started_at = datetime.now(timezone.utc)
 
-        # Re-otimizar paradas (garantir ordem correta)
-        stops_data = []
-        for stop in route.stops:
-            stops_data.append({
-                'stop_id': stop.id,
-                'order_id': stop.order_id,
-                'stop_type': stop.stop_type,
-                'latitude': float(stop.latitude) if stop.latitude else None,
-                'longitude': float(stop.longitude) if stop.longitude else None,
-                'address': stop.address
-            })
-
-        optimized_stops = optimize_stop_order(stops_data)
-
-        for stop_data in optimized_stops:
-            if 'stop_id' in stop_data:
-                stop = OwnDriverStop.query.get(stop_data['stop_id'])
-                if stop:
-                    stop.stop_order = stop_data['stop_order']
+        # F3: rebuild das paradas (coletas + entregas INTERCALADAS)
+        reconstruir_paradas_rota(route)
 
         # Atualizar status dos pedidos
-        for stop in route.stops:
-            order = Order.query.get(stop.order_id)
-            if order and order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
+        for order in Order.query.filter(Order.own_driver_route_id == route.id).all():
+            if order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
                 order.status = OrderStatus.ACCEPTED
                 order.accepted_at = datetime.now(timezone.utc)
 
@@ -148,30 +130,12 @@ def accept_route(route_id):
         route.status = 'ACTIVE'
         route.started_at = datetime.now(timezone.utc)
 
-        # Re-otimizar paradas
-        stops_data = []
-        for stop in route.stops:
-            stops_data.append({
-                'stop_id': stop.id,
-                'order_id': stop.order_id,
-                'stop_type': stop.stop_type,
-                'latitude': float(stop.latitude) if stop.latitude else None,
-                'longitude': float(stop.longitude) if stop.longitude else None,
-                'address': stop.address
-            })
-
-        optimized_stops = optimize_stop_order(stops_data)
-
-        for stop_data in optimized_stops:
-            if 'stop_id' in stop_data:
-                stop = OwnDriverStop.query.get(stop_data['stop_id'])
-                if stop:
-                    stop.stop_order = stop_data['stop_order']
+        # F3: rebuild das paradas (coletas + entregas INTERCALADAS)
+        reconstruir_paradas_rota(route)
 
         # Atualizar status dos pedidos
-        for stop in route.stops:
-            order = Order.query.get(stop.order_id)
-            if order and order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
+        for order in Order.query.filter(Order.own_driver_route_id == route.id).all():
+            if order.status in [OrderStatus.PENDING, OrderStatus.SCHEDULED]:
                 order.status = OrderStatus.ACCEPTED
                 order.accepted_at = datetime.now(timezone.utc)
 

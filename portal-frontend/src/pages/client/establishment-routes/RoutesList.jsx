@@ -109,15 +109,19 @@ const RoutesList = ({ routes, drivers, selectedDriver, onSetSelectedDriver, onAs
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {route.stops?.map((stop) => (
                 <div key={stop.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', background: stop.status === 'COMPLETED' ? '#f0fdf4' : '#f8fafc', borderRadius: '0.375rem' }}>
-                  <span style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', background: stop.status === 'COMPLETED' ? '#22c55e' : '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
-                    {stop.stop_order}
+                  <span style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', background: stop.status === 'COMPLETED' ? '#22c55e' : (stop.stop_type === 'PICKUP' ? '#0d9488' : '#2563eb'), color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
+                    {stop.stop_type === 'PICKUP' ? 'C' : stop.stop_order}
                   </span>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{stop.address}</p>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{stop.customer_name} • Pedido #{stop.order_number}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {stop.stop_type === 'PICKUP'
+                        ? `Coleta — ${stop.store_name || 'loja'}`
+                        : `${stop.customer_name || ''} • Pedido #${stop.order_number}${stop.store_name ? ` · ${stop.store_name}` : ''}`}
+                    </p>
                   </div>
                   {stop.status === 'COMPLETED' && <CheckCircle size={16} style={{ color: '#22c55e' }} />}
-                  {stop.status !== 'COMPLETED' && ['CREATED', 'PENDING', 'ACTIVE'].includes(route.status) && (
+                  {stop.status !== 'COMPLETED' && stop.stop_type !== 'PICKUP' && ['CREATED', 'PENDING', 'ACTIVE'].includes(route.status) && (
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                       <button
                         onClick={() => onMoveOrder({ ...stop, route_id: route.id })}
