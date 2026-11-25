@@ -27,7 +27,11 @@ const SubscriptionPage = () => {
     billing_cycle: 'WEEKLY',
     price_per_driver: 50.00,
     price_per_order: 0,
-    fixed_price: 0
+    fixed_price: 0,
+    orders_included: 0,
+    order_price_tiers: [],
+    establishment_count_mode: 'SNAPSHOT',
+    min_orders_per_establishment: 0
   });
 
   const checkUserRole = useCallback(async () => {
@@ -80,7 +84,11 @@ const SubscriptionPage = () => {
       billing_cycle: sub.billing_cycle || 'WEEKLY',
       price_per_driver: sub.price_per_driver || 50,
       price_per_order: sub.price_per_order || 0,
-      fixed_price: sub.fixed_price || 0
+      fixed_price: sub.fixed_price || 0,
+      orders_included: sub.orders_included || 0,
+      order_price_tiers: sub.order_price_tiers || [],
+      establishment_count_mode: sub.establishment_count_mode || 'SNAPSHOT',
+      min_orders_per_establishment: sub.min_orders_per_establishment || 0
     });
     setShowCreateModal(true);
   };
@@ -95,16 +103,23 @@ const SubscriptionPage = () => {
           billing_cycle: createForm.billing_cycle,
           price_per_driver: createForm.price_per_driver,
           price_per_order: createForm.price_per_order,
-          fixed_price: createForm.fixed_price
+          fixed_price: createForm.fixed_price,
+          orders_included: createForm.orders_included || 0,
+          order_price_tiers: createForm.order_price_tiers?.length ? createForm.order_price_tiers : null,
+          establishment_count_mode: createForm.establishment_count_mode || 'SNAPSHOT',
+          min_orders_per_establishment: createForm.min_orders_per_establishment || 0
         });
         setSuccess('Assinatura atualizada com sucesso!');
       } else {
-        await api.post('/api/finance/subscriptions', createForm);
+        await api.post('/api/finance/subscriptions', {
+          ...createForm,
+          order_price_tiers: createForm.order_price_tiers?.length ? createForm.order_price_tiers : null
+        });
         setSuccess('Assinatura criada com sucesso!');
       }
       setShowCreateModal(false);
       setEditingSub(null);
-      setCreateForm({ restaurant_id: '', billing_cycle: 'WEEKLY', price_per_driver: 50.00, price_per_order: 0, fixed_price: 0 });
+      setCreateForm({ restaurant_id: '', billing_cycle: 'WEEKLY', price_per_driver: 50.00, price_per_order: 0, fixed_price: 0, orders_included: 0, order_price_tiers: [], establishment_count_mode: 'SNAPSHOT', min_orders_per_establishment: 0 });
       setTimeout(() => setSuccess(''), 3000);
       loadData();
     } catch (err) {

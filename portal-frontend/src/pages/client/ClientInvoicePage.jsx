@@ -7,6 +7,7 @@ import api, { orderService, utils } from '@/lib/api';
 
 const ClientInvoicePage = () => {
   const [invoice, setInvoice] = useState(null);
+  const [subInvoices, setSubInvoices] = useState([]); // faturas de assinatura
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -24,6 +25,15 @@ const ClientInvoicePage = () => {
 
     setWeekStart(start.toISOString().split('T')[0]);
     setWeekEnd(end.toISOString().split('T')[0]);
+
+    // Faturas de assinatura
+    const loadSubInvoices = async () => {
+      try {
+        const res = await api.get('/api/finance/invoices');
+        setSubInvoices(res.data.invoices || []);
+      } catch { /* apoio — nunca derruba a página */ }
+    };
+    loadSubInvoices();
   }, []);
 
   const generateInvoice = async () => {
@@ -216,6 +226,55 @@ const ClientInvoicePage = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Faturas de assinatura (plataforma) */}
+      {subInvoices.length > 0 && (
+        <div style={{
+          background: 'white', borderRadius: '0.75rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden', marginTop: '1.5rem'
+        }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9' }}>
+            <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Faturas de Assinatura</p>
+            <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Cobranças da plataforma (acesso/uso) — não é frete</p>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: '0.8125rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #f1f5f9', color: '#64748b', textAlign: 'left' }}>
+                  <th style={{ padding: '0.625rem 1.5rem' }}>Fatura</th>
+                  <th style={{ padding: '0.625rem 1rem' }}>Período</th>
+                  <th style={{ padding: '0.625rem 1rem' }}>Entregadores</th>
+                  <th style={{ padding: '0.625rem 1rem' }}>Pedidos</th>
+                  <th style={{ padding: '0.625rem 1rem' }}>Valor</th>
+                  <th style={{ padding: '0.625rem 1rem' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subInvoices.map((inv, i) => (
+                  <tr key={inv.id} style={{ borderBottom: i < subInvoices.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+                    <td style={{ padding: '0.625rem 1.5rem', fontWeight: 600 }}>{inv.invoice_number}</td>
+                    <td style={{ padding: '0.625rem 1rem', color: '#64748b' }}>
+                      {inv.period_start?.split('T')[0]} — {inv.period_end?.split('T')[0]}
+                    </td>
+                    <td style={{ padding: '0.625rem 1rem' }}>{inv.drivers_count ?? '-'}</td>
+                    <td style={{ padding: '0.625rem 1rem' }}>{inv.orders_count ?? '-'}</td>
+                    <td style={{ padding: '0.625rem 1rem', fontWeight: 600 }}>{utils.formatCurrency(inv.total_amount)}</td>
+                    <td style={{ padding: '0.625rem 1rem' }}>
+                      <span style={{
+                        padding: '0.125rem 0.5rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600,
+                        background: inv.status === 'PAID' ? '#dcfce7' : inv.status === 'OVERDUE' ? '#fef2f2' : '#fef3c7',
+                        color: inv.status === 'PAID' ? '#166534' : inv.status === 'OVERDUE' ? '#dc2626' : '#92400e'
+                      }}>
+                        {inv.status === 'PAID' ? 'Paga' : inv.status === 'OVERDUE' ? 'Vencida' : 'Pendente'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

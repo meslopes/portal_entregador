@@ -16,8 +16,7 @@ const AdminFinancePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState(null);
-  const [commission, setCommission] = useState(30); // % que o admin retém
-  const [savingCommission, setSavingCommission] = useState(false);
+  const [commission, setCommission] = useState(0); // % do frete — DESCONTINUADO (viola princípio §2)
 
   const loadData = useCallback(async () => {
     try {
@@ -47,26 +46,17 @@ const AdminFinancePage = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const saveCommission = async () => {
-    try {
-      setSavingCommission(true);
-      await api.put('/api/admin/settings', { commission_rate: commission.toString() });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSavingCommission(false);
-    }
-  };
+  // saveCommission removido — % do frete viola princípio §2
 
   // Calculos financeiros - baseado em FRETE (km), NAO em valor dos itens
   // Frete total cobrado dos estabelecimentos
   const totalFromEstablishments = data?.total_delivery_fees || 0;
   // O que entregadores devem receber (70% do frete)
-  const driverPercentage = 100 - commission;
-  const totalToDrivers = totalFromEstablishments * (driverPercentage / 100);
-  // Lucro do admin (30% do frete)
-  const adminRetention = totalFromEstablishments * (commission / 100);
-  const retentionRate = commission;
+  const driverPercentage = 100;
+  const totalToDrivers = totalFromEstablishments;
+  // Receita do admin vem de assinaturas (acesso/uso) — NUNCA % do frete (§2)
+  const adminRetention = 0;
+  const retentionRate = 0;
 
   if (loading) {
     return (
@@ -139,50 +129,33 @@ const AdminFinancePage = () => {
               <span style={{ fontSize: '0.75rem', color: '#64748b' }}>100%</span>
             </div>
             <div style={{ height: '2rem', borderRadius: '0.5rem', overflow: 'hidden', display: 'flex' }}>
-              <div style={{ width: `${100 - commission}%`, background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>
-                Entregadores ({100 - commission}%)
+              <div style={{ width: '100%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>
+                Entregadores (100%)
               </div>
-              <div style={{ width: `${commission}%`, background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6875rem', fontWeight: 600, color: 'white' }}>
-                Admin ({commission}%)
-              </div>
+              {/* Admin não cobra % do frete — receita vem de assinaturas */}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Configuracao de comissao */}
+      {/* Modelo de receita — princípio §2: nunca % do frete */}
       <div style={{ background: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Percent size={18} style={{ color: '#8b5cf6' }} />
-          <span style={{ fontWeight: 600, color: '#1e293b' }}>Taxa de Retenção (Comissão)</span>
+          <Percent size={18} style={{ color: '#2563eb' }} />
+          <span style={{ fontWeight: 600, color: '#1e293b' }}>Modelo de Receita do Admin</span>
         </div>
-        <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-              Percentual retido pelo admin (%)
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <input
-                type="range"
-                min="0" max="50" value={commission}
-                onChange={e => setCommission(parseInt(e.target.value))}
-                style={{ flex: 1 }}
-              />
-              <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', minWidth: '60px', textAlign: 'right' }}>
-                {commission}%
-              </span>
-            </div>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-              Entregadores recebem {100 - commission}% • Admin retém {commission}%
+        <div style={{ padding: '1.5rem' }}>
+          <div style={{ padding: '1rem', background: '#eff6ff', borderRadius: '0.5rem', border: '1px solid #bfdbfe' }}>
+            <p style={{ fontSize: '0.875rem', color: '#1e40af', lineHeight: 1.6, margin: 0 }}>
+              A receita do admin vem de <strong>assinaturas</strong> (acesso/uso da plataforma) —
+              fixo por ciclo + por entregador + por pedido — <strong>nunca % do frete</strong>{' '}
+              (princípio da independência §2).
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: '#3b82f6', marginTop: '0.75rem', margin: '0.75rem 0 0' }}>
+              A configuração de cobrança por estabelecimento fica em <strong>Assinaturas</strong> —
+              cada contrato é combinado individualmente (fixo, por entregador, por pedido com cota ou faixas).
             </p>
           </div>
-          <button onClick={saveCommission} disabled={savingCommission} style={{
-            padding: '0.625rem 1.5rem', borderRadius: '0.5rem', border: 'none',
-            background: '#8b5cf6', color: 'white', fontSize: '0.875rem', fontWeight: 600,
-            cursor: savingCommission ? 'not-allowed' : 'pointer', opacity: savingCommission ? 0.7 : 1
-          }}>
-            {savingCommission ? 'Salvando...' : 'Salvar Taxa'}
-          </button>
         </div>
       </div>
 
