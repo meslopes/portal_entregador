@@ -275,6 +275,15 @@ class EstablishmentSubscription(db.Model):
     price_per_driver = db.Column(db.Numeric(10, 2), default=50.00)  # Preço por entregador por ciclo
     price_per_order = db.Column(db.Numeric(10, 2), default=0)  # Preço por pedido entregue no ciclo
     fixed_price = db.Column(db.Numeric(10, 2), default=0)  # Preço fixo por estabelecimento (opcional)
+    # Cota de pedidos inclusa no ciclo (2026-11-24 — paridade com MUV→admin)
+    orders_included = db.Column(db.Integer, default=0)  # 0 = sem cota
+    # Faixas marginais por pedido (como conta de luz) — se presente, substitui
+    # price_per_order/orders_included. Lista [{"to_orders": 200, "price": 0.0}, ...]
+    order_price_tiers = db.Column(db.JSON)
+    # Modo de contagem de entregadores (SNAPSHOT/USO/PRO_RATA_USO) — paridade
+    # com PlatformSubscription. SNAPSHOT = ativos agora (legado).
+    establishment_count_mode = db.Column(db.String(20), default='SNAPSHOT')
+    min_orders_per_establishment = db.Column(db.Integer, default=0)  # p/ modo USO
     is_active = db.Column(db.Boolean, default=True)
 
     # Controle de cobrança
@@ -302,7 +311,12 @@ class EstablishmentSubscription(db.Model):
             'tenant_id': self.tenant_id,
             'billing_cycle': self.billing_cycle,
             'price_per_driver': float(self.price_per_driver) if self.price_per_driver else 50.00,
+            'price_per_order': float(self.price_per_order) if self.price_per_order else 0,
             'fixed_price': float(self.fixed_price) if self.fixed_price else 0,
+            'orders_included': int(self.orders_included) if self.orders_included else 0,
+            'order_price_tiers': self.order_price_tiers,
+            'establishment_count_mode': self.establishment_count_mode or 'SNAPSHOT',
+            'min_orders_per_establishment': int(self.min_orders_per_establishment) if self.min_orders_per_establishment else 0,
             'is_active': self.is_active,
             'last_billed_at': self.last_billed_at.isoformat() if self.last_billed_at else None,
             'next_billing_at': self.next_billing_at.isoformat() if self.next_billing_at else None,
@@ -332,6 +346,7 @@ class SubscriptionInvoice(db.Model):
     price_per_driver = db.Column(db.Numeric(10, 2))
     orders_count = db.Column(db.Integer, default=0)  # Pedidos entregues no período
     price_per_order = db.Column(db.Numeric(10, 2))
+    fixed_price = db.Column(db.Numeric(10, 2))  # Componente fixo (snapshot da fatura)
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
 
     # Status
@@ -361,6 +376,9 @@ class SubscriptionInvoice(db.Model):
             'period_end': self.period_end.isoformat() if self.period_end else None,
             'drivers_count': self.drivers_count,
             'price_per_driver': float(self.price_per_driver) if self.price_per_driver else 0,
+            'orders_count': self.orders_count,
+            'price_per_order': float(self.price_per_order) if self.price_per_order else 0,
+            'fixed_price': float(self.fixed_price) if self.fixed_price else 0,
             'total_amount': float(self.total_amount) if self.total_amount else 0,
             'status': self.status,
             'due_date': self.due_date.isoformat() if self.due_date else None,

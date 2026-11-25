@@ -16,6 +16,7 @@ const SubscriptionPage = () => {
   const [success, setSuccess] = useState('');
   const [activeTab, setActiveTab] = useState('subscriptions');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingSub, setEditingSub] = useState(null); // assinatura em edição (null = criar)
   const [restaurants, setRestaurants] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [_actionLoading, setActionLoading] = useState(false);
@@ -72,18 +73,42 @@ const SubscriptionPage = () => {
     }
   };
 
+  const handleEdit = (sub) => {
+    setEditingSub(sub);
+    setCreateForm({
+      restaurant_id: sub.restaurant_id,
+      billing_cycle: sub.billing_cycle || 'WEEKLY',
+      price_per_driver: sub.price_per_driver || 50,
+      price_per_order: sub.price_per_order || 0,
+      fixed_price: sub.fixed_price || 0
+    });
+    setShowCreateModal(true);
+  };
+
   const handleCreateSubscription = async (e) => {
     e.preventDefault();
     try {
       setActionLoading(true);
-      await api.post('/api/finance/subscriptions', createForm);
-      setSuccess('Assinatura criada com sucesso!');
+      if (editingSub) {
+        // Edição — PUT na assinatura existente
+        await api.put(`/api/finance/subscriptions/${editingSub.id}`, {
+          billing_cycle: createForm.billing_cycle,
+          price_per_driver: createForm.price_per_driver,
+          price_per_order: createForm.price_per_order,
+          fixed_price: createForm.fixed_price
+        });
+        setSuccess('Assinatura atualizada com sucesso!');
+      } else {
+        await api.post('/api/finance/subscriptions', createForm);
+        setSuccess('Assinatura criada com sucesso!');
+      }
       setShowCreateModal(false);
+      setEditingSub(null);
       setCreateForm({ restaurant_id: '', billing_cycle: 'WEEKLY', price_per_driver: 50.00, price_per_order: 0, fixed_price: 0 });
       setTimeout(() => setSuccess(''), 3000);
       loadData();
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao criar assinatura');
+      setError(err.response?.data?.error || (editingSub ? 'Erro ao atualizar assinatura' : 'Erro ao criar assinatura'));
     } finally {
       setActionLoading(false);
     }
@@ -201,6 +226,7 @@ const SubscriptionPage = () => {
             <SubscriptionCards
               subscriptions={subscriptions}
               onGenerateInvoice={handleGenerateInvoice}
+              onEdit={handleEdit}
             />
           )}
 
@@ -216,7 +242,8 @@ const SubscriptionPage = () => {
       {/* Modal de Criação */}
       <CreateSubscriptionModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        isEditing={!!editingSub}
+        onClose={() => { setShowCreateModal(false); setEditingSub(null); }}
         onSubmit={handleCreateSubscription}
         createForm={createForm}
         setCreateForm={setCreateForm}

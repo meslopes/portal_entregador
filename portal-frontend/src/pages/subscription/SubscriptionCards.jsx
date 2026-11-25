@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, Pencil } from 'lucide-react';
 import { formatCurrency, formatDate } from './utils';
 
 const cardStyle = {
@@ -27,7 +27,7 @@ const pill = (bg, color) => ({
   color,
 });
 
-const SubscriptionCards = ({ subscriptions, onGenerateInvoice }) => {
+const SubscriptionCards = ({ subscriptions, onGenerateInvoice, onEdit }) => {
   if (subscriptions.length === 0) {
     return (
       <div
@@ -126,6 +126,24 @@ const SubscriptionCards = ({ subscriptions, onGenerateInvoice }) => {
 
           {/* Action row */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+            {onEdit && (
+              <button
+                onClick={() => onEdit(sub)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #e2e8f0',
+                  background: 'white',
+                  color: '#2563eb',
+                  fontSize: '0.8125rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '0.375rem'
+                }}
+              >
+                <Pencil size={14} /> Editar
+              </button>
+            )}
             <button
               onClick={() => onGenerateInvoice(sub.id)}
               style={{

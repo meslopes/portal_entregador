@@ -29,23 +29,62 @@ finance_billing_bp = Blueprint('finance_billing', __name__, url_prefix='/api/fin
 
 def calcular_assinatura(subscription, inicio, fim):
     """
-    Fórmula ÚNICA da assinatura de entregadores próprios (3 termos — plano de
-    monetização §5.1, docs/PLAN_MONETIZACAO_ENTREGAS_PROPRIAS.md):
+    Fórmula ÚNICA da assinatura admin→estabelecimento (paridade com MUV→admin).
 
-        total = FIXO + (R$/entregador × entregadores ativos)
-                + (R$/pedido × pedidos ENTREGUES no ciclo)
+    Componentes configuráveis (qualquer combinação — zeros desligam):
+      total = FIXO + (R$/entregador × contagem(modo, N))
+              + pedidos com COTA e/ou FAIXAS MARGINAIS
 
-    Qualquer termo pode ser zero — a combinação é o modelo comercial que o admin
-    negocia com cada estabelecimento (argumento de venda). Nunca % do frete
-    (princípio da independência).
+    Nunca % do frete (princípio da independência — plano §2).
 
-    ATENÇÃO: esta é a ÚNICA função que calcula o total — preview de tela e
-    geração de fatura devem chamá-la (a fórmula estava duplicada em 3 lugares).
+    Contagem de entregadores (establishment_count_mode):
+      SNAPSHOT      → ativos agora (legado, padrão)
+      USO           → entregadores com ≥ min_orders_per_establishment pedidos no ciclo
+      PRO_RATA_USO  → Σ (dias-com-pedido ÷ dias do ciclo) por entregador
+
+    Pedidos:
+      Se order_price_tiers: faixas marginais (como conta de luz — cada faixa
+        cobra só os pedidos que entram nela). Substitui price_per_order.
+      Senão: price_per_order × max(0, pedidos − orders_included).
     """
-    drivers_count = EstablishmentDriver.query.filter(
-        EstablishmentDriver.restaurant_id == subscription.restaurant_id,
-        EstablishmentDriver.is_active,
-    ).count()
+    # ── Contagem de entregadores ──
+    modo = (subscription.establishment_count_mode or 'SNAPSHOT').upper()
+    drivers_total = 0.0
+    drivers_count = 0
+    if modo == 'USO':
+        min_orders = int(subscription.min_orders_per_establishment or 1)
+        linhas = (db.session.query(EstablishmentDriver.id, db.func.count(Order.id))
+                  .outerjoin(Order, (Order.establishment_driver_id == EstablishmentDriver.id)
+                             & (Order.status == OrderStatus.DELIVERED)
+                             & (Order.created_at >= inicio) & (Order.created_at <= fim))
+                  .filter(EstablishmentDriver.restaurant_id == subscription.restaurant_id,
+                          EstablishmentDriver.is_active.is_(True))
+                  .group_by(EstablishmentDriver.id).all())
+        drivers_count = sum(1 for _, n in linhas if n >= min_orders)
+        drivers_total = round(drivers_count * float(subscription.price_per_driver or 0), 2)
+    elif modo == 'PRO_RATA_USO':
+        from datetime import timedelta
+        dias = max(1, (fim - inicio).days)
+        linhas = (db.session.query(EstablishmentDriver.id,
+                                   db.func.count(db.func.distinct(db.func.date(Order.created_at))))
+                  .join(Order, (Order.establishment_driver_id == EstablishmentDriver.id)
+                        & (Order.status == OrderStatus.DELIVERED)
+                        & (Order.created_at >= inicio) & (Order.created_at <= fim))
+                  .filter(EstablishmentDriver.restaurant_id == subscription.restaurant_id,
+                          EstablishmentDriver.is_active.is_(True))
+                  .group_by(EstablishmentDriver.id).all())
+        fracao = sum(min(n, dias) / dias for _, n in linhas)
+        drivers_count = round(fracao, 2)
+        drivers_total = round(fracao * float(subscription.price_per_driver or 0), 2)
+    else:
+        # SNAPSHOT (legado)
+        drivers_count = EstablishmentDriver.query.filter(
+            EstablishmentDriver.restaurant_id == subscription.restaurant_id,
+            EstablishmentDriver.is_active,
+        ).count()
+        drivers_total = round(drivers_count * float(subscription.price_per_driver or 0), 2)
+
+    # ── Pedidos entregues no ciclo ──
     orders_count = Order.query.filter(
         Order.restaurant_id == subscription.restaurant_id,
         Order.status == OrderStatus.DELIVERED,
@@ -53,18 +92,46 @@ def calcular_assinatura(subscription, inicio, fim):
         Order.created_at <= fim,
     ).count()
 
-    price_per_driver = float(subscription.price_per_driver or 0)
-    price_per_order = float(subscription.price_per_order or 0)
+    # ── Custo de pedidos: cota + faixas marginais ──
+    orders_total = 0.0
+    tiers = subscription.order_price_tiers
+    if tiers and isinstance(tiers, list):
+        # Faixas marginais — cada faixa cobra só os pedidos que entram nela
+        restantes = orders_count
+        ordenadas = sorted(tiers, key=lambda b: (b.get('to_orders') is None,
+                                                  int(b.get('to_orders') or 0)))
+        ultimo = None
+        for b in ordenadas:
+            to_n = b.get('to_orders')
+            preco = float(b.get('price') or 0)
+            if to_n is not None:
+                cap = int(to_n) - (ultimo if ultimo else 0)
+                qtd = min(restantes, max(0, cap))
+                ultimo = int(to_n)
+            else:
+                qtd = restantes  # faixa aberta "a partir de X pedidos"
+            orders_total += qtd * preco
+            restantes -= qtd
+            if restantes <= 0:
+                break
+        orders_total = round(orders_total, 2)
+    else:
+        cota = int(subscription.orders_included or 0)
+        pedidos_cobraveis = max(0, orders_count - cota)
+        price_per_order = float(subscription.price_per_order or 0)
+        orders_total = round(pedidos_cobraveis * price_per_order, 2)
+
     fixed_total = float(subscription.fixed_price or 0)
-    drivers_total = round(drivers_count * price_per_driver, 2)
-    orders_total = round(orders_count * price_per_order, 2)
     total = round(fixed_total + drivers_total + orders_total, 2)
 
     return {
         'drivers_count': drivers_count,
         'orders_count': orders_count,
-        'price_per_driver': price_per_driver,
-        'price_per_order': price_per_order,
+        'price_per_driver': float(subscription.price_per_driver or 0),
+        'price_per_order': float(subscription.price_per_order or 0),
+        'orders_included': int(subscription.orders_included or 0),
+        'order_price_tiers': tiers,
+        'establishment_count_mode': modo,
         'fixed_total': fixed_total,
         'drivers_total': drivers_total,
         'orders_total': orders_total,
@@ -203,6 +270,10 @@ def create_subscription():
             price_per_driver=price_per_driver,
             price_per_order=price_per_order,
             fixed_price=fixed_price,
+            orders_included=int(data.get('orders_included') or 0),
+            order_price_tiers=data.get('order_price_tiers') or None,
+            establishment_count_mode=data.get('establishment_count_mode') or 'SNAPSHOT',
+            min_orders_per_establishment=int(data.get('min_orders_per_establishment') or 0),
             is_active=True,
             next_billing_at=next_billing
         )
@@ -244,6 +315,17 @@ def update_subscription(subscription_id):
             subscription.price_per_order = data['price_per_order']
         if 'fixed_price' in data:
             subscription.fixed_price = data['fixed_price']
+        if 'orders_included' in data:
+            subscription.orders_included = int(data['orders_included'] or 0)
+        if 'order_price_tiers' in data:
+            subscription.order_price_tiers = data['order_price_tiers'] or None
+        if 'establishment_count_mode' in data:
+            modo = data['establishment_count_mode']
+            if modo not in ('SNAPSHOT', 'USO', 'PRO_RATA_USO'):
+                return jsonify({'error': 'establishment_count_mode deve ser SNAPSHOT, USO ou PRO_RATA_USO'}), 400
+            subscription.establishment_count_mode = modo
+        if 'min_orders_per_establishment' in data:
+            subscription.min_orders_per_establishment = int(data['min_orders_per_establishment'] or 0)
         if 'is_active' in data:
             subscription.is_active = data['is_active']
 
@@ -257,6 +339,23 @@ def update_subscription(subscription_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao atualizar assinatura: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@finance_billing_bp.route('/subscriptions/<int:subscription_id>/preview', methods=['GET'])
+@jwt_required()
+def preview_subscription(subscription_id):
+    """Simula a fatura do ciclo atual sem gerar — mostra a quebra por componente."""
+    try:
+        subscription = EstablishmentSubscription.query.get(subscription_id)
+        if not subscription:
+            return jsonify({'error': 'Assinatura não encontrada'}), 404
+        now = datetime.now(timezone.utc)
+        dias = 7 if subscription.billing_cycle == 'WEEKLY' else 30
+        inicio = now - timedelta(days=dias)
+        valores = calcular_assinatura(subscription, inicio, now)
+        return jsonify({'preview': valores, 'billing_cycle': subscription.billing_cycle}), 200
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
@@ -297,6 +396,7 @@ def generate_invoice(subscription_id):
             price_per_driver=subscription.price_per_driver,
             orders_count=valores['orders_count'],
             price_per_order=subscription.price_per_order,
+            fixed_price=subscription.fixed_price,
             total_amount=valores['total'],
             status='PENDING',
             due_date=due_date
@@ -525,6 +625,7 @@ def generate_all_invoices():
                 price_per_driver=subscription.price_per_driver,
                 orders_count=valores['orders_count'],
                 price_per_order=subscription.price_per_order,
+                fixed_price=subscription.fixed_price,
                 total_amount=valores['total'],
                 status='PENDING',
                 due_date=due_date

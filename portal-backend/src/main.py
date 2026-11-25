@@ -672,6 +672,11 @@ with app.app_context():
             ("establishment_subscriptions", "price_per_order NUMERIC(10,2) DEFAULT 0"),
             ("subscription_invoices", "orders_count INTEGER DEFAULT 0"),
             ("subscription_invoices", "price_per_order NUMERIC(10,2)"),
+            ("subscription_invoices", "fixed_price NUMERIC(10,2)"),
+            ("establishment_subscriptions", "orders_included INTEGER DEFAULT 0"),
+            ("establishment_subscriptions", "order_price_tiers JSON"),
+            ("establishment_subscriptions", "establishment_count_mode VARCHAR(20) DEFAULT 'SNAPSHOT'"),
+            ("establishment_subscriptions", "min_orders_per_establishment INTEGER DEFAULT 0"),
         ):
             col = col_sql.split()[0]
             db.session.execute(db.text(

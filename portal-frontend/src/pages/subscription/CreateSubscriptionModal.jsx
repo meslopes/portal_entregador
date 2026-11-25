@@ -41,6 +41,7 @@ const labelStyle = {
 
 const CreateSubscriptionModal = ({
   isOpen,
+  isEditing = false,
   onClose,
   onSubmit,
   createForm,
@@ -61,7 +62,7 @@ const CreateSubscriptionModal = ({
           }}
         >
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b' }}>
-            Nova Assinatura
+            {isEditing ? 'Editar Assinatura' : 'Nova Assinatura'}
           </h2>
           <button
             onClick={onClose}
@@ -82,7 +83,6 @@ const CreateSubscriptionModal = ({
             >
               <option value="">Selecione...</option>
               {restaurants
-                .filter((r) => r.has_own_drivers)
                 .map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
@@ -184,7 +184,7 @@ const CreateSubscriptionModal = ({
                 cursor: 'pointer',
               }}
             >
-              Criar Assinatura
+              {isEditing ? 'Salvar Alterações' : 'Criar Assinatura'}
             </button>
           </div>
         </form>
