@@ -403,6 +403,7 @@ def create_establishment():
 
         square_id = data.get('square_id') or None
         pricing_table_id = data.get('pricing_table_id') or None
+        platform_pricing_table_id = data.get('platform_pricing_table_id') or None
 
         # Entregas PRÓPRIAS sem praça definida: cria praça e tabela PRIVADAS
         # automaticamente (com o nome do estabelecimento) — a operação é autônoma
@@ -459,6 +460,7 @@ def create_establishment():
             square_id=square_id,
 
             pricing_table_id=pricing_table_id,
+            platform_pricing_table_id=platform_pricing_table_id,
 
             bank_name=data.get('bank_name') or None,
 
@@ -714,6 +716,10 @@ def update_establishment(establishment_id):
         if 'pricing_table_id' in data:
 
             est.pricing_table_id = data['pricing_table_id'] if data['pricing_table_id'] else None
+
+        if 'platform_pricing_table_id' in data:
+
+            est.platform_pricing_table_id = data['platform_pricing_table_id'] if data['platform_pricing_table_id'] else None
 
         if 'preparation_minutes' in data:
 

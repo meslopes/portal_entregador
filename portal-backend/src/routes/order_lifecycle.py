@@ -895,7 +895,7 @@ def create_order():
         # Fonte única de preços: tabela do estabelecimento → tabela padrão da praça
         if delivery_fee <= 0:
             from src.services.order_helpers import calcular_frete_tabela, resolve_pricing_table
-            pt = resolve_pricing_table(restaurant)
+            pt = resolve_pricing_table(restaurant, for_platform=not getattr(restaurant, 'has_own_drivers', False))
             if pt:
                 price_per_km = float(pt.price_per_km or 2.95)
                 min_km = float(pt.min_distance_km or 4.0)

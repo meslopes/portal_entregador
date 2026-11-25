@@ -214,7 +214,7 @@ def estimate_fee():
 
         from src.services.order_helpers import (
             calcular_frete_tabela, estimar_km_deslocamento, resolve_pricing_table)
-        pt = resolve_pricing_table(restaurant)
+        pt = resolve_pricing_table(restaurant, for_platform=not getattr(restaurant, 'has_own_drivers', False))
         # Valor dos produtos (opcional) — usado pelo frete grátis da tabela
         order_value = None
         try:

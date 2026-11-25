@@ -26,16 +26,20 @@ from src.utils.geo import haversine_distance
 logger = logging.getLogger(__name__)
 
 
-def resolve_pricing_table(restaurant):
+def resolve_pricing_table(restaurant, for_platform=False):
     """
     Fonte ÚNICA de preços de entrega (Fase 1 da consolidação de preços):
     tabela do estabelecimento → tabela padrão da praça → None.
 
-    Antes essa cadeia estava copiada em 6 arquivos (order_queries,
-    order_lifecycle, order_acceptance, admin.py, webhooks_whatsapp e aqui)
-    com pequenas divergências entre as cópias.
+    for_platform=True resolve a tabela de preços para motoristas da PLATAFORMA
+    (platform_pricing_table_id), com fallback para a tabela normal. Permite
+    preços de frete diferentes para entregas próprias vs plataforma (2026-11-24).
     """
     from src.models.portal_models import PricingTable, Square
+    if for_platform and restaurant and restaurant.platform_pricing_table_id:
+        pt = PricingTable.query.get(restaurant.platform_pricing_table_id)
+        if pt:
+            return pt
     if restaurant and restaurant.pricing_table_id:
         pt = PricingTable.query.get(restaurant.pricing_table_id)
         if pt:
@@ -196,8 +200,10 @@ def calcular_frete_tabela(pt, distance_km, order_value=None, displacement_km=0, 
 
 
 def get_driver_percentage(order):
-    """Retorna o percentual do entregador (0.0 a 1.0) da tabela de preços resolvida"""
-    pt = resolve_pricing_table(order.restaurant if order else None)
+    """Percentual do motorista da PLATAFORMA (decimal, ex: 0.65 = 65%).
+    Resolve da tabela de preços de PLATAFORMA (platform_pricing_table_id);
+    fallback para a tabela normal. Padrão 70%."""
+    pt = resolve_pricing_table(order.restaurant if order else None, for_platform=True)
     if pt and pt.driver_percentage:
         return float(pt.driver_percentage) / 100.0
     return 0.70

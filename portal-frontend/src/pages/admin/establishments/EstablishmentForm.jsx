@@ -13,7 +13,7 @@ const EMPTY_FORM = {
   name: '', cnpj: '', phone: '', email: '', password: '',
   address_street: '', address_number: '', address_neighborhood: '',
   address_city: 'Capão da Canoa', address_state: 'RS', address_zip: '',
-  latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '',
+  latitude: '', longitude: '', tenant_id: '', square_id: '', pricing_table_id: '', platform_pricing_table_id: '',
   preparation_minutes: '10',
   pickup_confirmation_type: 'code', delivery_confirmation_type: 'code',
   has_own_drivers: false,
@@ -50,6 +50,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         tenant_id: editing.tenant_id || '',
         square_id: editing.square_id || '',
         pricing_table_id: editing.pricing_table_id || '',
+        platform_pricing_table_id: editing.platform_pricing_table_id || '',
         preparation_minutes: editing.preparation_minutes || '10',
         pickup_confirmation_type: editing.pickup_confirmation_type || 'code',
         delivery_confirmation_type: editing.delivery_confirmation_type || 'code',
@@ -110,6 +111,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         square_id: formData.square_id || null,
         pricing_table_id: formData.pricing_table_id || null,
+        platform_pricing_table_id: formData.platform_pricing_table_id || null,
         preparation_minutes: parseInt(formData.preparation_minutes) || 10,
         pickup_confirmation_type: formData.pickup_confirmation_type || 'code',
         delivery_confirmation_type: formData.delivery_confirmation_type || 'code',
@@ -320,7 +322,19 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
                 ))}
               </select>
               <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                Selecione uma tabela específica ou deixe vazio para usar a padrão da praça
+                Preços de frete para entregas com entregador PRÓPRIO. Vazio = padrão da praça
+              </p>
+            </FormField>
+
+            <FormField label="Tabela de Preços (Plataforma)">
+              <select name="platform_pricing_table_id" value={formData.platform_pricing_table_id || ''} onChange={handleChange} style={inputStyle}>
+                <option value="">Mesma tabela de cima</option>
+                {pricingTables.map(pt => (
+                  <option key={pt.id} value={pt.id}>{pt.name} (R$ {parseFloat(pt.price_per_km || 0).toFixed(2)}/km)</option>
+                ))}
+              </select>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                Preços de frete para entregas com motorista da PLATAFORMA. Permite precificar cada modelo de entrega separadamente. Vazio = usa a tabela de cima
               </p>
             </FormField>
           </>
