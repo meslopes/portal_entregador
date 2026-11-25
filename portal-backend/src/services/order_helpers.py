@@ -205,26 +205,68 @@ def get_driver_percentage(order):
 
 def calcular_ganho_plataforma(delivery_fee, distance_km=0, order=None, driver_pct=None):
     """
-    Fórmula ÚNICA do ganho do motorista da PLATAFORMA (Etapa 1 da unificação).
-    ganho = frete × percentual + (km × R$ 0,50)
+    Fórmula ÚNICA do ganho do motorista da PLATAFORMA — modelo CONFIGURÁVEL.
+    O admin escolhe entre os 7 modelos na tabela de preços (platform_payment_type).
+
+    Modelos:
+      PERCENTAGE               → frete × percentual (padrão, retrocompat)
+      PER_DELIVERY             → valor fixo por entrega
+      PER_KM                   → km × valor por km
+      DAILY                    → valor fixo diário
+      FIXED                    → valor fixo
+      FIXED_PLUS_DELIVERY      → fixo + valor por entrega
+      FIXED_UP_TO_PLUS_DELIVERY → fixo até N entregas/dia + valor por entrega acima
 
     - delivery_fee: frete da entrega (o que o cliente pagou)
-    - distance_km: distância da rota em km (bônus R$ 0,50/km; 0 = sem bônus)
-    - order: pedido (para resolver o percentual da tabela de preços)
-    - driver_pct: percentual em decimal (ex: 0.65). Se None, resolve do order.
-
-    Antes essa fórmula estava copiada em 5+ arquivos com divergências
-    (inclusive um hardcoded 0.65 em order_lifecycle). Agora é esta função.
+    - distance_km: distância da rota em km
+    - order: pedido (resolve a tabela de preços)
+    - driver_pct: override manual do percentual (só modelo PERCENTAGE)
     """
-    if driver_pct is None:
-        if order:
-            driver_pct = get_driver_percentage(order)
-        else:
-            driver_pct = 0.70
-    ganho = float(delivery_fee or 0) * float(driver_pct)
-    if distance_km:
-        ganho += float(distance_km) * 0.5
-    return round(ganho, 2)
+    pt = resolve_pricing_table(order.restaurant if order else None) if order else None
+    tipo = (getattr(pt, 'platform_payment_type', None) or 'PERCENTAGE') if pt else 'PERCENTAGE'
+
+    if tipo == 'PERCENTAGE':
+        pct = driver_pct if driver_pct is not None else (
+            float(pt.driver_percentage) / 100.0 if pt and pt.driver_percentage else 0.70)
+        return round(float(delivery_fee or 0) * float(pct), 2)
+
+    elif tipo == 'PER_DELIVERY':
+        return float(pt.platform_fixed_value or 5.00) if pt else 5.00
+
+    elif tipo == 'PER_KM':
+        km_val = float(pt.platform_km_value or 1.50) if pt else 1.50
+        return round(float(distance_km or 0) * km_val, 2)
+
+    elif tipo == 'DAILY':
+        return float(pt.platform_fixed_value or 50.00) if pt else 50.00
+
+    elif tipo == 'FIXED':
+        return float(pt.platform_fixed_value or 5.00) if pt else 5.00
+
+    elif tipo == 'FIXED_PLUS_DELIVERY':
+        fixo = float(pt.platform_fixed_value or 5.00) if pt else 5.00
+        por_entrega = float(pt.platform_delivery_value or 3.00) if pt else 3.00
+        return fixo + por_entrega
+
+    elif tipo == 'FIXED_UP_TO_PLUS_DELIVERY':
+        # Fixo até N entregas/dia, depois valor por entrega
+        if pt and order and order.establishment_driver_id:
+            max_n = int(pt.platform_max_deliveries or 10)
+            from src.models.portal_models import OwnDriverEarning
+            from datetime import datetime, timezone, timedelta
+            hoje = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            feitas = OwnDriverEarning.query.filter(
+                OwnDriverEarning.establishment_driver_id == order.establishment_driver_id,
+                OwnDriverEarning.created_at >= hoje).count()
+            if feitas < max_n:
+                return float(pt.platform_fixed_value or 50.00)
+            return float(pt.platform_delivery_value or 3.00)
+        return float(pt.platform_fixed_value or 5.00) if pt else 5.00
+
+    # Fallback: percentual (comportamento antigo)
+    pct = driver_pct if driver_pct is not None else (
+        float(pt.driver_percentage) / 100.0 if pt and pt.driver_percentage else 0.70)
+    return round(float(delivery_fee or 0) * float(pct), 2)
 
 
 def send_platform_callback(order, new_status):

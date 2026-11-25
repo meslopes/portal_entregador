@@ -516,6 +516,27 @@ with app.app_context():
     except Exception as e:
         print(f"Migração volta/deslocamento: {e}")
         db.session.rollback()
+    # Migration: pagamento do motorista PLATAFORMA configurável (2026-11-24)
+    # — mandato "tudo configurável": admin escolhe entre os 7 modelos
+    try:
+        for col_sql in (
+            "platform_payment_type VARCHAR(30) DEFAULT 'PERCENTAGE'",
+            "platform_fixed_value NUMERIC(10,2) DEFAULT 5.00",
+            "platform_km_value NUMERIC(10,2) DEFAULT 1.50",
+            "platform_delivery_value NUMERIC(10,2) DEFAULT 3.00",
+            "platform_max_deliveries INTEGER DEFAULT 10",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'pricing_tables' AND column_name = '{col}') "
+                f"THEN ALTER TABLE pricing_tables ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas de pagamento plataforma adicionadas (platform_payment_type/fixed_value/km_value/delivery_value/max_deliveries)")
+    except Exception as e:
+        print(f"Migração pagamento plataforma: {e}")
+        db.session.rollback()
     # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
     try:
         for col_sql in (

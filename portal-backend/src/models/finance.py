@@ -75,6 +75,14 @@ class PricingTable(db.Model):
     min_delivery_fee = db.Column(db.Numeric(10, 2))
     max_delivery_fee = db.Column(db.Numeric(10, 2), default=50.00)
     driver_percentage = db.Column(db.Numeric(5, 2), default=65.0)
+    # Pagamento do motorista PLATAFORMA — modelo configurável (2026-11-24, mandato
+    # "tudo configurável"). O admin escolhe entre os 7 modelos, mesmo leque do
+    # entregador próprio. Padrão 'PERCENTAGE' = comportamento atual (retrocompat).
+    platform_payment_type = db.Column(db.String(30), default='PERCENTAGE')
+    platform_fixed_value = db.Column(db.Numeric(10, 2), default=5.00)
+    platform_km_value = db.Column(db.Numeric(10, 2), default=1.50)
+    platform_delivery_value = db.Column(db.Numeric(10, 2), default=3.00)
+    platform_max_deliveries = db.Column(db.Integer, default=10)
     # gamification_percentage REMOVIDO (Fase 2, 2026-11-16): a fonte do MuvScore
     # é o SystemConfig (Configurações → Preços) — o campo aqui só confundia
     # Modo de precificação (2026-11-17): 'PER_KM' (padrão — lógica atual com
@@ -117,6 +125,11 @@ class PricingTable(db.Model):
             'min_delivery_fee': float(self.min_delivery_fee) if self.min_delivery_fee else float(self.price_per_km) * float(self.min_distance_km or 4.0),
             'max_delivery_fee': float(self.max_delivery_fee) if self.max_delivery_fee else 50.00,
             'driver_percentage': float(self.driver_percentage) if self.driver_percentage else 65.0,
+            'platform_payment_type': self.platform_payment_type or 'PERCENTAGE',
+            'platform_fixed_value': float(self.platform_fixed_value) if self.platform_fixed_value else 5.00,
+            'platform_km_value': float(self.platform_km_value) if self.platform_km_value else 1.50,
+            'platform_delivery_value': float(self.platform_delivery_value) if self.platform_delivery_value else 3.00,
+            'platform_max_deliveries': int(self.platform_max_deliveries) if self.platform_max_deliveries else 10,
             'pricing_mode': self.pricing_mode or 'PER_KM',
             'tier_bands': self.tier_bands or [],
             'free_delivery_min_order': float(self.free_delivery_min_order) if self.free_delivery_min_order else None,

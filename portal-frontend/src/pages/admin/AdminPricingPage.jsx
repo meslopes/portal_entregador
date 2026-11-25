@@ -18,6 +18,7 @@ const AdminPricingPage = () => {
     name: '', description: '', square_id: '', price_per_km: '2.95', fixed_fee: '0',
     min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50',
     driver_percentage: '65', is_active: true,
+    platform_payment_type: 'PERCENTAGE', platform_fixed_value: '', platform_km_value: '', platform_delivery_value: '', platform_max_deliveries: '',
     pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '',
     round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '',
     vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1'
@@ -42,7 +43,7 @@ const AdminPricingPage = () => {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', fixed_fee: '0', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '', round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '', vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1' });
+    setForm({ name: '', description: '', square_id: '', price_per_km: '2.95', fixed_fee: '0', min_distance_km: '4', min_delivery_fee: '', max_delivery_fee: '50', driver_percentage: '65', is_active: true, pricing_mode: 'PER_KM', tier_bands: [], free_delivery_min_order: '', round_trip: false, round_trip_rate_per_km: '', pickup_rate_per_km: '', vehicle_multiplier_bike: '1', vehicle_multiplier_moto: '1', vehicle_multiplier_car: '1', platform_payment_type: 'PERCENTAGE', platform_fixed_value: '', platform_km_value: '', platform_delivery_value: '', platform_max_deliveries: '' });
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -58,6 +59,11 @@ const AdminPricingPage = () => {
       min_delivery_fee: String(table.min_delivery_fee || ''),
       max_delivery_fee: String(table.max_delivery_fee || '50'),
       driver_percentage: String(table.driver_percentage || '65'),
+      platform_payment_type: table.platform_payment_type || 'PERCENTAGE',
+      platform_fixed_value: table.platform_fixed_value != null ? String(table.platform_fixed_value) : '',
+      platform_km_value: table.platform_km_value != null ? String(table.platform_km_value) : '',
+      platform_delivery_value: table.platform_delivery_value != null ? String(table.platform_delivery_value) : '',
+      platform_max_deliveries: table.platform_max_deliveries != null ? String(table.platform_max_deliveries) : '',
       is_active: table.is_active !== false,
       pricing_mode: table.pricing_mode || 'PER_KM',
       tier_bands: (table.tier_bands || []).map(b => ({ to_km: b.to_km ?? '', price: String(b.price ?? '') })),
@@ -86,6 +92,11 @@ const AdminPricingPage = () => {
         min_delivery_fee: form.min_delivery_fee ? parseFloat(form.min_delivery_fee) : null,
         max_delivery_fee: parseFloat(form.max_delivery_fee) || 50,
         driver_percentage: parseFloat(form.driver_percentage) || 65,
+        platform_payment_type: form.platform_payment_type || 'PERCENTAGE',
+        platform_fixed_value: form.platform_fixed_value || 0,
+        platform_km_value: form.platform_km_value || 0,
+        platform_delivery_value: form.platform_delivery_value || 0,
+        platform_max_deliveries: parseInt(form.platform_max_deliveries) || 10,
         is_active: form.is_active,
         pricing_mode: form.pricing_mode,
         free_delivery_min_order: form.free_delivery_min_order || null,
@@ -331,7 +342,7 @@ const AdminPricingPage = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>% Entregador</label>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>% Entregador (modelo Percentual)</label>
                   <input type="number" step="1" value={form.driver_percentage} onChange={e => setForm(p => ({ ...p, driver_percentage: e.target.value }))} style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '0.25rem' }}>
@@ -340,6 +351,66 @@ const AdminPricingPage = () => {
                     <span style={{ fontSize: '0.8125rem', color: '#374151' }}>Tabela ativa</span>
                   </label>
                 </div>
+              </div>
+
+              {/* Pagamento do motorista PLATAFORMA — modelo configurável (2026-11-24) */}
+              <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>
+                  Pagamento do motorista da plataforma
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#475569', marginBottom: '0.25rem' }}>Modelo</label>
+                    <select value={form.platform_payment_type || 'PERCENTAGE'}
+                      onChange={e => setForm(p => ({ ...p, platform_payment_type: e.target.value }))}
+                      style={{ width: '100%', padding: '0.5rem 0.625rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.8125rem', background: 'white', boxSizing: 'border-box' }}>
+                      <option value="PERCENTAGE">Percentual do frete</option>
+                      <option value="PER_DELIVERY">Valor fixo por entrega</option>
+                      <option value="PER_KM">Valor por km</option>
+                      <option value="DAILY">Diária fixa</option>
+                      <option value="FIXED">Valor fixo</option>
+                      <option value="FIXED_PLUS_DELIVERY">Fixo + por entrega</option>
+                      <option value="FIXED_UP_TO_PLUS_DELIVERY">Fixo até N entregas + por entrega</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#475569', marginBottom: '0.25rem' }}>Valor fixo (R$)</label>
+                    <input type="number" step="0.01" min="0" value={form.platform_fixed_value || ''}
+                      onChange={e => setForm(p => ({ ...p, platform_fixed_value: e.target.value }))}
+                      placeholder="5.00"
+                      style={{ width: '100%', padding: '0.5rem 0.625rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.8125rem', boxSizing: 'border-box' }} />
+                  </div>
+                  {(form.platform_payment_type === 'PER_KM') && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#475569', marginBottom: '0.25rem' }}>Valor por km (R$)</label>
+                      <input type="number" step="0.01" min="0" value={form.platform_km_value || ''}
+                        onChange={e => setForm(p => ({ ...p, platform_km_value: e.target.value }))}
+                        placeholder="1.50"
+                        style={{ width: '100%', padding: '0.5rem 0.625rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.8125rem', boxSizing: 'border-box' }} />
+                    </div>
+                  )}
+                  {(form.platform_payment_type === 'FIXED_PLUS_DELIVERY' || form.platform_payment_type === 'FIXED_UP_TO_PLUS_DELIVERY') && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#475569', marginBottom: '0.25rem' }}>Valor por entrega (R$)</label>
+                      <input type="number" step="0.01" min="0" value={form.platform_delivery_value || ''}
+                        onChange={e => setForm(p => ({ ...p, platform_delivery_value: e.target.value }))}
+                        placeholder="3.00"
+                        style={{ width: '100%', padding: '0.5rem 0.625rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.8125rem', boxSizing: 'border-box' }} />
+                    </div>
+                  )}
+                  {(form.platform_payment_type === 'FIXED_UP_TO_PLUS_DELIVERY') && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#475569', marginBottom: '0.25rem' }}>Máx. entregas/dia</label>
+                      <input type="number" step="1" min="1" value={form.platform_max_deliveries || ''}
+                        onChange={e => setForm(p => ({ ...p, platform_max_deliveries: e.target.value }))}
+                        placeholder="10"
+                        style={{ width: '100%', padding: '0.5rem 0.625rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.8125rem', boxSizing: 'border-box' }} />
+                    </div>
+                  )}
+                </div>
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: 0 }}>
+                  O modelo define como o motorista da plataforma é pago. O padrão "Percentual" mantém o comportamento atual.
+                </p>
               </div>
 
               {/* Prévia — mesma regra do sistema (compartilhada com Meus Preços) */}

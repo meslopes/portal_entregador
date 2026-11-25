@@ -708,6 +708,12 @@ def create_pricing_table():
 
             driver_percentage=safe_float(data.get('driver_percentage'), 65.0),
 
+            platform_payment_type=data.get('platform_payment_type') or 'PERCENTAGE',
+            platform_fixed_value=safe_float(data.get('platform_fixed_value'), 5.00),
+            platform_km_value=safe_float(data.get('platform_km_value'), 1.50),
+            platform_delivery_value=safe_float(data.get('platform_delivery_value'), 3.00),
+            platform_max_deliveries=int(data.get('platform_max_deliveries') or 10),
+
             is_active=data.get('is_active', True)
 
         )
@@ -885,6 +891,31 @@ def update_pricing_table(table_id):
             if val is not None:
 
                 table.driver_percentage = val
+
+        # Pagamento do motorista PLATAFORMA — modelo configurável (2026-11-24)
+        if 'platform_payment_type' in data:
+            tipo = data['platform_payment_type'] or 'PERCENTAGE'
+            if tipo not in ('PERCENTAGE', 'PER_DELIVERY', 'PER_KM', 'DAILY',
+                            'FIXED', 'FIXED_PLUS_DELIVERY', 'FIXED_UP_TO_PLUS_DELIVERY'):
+                return jsonify({'error': 'platform_payment_type inválido'}), 400
+            table.platform_payment_type = tipo
+        if 'platform_fixed_value' in data:
+            val = safe_float(data['platform_fixed_value'])
+            if val is not None:
+                table.platform_fixed_value = val
+        if 'platform_km_value' in data:
+            val = safe_float(data['platform_km_value'])
+            if val is not None:
+                table.platform_km_value = val
+        if 'platform_delivery_value' in data:
+            val = safe_float(data['platform_delivery_value'])
+            if val is not None:
+                table.platform_delivery_value = val
+        if 'platform_max_deliveries' in data:
+            try:
+                table.platform_max_deliveries = int(data['platform_max_deliveries'] or 10)
+            except (TypeError, ValueError):
+                pass
 
         # Tipos de tabela (2026-11-17): modo de precificação, faixas, frete grátis
         try:
