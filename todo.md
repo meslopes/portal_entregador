@@ -286,6 +286,8 @@
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
 ## 📋 Pendencias Futuras
+- [ ] INTEGRACAO WHATSAPP COMO CANAL DE PEDIDOS (2026-11-25, analise registrada): WhatsApp Business API (Meta) como canal de pedidos de cada EST — catalogo de produtos + localizacao GPS; MuvLog processa pedidos e gerencia entrega. 7 componentes: multi-credential, webhook handler, catalogo, parser pedido, criacao Order, notificacoes status, dashboard. Comparativo vs iFood: sem comissao, autonomia total, dados do cliente sao do EST. Chance de sucesso ALTA. Documento: docs/ANALISE_WHATSAPP_CANAL_PEDIDOS.md. NAO implementar ainda — Mauro vai iniciar depois.
+- [ ] INTEGRACAO IFOOD MULTI-TENANT (2026-11-25, analise registrada): integracao e dos ESTABELECIMENTOS (merchant no iFood), NAO da plataforma. MuvLog = camada tecnologica (conecta iFood de cada loja ao sistema de entregas). 8 requisitos, 5 fases. Modelo recomendado: layer tecnico (cada EST entra com suas credenciais). Documento: docs/ANALISE_IFOOD_MULTI_TENANT.md. NAO implementar ainda.
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
 - [ ] Integracao WhatsApp Business API (Mauro: so quando o sistema estiver robusto)
 - [x] Alerta minimo de monitoramento (health/5xx) — Cloud Monitoring: uptime check + alerta 5xx + e-mail
