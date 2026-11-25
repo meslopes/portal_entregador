@@ -23,6 +23,7 @@ from src.models.portal_models import (
 )
 from src.services.order_helpers import (
     _notify_admin_pending_order,
+    calcular_ganho_plataforma,
     find_nearest_available_driver,
     get_driver_percentage,
     notify_admin_no_drivers,
@@ -117,10 +118,11 @@ def get_available_orders():
                 estimated_time = (delivery_distance / 30) * 60  # em minutos
                 order_dict['estimated_delivery_time_minutes'] = round(estimated_time, 0)
 
-            # Calcula ganhos estimados do entregador usando % configurável
+            # Calcula ganhos estimados do entregador (fórmula unificada)
+            from src.services.order_helpers import calcular_ganho_plataforma
             driver_pct = get_driver_percentage(order)
-            driver_earnings = float(order.delivery_fee or 0) * driver_pct
-            order_dict['estimated_driver_earnings'] = round(driver_earnings, 2)
+            driver_earnings = calcular_ganho_plataforma(float(order.delivery_fee or 0), 0, driver_pct=driver_pct)
+            order_dict['estimated_driver_earnings'] = driver_earnings
             order_dict['driver_percentage'] = round(driver_pct * 100, 0)
 
             orders_data.append(order_dict)
@@ -211,20 +213,17 @@ def accept_order(order_id):
             delivery_longitude=order.delivery_address.longitude if order.delivery_address else None
         )
 
-        # Calcula ganhos estimados do entregador (% configurável + bônus por distância)
-        # Fonte única: tabela do estabelecimento → tabela padrão da praça
-        driver_pct = get_driver_percentage(order)
-
-        base_earning = float(order.delivery_fee) * driver_pct
+        # Calcula ganhos do entregador (fórmula unificada: % do frete + R$ 0,50/km)
+        from src.services.order_helpers import calcular_ganho_plataforma
+        distance_km = 0
         if delivery.delivery_latitude and delivery.pickup_latitude:
-            distance = haversine_distance(
+            distance_km = haversine_distance(
                 delivery.pickup_latitude, delivery.pickup_longitude,
                 delivery.delivery_latitude, delivery.delivery_longitude
             )
-            delivery.distance_km = distance
-            delivery.driver_earnings = base_earning + (distance * 0.5)
-        else:
-            delivery.driver_earnings = base_earning
+            delivery.distance_km = distance_km
+        delivery.driver_earnings = calcular_ganho_plataforma(
+            float(order.delivery_fee), distance_km, order=order)
 
         db.session.add(delivery)
 
@@ -385,16 +384,14 @@ def reject_order(order_id):
                 from src.services.whatsapp import whatsapp_service
                 if whatsapp_service.is_configured() and next_driver.user.phone:
                     restaurant = order.restaurant
-                    # Calcula distancia usando Haversine
+                    # Calcula distância e ganho (fórmula unificada)
                     km_total = 0
-                    driver_pct = get_driver_percentage(order)
-                    driver_earnings = float(order.delivery_fee) * driver_pct
                     if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
                         km_total = haversine_distance(
                             restaurant.latitude, restaurant.longitude,
                             order.delivery_address.latitude, order.delivery_address.longitude
                         )
-                        driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
+                    driver_earnings = calcular_ganho_plataforma(float(order.delivery_fee), km_total, order=order)
 
                     whatsapp_service.send_new_order_to_driver(
                         next_driver.user.phone,
@@ -497,14 +494,12 @@ def call_platform_drivers(order_id):
                 if whatsapp_service.is_configured() and next_driver.user.phone:
                     restaurant = order.restaurant
                     km_total = 0
-                    driver_pct = get_driver_percentage(order)
-                    driver_earnings = float(order.delivery_fee) * driver_pct
                     if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
                         km_total = haversine_distance(
                             restaurant.latitude, restaurant.longitude,
                             order.delivery_address.latitude, order.delivery_address.longitude
                         )
-                        driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
+                    driver_earnings = calcular_ganho_plataforma(float(order.delivery_fee), km_total, order=order)
 
                     whatsapp_service.send_new_order_to_driver(
                         next_driver.user.phone,

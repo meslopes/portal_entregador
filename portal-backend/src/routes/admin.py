@@ -460,13 +460,9 @@ def assign_order_to_driver(order_id):
 
 
 
-        # Calcula ganhos (% configurável) — fonte única de preços
-        from src.services.order_helpers import get_driver_percentage
-        driver_pct = get_driver_percentage(order)
-
-        base_earning = float(order.delivery_fee) * driver_pct
-
-        delivery.driver_earnings = base_earning
+        # Calcula ganhos (fórmula unificada)
+        from src.services.order_helpers import calcular_ganho_plataforma
+        delivery.driver_earnings = calcular_ganho_plataforma(float(order.delivery_fee), 0, order=order)
 
 
 

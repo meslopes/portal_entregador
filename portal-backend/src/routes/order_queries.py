@@ -222,8 +222,15 @@ def estimate_fee():
                 order_value = float(data.get('order_value'))
         except (TypeError, ValueError):
             pass
-        # Deslocamento ate a coleta (S7.4): motorista online mais proximo (0 = nao cobra)
-        displacement_km, displacement_source = estimar_km_deslocamento(restaurant)
+        # Deslocamento ate a coleta (S7.4) — SÓ modelo PLATAFORMA.
+        # Entregadores próprios NÃO têm deslocamento cobrado (são funcionários
+        # da loja; custo interno, não do cliente). Configurável via
+        # pickup_rate_per_km (0 = não cobrar, padrão).
+        displacement_km, displacement_source = 0.0, 'disabled'
+        _pickup_rate = float(getattr(pt, 'pickup_rate_per_km', 0) or 0) if pt else 0
+        _has_own = getattr(restaurant, 'has_own_drivers', False)
+        if _pickup_rate > 0 and not _has_own:
+            displacement_km, displacement_source = estimar_km_deslocamento(restaurant)
         # Veiculo da entrega (S7.4 Fase 2) — multiplica a base do frete
         vehicle_type = (data.get('vehicle_type') or 'MOTO')
         if str(vehicle_type).upper() not in ('MOTO', 'MOTORCYCLE', 'BIKE', 'BICYCLE', 'CAR', 'CARRO'):

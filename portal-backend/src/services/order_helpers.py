@@ -68,17 +68,18 @@ def _frete_faixas(bands, distance_km):
 
 def estimar_km_deslocamento(restaurant):
     """
-    Distância REAL do motorista até a coleta (trecho de deslocamento — §7.4).
-    Usa OSRM (rota real, nunca linha reta) — regra do Mauro: "sem estimativa,
-    só valores reais". Se o OSRM não responder, retorna 0 (não cobra) em vez
-    de estimar. F2: inclui entregadores vinculados da frota compartilhada.
-    Retorna (km, fonte) com fonte 'osrm' ou 'none'.
+    Distância REAL do motorista PLATAFORMA até a coleta (§7.4).
+    SÓ se aplica ao modelo de motoristas da plataforma — entregadores próprios
+    NÃO têm deslocamento cobrado (são funcionários, já estão na loja; é custo
+    interno do estabelecimento, não do cliente). Usa OSRM (rota real, nunca
+    linha reta). Se o OSRM não responder, retorna 0 (não cobra) em vez de
+    estimar. Retorna (km, fonte) com fonte 'osrm' ou 'none'.
     """
     if not restaurant or not restaurant.latitude or not restaurant.longitude:
         return 0.0, 'none'
     r_lat, r_lng = float(restaurant.latitude), float(restaurant.longitude)
 
-    # 1) Coletar candidatos com GPS (plataforma + próprios/frota)
+    # 1) Só motoristas da PLATAFORMA online (com GPS) — próprios não contam
     candidatos = []
     try:
         from src.models.portal_models import Driver
@@ -91,13 +92,6 @@ def estimar_km_deslocamento(restaurant):
             q = q.filter(Driver.tenant_id == restaurant.tenant_id)
         for d in q.limit(50).all():
             candidatos.append((float(d.current_latitude), float(d.current_longitude)))
-    except Exception:
-        pass
-    try:
-        from src.services.distribution import candidatos_da_loja
-        for d in candidatos_da_loja(restaurant, online_only=True):
-            if d.current_latitude and d.current_longitude:
-                candidatos.append((float(d.current_latitude), float(d.current_longitude)))
     except Exception:
         pass
 
@@ -209,6 +203,30 @@ def get_driver_percentage(order):
     return 0.70
 
 
+def calcular_ganho_plataforma(delivery_fee, distance_km=0, order=None, driver_pct=None):
+    """
+    Fórmula ÚNICA do ganho do motorista da PLATAFORMA (Etapa 1 da unificação).
+    ganho = frete × percentual + (km × R$ 0,50)
+
+    - delivery_fee: frete da entrega (o que o cliente pagou)
+    - distance_km: distância da rota em km (bônus R$ 0,50/km; 0 = sem bônus)
+    - order: pedido (para resolver o percentual da tabela de preços)
+    - driver_pct: percentual em decimal (ex: 0.65). Se None, resolve do order.
+
+    Antes essa fórmula estava copiada em 5+ arquivos com divergências
+    (inclusive um hardcoded 0.65 em order_lifecycle). Agora é esta função.
+    """
+    if driver_pct is None:
+        if order:
+            driver_pct = get_driver_percentage(order)
+        else:
+            driver_pct = 0.70
+    ganho = float(delivery_fee or 0) * float(driver_pct)
+    if distance_km:
+        ganho += float(distance_km) * 0.5
+    return round(ganho, 2)
+
+
 def send_platform_callback(order, new_status):
     """Envia callback para plataforma externa quando status do pedido muda"""
     if not order.platform_source or not order.external_id:
@@ -274,15 +292,13 @@ def process_scheduled_orders():
 
             # Calcula distância e ganhos
             km_total = 0
-            driver_pct = get_driver_percentage(order)
             delivery_fee = float(order.delivery_fee or 0)
-            driver_earnings = delivery_fee * driver_pct
             if order.delivery_address and order.restaurant and order.delivery_address.latitude and order.restaurant.latitude:
                 km_total = haversine_distance(
                     order.restaurant.latitude, order.restaurant.longitude,
                     order.delivery_address.latitude, order.delivery_address.longitude
                 )
-                driver_earnings = delivery_fee * driver_pct + (km_total * 0.5)
+            driver_earnings = calcular_ganho_plataforma(delivery_fee, km_total, order=order)
 
             order_info = {
                 'order_number': order.order_number,
@@ -542,14 +558,12 @@ def process_expired_offers():
                             if whatsapp_service.is_configured() and next_driver.user.phone:
                                 restaurant = order.restaurant
                                 km_total = 0
-                                driver_pct = get_driver_percentage(order)
-                                driver_earnings = float(order.delivery_fee) * driver_pct
                                 if order.delivery_address and order.delivery_address.latitude and restaurant and restaurant.latitude:
                                     km_total = haversine_distance(
                                         restaurant.latitude, restaurant.longitude,
                                         order.delivery_address.latitude, order.delivery_address.longitude
                                     )
-                                    driver_earnings = float(order.delivery_fee) * driver_pct + (km_total * 0.5)
+                                driver_earnings = calcular_ganho_plataforma(float(order.delivery_fee), km_total, order=order)
 
                                 whatsapp_service.send_new_order_to_driver(
                                     next_driver.user.phone,

@@ -28,6 +28,7 @@ from src.models.portal_models import (
     db,
 )
 from src.services.order_helpers import (
+    calcular_ganho_plataforma,
     find_nearest_available_driver,
     send_platform_callback,
 )
@@ -375,7 +376,8 @@ def update_order_status(order_id):
                                     'total_amount': float(order.total_amount),
                                     'delivery_fee': float(order.delivery_fee),
                                     'distance_km': 0,
-                                    'driver_earnings': float(order.delivery_fee) * 0.65
+                                    'driver_earnings': calcular_ganho_plataforma(
+                                        float(order.delivery_fee), 0, order=order)
                                 }
                             )
                     except Exception:
@@ -903,9 +905,14 @@ def create_order():
                         float(restaurant.latitude), float(restaurant.longitude),
                         float(address.latitude), float(address.longitude)
                     )
-                # Deslocamento ate a coleta (S7.4): estimado pelo motorista online mais proximo
-                from src.services.order_helpers import estimar_km_deslocamento
-                displacement_km, _fonte = estimar_km_deslocamento(restaurant)
+                # Deslocamento ate a coleta (S7.4) — SÓ modelo PLATAFORMA.
+                # Próprios não têm deslocamento cobrado (funcionário da loja).
+                displacement_km = 0.0
+                _pickup_rate = float(getattr(pt, 'pickup_rate_per_km', 0) or 0) if pt else 0
+                _has_own = getattr(restaurant, 'has_own_drivers', False)
+                if _pickup_rate > 0 and not _has_own:
+                    from src.services.order_helpers import estimar_km_deslocamento
+                    displacement_km, _fonte = estimar_km_deslocamento(restaurant)
                 delivery_fee, price_per_km, min_km, _frete = calcular_frete_tabela(
                     pt, km_total,
                     order_value=float(data.get('subtotal') or 0) or None,

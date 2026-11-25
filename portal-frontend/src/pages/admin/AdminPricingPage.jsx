@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import { DollarSign, Plus, Edit, Trash2, X, Save, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { adminService } from '@/lib/api';
@@ -297,9 +297,9 @@ const AdminPricingPage = () => {
                     style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box', background: form.round_trip ? 'white' : '#f1f5f9' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>R$/km deslocamento até a coleta</label>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>R$/km deslocamento até a coleta (só plataforma)</label>
                   <input type="number" step="0.01" min="0" max="100" value={form.pickup_rate_per_km}
-                    onChange={e => setForm(p => ({ ...p, pickup_rate_per_km: e.target.value }))} placeholder="0 = não cobrar"
+                    onChange={e => setForm(p => ({ ...p, pickup_rate_per_km: e.target.value }))} placeholder="0 = não cobrar (padrão)"
                     style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
@@ -201,9 +201,12 @@ const MyPricesPage = () => {
         {/* Volta + deslocamento (§7.4) — taxas próprias em R$/km */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
-            <label style={labelStyle}>Taxa de deslocamento até a coleta (R$/km)</label>
+            <label style={labelStyle}>Taxa de deslocamento até a coleta (R$/km) — só plataforma</label>
             <input type="number" step="0.01" min="0" max="100" value={form.pickup_rate_per_km}
-              onChange={e => setForm(p => ({ ...p, pickup_rate_per_km: e.target.value }))} style={inputStyle} placeholder="0 = não cobrar" />
+              onChange={e => setForm(p => ({ ...p, pickup_rate_per_km: e.target.value }))} style={inputStyle} placeholder="0 = não cobrar (padrão)" />
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+              Aplica-se apenas a motoristas da plataforma (entregador próprio não tem esse custo). Na maioria dos locais não é cobrado — deixe 0.
+            </p>
             <p style={{ fontSize: '0.6875rem', color: '#64748b', marginTop: '0.25rem' }}>
               Por km do trajeto do motorista até pegar o pedido (estimado pela posição dos motoristas online)
             </p>
