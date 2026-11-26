@@ -372,6 +372,17 @@ def generate_invoice(subscription_id):
         now = datetime.now(timezone.utc)
         period_start = now - timedelta(days=7) if subscription.billing_cycle == 'WEEKLY' else now - timedelta(days=30)
 
+        # Verificar se já existe fatura para este período (evitar duplicação — 2026-11-26)
+        from src.models.finance import SubscriptionInvoice
+        existing = SubscriptionInvoice.query.filter_by(
+            subscription_id=subscription_id
+        ).filter(
+            SubscriptionInvoice.period_start == period_start,
+            SubscriptionInvoice.period_end == now
+        ).first()
+        if existing:
+            return jsonify({'error': f'Já existe fatura para este período ({existing.invoice_number}). Aguarde o próximo ciclo.'}), 400
+
         valores = calcular_assinatura(subscription, period_start, now)
         drivers_count = valores['drivers_count']
 
@@ -599,6 +610,16 @@ def generate_all_invoices():
                 period_start = now - timedelta(days=30)
 
             # Contar entregadores/pedidos e calcular — fórmula ÚNICA (3 termos)
+            # Verificar se já existe fatura para este período (evitar duplicação)
+            existing = SubscriptionInvoice.query.filter_by(
+                subscription_id=subscription.id
+            ).filter(
+                SubscriptionInvoice.period_start == period_start,
+                SubscriptionInvoice.period_end == now
+            ).first()
+            if existing:
+                continue  # Pula — já gerada
+
             valores = calcular_assinatura(subscription, period_start, now)
 
             # Pular se não há nada a cobrar
