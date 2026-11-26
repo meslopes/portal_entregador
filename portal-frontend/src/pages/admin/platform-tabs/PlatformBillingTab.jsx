@@ -457,7 +457,7 @@ const PlatformBillingTab = () => {
                 </td>
                 <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>{i.due_date ? new Date(i.due_date).toLocaleDateString('pt-BR') : '—'}</td>
                 <td style={{ padding: '0.75rem 1rem' }}>
-                  {i.status !== 'PAID' && (
+                  {i.status !== 'PAID' ? (
                     <>
                       <button onClick={() => handlePay(i.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#16a34a', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
                         <CheckCircle size={13} /> Marcar Paga
@@ -466,7 +466,7 @@ const PlatformBillingTab = () => {
                         <Trash2 size={13} /> Excluir
                       </button>
                     </>
-                  )}
+                  ) : <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>}
                   )}
                 </td>
               </tr>
