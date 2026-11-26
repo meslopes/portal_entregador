@@ -244,6 +244,12 @@ from src.routes.platform_billing import platform_billing_bp
 
 app.register_blueprint(platform_billing_bp, url_prefix='/api/platform')
 
+# WhatsApp Business API (Fase 1 — 2026-11-25)
+from src.routes.whatsapp_config import whatsapp_config_bp
+from src.routes.whatsapp_webhook import whatsapp_webhook_bp
+app.register_blueprint(whatsapp_config_bp, url_prefix='/api')
+app.register_blueprint(whatsapp_webhook_bp, url_prefix='/api')
+
 from src.routes.own_driver import own_driver_bp
 
 app.register_blueprint(own_driver_bp)
@@ -548,6 +554,51 @@ with app.app_context():
         print("Coluna fcm_token adicionada a establishment_drivers")
     except Exception as e:
         print(f"Migração fcm_token: {e}")
+        db.session.rollback()
+    # Migration: WhatsApp Business API — credenciais e mensagens (Fase 1, 2026-11-25)
+    try:
+        db.session.execute(db.text("""
+            CREATE TABLE IF NOT EXISTS whatsapp_credentials (
+                id SERIAL PRIMARY KEY,
+                restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) UNIQUE,
+                phone_number_id VARCHAR(100),
+                access_token VARCHAR(512),
+                business_account_id VARCHAR(100),
+                verify_token VARCHAR(100),
+                enabled BOOLEAN DEFAULT FALSE,
+                notify_customer BOOLEAN DEFAULT TRUE,
+                notify_establishment BOOLEAN DEFAULT TRUE,
+                accept_orders BOOLEAN DEFAULT TRUE,
+                auto_confirm BOOLEAN DEFAULT FALSE,
+                welcome_message TEXT,
+                business_hours_start VARCHAR(5),
+                business_hours_end VARCHAR(5),
+                off_hours_message TEXT,
+                quiet_hours_start VARCHAR(5),
+                quiet_hours_end VARCHAR(5),
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        db.session.execute(db.text("""
+            CREATE TABLE IF NOT EXISTS whatsapp_messages (
+                id SERIAL PRIMARY KEY,
+                restaurant_id INTEGER NOT NULL REFERENCES restaurants(id),
+                direction VARCHAR(10),
+                from_number VARCHAR(20),
+                to_number VARCHAR(20),
+                message_type VARCHAR(20),
+                content TEXT,
+                status VARCHAR(20),
+                error TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        db.session.commit()
+        print("Tabelas WhatsApp criadas (whatsapp_credentials, whatsapp_messages)")
+    except Exception as e:
+        print(f"Migração WhatsApp: {e}")
         db.session.rollback()
     # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
     try:

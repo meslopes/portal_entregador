@@ -604,6 +604,96 @@ class PushToken(db.Model):
     user = db.relationship('User', backref='push_tokens')
 
 
+class WhatsAppCredential(db.Model):
+    """Credenciais WhatsApp Business API por estabelecimento (Fase 1 — 2026-11-25).
+    Cada EST tem seu próprio número, token e configurações. Multi-tenant.
+    Mandato 'tudo configurável': cada campo operacional é ajustável pelo EST."""
+    __tablename__ = 'whatsapp_credentials'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False, unique=True)
+
+    # Credenciais da Meta (WhatsApp Business API)
+    phone_number_id = db.Column(db.String(100))      # ID do número de telefone
+    access_token = db.Column(db.String(512))          # Token de acesso (permanent)
+    business_account_id = db.Column(db.String(100))   # ID da conta business
+    verify_token = db.Column(db.String(100))          # Token de verificação do webhook
+
+    # Configurações operacionais (tudo configurável)
+    enabled = db.Column(db.Boolean, default=False)                 # Ligar/desligar WhatsApp
+    notify_customer = db.Column(db.Boolean, default=True)           # Notificar cliente
+    notify_establishment = db.Column(db.Boolean, default=True)      # Notificar estabelecimento
+    accept_orders = db.Column(db.Boolean, default=True)             # Aceitar pedidos pelo WhatsApp
+    auto_confirm = db.Column(db.Boolean, default=False)             # Confirmação automática
+    welcome_message = db.Column(db.Text)                            # Mensagem de boas-vindas
+    business_hours_start = db.Column(db.String(5))                  # HH:MM início
+    business_hours_end = db.Column(db.String(5))                    # HH:MM fim
+    off_hours_message = db.Column(db.Text)                          # Mensagem fora do horário
+    quiet_hours_start = db.Column(db.String(5))                     # HH:MM início silêncio
+    quiet_hours_end = db.Column(db.String(5))                       # HH:MM fim silêncio
+
+    # Controle
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    # Relacionamentos
+    restaurant = db.relationship('Restaurant', backref='whatsapp_credential')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'phone_number_id': self.phone_number_id,
+            'business_account_id': self.business_account_id,
+            'enabled': self.enabled,
+            'notify_customer': self.notify_customer,
+            'notify_establishment': self.notify_establishment,
+            'accept_orders': self.accept_orders,
+            'auto_confirm': self.auto_confirm,
+            'welcome_message': self.welcome_message,
+            'business_hours_start': self.business_hours_start,
+            'business_hours_end': self.business_hours_end,
+            'off_hours_message': self.off_hours_message,
+            'quiet_hours_start': self.quiet_hours_start,
+            'quiet_hours_end': self.quiet_hours_end,
+            'is_active': self.is_active,
+            'has_token': bool(self.access_token),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class WhatsAppMessage(db.Model):
+    """Log de mensagens WhatsApp recebidas/enviadas (auditoria — 2026-11-25)."""
+    __tablename__ = 'whatsapp_messages'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    direction = db.Column(db.String(10))       # 'inbound' ou 'outbound'
+    from_number = db.Column(db.String(20))
+    to_number = db.Column(db.String(20))
+    message_type = db.Column(db.String(20))    # text, interactive, location, template
+    content = db.Column(db.Text)
+    status = db.Column(db.String(20))          # sent, delivered, read, failed
+    error = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'direction': self.direction,
+            'from_number': self.from_number,
+            'to_number': self.to_number,
+            'message_type': self.message_type,
+            'content': self.content,
+            'status': self.status,
+            'error': self.error,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class ActivityLog(db.Model):
     """Registro de atividades da equipe (§7.2 do backlog EE — suporte/auditoria).
 
