@@ -436,6 +436,47 @@ def geocode_address(address, city_hint=None):
     return None
 
 
+def reverse_geocode(lat, lng):
+    """
+    Reverse geocoding — coordenadas → endereço legível (Fase 4 WhatsApp, 2026-11-25).
+    Usa Nominatim (OSM) — gratuito, sem chave. Retorna endereço formatado ou None.
+    """
+    try:
+        import requests as _req
+        url = 'https://nominatim.openstreetmap.org/reverse'
+        params = {
+            'lat': str(lat),
+            'lon': str(lng),
+            'format': 'json',
+            'addressdetails': 1,
+            'accept-language': 'pt-BR',
+        }
+        headers = {'User-Agent': 'MuvLog/1.0'}
+        resp = _req.get(url, params=params, headers=headers, timeout=10)
+        data = resp.json()
+
+        if data.get('display_name'):
+            # Montar endereço mais limpo
+            addr = data.get('address', {})
+            parts = []
+            if addr.get('road'):
+                parts.append(addr['road'])
+            if addr.get('house_number'):
+                parts.append(addr['house_number'])
+            if addr.get('suburb') or addr.get('neighbourhood'):
+                parts.append(addr.get('suburb') or addr.get('neighbourhood'))
+            if addr.get('city') or addr.get('town'):
+                parts.append(addr.get('city') or addr.get('town'))
+
+            if parts:
+                return ', '.join(parts)
+            return data['display_name']
+
+    except Exception as e:
+        logger.error(f'[GEOCODE] Reverse geocode falhou: {e}')
+    return None
+
+
 def geocode_establishment(address, city=None, state=None):
     """
     Geocodifica o endereco de um estabelecimento.

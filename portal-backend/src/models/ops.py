@@ -634,6 +634,11 @@ class WhatsAppCredential(db.Model):
     # Meta Catalog sync (opção — habilita carrinho nativo do WhatsApp)
     sync_to_meta_catalog = db.Column(db.Boolean, default=False)     # Sincronizar cardápio com Meta
     catalog_id = db.Column(db.String(100))                          # ID do catálogo na Meta
+    # Fase 4: endereço + GPS (configurável)
+    accept_gps = db.Column(db.Boolean, default=True)                # Aceitar localização GPS
+    accept_text_address = db.Column(db.Boolean, default=True)       # Aceitar endereço por texto
+    confirm_address = db.Column(db.Boolean, default=True)           # Confirmar endereço antes do pedido
+    max_delivery_km = db.Column(db.Numeric(6, 2), default=0)        # Raio máximo de entrega (0 = sem limite)
 
     # Controle
     is_active = db.Column(db.Boolean, default=True)
@@ -662,6 +667,10 @@ class WhatsAppCredential(db.Model):
             'quiet_hours_end': self.quiet_hours_end,
             'sync_to_meta_catalog': self.sync_to_meta_catalog,
             'catalog_id': self.catalog_id,
+            'accept_gps': self.accept_gps,
+            'accept_text_address': self.accept_text_address,
+            'confirm_address': self.confirm_address,
+            'max_delivery_km': float(self.max_delivery_km) if self.max_delivery_km else 0,
             'is_active': self.is_active,
             'has_token': bool(self.access_token),
             'created_at': self.created_at.isoformat() if self.created_at else None,

@@ -1,6 +1,7 @@
 """
-WhatsApp — Fluxo de pedido por catálogo (Fase 3 — 2026-11-25).
+WhatsApp — Fluxo de pedido por catálogo (Fase 3+4 — 2026-11-25).
 Processa mensagens do cliente, monta carrinho, cria Order.
+Endereço por GPS (reverse geocoding) ou texto (geocoding).
 Tudo configurável pelo EST (auto_confirm, accept_orders, etc.).
 """
 import logging
@@ -46,6 +47,8 @@ def process_customer_message(restaurant, cred, phone, text, msg_type='text', loc
         messages_to_send = _handle_cart(restaurant, cred, session, text, msg_type)
     elif session.step == 'ADDRESS':
         messages_to_send = _handle_address(restaurant, cred, session, text, location)
+    elif session.step == 'CONFIRMING_ADDRESS':
+        messages_to_send = _handle_confirming_address(restaurant, cred, session, text)
     elif session.step == 'CONFIRMING':
         messages_to_send = _handle_confirming(restaurant, cred, session, text)
 
@@ -197,28 +200,94 @@ def _find_product(restaurant, text):
 
 
 def _handle_address(restaurant, cred, session, text, location):
-    """Estado: coletando endereço."""
+    """Estado: coletando endereço (Fase 4 — GPS + geocoding + confirmação)."""
+    confirm_address = getattr(cred, 'confirm_address', True) if cred else True
+    max_km = float(getattr(cred, 'max_delivery_km', 0) or 0) if cred else 0
+
     if location and location.get('latitude'):
-        # Endereço por GPS
-        session.delivery_lat = location['latitude']
-        session.delivery_lng = location['longitude']
-        session.delivery_address = f"Localização: {location['latitude']},{location['longitude']}"
-        session.step = 'CONFIRMING'
+        # Endereço por GPS (Fase 4: reverse geocoding para endereço legível)
+        lat, lng = float(location['latitude']), float(location['longitude'])
+
+        # Reverse geocoding → endereço legível
+        readable_address = _reverse_geocode(lat, lng)
+        session.delivery_lat = lat
+        session.delivery_lng = lng
+        session.delivery_address = readable_address or f'Localização: {lat:.6f},{lng:.6f}'
+
+        # Verificar distância máxima (se configurado)
+        if max_km > 0 and restaurant.latitude and restaurant.longitude:
+            from src.utils.geo import haversine_distance
+            dist = haversine_distance(
+                float(restaurant.latitude), float(restaurant.longitude), lat, lng
+            )
+            if dist > max_km:
+                return [{'text': f'😔 Desculpe, não entregamos nessa região (máx. {max_km:.0f} km).\n\nNosso raio de entrega é de {max_km:.0f} km do estabelecimento.'}]
+
+        if confirm_address:
+            session.step = 'CONFIRMING_ADDRESS'
+        else:
+            session.step = 'CONFIRMING'
         db.session.commit()
+
         total = sum(float(item['price']) * item['qty'] for item in session.cart)
-        msg = f'*Localização recebida!* 📍\n\n*Seu pedido:*\n{_format_cart(session.cart)}\n*Total: R$ {total:.2f}*\n\n*Confirma o pedido?* (sim/não)'
+        addr_display = session.delivery_address[:60] + '...' if len(session.delivery_address) > 60 else session.delivery_address
+        if confirm_address:
+            msg = f'*📍 Localização recebida!*\n\nEndereço: {addr_display}\n\n*Está correto?* (sim/não)'
+        else:
+            msg = f'*📍 Localização registrada!* {addr_display}\n\n*Seu pedido:*\n{_format_cart(session.cart)}\n*Total: R$ {total:.2f}*\n\n*Confirma o pedido?* (sim/não)'
         return [{'text': msg}]
 
-    # Endereço por texto
+    # Endereço por texto (Fase 4: geocoding para obter coordenadas)
     if text and len(text.strip()) > 5:
-        session.delivery_address = text.strip()
-        session.step = 'CONFIRMING'
+        addr_text = text.strip()
+
+        # Geocoding → coordenadas
+        lat, lng = _geocode_address(restaurant, addr_text)
+        session.delivery_address = addr_text
+        session.delivery_lat = lat
+        session.delivery_lng = lng
+
+        # Verificar distância máxima (se configurado e tiver coordenadas)
+        if max_km > 0 and lat and lng and restaurant.latitude and restaurant.longitude:
+            from src.utils.geo import haversine_distance
+            dist = haversine_distance(
+                float(restaurant.latitude), float(restaurant.longitude), lat, lng
+            )
+            if dist > max_km:
+                return [{'text': f'😔 Desculpe, não entregamos nessa região (máx. {max_km:.0f} km).\n\nNosso raio de entrega é de {max_km:.0f} km do estabelecimento.'}]
+
+        if confirm_address:
+            session.step = 'CONFIRMING_ADDRESS'
+        else:
+            session.step = 'CONFIRMING'
         db.session.commit()
+
         total = sum(float(item['price']) * item['qty'] for item in session.cart)
-        msg = f'*Endereço registrado:* {text.strip()}\n\n*Seu pedido:*\n{_format_cart(session.cart)}\n*Total: R$ {total:.2f}*\n\n*Confirma o pedido?* (sim/não)'
+        if confirm_address:
+            msg = f'*📍 Endereço registrado:*\n{addr_text}\n\n*Está correto?* (sim/não)'
+        else:
+            msg = f'*📍 Endereço registrado:* {addr_text}\n\n*Seu pedido:*\n{_format_cart(session.cart)}\n*Total: R$ {total:.2f}*\n\n*Confirma o pedido?* (sim/não)'
         return [{'text': msg}]
 
     return [{'text': 'Por favor, informe seu endereço de entrega ou compartilhe sua localização 📍'}]
+
+
+def _handle_confirming_address(restaurant, cred, session, text):
+    """Estado: confirmando endereço (Fase 4)."""
+    text_lower = (text or '').lower().strip()
+
+    if any(kw in text_lower for kw in ['sim', 'correto', 'isso', 'certo', 'ok']):
+        session.step = 'CONFIRMING'
+        db.session.commit()
+        total = sum(float(item['price']) * item['qty'] for item in session.cart)
+        return [{'text': f'✅ *Endereço confirmado!*\n\n*Seu pedido:*\n{_format_cart(session.cart)}\n*Total: R$ {total:.2f}*\n\n*Confirma o pedido?* (sim/não)'}]
+
+    if any(kw in text_lower for kw in ['não', 'nao', 'errado', 'incorreto']):
+        session.step = 'ADDRESS'
+        db.session.commit()
+        return [{'text': 'Sem problemas! Informe o endereço correto ou compartilhe sua localização 📍'}]
+
+    return [{'text': 'Por favor, confirme com *sim* ou diga *não* para corrigir.'}]
 
 
 def _handle_confirming(restaurant, cred, session, text):
@@ -316,3 +385,34 @@ def _format_cart(cart):
         price = float(item['price']) * qty
         lines.append(f'{qty}x {name} — R$ {price:.2f}')
     return '\n'.join(lines)
+
+
+def _reverse_geocode(lat, lng):
+    """Fase 4: Reverse geocoding — coordenadas → endereço legível."""
+    try:
+        from src.services.geocoding import reverse_geocode
+        result = reverse_geocode(lat, lng)
+        if result:
+            return result
+    except Exception as e:
+        logger.warning(f'[WHATSAPP] Reverse geocode falhou: {e}')
+    return None
+
+
+def _geocode_address(restaurant, address_text):
+    """Fase 4: Geocoding — endereço texto → coordenadas. Retorna (lat, lng) ou (None, None)."""
+    try:
+        from src.services.geocoding import geocode_address
+        city_hint = None
+        if restaurant and restaurant.square_id:
+            from src.models.portal_models import Square
+            sq = Square.query.get(restaurant.square_id)
+            if sq:
+                city_hint = sq.city
+
+        result = geocode_address(address_text, city_hint=city_hint)
+        if result:
+            return result.get('latitude'), result.get('longitude')
+    except Exception as e:
+        logger.warning(f'[WHATSAPP] Geocode falhou: {e}')
+    return None, None

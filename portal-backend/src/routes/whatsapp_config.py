@@ -86,6 +86,8 @@ def update_config():
         bool_fields = [
             'enabled', 'notify_customer', 'notify_establishment',
             'accept_orders', 'auto_confirm', 'is_active',
+            'sync_to_meta_catalog',
+            'accept_gps', 'accept_text_address', 'confirm_address',
         ]
         for field in bool_fields:
             if field in data:
@@ -105,6 +107,10 @@ def update_config():
         for field in time_fields:
             if field in data:
                 setattr(cred, field, data[field] or None)
+
+        # Campos numéricos (Fase 4)
+        if 'max_delivery_km' in data:
+            cred.max_delivery_km = float(data['max_delivery_km'] or 0)
 
         db.session.commit()
         return jsonify({'message': 'Configuração atualizada', 'config': cred.to_dict()}), 200
