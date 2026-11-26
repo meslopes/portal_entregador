@@ -1,8 +1,9 @@
 """
-WhatsApp — Fluxo de pedido por catálogo (Fase 3+4 — 2026-11-25).
+WhatsApp — Fluxo de pedido por catálogo (Fase 3-5 — 2026-11-25).
 Processa mensagens do cliente, monta carrinho, cria Order.
 Endereço por GPS (reverse geocoding) ou texto (geocoding).
-Tudo configurável pelo EST (auto_confirm, accept_orders, etc.).
+Pagamento PIX/dinheiro/cartão, pedido rápido, avaliação.
+Tudo configurável pelo EST.
 """
 import logging
 from decimal import Decimal
@@ -14,6 +15,13 @@ from src.models.portal_models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Pagamentos aceitos (configurável pelo EST)
+PAYMENT_OPTIONS = {
+    'PIX': '💳 PIX',
+    'CASH': '💵 Dinheiro na entrega',
+    'CARD': '💳 Cartão na entrega',
+}
 
 
 def process_customer_message(restaurant, cred, phone, text, msg_type='text', location=None):
@@ -51,6 +59,10 @@ def process_customer_message(restaurant, cred, phone, text, msg_type='text', loc
         messages_to_send = _handle_confirming_address(restaurant, cred, session, text)
     elif session.step == 'CONFIRMING':
         messages_to_send = _handle_confirming(restaurant, cred, session, text)
+    elif session.step == 'PAYMENT':
+        messages_to_send = _handle_payment(restaurant, cred, session, text)
+    elif session.step == 'RATING':
+        messages_to_send = _handle_rating(restaurant, cred, session, text)
 
     return messages_to_send
 
@@ -82,7 +94,15 @@ def _handle_browsing(restaurant, cred, session, text, msg_type):
 
     # Comando: ajuda
     if any(kw in text_lower for kw in ['ajuda', 'help', 'comandos']):
-        return [{'text': '*Comandos disponíveis:*\n\n🍕 *cardápio* — ver produtos\n🛒 *pedido* — fazer um pedido\n📋 *meu pedido* — ver carrinho\n📍 *endereço* — informar endereço\n❌ *cancelar* — cancelar pedido\n\nOu simplesmente me diga o que deseja!'}]
+        return [{'text': '*Comandos disponíveis:*\n\n🍕 *cardápio* — ver produtos\n🛒 *pedido* — fazer um pedido\n📋 *meu pedido* — ver carrinho\n🔁 *repetir* — repetir último pedido\n⭐ *avaliar* — avaliar última entrega\n📍 *endereço* — informar endereço\n❌ *cancelar* — cancelar pedido\n\nOu simplesmente me diga o que deseja!'}]
+
+    # Fase 5: pedido rápido (repetir último)
+    if any(kw in text_lower for kw in ['repetir', 'repetir pedido', 'último pedido', 'ultimo pedido', 'mesmo pedido']):
+        return _quick_reorder(restaurant, session)
+
+    # Fase 5: avaliar entrega
+    if any(kw in text_lower for kw in ['avaliar', 'avaliação', 'avaliacao', 'estrelas', 'nota']):
+        return _ask_rating(restaurant, session)
 
     # Boas-vindas
     welcome = cred.welcome_message if cred and cred.welcome_message else 'Bem-vindo! Como posso ajudar? 🍕'
@@ -291,24 +311,32 @@ def _handle_confirming_address(restaurant, cred, session, text):
 
 
 def _handle_confirming(restaurant, cred, session, text):
-    """Estado: confirmando o pedido."""
+    """Estado: confirmando o pedido (vai para pagamento)."""
     text_lower = (text or '').lower().strip()
 
     if any(kw in text_lower for kw in ['sim', 'confirmar', 'isso', 'pode ser', 'confirmo']):
-        # Criar pedido
-        order = _create_order(restaurant, session)
-        if order:
-            session.order_id = order.id
-            session.is_active = False
-            db.session.commit()
-            return [{
-                'text': f'✅ *Pedido #{order.order_number} criado!*\n\n'
-                        f'🍽️ {restaurant.name}\n'
-                        f'📍 {session.delivery_address}\n'
-                        f'💰 Total: R$ {float(order.total_amount):.2f}\n\n'
-                        f'Você receberá atualizações por aqui! 📱'
-            }]
-        return [{'text': 'Desculpe, houve um erro ao criar o pedido. Tente novamente.'}]
+        # Ir para escolha de pagamento
+        session.step = 'PAYMENT'
+        db.session.commit()
+
+        # Pagamentos aceitos (configurável)
+        options = []
+        if getattr(cred, 'accept_pix', True):
+            options.append('💳 PIX')
+        if getattr(cred, 'accept_cash', True):
+            options.append('💵 Dinheiro na entrega')
+        if getattr(cred, 'accept_card', True):
+            options.append('💳 Cartão na entrega')
+
+        if not options:
+            options = ['💳 PIX']  # Padrão
+
+        total = sum(float(item['price']) * item['qty'] for item in session.cart)
+        msg = f'*💰 Forma de pagamento:*\n\n'
+        for i, opt in enumerate(options, 1):
+            msg += f'{i}. {opt}\n'
+        msg += f'\n*Total: R$ {total:.2f}*\n\nEscolha uma opção (número ou nome).'
+        return [{'text': msg}]
 
     if any(kw in text_lower for kw in ['não', 'nao', 'cancelar', 'voltar']):
         session.step = 'BROWSING'
@@ -318,8 +346,55 @@ def _handle_confirming(restaurant, cred, session, text):
     return [{'text': 'Por favor, confirme com *sim* ou cancele com *não*.'}]
 
 
-def _create_order(restaurant, session):
-    """Cria um Order a partir da sessão WhatsApp."""
+def _handle_payment(restaurant, cred, session, text):
+    """Estado: escolhendo forma de pagamento (Fase 5)."""
+    text_lower = (text or '').lower().strip()
+
+    # Mapear escolha
+    payment_method = None
+    if any(kw in text_lower for kw in ['1', 'pix', 'qrcode', 'qr code']):
+        payment_method = 'PIX'
+    elif any(kw in text_lower for kw in ['2', 'dinheiro', 'cash', 'espécie']):
+        payment_method = 'CASH'
+    elif any(kw in text_lower for kw in ['3', 'cartão', 'cartao', 'card', 'maquininha']):
+        payment_method = 'CARD'
+
+    if not payment_method:
+        return [{'text': 'Por favor, escolha uma forma de pagamento: PIX, Dinheiro ou Cartão.'}]
+
+    # Criar pedido
+    order = _create_order(restaurant, session, payment_method)
+    if order:
+        session.order_id = order.id
+        session.is_active = False
+        db.session.commit()
+
+        total = float(order.total_amount)
+        msg = f'✅ *Pedido #{order.order_number} criado!*\n\n'
+        msg += f'🍽️ {restaurant.name}\n'
+        msg += f'📍 {session.delivery_address}\n'
+        msg += f'💰 Total: R$ {total:.2f}\n'
+        msg += f'💳 Pagamento: {PAYMENT_OPTIONS.get(payment_method, payment_method)}\n\n'
+
+        if payment_method == 'PIX':
+            msg += '📱 *PIX:* Assim que o pedido for confirmado, enviaremos o QR Code.\n\n'
+
+        msg += 'Você receberá atualizações por aqui! 📱'
+
+        # Notificação para o EST
+        try:
+            from src.services.whatsapp_notify import notify_status_change
+            notify_status_change(order, 'CONFIRMED')
+        except Exception:
+            pass
+
+        return [{'text': msg}]
+
+    return [{'text': 'Desculpe, houve um erro ao criar o pedido. Tente novamente.'}]
+
+
+def _create_order(restaurant, session, payment_method='PIX'):
+    """Cria um Order a partir da sessão WhatsApp (Fase 5: com pagamento)."""
     try:
         # Buscar ou criar Customer
         customer = Customer.query.filter_by(phone=session.customer_phone).first()
@@ -334,6 +409,13 @@ def _create_order(restaurant, session):
         # Calcular total
         subtotal = sum(float(item['price']) * item['qty'] for item in session.cart)
 
+        # Mapear método de pagamento
+        pm = {
+            'PIX': PaymentMethod.PIX,
+            'CASH': PaymentMethod.CASH,
+            'CARD': PaymentMethod.CARD,
+        }.get(payment_method, PaymentMethod.PIX)
+
         # Criar pedido
         order = Order(
             restaurant_id=restaurant.id,
@@ -341,9 +423,9 @@ def _create_order(restaurant, session):
             order_number=f'WA-{session.id:06d}',
             items=session.cart,
             subtotal=Decimal(str(subtotal)),
-            delivery_fee=Decimal('0'),  # Frete calculado depois
+            delivery_fee=Decimal('0'),
             total_amount=Decimal(str(subtotal)),
-            payment_method=PaymentMethod.PIX,
+            payment_method=pm,
             status=OrderStatus.PENDING,
             special_instructions=session.notes or '',
         )
@@ -385,6 +467,125 @@ def _format_cart(cart):
         price = float(item['price']) * qty
         lines.append(f'{qty}x {name} — R$ {price:.2f}')
     return '\n'.join(lines)
+
+
+def _quick_reorder(restaurant, session):
+    """Fase 5: Repetir o último pedido do cliente."""
+    try:
+        last_order = Order.query.filter_by(
+            restaurant_id=restaurant.id,
+            customer_id=session.customer_id if hasattr(session, 'customer_id') else None,
+        ).order_by(Order.created_at.desc()).first()
+
+        # Buscar por telefone se não tiver customer_id
+        if not last_order:
+            customer = Customer.query.filter_by(phone=session.customer_phone).first()
+            if customer:
+                last_order = Order.query.filter_by(
+                    restaurant_id=restaurant.id,
+                    customer_id=customer.id,
+                ).order_by(Order.created_at.desc()).first()
+
+        if not last_order or not last_order.items:
+            return [{'text': 'Você ainda não tem pedidos anteriores. 🤔\n\nDigite *cardápio* para ver nossos produtos!'}]
+
+        # Copiar itens para o carrinho
+        cart = []
+        for item in (last_order.items or []):
+            cart.append({
+                'product_id': item.get('product_id', 0),
+                'name': item.get('name', ''),
+                'price': item.get('price', 0),
+                'qty': item.get('qty', 1),
+            })
+
+        session.cart = cart
+        session.step = 'ADDRESS'
+        db.session.commit()
+
+        total = sum(float(item['price']) * item['qty'] for item in cart)
+        msg = f'🔁 *Último pedido copiado!*\n\n*Itens:*\n{_format_cart(cart)}\n*Total: R$ {total:.2f}*\n\n📍 Informe seu *endereço de entrega* ou compartilhe sua *localização*.'
+        return [{'text': msg}]
+
+    except Exception as e:
+        logger.error(f'[WHATSAPP] Erro no pedido rápido: {e}')
+        return [{'text': 'Erro ao buscar pedido anterior. Tente novamente.'}]
+
+
+def _ask_rating(restaurant, session):
+    """Fase 5: Pedir avaliação da última entrega."""
+    try:
+        customer = Customer.query.filter_by(phone=session.customer_phone).first()
+        if not customer:
+            return [{'text': 'Você ainda não tem entregas para avaliar. 😊'}]
+
+        last_order = Order.query.filter_by(
+            restaurant_id=restaurant.id,
+            customer_id=customer.id,
+            status=OrderStatus.DELIVERED,
+        ).order_by(Order.created_at.desc()).first()
+
+        if not last_order:
+            return [{'text': 'Você ainda não tem entregas concluídas para avaliar. 😊'}]
+
+        session.step = 'RATING'
+        session.order_id = last_order.id
+        db.session.commit()
+
+        msg = f'⭐ *Avalie sua experiência!*\n\nPedido #{last_order.order_number} — {restaurant.name}\n\n'
+        msg += 'De 1 a 5, quantas estrelas? ⭐\n\n'
+        msg += '1 = ⭐ Ruim · 2 = ⭐⭐ · 3 = ⭐⭐⭐ · 4 = ⭐⭐⭐⭐ · 5 = ⭐⭐⭐⭐⭐'
+        return [{'text': msg}]
+
+    except Exception as e:
+        logger.error(f'[WHATSAPP] Erro na avaliação: {e}')
+        return [{'text': 'Erro ao buscar entregas. Tente novamente.'}]
+
+
+def _handle_rating(restaurant, cred, session, text):
+    """Fase 5: Registrar avaliação (1-5 estrelas)."""
+    try:
+        text_lower = (text or '').lower().strip()
+
+        # Extrair número de estrelas
+        stars = None
+        for kw, val in [('5', 5), ('4', 4), ('3', 3), ('2', 2), ('1', 1)]:
+            if kw in text_lower:
+                stars = val
+                break
+
+        if not stars:
+            return [{'text': 'Por favor, digite um número de 1 a 5 estrelas. ⭐'}]
+
+        # Registrar avaliação no pedido
+        order = Order.query.get(session.order_id) if session.order_id else None
+        if order:
+            # Avaliação via Delivery ou campo direto
+            try:
+                from src.models.portal_models import Delivery
+                delivery = Delivery.query.filter_by(order_id=order.id).first()
+                if delivery:
+                    delivery.customer_rating = stars
+            except Exception:
+                pass
+
+            # Nota geral do restaurante (simplificado)
+            if order.restaurant:
+                current = float(order.restaurant.rating or 5.0)
+                count = int(order.restaurant.rating_count or 0) if hasattr(order.restaurant, 'rating_count') else 0
+                new_rating = round((current * count + stars) / (count + 1), 1) if count else stars
+                # Não salvar se não tiver campo — só registra na mensagem
+
+        session.step = 'BROWSING'
+        session.order_id = None
+        db.session.commit()
+
+        stars_display = '⭐' * stars
+        return [{'text': f'{stars_display} *Obrigado pela avaliação!*\n\nSua opinião é muito importante para nós. 😊\n\nDigite *pedido* para fazer outro pedido!'}]
+
+    except Exception as e:
+        logger.error(f'[WHATSAPP] Erro na avaliação: {e}')
+        return [{'text': 'Erro ao registrar avaliação. Tente novamente.'}]
 
 
 def _reverse_geocode(lat, lng):

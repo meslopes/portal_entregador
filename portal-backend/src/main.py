@@ -677,6 +677,26 @@ with app.app_context():
     except Exception as e:
         print(f"Migração WhatsApp Fase 4: {e}")
         db.session.rollback()
+    # Migration: WhatsApp Fase 5 — pagamento + polimento (configurável)
+    try:
+        for col_sql in (
+            "accept_pix BOOLEAN DEFAULT TRUE",
+            "accept_cash BOOLEAN DEFAULT TRUE",
+            "accept_card BOOLEAN DEFAULT TRUE",
+            "quick_reorder BOOLEAN DEFAULT TRUE",
+            "post_delivery_rating BOOLEAN DEFAULT TRUE",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'whatsapp_credentials' AND column_name = '{col}') "
+                f"THEN ALTER TABLE whatsapp_credentials ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas WhatsApp Fase 5 adicionadas (accept_pix, accept_cash, accept_card, quick_reorder, post_delivery_rating)")
+    except Exception as e:
+        print(f"Migração WhatsApp Fase 5: {e}")
+        db.session.rollback()
     # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
     try:
         for col_sql in (

@@ -639,6 +639,12 @@ class WhatsAppCredential(db.Model):
     accept_text_address = db.Column(db.Boolean, default=True)       # Aceitar endereço por texto
     confirm_address = db.Column(db.Boolean, default=True)           # Confirmar endereço antes do pedido
     max_delivery_km = db.Column(db.Numeric(6, 2), default=0)        # Raio máximo de entrega (0 = sem limite)
+    # Fase 5: pagamento + polimento (configurável)
+    accept_pix = db.Column(db.Boolean, default=True)                # Aceitar PIX
+    accept_cash = db.Column(db.Boolean, default=True)               # Aceitar dinheiro
+    accept_card = db.Column(db.Boolean, default=True)               # Aceitar cartão
+    quick_reorder = db.Column(db.Boolean, default=True)             # Pedido rápido (repetir)
+    post_delivery_rating = db.Column(db.Boolean, default=True)      # Avaliação pós-entrega
 
     # Controle
     is_active = db.Column(db.Boolean, default=True)
@@ -671,6 +677,11 @@ class WhatsAppCredential(db.Model):
             'accept_text_address': self.accept_text_address,
             'confirm_address': self.confirm_address,
             'max_delivery_km': float(self.max_delivery_km) if self.max_delivery_km else 0,
+            'accept_pix': self.accept_pix,
+            'accept_cash': self.accept_cash,
+            'accept_card': self.accept_card,
+            'quick_reorder': self.quick_reorder,
+            'post_delivery_rating': self.post_delivery_rating,
             'is_active': self.is_active,
             'has_token': bool(self.access_token),
             'created_at': self.created_at.isoformat() if self.created_at else None,

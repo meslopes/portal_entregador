@@ -88,6 +88,8 @@ def update_config():
             'accept_orders', 'auto_confirm', 'is_active',
             'sync_to_meta_catalog',
             'accept_gps', 'accept_text_address', 'confirm_address',
+            'accept_pix', 'accept_cash', 'accept_card',
+            'quick_reorder', 'post_delivery_rating',
         ]
         for field in bool_fields:
             if field in data:
