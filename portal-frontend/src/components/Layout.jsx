@@ -120,6 +120,7 @@ const Layout = ({ children }) => {
         { name: 'Inadimplência', href: '/admin/overdue-report', icon: AlertTriangle },
         { name: 'Saques Plataforma', href: '/admin/withdrawals', icon: CreditCard },
         { name: 'Faturas', href: '/admin/invoices', icon: FileText },
+        { name: 'Faturas da Plataforma', href: '/admin/platform-invoices', icon: CreditCard },
       ]
     },
     {

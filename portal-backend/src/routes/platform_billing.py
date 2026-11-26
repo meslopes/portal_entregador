@@ -20,6 +20,7 @@ from src.models.portal_models import (
     PlatformSubscription,
     Restaurant,
     Tenant,
+    User,
     db,
 )
 from src.routes.platform import platform_admin_required
@@ -534,6 +535,47 @@ def generate_platform_invoice(sub_id):
                         'invoice_id': invoice.id, 'total': valores['total']}), 201
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_billing_bp.route('/billing/my-invoices', methods=['GET'])
+@jwt_required()
+def list_my_platform_invoices():
+    """Faturas da plataforma para o admin logado (MUV→admin).
+    Retorna APENAS as faturas do tenant do usuário autenticado."""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        if not user or not user.tenant_id:
+            return jsonify({'error': 'Usuário não pertence a um tenant'}), 400
+
+        invoices = PlatformInvoice.query.filter_by(
+            tenant_id=user.tenant_id
+        ).order_by(PlatformInvoice.created_at.desc()).limit(100).all()
+
+        tenant = Tenant.query.get(user.tenant_id)
+
+        result = []
+        for i in invoices:
+            result.append({
+                'id': i.id,
+                'invoice_number': i.invoice_number,
+                'period_start': i.period_start.isoformat() if i.period_start else None,
+                'period_end': i.period_end.isoformat() if i.period_end else None,
+                'fixed_price': float(i.fixed_price or 0),
+                'price_per_establishment': float(i.price_per_establishment or 0),
+                'establishments_count': i.establishments_count or 0,
+                'price_per_order': float(i.price_per_order or 0),
+                'orders_count': i.orders_count or 0,
+                'total_amount': float(i.total_amount or 0),
+                'status': i.status,
+                'due_date': i.due_date.isoformat() if i.due_date else None,
+                'paid_at': i.paid_at.isoformat() if i.paid_at else None,
+                'tenant_name': tenant.name if tenant else None,
+            })
+
+        return jsonify({'invoices': result, 'tenant_name': tenant.name if tenant else None}), 200
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 

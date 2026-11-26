@@ -1,4 +1,4 @@
-﻿import { Route } from 'react-router-dom';
+import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
@@ -28,6 +28,7 @@ import AdminGuidePage from '@/pages/admin/AdminGuidePage';
 import DatabaseMapPage from '@/pages/admin/DatabaseMapPage';
 import PaymentReportsPage from '@/pages/PaymentReportsPage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
+import PlatformInvoicesPage from '@/pages/admin/PlatformInvoicesPage';
 
 function AdminRoute({ children }) {
   return (
@@ -56,6 +57,7 @@ export const adminRoutes = (
       <Route path="/admin/integrations" element={<AdminRoute><AdminIntegrationsPage /></AdminRoute>} />
       <Route path="/admin/withdrawals" element={<AdminRoute><AdminWithdrawalsPage /></AdminRoute>} />
       <Route path="/admin/invoices" element={<AdminRoute><AdminInvoicesPage /></AdminRoute>} />
+      <Route path="/admin/platform-invoices" element={<AdminRoute><PlatformInvoicesPage /></AdminRoute>} />
       <Route path="/admin/reports" element={<AdminRoute><AdminReportsPage /></AdminRoute>} />
       <Route path="/admin/driver-payments" element={<AdminRoute><AdminDriverPaymentsPage /></AdminRoute>} />
       <Route path="/admin/squares" element={<AdminRoute><AdminSquaresPage /></AdminRoute>} />
