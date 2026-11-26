@@ -467,7 +467,6 @@ const PlatformBillingTab = () => {
                       </button>
                     </>
                   ) : <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>}
-                  )}
                 </td>
               </tr>
             ))}
