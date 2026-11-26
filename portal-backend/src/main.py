@@ -247,8 +247,10 @@ app.register_blueprint(platform_billing_bp, url_prefix='/api/platform')
 # WhatsApp Business API (Fase 1 — 2026-11-25)
 from src.routes.whatsapp_config import whatsapp_config_bp
 from src.routes.whatsapp_webhook import whatsapp_webhook_bp
+from src.routes.whatsapp_catalog import whatsapp_catalog_bp
 app.register_blueprint(whatsapp_config_bp, url_prefix='/api')
 app.register_blueprint(whatsapp_webhook_bp, url_prefix='/api')
+app.register_blueprint(whatsapp_catalog_bp, url_prefix='/api')
 
 from src.routes.own_driver import own_driver_bp
 
@@ -599,6 +601,62 @@ with app.app_context():
         print("Tabelas WhatsApp criadas (whatsapp_credentials, whatsapp_messages)")
     except Exception as e:
         print(f"Migração WhatsApp: {e}")
+        db.session.rollback()
+    # Migration: WhatsApp Fase 3 — produtos + sessões de pedido (2026-11-25)
+    try:
+        db.session.execute(db.text("""
+            CREATE TABLE IF NOT EXISTS whatsapp_products (
+                id SERIAL PRIMARY KEY,
+                restaurant_id INTEGER NOT NULL REFERENCES restaurants(id),
+                category VARCHAR(100) DEFAULT 'Geral',
+                name VARCHAR(200) NOT NULL,
+                description TEXT,
+                price NUMERIC(10,2) NOT NULL,
+                image_url VARCHAR(500),
+                is_active BOOLEAN DEFAULT TRUE,
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        db.session.execute(db.text("""
+            CREATE TABLE IF NOT EXISTS whatsapp_order_sessions (
+                id SERIAL PRIMARY KEY,
+                restaurant_id INTEGER NOT NULL REFERENCES restaurants(id),
+                customer_phone VARCHAR(20) NOT NULL,
+                step VARCHAR(20) DEFAULT 'BROWSING',
+                cart JSON DEFAULT '[]',
+                delivery_address TEXT,
+                delivery_lat NUMERIC(10,8),
+                delivery_lng NUMERIC(11,8),
+                notes TEXT,
+                order_id INTEGER,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        db.session.commit()
+        print("Tabelas WhatsApp Fase 3 criadas (whatsapp_products, whatsapp_order_sessions)")
+    except Exception as e:
+        print(f"Migração WhatsApp Fase 3: {e}")
+        db.session.rollback()
+    # Migration: Meta Catalog sync (opção configurável — 2026-11-25)
+    try:
+        for col_sql in (
+            "sync_to_meta_catalog BOOLEAN DEFAULT FALSE",
+            "catalog_id VARCHAR(100)",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'whatsapp_credentials' AND column_name = '{col}') "
+                f"THEN ALTER TABLE whatsapp_credentials ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas Meta Catalog adicionadas (sync_to_meta_catalog, catalog_id)")
+    except Exception as e:
+        print(f"Migração Meta Catalog: {e}")
         db.session.rollback()
     # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
     try:

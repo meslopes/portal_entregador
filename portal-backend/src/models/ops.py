@@ -631,6 +631,9 @@ class WhatsAppCredential(db.Model):
     off_hours_message = db.Column(db.Text)                          # Mensagem fora do horário
     quiet_hours_start = db.Column(db.String(5))                     # HH:MM início silêncio
     quiet_hours_end = db.Column(db.String(5))                       # HH:MM fim silêncio
+    # Meta Catalog sync (opção — habilita carrinho nativo do WhatsApp)
+    sync_to_meta_catalog = db.Column(db.Boolean, default=False)     # Sincronizar cardápio com Meta
+    catalog_id = db.Column(db.String(100))                          # ID do catálogo na Meta
 
     # Controle
     is_active = db.Column(db.Boolean, default=True)
@@ -657,6 +660,8 @@ class WhatsAppCredential(db.Model):
             'off_hours_message': self.off_hours_message,
             'quiet_hours_start': self.quiet_hours_start,
             'quiet_hours_end': self.quiet_hours_end,
+            'sync_to_meta_catalog': self.sync_to_meta_catalog,
+            'catalog_id': self.catalog_id,
             'is_active': self.is_active,
             'has_token': bool(self.access_token),
             'created_at': self.created_at.isoformat() if self.created_at else None,
@@ -691,6 +696,74 @@ class WhatsAppMessage(db.Model):
             'status': self.status,
             'error': self.error,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class WhatsAppProduct(db.Model):
+    """Produtos do cardápio WhatsApp por estabelecimento (Fase 3 — 2026-11-25).
+    Cada EST monta seu cardápio. Tudo configurável."""
+    __tablename__ = 'whatsapp_products'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    category = db.Column(db.String(100), default='Geral')
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+    image_url = db.Column(db.String(500))
+    is_active = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    restaurant = db.relationship('Restaurant', backref='whatsapp_products')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'category': self.category,
+            'name': self.name,
+            'description': self.description,
+            'price': float(self.price) if self.price else 0,
+            'image_url': self.image_url,
+            'is_active': self.is_active,
+            'sort_order': self.sort_order,
+        }
+
+
+class WhatsAppOrderSession(db.Model):
+    """Sessão de pedido em andamento pelo WhatsApp (Fase 3 — 2026-11-25).
+    Controla o fluxo: cliente monta carrinho → endereço → confirmação."""
+    __tablename__ = 'whatsapp_order_sessions'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=False)
+    customer_phone = db.Column(db.String(20), nullable=False)
+    step = db.Column(db.String(20), default='BROWSING')  # BROWSING, CART, ADDRESS, CONFIRMING
+    cart = db.Column(db.JSON, default=list)  # [{product_id, name, price, qty}]
+    delivery_address = db.Column(db.Text)
+    delivery_lat = db.Column(db.Numeric(10, 8))
+    delivery_lng = db.Column(db.Numeric(11, 8))
+    notes = db.Column(db.Text)
+    order_id = db.Column(db.Integer)  # ID do Order criado (quando finalizado)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+
+    restaurant = db.relationship('Restaurant', backref='whatsapp_sessions')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurant_id': self.restaurant_id,
+            'customer_phone': self.customer_phone,
+            'step': self.step,
+            'cart': self.cart or [],
+            'delivery_address': self.delivery_address,
+            'notes': self.notes,
+            'order_id': self.order_id,
+            'is_active': self.is_active,
         }
 
 

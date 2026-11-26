@@ -132,11 +132,19 @@ def _process_inbound_message(restaurant, cred, msg):
         if cred and not cred.accept_orders:
             return
 
-        # TODO Fase 3: processar pedido (catálogo)
-        # TODO Fase 6: bot de atendimento (regras)
-        # TODO Fase 7: IA (LLM)
+        # Fase 3: processar pedido (catálogo) — Opção A (MuvLog fonte)
+        if cred and cred.accept_orders:
+            from src.routes.whatsapp_order_flow import process_customer_message
+            location = None
+            if msg_type == 'location':
+                loc = msg.get('location', {})
+                location = {'latitude': loc.get('latitude'), 'longitude': loc.get('longitude')}
+            replies = process_customer_message(restaurant, cred, from_number, content, msg_type, location)
+            for reply in replies:
+                _send_text(cred, from_number, reply.get('text', ''))
+            return
 
-        # Por enquanto: resposta de boas-vindas
+        # Fallback: boas-vindas
         if cred and cred.welcome_message:
             _send_text(cred, from_number, cred.welcome_message)
 
