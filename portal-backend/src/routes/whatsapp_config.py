@@ -90,6 +90,7 @@ def update_config():
             'accept_gps', 'accept_text_address', 'confirm_address',
             'accept_pix', 'accept_cash', 'accept_card',
             'quick_reorder', 'post_delivery_rating',
+            'chatbot_enabled', 'chatbot_transfer_to_human',
         ]
         for field in bool_fields:
             if field in data:
@@ -113,6 +114,12 @@ def update_config():
         # Campos numéricos (Fase 4)
         if 'max_delivery_km' in data:
             cred.max_delivery_km = float(data['max_delivery_km'] or 0)
+
+        # Campos JSON (Fase 6)
+        if 'chatbot_menu_items' in data:
+            cred.chatbot_menu_items = data['chatbot_menu_items'] or None
+        if 'chatbot_faq' in data:
+            cred.chatbot_faq = data['chatbot_faq'] or None
 
         db.session.commit()
         return jsonify({'message': 'Configuração atualizada', 'config': cred.to_dict()}), 200

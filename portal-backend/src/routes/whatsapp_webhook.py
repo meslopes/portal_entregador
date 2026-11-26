@@ -132,14 +132,22 @@ def _process_inbound_message(restaurant, cred, msg):
         if cred and not cred.accept_orders:
             return
 
-        # Fase 3: processar pedido (catálogo) — Opção A (MuvLog fonte)
+        # Fase 6: bot de atendimento (regras) + Fase 3-5: pedido
         if cred and cred.accept_orders:
-            from src.routes.whatsapp_order_flow import process_customer_message
+            from src.routes.whatsapp_chatbot import handle_bot_message
             location = None
+            interactive_data = None
             if msg_type == 'location':
                 loc = msg.get('location', {})
                 location = {'latitude': loc.get('latitude'), 'longitude': loc.get('longitude')}
-            replies = process_customer_message(restaurant, cred, from_number, content, msg_type, location)
+            if msg_type == 'interactive':
+                interactive = msg.get('interactive', {})
+                if 'button_reply' in interactive:
+                    interactive_data = {'button_id': interactive['button_reply'].get('id', '')}
+                elif 'list_reply' in interactive:
+                    interactive_data = {'button_id': interactive['list_reply'].get('id', '')}
+
+            replies = handle_bot_message(restaurant, cred, from_number, content, msg_type, interactive_data)
             for reply in replies:
                 _send_text(cred, from_number, reply.get('text', ''))
             return

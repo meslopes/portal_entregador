@@ -697,6 +697,25 @@ with app.app_context():
     except Exception as e:
         print(f"Migração WhatsApp Fase 5: {e}")
         db.session.rollback()
+    # Migration: WhatsApp Fase 6 — bot de atendimento (configurável)
+    try:
+        for col_sql in (
+            "chatbot_enabled BOOLEAN DEFAULT TRUE",
+            "chatbot_menu_items JSON",
+            "chatbot_faq JSON",
+            "chatbot_transfer_to_human BOOLEAN DEFAULT TRUE",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'whatsapp_credentials' AND column_name = '{col}') "
+                f"THEN ALTER TABLE whatsapp_credentials ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas WhatsApp Fase 6 adicionadas (chatbot_enabled, chatbot_menu_items, chatbot_faq, chatbot_transfer_to_human)")
+    except Exception as e:
+        print(f"Migração WhatsApp Fase 6: {e}")
+        db.session.rollback()
     # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
     try:
         for col_sql in (

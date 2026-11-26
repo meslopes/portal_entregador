@@ -645,6 +645,11 @@ class WhatsAppCredential(db.Model):
     accept_card = db.Column(db.Boolean, default=True)               # Aceitar cartão
     quick_reorder = db.Column(db.Boolean, default=True)             # Pedido rápido (repetir)
     post_delivery_rating = db.Column(db.Boolean, default=True)      # Avaliação pós-entrega
+    # Fase 6: bot de atendimento (configurável)
+    chatbot_enabled = db.Column(db.Boolean, default=True)           # Bot de atendimento
+    chatbot_menu_items = db.Column(db.JSON)                         # Itens do menu principal
+    chatbot_faq = db.Column(db.JSON)                                # FAQ (pergunta/resposta)
+    chatbot_transfer_to_human = db.Column(db.Boolean, default=True) # Transferir para humano
 
     # Controle
     is_active = db.Column(db.Boolean, default=True)
@@ -682,6 +687,10 @@ class WhatsAppCredential(db.Model):
             'accept_card': self.accept_card,
             'quick_reorder': self.quick_reorder,
             'post_delivery_rating': self.post_delivery_rating,
+            'chatbot_enabled': self.chatbot_enabled,
+            'chatbot_menu_items': self.chatbot_menu_items,
+            'chatbot_faq': self.chatbot_faq,
+            'chatbot_transfer_to_human': self.chatbot_transfer_to_human,
             'is_active': self.is_active,
             'has_token': bool(self.access_token),
             'created_at': self.created_at.isoformat() if self.created_at else None,
