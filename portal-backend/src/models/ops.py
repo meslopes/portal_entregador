@@ -650,6 +650,15 @@ class WhatsAppCredential(db.Model):
     chatbot_menu_items = db.Column(db.JSON)                         # Itens do menu principal
     chatbot_faq = db.Column(db.JSON)                                # FAQ (pergunta/resposta)
     chatbot_transfer_to_human = db.Column(db.Boolean, default=True) # Transferir para humano
+    # Fase 7: IA com linguagem natural (configurável)
+    ai_enabled = db.Column(db.Boolean, default=False)               # IA habilitada
+    ai_provider = db.Column(db.String(20), default='openai')        # openai, claude, gemini
+    ai_api_key = db.Column(db.String(512))                          # Chave API do provedor
+    ai_model = db.Column(db.String(100))                            # Modelo (gpt-4, claude-3, etc)
+    ai_personality = db.Column(db.Text)                             # Personalidade da IA
+    ai_monthly_limit = db.Column(db.Integer, default=500)           # Limite de interações/mês
+    ai_token_limit = db.Column(db.Integer, default=1000)            # Limite de tokens por resposta
+    ai_transfer_threshold = db.Column(db.Numeric(3, 2), default=0.5) # Limiar para transferir (0-1)
 
     # Controle
     is_active = db.Column(db.Boolean, default=True)
@@ -691,6 +700,14 @@ class WhatsAppCredential(db.Model):
             'chatbot_menu_items': self.chatbot_menu_items,
             'chatbot_faq': self.chatbot_faq,
             'chatbot_transfer_to_human': self.chatbot_transfer_to_human,
+            'ai_enabled': self.ai_enabled,
+            'ai_provider': self.ai_provider,
+            'ai_model': self.ai_model,
+            'ai_personality': self.ai_personality,
+            'ai_monthly_limit': self.ai_monthly_limit,
+            'ai_token_limit': self.ai_token_limit,
+            'ai_transfer_threshold': float(self.ai_transfer_threshold) if self.ai_transfer_threshold else 0.5,
+            'has_ai_key': bool(self.ai_api_key),
             'is_active': self.is_active,
             'has_token': bool(self.access_token),
             'created_at': self.created_at.isoformat() if self.created_at else None,

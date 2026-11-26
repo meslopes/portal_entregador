@@ -716,6 +716,29 @@ with app.app_context():
     except Exception as e:
         print(f"Migração WhatsApp Fase 6: {e}")
         db.session.rollback()
+    # Migration: WhatsApp Fase 7 — IA com linguagem natural (configurável)
+    try:
+        for col_sql in (
+            "ai_enabled BOOLEAN DEFAULT FALSE",
+            "ai_provider VARCHAR(20) DEFAULT 'openai'",
+            "ai_api_key VARCHAR(512)",
+            "ai_model VARCHAR(100)",
+            "ai_personality TEXT",
+            "ai_monthly_limit INTEGER DEFAULT 500",
+            "ai_token_limit INTEGER DEFAULT 1000",
+            "ai_transfer_threshold NUMERIC(3,2) DEFAULT 0.5",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'whatsapp_credentials' AND column_name = '{col}') "
+                f"THEN ALTER TABLE whatsapp_credentials ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Colunas WhatsApp Fase 7 adicionadas (ai_enabled, ai_provider, ai_api_key, ai_model, ai_personality, ai_monthly_limit, ai_token_limit, ai_transfer_threshold)")
+    except Exception as e:
+        print(f"Migração WhatsApp Fase 7: {e}")
+        db.session.rollback()
     # Migration: multiplicadores por veiculo (2026-11-18) — S7.4 Fase 2 (frota mista)
     try:
         for col_sql in (

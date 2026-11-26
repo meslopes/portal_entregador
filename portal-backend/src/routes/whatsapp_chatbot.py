@@ -157,11 +157,12 @@ def send_text(cred, to_number, text):
 def handle_bot_message(restaurant, cred, phone, text, msg_type='interactive', interactive_data=None):
     """
     Processa mensagem no contexto do bot de atendimento.
+    Fase 6 (regras) + Fase 7 (IA — linguagem natural).
     Retorna lista de respostas.
     """
     responses = []
 
-    # Se veio de botão interativo
+    # Se veio de botão interativo (sempre regras)
     if interactive_data:
         button_id = interactive_data.get('button_id', '')
         if button_id == 'cardapio':
@@ -174,13 +175,16 @@ def handle_bot_message(restaurant, cred, phone, text, msg_type='interactive', in
             responses.append({
                 'text': '👤 *Transferindo para atendente...*\n\nUm de nossos atendentes responderá em breve. Enquanto isso, pode nos dizer como podemos ajudar!'
             })
-            # Notificar EST
             _notify_establishment_human_needed(cred, restaurant, phone)
         else:
             responses.append({'text': 'Opção não reconhecida. Digite *ajuda* para ver as opções.'})
         return responses
 
-    # Texto livre → verificar FAQ
+    # Fase 7: tentar IA primeiro (se habilitada)
+    if _try_ai_response(restaurant, cred, phone, text, responses):
+        return responses
+
+    # Fase 6: verificar FAQ (regras)
     faq_answer = get_faq_answer(text, cred, restaurant)
     if faq_answer:
         responses.append({'text': faq_answer})
@@ -199,6 +203,66 @@ def handle_bot_message(restaurant, cred, phone, text, msg_type='interactive', in
     responses.extend(process_customer_message(restaurant, cred, phone, text, msg_type))
 
     return responses
+
+
+def _try_ai_response(restaurant, cred, phone, text, responses):
+    """Fase 7: Tenta responder com IA. Retorna True se respondeu."""
+    try:
+        from src.services.whatsapp_ai_service import (
+            should_use_ai, ask_ai, check_monthly_limit,
+        )
+
+        if not should_use_ai(cred):
+            return False
+
+        if not check_monthly_limit(cred):
+            logger.warning(f'[AI] Limite mensal atingido para {restaurant.name}')
+            return False
+
+        # Montar histórico da conversa (últimas 10 mensagens)
+        from src.models.portal_models import WhatsAppMessage
+        history_msgs = WhatsAppMessage.query.filter_by(
+            restaurant_id=restaurant.id,
+            direction='outbound',
+        ).order_by(WhatsAppMessage.created_at.desc()).limit(10).all()
+
+        history = []
+        for m in reversed(history_msgs):
+            history.append({'role': 'assistant', 'content': m.content or ''})
+
+        answer, confidence, tokens = ask_ai(cred, restaurant, text, history)
+
+        if answer and confidence > 0:
+            # Verificar se deve transferir (baixa confiança)
+            transfer_threshold = getattr(cred, 'ai_transfer_threshold', 0.5) or 0.5
+            if confidence < transfer_threshold:
+                responses.append({
+                    'text': '👤 Vou transferir para um atendente que poderá ajudar melhor!'
+                })
+                _notify_establishment_human_needed(cred, restaurant, phone)
+                return True
+
+            responses.append({'text': answer})
+
+            # Log da resposta da IA
+            log = WhatsAppMessage(
+                restaurant_id=restaurant.id,
+                direction='outbound',
+                to_number=phone,
+                message_type='ai',
+                content=answer,
+                status='sent',
+            )
+            db.session.add(log)
+            db.session.commit()
+
+            return True
+
+        return False
+
+    except Exception as e:
+        logger.error(f'[AI] Erro no chatbot: {e}')
+        return False
 
 
 def _notify_establishment_human_needed(cred, restaurant, customer_phone):

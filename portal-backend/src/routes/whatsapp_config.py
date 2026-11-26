@@ -91,6 +91,7 @@ def update_config():
             'accept_pix', 'accept_cash', 'accept_card',
             'quick_reorder', 'post_delivery_rating',
             'chatbot_enabled', 'chatbot_transfer_to_human',
+            'ai_enabled',
         ]
         for field in bool_fields:
             if field in data:
@@ -120,6 +121,18 @@ def update_config():
             cred.chatbot_menu_items = data['chatbot_menu_items'] or None
         if 'chatbot_faq' in data:
             cred.chatbot_faq = data['chatbot_faq'] or None
+
+        # Campos IA (Fase 7)
+        ai_fields = ['ai_provider', 'ai_api_key', 'ai_model', 'ai_personality']
+        for field in ai_fields:
+            if field in data:
+                setattr(cred, field, data[field] or None)
+        if 'ai_monthly_limit' in data:
+            cred.ai_monthly_limit = int(data['ai_monthly_limit'] or 500)
+        if 'ai_token_limit' in data:
+            cred.ai_token_limit = int(data['ai_token_limit'] or 1000)
+        if 'ai_transfer_threshold' in data:
+            cred.ai_transfer_threshold = float(data['ai_transfer_threshold'] or 0.5)
 
         db.session.commit()
         return jsonify({'message': 'Configuração atualizada', 'config': cred.to_dict()}), 200
