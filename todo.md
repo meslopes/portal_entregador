@@ -274,6 +274,18 @@
 - [x] Ganhos pela loja DO PEDIDO em rotas multi-loja (cada loja paga a sua config) — corrigido em assign-driver/add-orders
 - [x] Smoke 17/17 (_tmp_smoke_f3_route.py: create multi-loja/intercalada/precedencia/embalagem/store_name/stop_seq/waypoints/assign 200+403/add-orders/loja-unica-sem-coleta/remove-limpa-coleta/auto-rota) + regressao: autoroute 6/6, reassign 7/7, fleet_f2 19/19
 
+## ✅ 2026-11-25/26 — WhatsApp Canal de Pedidos (CONCLUIDA)
+- [x] FASE 1: Fundação — WhatsAppCredential (15 configs) + WhatsAppMessage (log) + CRUD config + webhook handler multi-tenant (`e086c591`)
+- [x] FASE 2: Notificações — 6 templates de status + hooks no ciclo de vida + quiet hours (`0af16b52`)
+- [x] FASE 3: Pedido por catálogo — WhatsAppProduct + WhatsAppOrderSession + CRUD catálogo + fluxo pedido + Meta Catalog sync opcional (`c8499e84`)
+- [x] FASE 4: Endereço + GPS — reverse geocoding (Nominatim) + geocoding + confirmação configurável + raio máximo (`d4d703ff`)
+- [x] FASE 5: Pagamento + polimento — PIX/dinheiro/cartão + pedido rápido + avaliação estrelas (`e784557f`)
+- [x] FASE 6: Bot de atendimento — menu interativo (7 itens) + FAQ (12 respostas) + transferir humano (`90988726`)
+- [x] FASE 7: IA linguagem natural — OpenAI/Claude/Gemini multi-tenant + roteamento inteligente + limite mensal (`08949490`)
+- [x] Sandbox testado: conexão ✅ envio ✅ fluxo pedido ✅ cardápio (5 produtos) ✅
+- [x] TOTAL: 52 configurações (tudo configurável) — 8 modelos + 7 rotas principais
+- [ ] PENDENTE: publicar app na Meta para webhook real + configurar IA (Gemini free tier)
+
 ## ✅ 2026-11-25 — Ciclo de Configurabilidade (CONCLUIDA)
 - [x] FROTA F2 refinamentos: ganhos dos meus entregadores (base ve tudo, vinculada ve o que gerou) + deslocamento OSRM + UI vinculados sem gestao + fix metrics sem @jwt_required (`46e8232b`)
 - [x] FORMULA UNICA ganho plataforma: `calcular_ganho_plataforma()` — 10 duplicacoes em 5 arquivos → 1 funcao; fix hardcoded 0.65 em order_lifecycle (`9f039896`)
