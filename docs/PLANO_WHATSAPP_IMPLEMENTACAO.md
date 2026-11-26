@@ -17,6 +17,8 @@ Fase 2: Notificações (status do pedido)           ← VALOR IMEDIATO
 Fase 3: Pedido por catálogo                        ← O CORAÇÃO DO NEGÓCIO
 Fase 4: Endereço + GPS                             ← PRECISÃO
 Fase 5: Pagamento + polimento                      ← EXPERIÊNCIA COMPLETA
+Fase 6: Atendimento automatizado (regras)          ← EST NÃO PRECISA ATENDER
+Fase 7: Atendimento com IA (LLM)                   ← EXPERIÊNCIA NATURAL
 ```
 
 ---
@@ -258,6 +260,117 @@ Fase 5: Pagamento + polimento                      ← EXPERIÊNCIA COMPLETA
 
 ---
 
+## FASE 6 — Atendimento automatizado (regras)
+**Prioridade: 🟡 ALTA · Esforço: ~2–3 dias**
+
+> O estabelecimento NÃO precisa ficar atendendo clientes — o bot responde
+> automaticamente. Sem IA — usa botões, menus e fluxos pré-definidos.
+
+### 6.1 Menu principal interativo
+
+| # | Tarefa | Descrição |
+|---|--------|-----------|
+| 6.1.1 | Boas-vindas personalizada por EST | Nome, logo, horário de funcionamento |
+| 6.1.2 | Menu de botões | [Cardápio] [Fazer Pedido] [Meu Pedido] [Ajuda] [Falar com Atendente] |
+| 6.1.3 | Respostas rápidas (FAQ) | Horário, endereço, taxa de entrega, formas de pagamento |
+
+### 6.2 Fluxo de pedido automatizado
+
+| # | Tarefa | Descrição |
+|---|--------|-----------|
+| 6.2.1 | Navegação por categorias | [Pizzas] [Bebidas] [Sobremesas] → produtos |
+| 6.2.2 | Seleção de produtos | Botões com nome + preço |
+| 6.2.3 | Carrinho | "Seu pedido: 2× Calabresa, 1× Coca. Total: R$ 80" |
+| 6.2.4 | Confirmação | [Confirmar] [Editar] [Cancelar] |
+| 6.2.5 | Status automático | Templates de confirmação/preparo/entrega |
+
+### 6.3 Transferência para humano
+
+| # | Tarefa | Descrição |
+|---|--------|-----------|
+| 6.3.1 | Botão "Falar com Atendente" | Transfere para fila de atendimento |
+| 6.3.2 | Notificação ao EST | "Cliente precisa de atendimento humano" |
+| 6.3.3 | Fora do horário | "Deixe sua mensagem que responderemos em breve" |
+
+**Configurável (Fase 6):**
+| O que | Config | Por quem |
+|-------|--------|----------|
+| Bot de atendimento | `whatsapp_chatbot_enabled` (toggle) | EST |
+| Menu principal (itens) | `whatsapp_main_menu` (editável) | EST |
+| Boas-vindas (texto) | `whatsapp_welcome_message` (editável) | EST |
+| FAQ (perguntas/respostas) | `whatsapp_faq` (CRUD) | EST |
+| Horário de atendimento automático | `whatsapp_bot_hours` | EST |
+| Transferir para humano | `whatsapp_transfer_to_human` (toggle) | EST |
+| Mensagem fora do horário | `whatsapp_off_hours_message` | EST |
+
+**Entregável Fase 6:** bot atende clientes automaticamente — EST não precisa ficar no WhatsApp.
+
+---
+
+## FASE 7 — Atendimento com IA (LLM)
+**Prioridade: 🟢 DIFERENCIAL · Esforço: ~3–5 dias**
+
+> Experiência natural — cliente fala normalmente e a IA entende.
+> Plano "Premium" — custo adicional por interação.
+
+### 7.1 Integração com LLM
+
+| # | Tarefa | Arquivos | Esforço |
+|---|--------|----------|---------|
+| 7.1.1 | Escolher provedor (OpenAI / Claude / Gemini) | `src/services/ai_service.py` | 0,5d |
+| 7.1.2 | Chave API por tenant (multi-tenant) | modelo + config | 0,5d |
+| 7.1.3 | Prompt do sistema (contexto do EST) | `ai_service.py` | 0,5d |
+| 7.1.4 | Memória de conversa (contexto da sessão) | `src/services/whatsapp_session.py` | 0,5d |
+
+### 7.2 Capacidades da IA
+
+| # | Capacidade | Exemplo |
+|---|-----------|---------|
+| 7.2.1 | **Entender texto livre** | "Quero uma pizza grande de calabresa" |
+| 7.2.2 | **Responder perguntas** | "Vocês entregam no meu bairro?" |
+| 7.2.3 | **Recomendar produtos** | "Baseado no seu pedido, quer sobremesa?" |
+| 7.2.4 | **Lidar com reclamações** | "Meu pedido atrasou" |
+| 7.2.5 | **Confirmar pedido** | "Será 2× Calabresa + 1× Coca. Confirma?" |
+| 7.2.6 | **Extrair endereço** | "Rua das Flores, 123, Vila Mariana" |
+| 7.2.7 | **Traduzir/entender erros** | "Aqulai me manda uma coca" → entende |
+| 7.2.8 | **Transferir quando necessário** | Caso complexo → atendente humano |
+
+### 7.3 Roteamento inteligente
+
+| # | Tarefa | Descrição |
+|---|--------|-----------|
+| 7.3.1 | Se IA tem certeza → responde sozinha | Pedidos, FAQ, status |
+| 7.3.2 | Se IA não tem certeza → transfere | Casos complexos, reclamações |
+| 7.3.3 | Log de interações da IA | Auditoria + melhoria |
+| 7.3.4 | Feedback do EST | "A resposta da IA foi útil?" |
+
+### 7.4 Controle de custo
+
+| # | Tarefa | Descrição |
+|---|--------|-----------|
+| 7.4.1 | Limite de tokens/mês por EST | Evitar custos surpresa |
+| 7.4.2 | Cache de respostas frequentes | Reduz chamadas à IA |
+| 7.4.3 | Só usar IA para texto livre | Fluxos estruturados ficam no bot |
+| 7.4.4 | Relatório de uso | EST vê quantas interações da IA |
+
+**Configurável (Fase 7):**
+| O que | Config | Por quem |
+|-------|--------|----------|
+| Atendimento com IA | `whatsapp_ai_enabled` (toggle) | EST |
+| Provedor de IA | `whatsapp_ai_provider` (OpenAI/Claude/Gemini) | EST/ADM |
+| Personalidade da IA | `whatsapp_ai_personality` (tom, linguagem) | EST |
+| Limite de interações/mês | `whatsapp_ai_monthly_limit` | EST |
+| Limite de tokens | `whatsapp_ai_token_limit` | ADM |
+| Transferir quando não souber | `whatsapp_ai_transfer_threshold` | EST |
+| Base de conhecimento (produtos) | Automático do cardápio | — |
+| Base de conhecimento (FAQ) | `whatsapp_ai_knowledge` (editável) | EST |
+| Cache de respostas | `whatsapp_ai_cache_enabled` (toggle) | ADM |
+| Relatório de uso da IA | `whatsapp_ai_report` (toggle) | EST |
+
+**Entregável Fase 7:** IA atende clientes em linguagem natural — plano "Premium".
+
+---
+
 ## Resumo de fases
 
 | Fase | Nome | Prioridade | Esforço | Entregável |
@@ -267,7 +380,9 @@ Fase 5: Pagamento + polimento                      ← EXPERIÊNCIA COMPLETA
 | **3** | Pedido por catálogo | 🟡 Alta | 3–4 dias | Cliente faz pedido pelo WhatsApp |
 | **4** | Endereço + GPS | 🟡 Média | 1–2 dias | Endereço exato (GPS/texto) |
 | **5** | Pagamento + polimento | 🟢 Média | 2–3 dias | PIX, pedido rápido, avaliação |
-| **TOTAL** | | | **11–16 dias** | **Sistema completo** |
+| **6** | Atendimento automatizado (regras) | 🟡 Alta | 2–3 dias | Bot atende sem humano |
+| **7** | Atendimento com IA (LLM) | 🟢 Diferencial | 3–5 dias | IA entende linguagem natural |
+| **TOTAL** | | | **16–25 dias** | **Sistema completo + IA** |
 
 ---
 
@@ -280,7 +395,9 @@ Fase 1 (fundação)
   │
   ├──► Fase 3 (pedido catálogo) ──► Fase 4 (endereço) ──► Fase 5.1 (PIX)
   │
-  └──► Fase 5.2 (pedido rápido)
+  ├──► Fase 5.2 (pedido rápido)
+  │
+  └──► Fase 6 (bot regras) ──► Fase 7 (IA) ──► Plano Premium
 ```
 
 **Fase 1 é obrigatória antes de qualquer outra.**
@@ -299,12 +416,31 @@ Fases 2 e 3 podem ser paralelas após a Fase 1.
 
 ---
 
-## Modelo de custos (resumo)
+## Modelo de custos e planos de venda
 
-| Cenário (50 ESTs) | Custo MUV/mês | Receita/mês | Margem |
-|-------------------|:---:|:---:|:---:|
-| EST paga WhatsApp direto | R$ 300 | R$ 10.000 | 97% |
-| Híbrido (MUV paga + cobra) | R$ 800 | R$ 10.000 | 92% |
+### Planos por estabelecimento
+
+| Plano | O que inclui | Preço sugerido/EST/mês |
+|-------|-------------|:---:|
+| **Essencial** | Cardápio, pedido por botões, status, FAQ | Incluso na assinatura |
+| **Completo** | + bot de atendimento (regras), pedido rápido, avaliação | + R$ 30–50 |
+| **Premium** | + IA (linguagem natural, perguntas, recomendações) | + R$ 80–150 |
+
+### Custos operacionais (MUV)
+
+| Plano | Custo WhatsApp/EST | Custo IA/EST | Custo total/EST | Preço venda | Margem |
+|-------|:---:|:---:|:---:|:---:|:---:|
+| **Essencial** | R$ 40–80 | R$ 0 | R$ 40–80 | Incluso | ~80% |
+| **Completo** | R$ 40–80 | R$ 0 | R$ 40–80 | R$ 30–50 | ~50% |
+| **Premium** | R$ 40–80 | R$ 50–150 | R$ 90–230 | R$ 80–150 | ~60% |
+
+### Escala (50 estabelecimentos)
+
+| Cenário | Custo MUV/mês | Receita/mês | Margem |
+|---------|:---:|:---:|:---:|
+| Todos Essencial | R$ 2.000–4.000 | R$ 10.000 (assinatura) | 60–80% |
+| 30 Essencial + 20 Premium | R$ 4.000–8.600 | R$ 13.000–15.000 | 50–70% |
+| Todos Premium | R$ 4.500–11.500 | R$ 16.000–20.000 | 50–70% |
 
 ---
 
@@ -322,7 +458,9 @@ Nada é fixo — cada cliente ajusta ao seu modo de trabalho.
 | 3 — Pedido | 10 | Cardápio, pedido mínimo, pagamento, confirmação auto/manual |
 | 4 — Endereço | 6 | GPS, texto, confirmação, área de atendimento |
 | 5 — Pagamento | 8 | PIX, dinheiro, cartão, pedido rápido, avaliação, promoções |
-| **TOTAL** | **35 configs** | |
+| 6 — Bot regras | 7 | Menu principal, FAQ, boas-vindas, transferir humano |
+| 7 — IA | 10 | Provedor IA, personalidade, limite tokens, base conhecimento |
+| **TOTAL** | **52 configs** | |
 
 ### Quem configura o quê
 
