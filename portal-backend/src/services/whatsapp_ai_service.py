@@ -180,8 +180,13 @@ def _ask_gemini(config, messages):
             'parts': [{'text': m['content']}],
         })
 
+    model = config.get('model') or 'gemini-2.5-flash'
+    # Remover prefixo "models/" se presente
+    if model.startswith('models/'):
+        model = model[7:]
+
     resp = requests.post(
-        f'{PROVIDERS["gemini"]}?key={config["api_key"]}',
+        f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={config["api_key"]}',
         headers={'Content-Type': 'application/json'},
         json={
             'contents': contents,
