@@ -248,6 +248,13 @@ def accept_order(order_id):
         # Callback para plataforma externa (iFood, etc.)
         send_platform_callback(order, 'ACCEPTED')
 
+        # WhatsApp Fase 2: notificar confirmação
+        try:
+            from src.services.whatsapp_notify import notify_status_change
+            notify_status_change(order, 'CONFIRMED')
+        except Exception as _wn:
+            logger.warning(f'[WHATSAPP NOTIFY] falhou: {_wn}')
+
         order_dict = order.to_dict()
         order_dict['restaurant'] = order.restaurant.to_dict()
         order_dict['customer'] = order.customer.to_dict() if order.customer else None

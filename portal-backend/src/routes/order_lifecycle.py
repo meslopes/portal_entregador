@@ -390,6 +390,13 @@ def update_order_status(order_id):
         # Callback para plataforma externa (iFood, etc.)
         send_platform_callback(order, new_status_enum.value)
 
+        # WhatsApp Fase 2: notificar status do pedido
+        try:
+            from src.services.whatsapp_notify import notify_status_change
+            notify_status_change(order, new_status_enum)
+        except Exception as _wn:
+            logger.warning(f'[WHATSAPP NOTIFY] falhou: {_wn}')
+
         # Envia notificacao WhatsApp (se configurado)
         try:
             from src.services.whatsapp import whatsapp_service
@@ -586,6 +593,13 @@ def cancel_order(order_id):
 
         # Callback para plataforma externa (iFood, etc.)
         send_platform_callback(order, 'CANCELLED')
+
+        # WhatsApp: notificar cancelamento
+        try:
+            from src.services.whatsapp_notify import notify_status_change
+            notify_status_change(order, 'CANCELLED')
+        except Exception as _wn:
+            logger.warning(f'[WHATSAPP NOTIFY] falhou: {_wn}')
 
         response_data = {
             'message': 'Pedido cancelado com sucesso',
