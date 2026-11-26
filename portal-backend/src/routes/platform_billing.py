@@ -453,6 +453,16 @@ def generate_platform_invoice(sub_id):
         invoice_number = f"PLAT-{sub.tenant_id:04d}-{count + 1:04d}"
         due_date = now + timedelta(days=7 if sub.billing_cycle == 'WEEKLY' else 30)
 
+        # Verificar se já existe fatura para este período (evitar duplicação — 2026-11-26)
+        existing = PlatformInvoice.query.filter_by(
+            tenant_id=sub.tenant_id
+        ).filter(
+            PlatformInvoice.period_start == period_start,
+            PlatformInvoice.period_end == now
+        ).first()
+        if existing:
+            return jsonify({'error': f'Já existe fatura para este período ({existing.invoice_number}).'}), 400
+
         invoice = PlatformInvoice(
             tenant_id=sub.tenant_id,
             invoice_number=invoice_number,
@@ -584,6 +594,26 @@ def pay_platform_invoice(invoice_id):
             sub.total_paid = float(sub.total_paid or 0) + float(invoice.total_amount)
         db.session.commit()
         return jsonify({'message': 'Fatura marcada como paga'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_billing_bp.route('/billing/invoices/<int:invoice_id>', methods=['DELETE'])
+@jwt_required()
+def delete_platform_invoice(invoice_id):
+    """Excluir fatura da plataforma (admin pode remover faturas indevidas/duplicadas)."""
+    try:
+        invoice = PlatformInvoice.query.get(invoice_id)
+        if not invoice:
+            return jsonify({'error': 'Fatura não encontrada'}), 404
+
+        if invoice.status == 'PAID':
+            return jsonify({'error': 'Não é possível excluir fatura já paga'}), 400
+
+        db.session.delete(invoice)
+        db.session.commit()
+        return jsonify({'message': 'Fatura excluída'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

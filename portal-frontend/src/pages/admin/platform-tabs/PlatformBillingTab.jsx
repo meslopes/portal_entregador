@@ -165,6 +165,17 @@ const PlatformBillingTab = () => {
     }
   };
 
+  const handleDeleteInvoice = async (invoiceId) => {
+    if (!confirm('Excluir esta fatura? Esta ação não pode ser desfeita.')) return;
+    try {
+      await api.delete(`/api/platform/billing/invoices/${invoiceId}`);
+      showToast('Fatura excluída', 'success');
+      load();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Erro ao excluir fatura', 'error');
+    }
+  };
+
   const nomeModo = (m) => MODOS.find(x => x.value === (m || 'SNAPSHOT'))?.label || m;
 
   const faixasDoForm = form.order_price_tiers;
@@ -447,9 +458,15 @@ const PlatformBillingTab = () => {
                 <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>{i.due_date ? new Date(i.due_date).toLocaleDateString('pt-BR') : '—'}</td>
                 <td style={{ padding: '0.75rem 1rem' }}>
                   {i.status !== 'PAID' && (
-                    <button onClick={() => handlePay(i.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#16a34a', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
-                      <CheckCircle size={13} /> Marcar Paga
-                    </button>
+                    <>
+                      <button onClick={() => handlePay(i.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#16a34a', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                        <CheckCircle size={13} /> Marcar Paga
+                      </button>
+                      <button onClick={() => handleDeleteInvoice(i.id)} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', background: '#dc2626', color: 'white', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+                        <Trash2 size={13} /> Excluir
+                      </button>
+                    </>
+                  )}
                   )}
                 </td>
               </tr>
