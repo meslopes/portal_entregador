@@ -184,7 +184,7 @@ const DriverRouteMap = () => {
 
       // Enviar GPS para o backend (a cada atualização)
       try {
-        const token = localStorage.getItem('own_driver_token') || localStorage.getItem('token');
+        const token = sessionStorage.getItem('') || sessionStorage.getItem('');
         if (token) {
           import('@/lib/api').then(({ driverService }) => {
             driverService.updateLocation(lat, lng).catch(() => {});

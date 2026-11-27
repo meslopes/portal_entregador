@@ -21,7 +21,7 @@ const OwnDriverLoginPage = () => {
     try {
       setLoading(true);
       const res = await api.post('/api/own-driver/login', { phone, pin });
-      localStorage.setItem('own_driver_token', res.data.token);
+      sessionStorage.setItem('', res.data.token);
 
       // Registrar FCM token para push notifications (ofertas)
       try {

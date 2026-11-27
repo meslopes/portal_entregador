@@ -23,7 +23,7 @@ const LoginPage = () => {
     setAccountOptions(null);
     try {
       const response = await login(formData.email, formData.password, userType);
-      const user = response?.user || JSON.parse(localStorage.getItem('user'));
+      const user = response?.user || JSON.parse(sessionStorage.getItem(''));
       navigateToDashboard(user);
     } catch {
       // erro tratado no contexto
@@ -54,7 +54,7 @@ const LoginPage = () => {
     setAccountOptions(null);
     try {
       const response = await login(formData.email, formData.password);
-      const user = response?.user || JSON.parse(localStorage.getItem('user'));
+      const user = response?.user || JSON.parse(sessionStorage.getItem(''));
       navigateToDashboard(user);
     } catch (err) {
       // Se 409 - múltiplas contas, mostrar seletor

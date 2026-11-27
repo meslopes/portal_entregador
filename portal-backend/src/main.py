@@ -40,7 +40,7 @@ app.config['JWT_SECRET_KEY'] = jwt_secret_key or 'dev-jwt-secret-key-local-nao-u
 # Token JWT: 8h (mesmo valor de config.py — fonte única)
 from datetime import timedelta
 
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=8)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=4)  # SEGURANÇA: reduzido de 8h para 4h
 
 # Configuração do banco de dados
 database_url = os.getenv('DATABASE_URL', f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}")

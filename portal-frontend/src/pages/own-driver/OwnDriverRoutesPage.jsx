@@ -103,7 +103,7 @@ const OwnDriverRoutesPage = () => {
   const loadRoutes = async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
-      const token = localStorage.getItem('own_driver_token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get('/api/routes/own-driver/active', { headers });
       const allRoutes = res.data.routes || [];
@@ -126,7 +126,7 @@ const OwnDriverRoutesPage = () => {
 
   const acceptRoute = async (routeId) => {
     try {
-      const token = localStorage.getItem('own_driver_token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/routes/${routeId}/accept`, {}, { headers });
       loadRoutes();
@@ -138,7 +138,7 @@ const OwnDriverRoutesPage = () => {
   const rejectRoute = async (routeId) => {
     if (!(await confirmAsync('Tem certeza que deseja rejeitar esta rota? O estabelecimento será notificado.'))) return;
     try {
-      const token = localStorage.getItem('own_driver_token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/routes/${routeId}/reject`, {}, { headers });
       loadRoutes();
@@ -165,7 +165,7 @@ const OwnDriverRoutesPage = () => {
     try {
       setDelivering(true);
       setError('');
-      const token = localStorage.getItem('own_driver_token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
 
       let locationData = {};

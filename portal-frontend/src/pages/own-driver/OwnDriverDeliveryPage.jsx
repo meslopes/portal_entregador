@@ -30,7 +30,7 @@ const OwnDriverDeliveryPage = () => {
   const loadOrder = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('own_driver_token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get(`/api/own-driver/orders?status=all`, { headers });
       const found = res.data.orders.find(o => o.id === parseInt(orderId));
@@ -65,7 +65,7 @@ const OwnDriverDeliveryPage = () => {
     try {
       setUpdating(true);
       setError('');
-      const token = localStorage.getItem('own_driver_token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
 
       let locationData = {};

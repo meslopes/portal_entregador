@@ -173,11 +173,11 @@ export const startOrderMonitor = (onNewOrders) => {
     try {
       if (!soundEnabled) return;
 
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (!token) return;
 
       // Não fazer polling para entregadores — o OrderOfferPopup já cuida disso
-      const userStr = localStorage.getItem('user');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
         try {
           const user = JSON.parse(userStr);

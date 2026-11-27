@@ -94,11 +94,14 @@ const AdminDashboardPage = () => {
   };
 
   const loadTenants = async () => {
+    // SEGURANÇA: só super admin lista tenants (endpoint /api/platform/)
     try {
+      const userRes = await api.get('/api/user/profile');
+      if (!userRes.data.is_super_admin) return;
       const response = await api.get('/api/platform/tenants');
       setTenants(response.data.tenants || []);
     } catch {
-      console.log('Tenants not available');
+      // Silencioso
     }
   };
 

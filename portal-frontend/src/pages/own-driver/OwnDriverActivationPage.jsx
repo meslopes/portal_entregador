@@ -1,13 +1,13 @@
-ï»¿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Bike, Lock, AlertCircle, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/api';
 
 /**
- * AtivaÃ§Ã£o do entregador prÃ³prio (OpÃ§Ã£o 2 do Enviar Acesso).
- * O estabelecimento gera o link em "Meus Entregadores" â†’ Enviar Acesso â†’
- * Link de ativaÃ§Ã£o. O entregador abre e define o PRÃ“PRIO PIN â€” nenhum
- * segredo Ã© transmitido (padrÃ£o do convite de admin).
+ * Ativação do entregador próprio (Opção 2 do Enviar Acesso).
+ * O estabelecimento gera o link em "Meus Entregadores" ? Enviar Acesso ?
+ * Link de ativação. O entregador abre e define o PRÓPRIO PIN — nenhum
+ * segredo é transmitido (padrão do convite de admin).
  */
 const OwnDriverActivationPage = () => {
   const { token } = useParams();
@@ -32,7 +32,7 @@ const OwnDriverActivationPage = () => {
         }
       } catch (err) {
         setStatus(err.response?.status === 404 ? 'NOT_FOUND' : 'ERRO');
-        setErro(err.response?.data?.error || 'NÃ£o foi possÃ­vel verificar o link');
+        setErro(err.response?.data?.error || 'Não foi possível verificar o link');
       } finally {
         setLoading(false);
       }
@@ -43,13 +43,13 @@ const OwnDriverActivationPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErro('');
-    if (pin.length !== 4) { setErro('O PIN deve ter 4 dÃ­gitos'); return; }
-    if (pin !== confirmarPin) { setErro('Os PINs nÃ£o conferem'); return; }
+    if (pin.length !== 4) { setErro('O PIN deve ter 4 dígitos'); return; }
+    if (pin !== confirmarPin) { setErro('Os PINs não conferem'); return; }
     try {
       setAtivando(true);
       const res = await api.post(`/api/own-driver/activation/${token}`, { pin });
-      // Auto-login â€” mesmo formato do login com telefone + PIN
-      localStorage.setItem('own_driver_token', res.data.token);
+      // Auto-login — mesmo formato do login com telefone + PIN
+      sessionStorage.setItem('', res.data.token);
       localStorage.setItem('own_driver_data', JSON.stringify({
         id: res.data.driver?.id,
         name: res.data.driver?.name,
@@ -67,10 +67,10 @@ const OwnDriverActivationPage = () => {
   };
 
   const mensagens = {
-    EXPIRED: 'Este link expirou. PeÃ§a um novo link ao estabelecimento.',
-    USED: 'Este link jÃ¡ foi utilizado. Se vocÃª jÃ¡ definiu seu PIN, faÃ§a login normalmente.',
-    NOT_FOUND: 'Link invÃ¡lido. PeÃ§a um novo link ao estabelecimento.',
-    ERRO: 'NÃ£o foi possÃ­vel verificar o link. Tente novamente.',
+    EXPIRED: 'Este link expirou. Peça um novo link ao estabelecimento.',
+    USED: 'Este link já foi utilizado. Se você já definiu seu PIN, faça login normalmente.',
+    NOT_FOUND: 'Link inválido. Peça um novo link ao estabelecimento.',
+    ERRO: 'Não foi possível verificar o link. Tente novamente.',
   };
 
   return (
@@ -94,7 +94,7 @@ const OwnDriverActivationPage = () => {
             muv.log
           </h1>
           <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-            AtivaÃ§Ã£o da conta do entregador
+            Ativação da conta do entregador
           </p>
         </div>
 
@@ -124,7 +124,7 @@ const OwnDriverActivationPage = () => {
             }}>
               <CheckCircle size={16} style={{ verticalAlign: 'middle', marginRight: '0.375rem' }} />
               Bem-vindo, <strong>{dados.driver_name}</strong>!
-              {dados.restaurant_name && <> VocÃª foi cadastrado no <strong>{dados.restaurant_name}</strong>.</>}
+              {dados.restaurant_name && <> Você foi cadastrado no <strong>{dados.restaurant_name}</strong>.</>}
             </div>
 
             {erro && (
@@ -141,7 +141,7 @@ const OwnDriverActivationPage = () => {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                  Escolha seu PIN (4 dÃ­gitos)
+                  Escolha seu PIN (4 dígitos)
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Lock size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
@@ -192,7 +192,7 @@ const OwnDriverActivationPage = () => {
                   }}
                 />
                 {confirmarPin && confirmarPin !== pin && (
-                  <p style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.375rem' }}>Os PINs nÃ£o conferem</p>
+                  <p style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.375rem' }}>Os PINs não conferem</p>
                 )}
               </div>
 
@@ -213,7 +213,7 @@ const OwnDriverActivationPage = () => {
             </form>
 
             <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '1.25rem', lineHeight: 1.6 }}>
-              Guarde este PIN â€” Ã© com ele que vocÃª entra no app.
+              Guarde este PIN — é com ele que você entra no app.
             </p>
           </>
         )}

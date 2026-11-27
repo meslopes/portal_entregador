@@ -15,7 +15,7 @@ export const SquareProvider = ({ children }) => {
   useEffect(() => {
     const validateSquare = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const user = JSON.parse(sessionStorage.getItem('') || '{}');
         // Apenas admins precisam validar praças
         if (!user || user.user_type !== 'ADMIN') return;
 

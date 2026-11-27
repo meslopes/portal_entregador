@@ -41,6 +41,9 @@ const PlatformBillingTab = () => {
   const load = useCallback(async () => {
     try {
       setLoading(true);
+      // SEGURANÇA: só super admin acessa dados da plataforma
+      const userRes = await api.get('/api/user/profile');
+      if (!userRes.data.is_super_admin) return;
       const [s, i, t] = await Promise.all([
         api.get('/api/platform/billing/subscriptions'),
         api.get('/api/platform/billing/invoices'),

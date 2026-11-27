@@ -21,7 +21,7 @@ api.interceptors.request.use(
   (config) => {
     // Não sobrescrever se já tem Authorization (ex: own-driver token)
     if (!config.headers.Authorization) {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -85,13 +85,13 @@ api.interceptors.response.use(
       // Verificar se é rota de own-driver
       const isOwnDriverRequest = error.config?.url?.includes('/api/own-driver/');
       if (isOwnDriverRequest) {
-        localStorage.removeItem('own_driver_token');
+        sessionStorage.removeItem('own_driver_token');
         localStorage.removeItem('own_driver_data');
         localStorage.removeItem('own_driver_restaurant');
         window.location.href = '/own-driver/login';
       } else {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('');
         window.location.href = '/login';
       }
       // Reseta flag após 2s para permitir novo redirect se necessário
@@ -100,8 +100,8 @@ api.interceptors.response.use(
 
     // Entregador convertido de plataforma para próprio — forçar redirect
     if (error.response?.status === 409 && error.response?.data?.error === 'convertido_proprio') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('');
+      sessionStorage.removeItem('');
       alert('Você foi transferido para entregador próprio. Faça login novamente pelo aplicativo de entregador próprio.');
       window.location.href = '/own-driver/login';
       return Promise.reject(error);

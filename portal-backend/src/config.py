@@ -16,7 +16,7 @@ class Config:
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
     # 8h: cobre um turno de entrega sem expirar no meio do trabalho.
     # Valor único — main.py e main_production.py importam daqui.
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=4)  # SEGURANÇA: reduzido de 8h para 4h
 
     # Configurações do banco de dados
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///src/database/app.db')
@@ -36,7 +36,8 @@ class Config:
         "https://muvlog.vercel.app",
         "https://muvlog-frontend.vercel.app",
         "https://portal-entregador-gamma.vercel.app",
-        "https://portal-entregador.vercel.app",`n        "https://portal-frontend-sepia.vercel.app",
+        "https://portal-entregador.vercel.app",
+        "https://portal-frontend-sepia.vercel.app",
     ]
 
     # Configurações de logging

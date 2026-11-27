@@ -24,7 +24,7 @@ const AdminEstablishmentsPage = () => {
   const [tenants, setTenants] = useState([]);
   const [pendingEstablishments, setPendingEstablishments] = useState([]);
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('') || '{}');
   const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   const [showForm, setShowForm] = useState(false);

@@ -33,7 +33,7 @@ const AdminDriversPage = () => {
   const [establishments, setEstablishments] = useState([]);
 
   // Verificar se é super admin
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('') || '{}');
   const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   // Modal states
@@ -156,7 +156,7 @@ const AdminDriversPage = () => {
   };
 
   const loadSquares = async () => { try { const data = await adminService.getSquares(); setSquares(data.squares || []); } catch { /* intentionally empty */ } };
-  const loadTenants = async () => { try { const res = await api.get('/api/platform/tenants'); setTenants(res.data.tenants || []); } catch { /* intentionally empty */ } };
+  const loadTenants = async () => { try { const userRes = await api.get('/api/user/profile'); if (!userRes.data.is_super_admin) return; const res = await api.get('/api/platform/tenants'); setTenants(res.data.tenants || []); } catch { /* silencioso */ } };
 
   const handleConvertToOwn = async () => {
     const select = document.getElementById('convert-restaurant');

@@ -85,12 +85,26 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Carrega dados do localStorage na inicialização
+  // PROTEÇÃO B: Detector de mudança de token (previne sessão invadida)
+  useEffect(() => {
+    const checkTokenChange = () => {
+      const currentToken = sessionStorage.getItem('token');
+      if (state.token && currentToken && currentToken !== state.token) {
+        console.warn('⚠️ Token alterado externamente — recarregando sessão');
+        window.location.reload();
+      }
+    };
+    const interval = setInterval(checkTokenChange, 5000); // Verifica a cada 5s
+    return () => clearInterval(interval);
+  }, [state.token]);
+
+  // PROTEÇÃO A: sessionStorage (isola por aba — previne conflito multi-aba)
+  // Carrega dados do sessionStorage na inicialização
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const user = localStorage.getItem('user');
+        const token = sessionStorage.getItem('token');
+        const user = sessionStorage.getItem('user');
 
         if (token && user) {
           // Verifica se o token ainda é válido
@@ -106,9 +120,9 @@ export const AuthProvider = ({ children }) => {
           dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
         }
       } catch {
-        // Token inválido, remove do localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // Token inválido, remove do sessionStorage
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       }
     };
@@ -129,9 +143,9 @@ export const AuthProvider = ({ children }) => {
         throw { response: { status: 409, data: response } };
       }
       
-      // Salva no localStorage apenas campos não-sensíveis (sem CPF/telefone)
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
+      // Salva no sessionStorage (isola por aba)
+      sessionStorage.setItem('token', response.access_token);
+      sessionStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -171,9 +185,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.register(userData);
       
-      // Salva no localStorage apenas campos não-sensíveis (sem CPF/telefone)
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
+      // Salva no sessionStorage (isola por aba)
+      sessionStorage.setItem('token', response.access_token);
+      sessionStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -196,14 +210,14 @@ export const AuthProvider = ({ children }) => {
 
   // Função de logout
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
   };
 
   // Função para atualizar dados do usuário
   const updateUser = (userData) => {
-    localStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(userData)));
+    sessionStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(userData)));
     dispatch({
       type: AUTH_ACTIONS.UPDATE_USER,
       payload: userData,

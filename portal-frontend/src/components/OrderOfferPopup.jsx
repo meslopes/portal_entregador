@@ -15,11 +15,11 @@ const OrderOfferPopup = () => {
 
   const checkForOffers = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('');
       if (!token) return;
 
       // Verificar se o usuario e um entregador
-      const userStr = localStorage.getItem('user');
+      const userStr = sessionStorage.getItem('');
       if (!userStr) return;
       const user = JSON.parse(userStr);
       if (user.user_type !== 'DRIVER') return;

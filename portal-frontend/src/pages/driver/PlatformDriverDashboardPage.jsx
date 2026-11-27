@@ -34,7 +34,7 @@ const PlatformDriverDashboardPage = () => {
   const loadData = useCallback(async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
 
       const [routesRes, statsRes, scoreRes] = await Promise.all([
@@ -66,7 +66,7 @@ const PlatformDriverDashboardPage = () => {
 
   const acceptRoute = async (routeId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/platform-routes/${routeId}/accept`, {}, { headers });
       loadData();
@@ -78,7 +78,7 @@ const PlatformDriverDashboardPage = () => {
   const rejectRoute = async (routeId) => {
     if (!(await confirmAsync('Rejeitar esta rota?'))) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/platform-routes/${routeId}/reject`, {}, { headers });
       loadData();
@@ -89,7 +89,7 @@ const PlatformDriverDashboardPage = () => {
 
   const completeStop = async (routeId, stopId) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/platform-routes/${routeId}/complete-stop`, { stop_id: stopId }, { headers });
       loadData(true);
