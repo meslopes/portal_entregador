@@ -490,7 +490,10 @@ def edit_order(order_id):
             order.special_instructions = sanitize_customer_instructions(data['special_instructions'])
 
         if 'delivery_fee' in data:
-            order.delivery_fee = float(data['delivery_fee'])
+            _fee = float(data['delivery_fee'])
+            if _fee < 0:
+                return jsonify({'error': 'Frete não pode ser negativo'}), 400
+            order.delivery_fee = _fee
             order.total_amount = float(order.subtotal or 0) + float(data['delivery_fee'])
 
         order.updated_at = datetime.now(timezone.utc)
@@ -907,12 +910,23 @@ def create_order():
         # Obter tenant_id do usuário atual
         tenant_id = get_current_tenant_id()
 
-        # Usar frete calculado pelo frontend (que usa OSRM para distância real)
-        # O frontend já calculou com a distância real via rota
-        delivery_fee = float(data.get('delivery_fee', 0))
+        # SEGURANÇA (auditoria 2026-11-26): sempre calcular frete no servidor.
+        # NÃO confiar no valor do cliente — recalcular pela tabela de preços.
+        delivery_fee = 0.0
+        try:
+            from src.services.order_helpers import calcular_frete_tabela, resolve_pricing_table
+            pt = resolve_pricing_table(restaurant, for_platform=not getattr(restaurant, 'has_own_drivers', False))
+            if pt and restaurant.latitude and address and address.latitude:
+                from src.utils.geo import haversine_distance
+                _km = haversine_distance(
+                    float(restaurant.latitude), float(restaurant.longitude),
+                    float(address.latitude), float(address.longitude)
+                )
+                delivery_fee, _ppk, _mkm, _det = calcular_frete_tabela(pt, _km)
+        except Exception:
+            pass
 
-        # Se o frontend não enviou frete, calcular com haversine como fallback
-        # Fonte única de preços: tabela do estabelecimento → tabela padrão da praça
+        # Se não conseguiu calcular, usar o valor do cliente (fallback)
         if delivery_fee <= 0:
             from src.services.order_helpers import calcular_frete_tabela, resolve_pricing_table
             pt = resolve_pricing_table(restaurant, for_platform=not getattr(restaurant, 'has_own_drivers', False))
@@ -972,6 +986,15 @@ def create_order():
                 return jsonify({'error': f'Item {i} deve ser um objeto'}), 400
             if 'name' not in item:
                 return jsonify({'error': f'Item {i} deve ter o campo name'}), 400
+        # SEGURANÇA (auditoria 2026-11-26): validar quantity >= 1 e price >= 0
+        if items:
+            for item in items:
+                qty = int(item.get('quantity', 1))
+                price = float(item.get('price', 0))
+                if qty < 1 or qty > 1000:
+                    return jsonify({'error': 'Quantidade inválida (1-1000)'}), 400
+                if price < 0:
+                    return jsonify({'error': 'Preço não pode ser negativo'}), 400
         subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 1)) for item in items) if items else 0
         total_amount = subtotal + delivery_fee
 

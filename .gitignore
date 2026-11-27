@@ -55,3 +55,6 @@ tmp_*.py
 *.docx
 package-lock.json
 .vercel
+
+# Backups (contém dados sensíveis)
+backups/

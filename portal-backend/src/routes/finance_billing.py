@@ -551,11 +551,22 @@ def get_invoices():
 @finance_billing_bp.route('/invoices/<int:invoice_id>/pay', methods=['POST'])
 @jwt_required()
 def pay_invoice(invoice_id):
-    """Marca uma fatura como paga"""
+    """Marca uma fatura como paga — SEGURANÇA: só admin do tenant."""
     try:
+        user = User.query.get(int(get_jwt_identity()))
+        if not user:
+            return jsonify({'error': 'Não autorizado'}), 401
+
         invoice = SubscriptionInvoice.query.get(invoice_id)
         if not invoice:
             return jsonify({'error': 'Fatura não encontrada'}), 404
+
+        # SEGURANÇA (auditoria 2026-11-26): só admin do tenant
+        if user.user_type != UserType.ADMIN:
+            return jsonify({'error': 'Apenas administradores'}), 403
+        if not user.is_super_admin and user.tenant_id:
+            if invoice.subscription and invoice.subscription.tenant_id != user.tenant_id:
+                return jsonify({'error': 'Acesso negado'}), 403
 
         data = request.get_json() or {}
         payment_method = data.get('payment_method', 'PIX')

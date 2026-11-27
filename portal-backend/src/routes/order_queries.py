@@ -309,8 +309,23 @@ def get_order_details(order_id):
             return jsonify({'error': 'Pedido não encontrado'}), 404
 
         # Verifica permissão
+        # SEGURANÇA (auditoria 2026-11-26): ownership check para TODOS os tipos
         if user.user_type == UserType.DRIVER and (not user.driver or order.driver_id != user.driver.id):
             return jsonify({'error': 'Acesso negado'}), 403
+
+        # CLIENT: só vê pedidos do seu estabelecimento
+        if user.user_type == UserType.CLIENT:
+            customer = Customer.query.filter_by(user_id=user.id).first()
+            if customer:
+                from src.utils.restaurant import find_restaurant_by_name
+                user_restaurant = find_restaurant_by_name(customer.name)
+                if user_restaurant and order.restaurant_id != user_restaurant.id:
+                    return jsonify({'error': 'Acesso negado'}), 403
+
+        # ADMIN: precisa ser do mesmo tenant (exceto super admin)
+        if user.user_type == UserType.ADMIN and not user.is_super_admin:
+            if user.tenant_id and order.tenant_id != user.tenant_id:
+                return jsonify({'error': 'Acesso negado'}), 403
 
         order_dict = order.to_dict()
         order_dict['restaurant'] = order.restaurant.to_dict() if order.restaurant else None

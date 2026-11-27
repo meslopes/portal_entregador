@@ -434,7 +434,10 @@ def get_user_details(user_id):
 
             return jsonify({'error': 'Usuário não encontrado'}), 404
 
-
+        # SEGURANÇA (auditoria 2026-11-26): tenant check
+        _tid = get_current_tenant_id()
+        if _tid and user.tenant_id != _tid:
+            return jsonify({'error': 'Acesso negado'}), 403
 
         user_dict = user.to_dict(include_sensitive=True)
 
