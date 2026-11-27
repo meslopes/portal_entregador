@@ -151,6 +151,18 @@ const AdminSettingsPage = () => {
         </div>
       </div>
 
+      {/* Botão de salvar também no rodapé — telas longas não exigem voltar ao topo */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+        <button onClick={handleSave} disabled={saving} style={{
+          display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1.25rem',
+          borderRadius: '0.5rem', border: 'none', background: '#2563eb', color: 'white',
+          fontSize: '0.875rem', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
+          opacity: saving ? 0.7 : 1
+        }}>
+          <Save size={16} /> {saving ? 'Salvando...' : 'Salvar Tudo'}
+        </button>
+      </div>
+
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         .settings-grid { grid-template-columns: 250px 1fr; }
