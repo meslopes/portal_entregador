@@ -202,7 +202,7 @@ const ClientDashboardPage = () => {
 
       const deliveryMarker = L.marker([addr.latitude, addr.longitude], { icon: deliveryIcon })
         .addTo(map)
-        .bindPopup(`<div style="min-width:160px"><strong>Pedido #${escapeHtml(addr.order_number)}</strong><br><small>${escapeHtml(addr.customer_name)}</small><br><small>${escapeHtml(addr.street) || ''}, ${escapeHtml(addr.neighborhood) || ''}</small><br><span style="color:${color};font-weight:600">${escapeHtml(addr.order_status)}</span></div>`);
+        .bindPopup(`<div style="min-width:160px"><strong>Pedido #${escapeHtml(addr.seq_number ?? addr.order_number)}</strong><br><small>${escapeHtml(addr.customer_name)}</small><br><small>${escapeHtml(addr.street) || ''}, ${escapeHtml(addr.neighborhood) || ''}</small><br><span style="color:${color};font-weight:600">${escapeHtml(addr.order_status)}</span></div>`);
 
       markersRef.current.push(deliveryMarker);
       bounds.push([addr.latitude, addr.longitude]);
@@ -254,7 +254,7 @@ const ClientDashboardPage = () => {
       });
 
       const popupHtml = driver.order_id
-        ? `<div style="min-width:160px"><strong>${driver.name}</strong> ${driver.is_own ? '<span style="color:#8b5cf6">(Próprio)</span>' : ''}<br><small>${driver.vehicle_type}</small><br><small>Pedido: #${driver.order_number}</small><br><span style="color:${color};font-weight:600">${label}</span></div>`
+        ? `<div style="min-width:160px"><strong>${driver.name}</strong> ${driver.is_own ? '<span style="color:#8b5cf6">(Próprio)</span>' : ''}<br><small>${driver.vehicle_type}</small><br><small>Pedido: #${escapeHtml(driver.seq_number ?? driver.order_number)}</small><br><span style="color:${color};font-weight:600">${label}</span></div>`
         : `<div style="min-width:160px"><strong>${driver.name}</strong> <span style="color:#8b5cf6">(Próprio)</span><br><small>${driver.vehicle_type}</small><br><span style="color:#8b5cf6;font-weight:600">Disponível</span></div>`;
 
       const marker = L.marker([driver.latitude, driver.longitude], { icon })

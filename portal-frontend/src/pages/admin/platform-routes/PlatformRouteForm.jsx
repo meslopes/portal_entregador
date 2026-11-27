@@ -70,7 +70,7 @@ const PlatformRouteForm = ({
                       style={{ cursor: 'pointer' }}
                     />
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
+                      <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.seq_number ?? order.order_number}</p>
                       <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.customer?.name} • {order.delivery_address?.street}</p>
                     </div>
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.status}</span>

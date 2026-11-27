@@ -14,7 +14,7 @@ const OrderCard = ({ order, onAccept, onReject, isAccepting, isRejecting, calcul
             <ShoppingCart size={18} style={{ color: '#2563eb' }} />
           </div>
           <div>
-            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Pedido #{order.order_number}</p>
+            <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>Pedido #{order.seq_number ?? order.order_number}</p>
             <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.items?.length || 0} ite{order.items?.length !== 1 ? 'ns' : 'm'}</p>
           </div>
         </div>
@@ -128,7 +128,7 @@ const ActiveOrderCard = ({ order }) => {
               <Package size={14} style={{ color: config.color }} />
             </div>
             <div>
-              <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>#{order.order_number}</p>
+              <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>#{order.seq_number ?? order.order_number}</p>
               <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{order.restaurant?.name}</p>
             </div>
           </div>

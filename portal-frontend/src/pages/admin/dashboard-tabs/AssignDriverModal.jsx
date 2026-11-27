@@ -28,7 +28,7 @@ export default function AssignDriverModal({
         </div>
         <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
           <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Pedido</p>
-          <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b' }}>#{orderToAssign.order_number}</p>
+          <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b' }}>#{orderToAssign.seq_number ?? orderToAssign.order_number}</p>
           <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
             {orderToAssign.restaurant?.name} → {orderToAssign.customer?.name}
           </p>

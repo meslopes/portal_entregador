@@ -92,7 +92,7 @@ const OrderInfoSection = ({ order }) => {
                 </p>
                 {(order.own_driver?.phone || order.driver?.user?.phone) && (
                   <a
-                    href={`https://wa.me/55${(order.own_driver?.phone || order.driver?.user?.phone || '').replace(/\D/g, '')}?text=Olá, sobre o pedido #${order.order_number}`}
+                    href={`https://wa.me/55${(order.own_driver?.phone || order.driver?.user?.phone || '').replace(/\D/g, '')}?text=Olá, sobre o pedido #${order.seq_number ?? order.order_number}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{

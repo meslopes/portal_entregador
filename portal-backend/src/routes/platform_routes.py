@@ -20,6 +20,7 @@ from src.models.portal_models import (
     db,
 )
 from src.utils.geo import haversine_distance
+from src.routes.route_helpers import atribuir_numeracao_paradas
 from src.utils.tenant import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -36,9 +37,7 @@ def optimize_platform_route_order(stops, driver_pos=None):
         return []
 
     if len(stops) <= 2:
-        for i, stop in enumerate(stops):
-            stop['stop_order'] = i + 1
-        return stops
+        return atribuir_numeracao_paradas(stops)
 
     # Algoritmo direção-aware
     optimized = []
@@ -108,11 +107,8 @@ def optimize_platform_route_order(stops, driver_pos=None):
             if best_stop['stop_type'] == 'PICKUP':
                 picked_up_orders.add(best_stop['order_id'])
 
-    # Atribuir ordem
-    for i, stop in enumerate(optimized):
-        stop['stop_order'] = i + 1
-
-    return optimized
+    # Atribuir ordem global (stop_seq) e embalagem (stop_order)
+    return atribuir_numeracao_paradas(optimized)
 
 
 @platform_routes_bp.route('/create', methods=['POST'])
@@ -221,6 +217,7 @@ def create_platform_route():
                 route_id=route.id,
                 order_id=stop_data['order_id'],
                 stop_order=stop_data['stop_order'],
+                stop_seq=stop_data['stop_seq'],
                 stop_type=stop_data['stop_type'],
                 latitude=stop_data['latitude'],
                 longitude=stop_data['longitude'],
@@ -478,10 +475,16 @@ def remove_order_from_route(route_id):
             order.driver_id = None
             order.status = OrderStatus.READY
 
-        # Reordenar paradas restantes
-        remaining_stops = PlatformDriverStop.query.filter_by(route_id=route_id).order_by(PlatformDriverStop.stop_order).all()
+        # Reordenar paradas restantes (ordem global + embalagem)
+        remaining_stops = PlatformDriverStop.query.filter_by(route_id=route_id).order_by(PlatformDriverStop.stop_seq).all()
+        embalagem = 0
         for i, s in enumerate(remaining_stops):
-            s.stop_order = i + 1
+            s.stop_seq = i + 1
+            if s.stop_type == 'DELIVERY':
+                embalagem += 1
+                s.stop_order = embalagem
+            else:
+                s.stop_order = None
 
         # Se rota ficou sem paradas, excluir
         if not remaining_stops:
@@ -552,16 +555,22 @@ def move_order_between_routes(route_id):
             order.platform_route_id = target_route_id
             order.driver_id = target_route.driver_id
 
-        # Reordenar paradas da rota de origem
-        remaining_stops = PlatformDriverStop.query.filter_by(route_id=route_id).order_by(PlatformDriverStop.stop_order).all()
+        # Reordenar paradas da rota de origem (ordem global + embalagem)
+        remaining_stops = PlatformDriverStop.query.filter_by(route_id=route_id).order_by(PlatformDriverStop.stop_seq).all()
+        embalagem = 0
         for i, s in enumerate(remaining_stops):
-            s.stop_order = i + 1
+            s.stop_seq = i + 1
+            if s.stop_type == 'DELIVERY':
+                embalagem += 1
+                s.stop_order = embalagem
+            else:
+                s.stop_order = None
 
         if not remaining_stops:
             db.session.delete(source_route)
 
         # Re-otimizar paradas da rota de destino
-        target_stops = PlatformDriverStop.query.filter_by(route_id=target_route_id).order_by(PlatformDriverStop.stop_order).all()
+        target_stops = PlatformDriverStop.query.filter_by(route_id=target_route_id).order_by(PlatformDriverStop.stop_seq).all()
         target_stops_data = []
         for s in target_stops:
             target_stops_data.append({
@@ -577,6 +586,7 @@ def move_order_between_routes(route_id):
             for s in target_stops:
                 if s.order_id == stop_data['order_id'] and s.stop_type == stop_data['stop_type']:
                     s.stop_order = stop_data['stop_order']
+                    s.stop_seq = stop_data['stop_seq']
                     break
 
         db.session.commit()

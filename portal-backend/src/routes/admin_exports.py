@@ -194,8 +194,21 @@ def import_orders_csv():
                 items = [{'name': items_str, 'quantity': 1}] if items_str else []
 
                 from datetime import datetime as dt
+
+                # Loja do pedido (coluna OPCIONAL "estabelecimento"). Sem ela o
+                # pedido não ganha nº curto — a numeração é por estabelecimento.
+                restaurant = None
+                estab_nome = row.get('estabelecimento', '').strip()
+                if estab_nome:
+                    from src.models.portal_models import Restaurant
+                    restaurant = Restaurant.query.filter(
+                        Restaurant.tenant_id == tenant_id,
+                        Restaurant.name.ilike(f'%{estab_nome}%')
+                    ).first()
+
                 order = Order(
                     tenant_id=tenant_id,
+                    restaurant_id=restaurant.id if restaurant else None,
                     customer_id=customer.id,
                     delivery_address_id=address.id,
                     order_number=f"IMP{dt.now().strftime('%Y%m%d%H%M%S')}{i:04d}",
@@ -207,6 +220,9 @@ def import_orders_csv():
                     status=OrderStatus.PENDING
                 )
                 db.session.add(order)
+                # N1 — numeração curta (#37) também na importação CSV
+                from src.services.order_helpers import atribuir_numero_curto
+                atribuir_numero_curto(order, restaurant)
                 created += 1
 
             except Exception as e:

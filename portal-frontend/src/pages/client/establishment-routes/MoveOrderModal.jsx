@@ -11,7 +11,7 @@ const MoveOrderModal = ({ movingStop, targetRouteId, routes, onSetTargetRouteId,
         </div>
         <div style={{ padding: '1.5rem' }}>
           <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
-            Mover pedido <strong>#{movingStop.order_number}</strong> para outra rota:
+            Mover pedido <strong>#{movingStop.seq_number ?? movingStop.order_number ?? movingStop.order_id}</strong> para outra rota:
           </p>
           <select
             value={targetRouteId}

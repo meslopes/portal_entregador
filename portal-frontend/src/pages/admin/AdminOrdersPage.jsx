@@ -182,7 +182,7 @@ const OrderCard = ({ order, onEdit, onDelete, onViewDetail }) => {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#fafbfc' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '0.8125rem', color: '#64748b', fontWeight: 500 }}>#{order.order_number}</span>
+          <span style={{ fontFamily: 'monospace', fontSize: '0.8125rem', color: '#64748b', fontWeight: 500 }}>#{order.seq_number ?? order.order_number}</span>
           <span style={{ padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.6875rem', fontWeight: 600, background: statusColor.bg, color: statusColor.color }}>
             {utils.getStatusText(order.status)}
           </span>

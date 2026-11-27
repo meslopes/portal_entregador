@@ -80,7 +80,7 @@ const ClientOrdersList = ({ orders, loading, filter, setFilter, page, setPage, t
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                           <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.9375rem' }}>
-                            #{order.order_number}
+                            #{order.seq_number ?? order.order_number}
                           </span>
                           <span style={{
                             padding: '0.125rem 0.5rem', borderRadius: '9999px',

@@ -48,8 +48,8 @@ const ClientOrderDetail = ({ order, onClose, onOrderUpdated }) => {
       const carga = alvo?.active_orders ?? 0;
       const atualNome = order.own_driver?.name || order.driver?.name || null;
       let msg = atualNome
-        ? `Mover o pedido #${order.order_number} de ${atualNome} para ${alvo?.name}?\n\nO pedido ficará AGUARDANDO ACEITE de ${alvo?.name}.`
-        : `Atribuir o pedido #${order.order_number} a ${alvo?.name}?`;
+        ? `Mover o pedido #${order.seq_number ?? order.order_number} de ${atualNome} para ${alvo?.name}?\n\nO pedido ficará AGUARDANDO ACEITE de ${alvo?.name}.`
+        : `Atribuir o pedido #${order.seq_number ?? order.order_number} a ${alvo?.name}?`;
       if (carga >= limiteRota) {
         msg += `\n\n⚠️ ${alvo?.name} ficará com ${carga + 1}/${limiteRota} pedidos (acima do limite — decisão sua).`;
       }
@@ -117,11 +117,12 @@ const ClientOrderDetail = ({ order, onClose, onOrderUpdated }) => {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
-      <div role="dialog" aria-modal="true" aria-label={`Pedido #${order.order_number}`} style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+      <div role="dialog" aria-modal="true" aria-label={`Pedido #${order.seq_number ?? order.order_number}`} style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
         {/* Header */}
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Pedido #{order.order_number}</h2>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Pedido #{order.seq_number ?? order.order_number}</h2>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Nº sistema: {order.order_number}</div>
             <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{utils.formatDateTime(order.created_at)}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

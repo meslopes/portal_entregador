@@ -53,7 +53,7 @@ const PaymentHistory = ({
           ) : (
             earnings.map(earning => (
               <tr key={earning.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={tdStyle}>#{earning.order_number}</td>
+                <td style={tdStyle}>#{earning.seq_number ?? earning.order_number}</td>
                 <td style={tdStyle}>
                   {earning.created_at ? new Date(earning.created_at).toLocaleDateString('pt-BR') : '-'}
                   <br />

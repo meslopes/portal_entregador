@@ -60,9 +60,17 @@ const PlatformRoutesList = ({ routes, onMoveStop, onRemoveOrder }) => {
                       <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{stop.address}</p>
                     </div>
                     <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {stop.stop_order != null && (
+                        <span style={{
+                          background: '#2563eb', color: 'white', borderRadius: '0.375rem',
+                          padding: '0.125rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, marginRight: '0.375rem'
+                        }}>
+                          📦 Embalagem {stop.stop_order}
+                        </span>
+                      )}
                       {stop.stop_type === 'PICKUP'
-                        ? `${stop.restaurant_name || 'Estabelecimento'} • Pedido #${stop.order_number}`
-                        : `${stop.customer_name || 'Cliente'} • Pedido #${stop.order_number}`
+                        ? `Coleta — ${stop.restaurant_name || 'Estabelecimento'}`
+                        : `${stop.customer_name || 'Cliente'} • Pedido #${stop.seq_number ?? stop.order_number ?? stop.order_id}`
                       }
                     </p>
                   </div>

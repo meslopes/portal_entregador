@@ -84,7 +84,7 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 100, padding: '1rem'
     }}>
-      <div role="dialog" aria-modal="true" aria-label={`Pedido #${order.order_number}`} style={{
+      <div role="dialog" aria-modal="true" aria-label={`Pedido #${order.seq_number ?? order.order_number}`} style={{
         background: 'white', borderRadius: '0.75rem', width: '100%',
         maxWidth: '500px', maxHeight: '90vh', overflow: 'auto',
         boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
@@ -96,8 +96,9 @@ const OrderDetailsModal = ({ order, onClose, onRate }) => {
         }}>
           <div>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>
-              Pedido #{order.order_number}
+              Pedido #{order.seq_number ?? order.order_number}
             </h2>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Nº sistema: {order.order_number}</div>
             <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
               {utils.formatDateTime(order.created_at)}
             </p>

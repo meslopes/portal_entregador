@@ -141,7 +141,7 @@ export const RecentOrdersSection = ({ orders }) =>
         : badge('SEM ENTREGADOR', '#dc2626', '#fee2e2');
       return card(
         <div key={o.id}>
-          <strong>#{o.order_number}</strong> {badge(o.status, '#64748b', '#f1f5f9')} {driverBadge}
+          <strong>#{o.seq_number ?? o.order_number}</strong> {badge(o.status, '#64748b', '#f1f5f9')} {driverBadge}
           <div style={{ fontSize: '0.8125rem', color: '#475569', marginTop: '0.25rem' }}>
             {o.restaurant_name} → {o.customer_name}
             {o.driver_name ? ` • Entregador: ${o.driver_name}` : ''}

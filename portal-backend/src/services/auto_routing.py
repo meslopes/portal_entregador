@@ -423,12 +423,17 @@ def create_auto_route(orders, driver, settings):
         db.session.add(route)
         db.session.flush()
 
-        # Criar paradas
+        # Criar paradas (stop_seq = ordem global; stop_order = embalagem)
+        embalagem = 0
         for i, stop_data in enumerate(optimized_stops):
+            eh_entrega = stop_data['type'] == 'DELIVERY'
+            if eh_entrega:
+                embalagem += 1
             stop = PlatformDriverStop(
                 route_id=route.id,
                 order_id=stop_data['order_id'],
-                stop_order=i + 1,
+                stop_order=embalagem if eh_entrega else None,
+                stop_seq=i + 1,
                 stop_type=stop_data['type'],
                 latitude=stop_data['lat'],
                 longitude=stop_data['lng'],

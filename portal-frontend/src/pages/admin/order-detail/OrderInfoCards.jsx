@@ -111,7 +111,7 @@ const OrderInfoCards = ({ order, si, utils }) => (
         <p style={{ color: '#64748b', fontSize: '0.8125rem' }}>{order.driver.vehicle_type}</p>
         {order.driver.user?.phone && (
           <a
-            href={`https://wa.me/55${order.driver.user.phone.replace(/\D/g, '')}?text=Olá ${order.driver.user?.first_name}, sobre o pedido #${order.order_number}...`}
+            href={`https://wa.me/55${order.driver.user.phone.replace(/\D/g, '')}?text=Olá ${order.driver.user?.first_name}, sobre o pedido #${order.seq_number ?? order.order_number}...`}
             target="_blank"
             rel="noopener noreferrer"
             style={{

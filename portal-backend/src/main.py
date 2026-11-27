@@ -1118,6 +1118,41 @@ with app.app_context():
         print(f"Migração rota multi-loja: {e}")
         db.session.rollback()
 
+    # Migration embalagem da rota da plataforma (2026-11-26) — mesma numeração
+    # do F3: stop_seq = ordem global; stop_order = embalagem (contador só das
+    # entregas; NULL em PICKUP)
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'platform_driver_stops' AND column_name = 'stop_seq') "
+            "THEN ALTER TABLE platform_driver_stops ADD COLUMN stop_seq INTEGER; END IF; END $$"
+        ))
+        db.session.execute(db.text(
+            "ALTER TABLE platform_driver_stops ALTER COLUMN stop_order DROP NOT NULL"
+        ))
+        db.session.execute(db.text(
+            "UPDATE platform_driver_stops SET stop_seq = stop_order WHERE stop_seq IS NULL AND stop_order IS NOT NULL"
+        ))
+        # Converter numeração antiga (ordem global em stop_order) para embalagem —
+        # só enquanto existir PICKUP numerado (sinal de dado antigo)
+        db.session.execute(db.text("""
+            DO $$
+            BEGIN
+              IF EXISTS (SELECT 1 FROM platform_driver_stops WHERE stop_type = 'PICKUP' AND stop_order IS NOT NULL) THEN
+                UPDATE platform_driver_stops SET stop_order = NULL WHERE stop_type = 'PICKUP';
+                UPDATE platform_driver_stops p SET stop_order = sub.rn FROM (
+                  SELECT id, row_number() OVER (PARTITION BY route_id ORDER BY stop_seq) AS rn
+                  FROM platform_driver_stops WHERE stop_type = 'DELIVERY'
+                ) sub WHERE p.id = sub.id;
+              END IF;
+            END $$
+        """))
+        db.session.commit()
+        print("Embalagem da rota da plataforma (stop_seq + embalagem) adicionada")
+    except Exception as e:
+        print(f"Migração embalagem rota plataforma: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

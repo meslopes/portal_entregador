@@ -9,7 +9,7 @@ const RatingModal = ({ order, onClose, onSubmit, rating, setRating, feedback, se
         {/* Header */}
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>Avaliar Entrega</h2>
-          <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Pedido #{order.order_number}</p>
+          <p style={{ fontSize: '0.8125rem', color: '#64748b' }}>Pedido #{order.seq_number ?? order.order_number}</p>
         </div>
 
         <div style={{ padding: '1.5rem' }}>

@@ -1021,3 +1021,32 @@ def find_nearest_available_driver(order, exclude_driver_ids=None):
         return None
 
 
+def atribuir_numero_curto(order, restaurant=None):
+    """N1 — numeração curta do pedido (#37) para o dia a dia.
+
+    Sequencial POR ESTABELECIMENTO; zera diariamente (DAILY) ou é contínuo
+    (CONTINUOUS) conforme `Restaurant.seq_reset_mode`. Vale para TODOS os
+    pedidos — entrega própria E da plataforma — e deve ser chamado em TODO
+    caminho de criação (pedido normal, link rápido, WhatsApp, importação CSV).
+
+    Nunca derruba a criação do pedido: em caso de erro o pedido nasce sem
+    número curto e a interface cai no `order_number` longo (fallback).
+    """
+    try:
+        restaurant = restaurant or order.restaurant
+        if restaurant is None:
+            logger.warning("[SEQ] numeração curta pulada: pedido sem estabelecimento")
+            return
+
+        hoje = datetime.now(timezone.utc).date()
+        modo_num = restaurant.seq_reset_mode or 'DAILY'
+        q = Order.query.filter(Order.restaurant_id == restaurant.id, Order.seq_number.isnot(None))
+        if modo_num == 'DAILY':
+            q = q.filter(Order.seq_date == hoje)
+        ultimo = q.order_by(Order.seq_number.desc()).first()
+        order.seq_number = (ultimo.seq_number + 1) if ultimo else 1
+        order.seq_date = hoje
+    except Exception as _e:
+        logger.warning(f"[SEQ] numeração curta falhou: {_e}")
+
+

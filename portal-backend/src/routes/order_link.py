@@ -156,11 +156,15 @@ def create_order_from_link(token):
             status=OrderStatus.PENDING,
         )
         db.session.add(order)
+        # N1 — numeração curta (#37) também no pedido pelo link rápido
+        from src.services.order_helpers import atribuir_numero_curto
+        atribuir_numero_curto(order, restaurant)
         db.session.commit()
 
         return jsonify({
             'message': 'Pedido criado com sucesso',
             'order_number': order.order_number,
+            'seq_number': order.seq_number,
             'restaurant_name': restaurant.name,
         }), 201
 

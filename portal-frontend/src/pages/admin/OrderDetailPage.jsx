@@ -224,7 +224,7 @@ const OrderDetailPage = () => {
 
     timeline.push({
       status: 'CREATED', time: order.created_at, label: 'Pedido criado',
-      detail: `Pedido #${order.order_number}`, icon: '📝', color: '#64748b'
+      detail: `Pedido #${order.seq_number ?? order.order_number}`, icon: '📝', color: '#64748b'
     });
 
     if (order.scheduled_at) {
@@ -307,8 +307,9 @@ const OrderDetailPage = () => {
         </button>
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b' }}>
-            Pedido #{order.order_number}
+            Pedido #{order.seq_number ?? order.order_number}
           </h1>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Nº sistema: {order.order_number}</div>
           <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
             Criado em {formatLocalDateTime(order.created_at)}
           </p>

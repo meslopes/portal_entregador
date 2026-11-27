@@ -21,7 +21,7 @@ export default function StatusOrderCard({
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
+        <span style={{ fontWeight: 500, color: '#1e293b' }}>#{order.seq_number ?? order.order_number}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
           <span style={{ color: '#64748b', fontSize: '0.75rem' }}>{utils.formatCurrency(order.total_amount)}</span>
           <button

@@ -37,6 +37,7 @@ const HistoryPage = () => {
     const search = searchTerm.toLowerCase();
     return (
       order.order_number?.toLowerCase().includes(search) ||
+      (order.seq_number != null && String(order.seq_number).includes(search)) ||
       order.restaurant?.name?.toLowerCase().includes(search) ||
       order.delivery_address?.street?.toLowerCase().includes(search)
     );
@@ -231,7 +232,7 @@ const HistoryCard = ({ order }) => {
             </div>
             <div>
               <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9375rem' }}>
-                Pedido #{order.order_number}
+                Pedido #{order.seq_number ?? order.order_number}
               </p>
               <p style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 <Calendar size={11} />

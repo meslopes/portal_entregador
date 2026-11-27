@@ -275,6 +275,7 @@ class OwnDriverStop(db.Model):
             'route_id': self.route_id,
             'order_id': self.order_id,
             'order_number': self.order.order_number if self.order else None,
+            'seq_number': self.order.seq_number if self.order else None,
             'order_status': self.order.status.value if self.order and self.order.status else None,
             'customer_name': self.order.customer.name if self.order and self.order.customer else None,
             'customer_phone': self.order.customer.phone if self.order and self.order.customer else None,
@@ -373,7 +374,8 @@ class PlatformDriverRoute(db.Model):
     # Relacionamentos
     driver = db.relationship('Driver', backref='routes')
     restaurant = db.relationship('Restaurant', backref='platform_routes')
-    stops = db.relationship('PlatformDriverStop', backref='route', order_by='PlatformDriverStop.stop_order')
+    # F2 embalagem (2026-11-26): stop_seq = ordem global (coletas incluídas)
+    stops = db.relationship('PlatformDriverStop', backref='route', order_by='PlatformDriverStop.stop_seq')
 
     def to_dict(self):
         driver_name = 'N/A'
@@ -398,14 +400,21 @@ class PlatformDriverRoute(db.Model):
 
 
 class PlatformDriverStop(db.Model):
-    """Parada individual em uma rota de entrega de entregador da plataforma"""
+    """Parada individual em uma rota de entrega de entregador da plataforma.
+
+    Mesma numeração do F3 das rotas de próprios (2026-11-26):
+    `stop_seq` = ordem GLOBAL da rota (1..N, inclui coletas);
+    `stop_order` = NÚMERO DA EMBALAGEM (contador só das entregas, zera por
+    rota — exibição "Embalagem N"; NULL em PICKUP).
+    """
     __tablename__ = 'platform_driver_stops'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     route_id = db.Column(db.Integer, db.ForeignKey('platform_driver_routes.id'), nullable=False)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
     restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'), nullable=True)  # Restaurante da coleta
-    stop_order = db.Column(db.Integer, nullable=False)
+    stop_order = db.Column(db.Integer)  # embalagem (1..N entre ENTREGAS; NULL em PICKUP)
+    stop_seq = db.Column(db.Integer)  # ordem global da rota (1..N com coletas)
     stop_type = db.Column(db.String(20))  # PICKUP, DELIVERY
     latitude = db.Column(db.Numeric(10, 8))
     longitude = db.Column(db.Numeric(11, 8))
@@ -425,11 +434,13 @@ class PlatformDriverStop(db.Model):
             'route_id': self.route_id,
             'order_id': self.order_id,
             'order_number': self.order.order_number if self.order else None,
+            'seq_number': self.order.seq_number if self.order else None,
             'customer_name': self.order.customer.name if self.order and self.order.customer else None,
             'customer_phone': self.order.customer.phone if self.order and self.order.customer else None,
             'restaurant_id': self.restaurant_id,
             'restaurant_name': self.restaurant.name if self.restaurant else (self.order.restaurant.name if self.order and self.order.restaurant else None),
             'stop_order': self.stop_order,
+            'stop_seq': self.stop_seq,
             'stop_type': self.stop_type,
             'latitude': float(self.latitude) if self.latitude else None,
             'longitude': float(self.longitude) if self.longitude else None,

@@ -97,7 +97,7 @@ const DistributionModal = ({ order, onClose, onDistributed }) => {
               Distribuir Pedido
             </h2>
             <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
-              #{order.order_number}
+              #{order.seq_number ?? order.order_number}
             </p>
           </div>
           <button onClick={onClose} style={{

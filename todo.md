@@ -297,6 +297,13 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
+## ✅ 2026-11-26 — Numeração dos pedidos estendida à plataforma (CONCLUIDA)
+- [x] DIAGNÓSTICO (relato do Mauro em testes): o ciclo N1–N4 (24/11) tinha ficado preso às entregas PRÓPRIAS — nº longo `PED...` continuava no app do entregador da plataforma, admin, dashboard do estab., modais de detalhe e páginas públicas; "Embalagem N" não existia nas rotas da plataforma
+- [x] GERAÇÃO do #seq: helper único `atribuir_numero_curto()` (services/order_helpers.py) — create_order + Link Rápido + WhatsApp (2 fluxos) + importação CSV (coluna opcional "estabelecimento" também passa a preencher restaurant_id); pedido sem loja não ganha #seq (numeração é por estabelecimento)
+- [x] EMBALAGEM NA PLATAFORMA: `PlatformDriverStop.stop_seq` (ordem global) + `stop_order` = embalagem (NULL em coleta) — mesma semântica do F3; migração nos 2 entries com conversão de dado antigo; renumber automático em remove/move-order; `package_number` no to_dict do pedido (rota própria OU plataforma)
+- [x] EXIBIÇÃO (42 telas): `#seq ?? order_number` em cards/listas/pins/popups; detalhe = #seq + "Nº sistema" pequeno cinza; badges "📦 Embalagem N" / "Coleta" nas rotas da plataforma (app + admin); busca também casa #seq
+- [x] Verificação: smoke 9/9 (`_tmp_smoke_seq2.py`: link→#seq · stop_seq 1..N · coleta sem embalagem · embalagem 1..2 · package_number · renumber após remove) + regressão (create_order numera · embalagem próprios 1/2) + backend compila + frontend build ✅
+
 ## ⚠️ PENDÊNCIAS MANUAIS — ANTES DE PRODUÇÃO (2026-11-26)
 > **NÃO colocar em produção sem resolver.** Detalhes em MEMORY-auditoria-seguranca-2026-11.md
 - [ ] **1. ROTACIONAR CHAVES** (SECRET_KEY, JWT_SECRET_KEY, Google Maps, Supabase) — Cloud Run env vars. Risco: JWT forgery

@@ -36,7 +36,7 @@ const AvailableOrders = ({ orders, selectedOrders, onToggleOrder }) => {
             />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</span>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.seq_number ?? order.order_number}</span>
                 <span style={{ padding: '0.125rem 0.375rem', borderRadius: '9999px', fontSize: '0.75rem', background: order.status === 'SCHEDULED' ? '#ede9fe' : '#dbeafe', color: order.status === 'SCHEDULED' ? '#6d28d9' : '#1d4ed8' }}>
                   {order.status === 'SCHEDULED' ? 'Agendado' : order.status === 'PENDING' ? 'Pendente' : 'Aceito'}
                 </span>

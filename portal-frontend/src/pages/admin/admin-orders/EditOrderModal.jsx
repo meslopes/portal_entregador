@@ -10,7 +10,10 @@ const EditOrderModal = ({ editingOrder, editData, setEditData, onClose, onSubmit
   <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
     <div style={{ background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
       <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Pedido #{editingOrder.order_number}</h2>
+        <div>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b' }}>Editar Pedido #{editingOrder.seq_number ?? editingOrder.order_number}</h2>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Nº sistema: {editingOrder.order_number}</div>
+        </div>
         <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
       </div>
       <form onSubmit={onSubmit} style={{ padding: '1.5rem', maxHeight: '70vh', overflowY: 'auto' }}>

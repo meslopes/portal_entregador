@@ -143,7 +143,7 @@ export default function MapSection({
               const color = statusCfg?.color || '#64748b';
               const label = statusCfg?.label || o.status;
               ordersHtml += `<div style="padding:4px 6px;margin:2px 0;background:#f8fafc;border-radius:4px;font-size:11px;border-left:3px solid ${color}">`;
-              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${escapeHtml(o.order_number)}</b><span style="color:${color}">${escapeHtml(label)}</span></div>`;
+              ordersHtml += `<div style="display:flex;justify-content:space-between;"><b>#${escapeHtml(o.seq_number ?? o.order_number)}</b><span style="color:${color}">${escapeHtml(label)}</span></div>`;
               ordersHtml += `<div style="color:#64748b;">${escapeHtml(o.customer_name) || 'Cliente'}</div>`;
               if (o.driver_name) ordersHtml += `<div style="color:#64748b;">🏍 ${escapeHtml(o.driver_name)}</div>`;
               ordersHtml += `<div style="color:#64748b;">R$ ${(o.total_amount || 0).toFixed(2)}</div>`;
@@ -172,7 +172,7 @@ export default function MapSection({
           });
           const marker = L.marker([del.latitude, del.longitude], { icon })
             .addTo(map)
-            .bindPopup(`<b>#${escapeHtml(del.order_number)}</b><br>${escapeHtml(del.customer_name)}<br>${escapeHtml(del.street)}`);
+            .bindPopup(`<b>#${escapeHtml(del.seq_number ?? del.order_number)}</b><br>${escapeHtml(del.customer_name)}<br>${escapeHtml(del.street)}`);
           markersRef.current.push(marker);
           allPoints.push([del.latitude, del.longitude]);
         }

@@ -59,8 +59,13 @@ const ActiveDeliveryPage = () => {
           </button>
         </div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.25rem' }}>
-          Pedido #{order.order_number}
+          Pedido #{order.seq_number ?? order.order_number}
         </h1>
+        {order.package_number != null && (
+          <p style={{ fontSize: '0.8125rem', fontWeight: 700, marginTop: '0.25rem' }}>
+            📦 Embalagem {order.package_number}
+          </p>
+        )}
         <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
           Acompanhe o andamento da entrega
         </p>

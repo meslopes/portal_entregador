@@ -152,7 +152,7 @@ const OwnDriverRoutesPage = () => {
       routeId,
       stopId: stop.id,
       orderId: stop.order_id,
-      orderNumber: stop.order_number || stop.order_id,
+      orderNumber: stop.seq_number ?? stop.order_number ?? stop.order_id,
       deliveryCode: stop.delivery_code || null,
       pickupCode: stop.pickup_code || null,
     });

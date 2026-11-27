@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShoppingBag, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
@@ -89,7 +89,7 @@ const OrderLinkPage = () => {
             <CheckCircle size={28} style={{ margin: '0 auto 0.5rem' }} />
             <div style={{ fontWeight: 700, fontSize: '1.0625rem' }}>Pedido enviado!</div>
             <div style={{ fontSize: '0.875rem', marginTop: '0.375rem' }}>
-              Número do pedido: <strong>#{pedido.order_number}</strong>
+              Número do pedido: <strong>#{pedido.seq_number ?? pedido.order_number}</strong>
             </div>
             <div style={{ fontSize: '0.8125rem', marginTop: '0.5rem', color: '#15803d' }}>
               {pedido.restaurant_name} já recebeu seu pedido.

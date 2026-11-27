@@ -46,6 +46,7 @@ const ClientOrdersPage = () => {
     const s = search.toLowerCase();
     return (
       o.order_number?.toLowerCase().includes(s) ||
+      (o.seq_number != null && String(o.seq_number).includes(s)) ||
       o.customer?.name?.toLowerCase().includes(s) ||
       o.delivery_address?.street?.toLowerCase().includes(s)
     );

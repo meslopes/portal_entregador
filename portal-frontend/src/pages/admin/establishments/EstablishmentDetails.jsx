@@ -201,7 +201,7 @@ const EstablishmentDetails = ({
               return (
                 <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f8fafc' }}>
                   <div>
-                    <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
+                    <p style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#1e293b' }}>#{order.seq_number ?? order.order_number}</p>
                     <p style={{ fontSize: '0.6875rem', color: '#64748b' }}>{utils.formatDate(order.created_at)}</p>
                   </div>
                   <div style={{ textAlign: 'right' }}>

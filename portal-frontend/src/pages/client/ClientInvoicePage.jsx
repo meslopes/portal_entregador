@@ -219,7 +219,7 @@ const ClientInvoicePage = () => {
               </div>
               {invoice.orders?.map((order, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '0.5rem 1rem', borderBottom: i < invoice.orders.length - 1 ? '1px solid #f1f5f9' : 'none', fontSize: '0.8125rem' }}>
-                  <span style={{ color: '#1e293b', fontWeight: 500 }}>#{order.order_number}</span>
+                  <span style={{ color: '#1e293b', fontWeight: 500 }}>#{order.seq_number ?? order.order_number}</span>
                   <span style={{ color: '#64748b' }}>{order.date}</span>
                   <span style={{ textAlign: 'right', color: '#1e293b' }}>{utils.formatCurrency(order.amount)}</span>
                   <span style={{ textAlign: 'right', color: '#0d9488', fontWeight: 600 }}>{utils.formatCurrency(order.delivery_fee)}</span>

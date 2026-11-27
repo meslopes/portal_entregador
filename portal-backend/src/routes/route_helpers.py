@@ -10,6 +10,24 @@ from src.utils.geo import haversine_distance
 logger = logging.getLogger(__name__)
 
 
+def atribuir_numeracao_paradas(stops):
+    """Numera as paradas de uma rota (dicionários) — padrão F3 (2026-11-26).
+
+    `stop_seq` = ordem GLOBAL (1..N, inclui coletas);
+    `stop_order` = NÚMERO DA EMBALAGEM (contador só das entregas; NULL em PICKUP).
+    Vale para rotas de próprios E da plataforma.
+    """
+    embalagem = 0
+    for i, stop in enumerate(stops):
+        stop['stop_seq'] = i + 1
+        if stop.get('stop_type') == 'DELIVERY':
+            embalagem += 1
+            stop['stop_order'] = embalagem
+        else:
+            stop['stop_order'] = None
+    return stops
+
+
 def optimize_stop_order(stops):
     """
     Otimiza a ordem das paradas usando algoritmo do vizinho mais próximo.
@@ -20,9 +38,7 @@ def optimize_stop_order(stops):
     2. Entregas ordenadas por proximidade (vizinho mais próximo)
     """
     if len(stops) <= 2:
-        for i, stop in enumerate(stops):
-            stop['stop_order'] = i + 1
-        return stops
+        return atribuir_numeracao_paradas(stops)
 
     # Separar pickups e deliveries
     pickups = [s for s in stops if s['stop_type'] == 'PICKUP']
@@ -30,10 +46,7 @@ def optimize_stop_order(stops):
 
     if len(deliveries) <= 1:
         # Se tem 0 ou 1 entrega, não precisa otimizar
-        optimized = pickups + deliveries
-        for i, stop in enumerate(optimized):
-            stop['stop_order'] = i + 1
-        return optimized
+        return atribuir_numeracao_paradas(pickups + deliveries)
 
     # Otimizar ordem das entregas usando vizinho mais próximo
     # Começar do restaurante (último pickup ou primeiro ponto)
@@ -78,11 +91,8 @@ def optimize_stop_order(stops):
     # Combinar: pickups primeiro, depois deliveries otimizadas
     optimized = pickups + optimized_deliveries
 
-    # Reatribuir ordem
-    for i, stop in enumerate(optimized):
-        stop['stop_order'] = i + 1
-
-    return optimized
+    # Reatribuir ordem global (stop_seq) e embalagem (stop_order)
+    return atribuir_numeracao_paradas(optimized)
 
 
 def auto_create_or_update_route(establishment_driver_id, restaurant_id):

@@ -240,7 +240,16 @@
     entregador — a limpeza de fixtures não pode filtrar rotas só por
     `establishment_driver_id` (varrer por `restaurant_id`/ids também).
 
+48. **Smoke via HTTP × fixtures só com `flush`** — o servidor (processo
+    separado) só enxerga dados COMMITADOS; `flush` libera ids só na sessão
+    do script. Sintoma enganoso: 401 "token inválido" em endpoint que usa
+    o usuário recém-criado (o JWT assina, mas o lookup do usuário no banco
+    falha → loader JWT devolve 401). Regra: `db.session.commit()` das
+    fixtures ANTES da primeira chamada HTTP. Complemento: fixture hardcoded
+    por id (ex.: `Restaurant.query.get(75)`) apodrece com o tempo — smoke
+    deve criar as próprias fixtures (com nome único por pid).
+
 ---
 
-_Atualizado em 2026-11-24 — 47 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-27 — 48 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

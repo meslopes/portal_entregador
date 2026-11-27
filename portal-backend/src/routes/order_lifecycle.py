@@ -1022,20 +1022,11 @@ def create_order():
         db.session.add(order)
         db.session.flush()
 
-        # N1 — numeração curta para o dia a dia (#37): por estabelecimento;
-        # zera diariamente ou é contínua (seq_reset_mode do restaurante)
-        try:
-            from datetime import date as _date
-            hoje = datetime.now(timezone.utc).date()
-            modo_num = (restaurant.seq_reset_mode or 'DAILY') if restaurant else 'DAILY'
-            q = Order.query.filter(Order.restaurant_id == restaurant.id, Order.seq_number.isnot(None))
-            if modo_num == 'DAILY':
-                q = q.filter(Order.seq_date == hoje)
-            ultimo = q.order_by(Order.seq_number.desc()).first()
-            order.seq_number = (ultimo.seq_number + 1) if ultimo else 1
-            order.seq_date = hoje
-        except Exception as _e:
-            logger.warning(f"[SEQ] numeração curta falhou: {_e}")
+        # N1 — numeração curta (#37): sequencial por estabelecimento, zera por
+        # dia ou é contínua (helper único — também usado no link rápido,
+        # WhatsApp e importação CSV)
+        from src.services.order_helpers import atribuir_numero_curto
+        atribuir_numero_curto(order, restaurant)
 
         # Pedido agendado - não notifica entregador ainda
         # Será convertido para PENDING automaticamente quando scheduled_at chegar

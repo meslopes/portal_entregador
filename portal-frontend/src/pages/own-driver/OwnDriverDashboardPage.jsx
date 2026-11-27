@@ -87,7 +87,8 @@ const OwnDriverDashboardPage = () => {
             if (stop.order_id && !ordersFromRoutes.find(o => o.id === stop.order_id)) {
               ordersFromRoutes.push({
                 id: stop.order_id,
-                order_number: stop.order_number || `Pedido #${stop.order_id}`,
+                seq_number: stop.seq_number,
+                order_number: stop.order_number ?? stop.order_id,
                 status: stop.order_status || (route.status === 'ACTIVE' ? 'ACCEPTED' : 'PENDING'),
                 delivery_address: { street: stop.address },
                 customer: { name: stop.customer_name, phone: stop.customer_phone },

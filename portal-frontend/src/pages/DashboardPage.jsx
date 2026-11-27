@@ -134,7 +134,7 @@ const DashboardPage = () => {
             iconAnchor: [12, 12]
           });
           L.marker([currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude], { icon: orderIcon }).addTo(map)
-            .bindPopup(`Pedido #${escapeHtml(currentOrder.order_number)}`);
+            .bindPopup(`Pedido #${escapeHtml(currentOrder.seq_number ?? currentOrder.order_number)}`);
           const bounds = L.latLngBounds([
             [location.latitude, location.longitude],
             [currentOrder.delivery_address.latitude, currentOrder.delivery_address.longitude]

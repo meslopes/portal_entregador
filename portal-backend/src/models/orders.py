@@ -282,6 +282,19 @@ class Order(db.Model):
         from src.utils.order_tags import extract_system_tags
         return extract_system_tags(self.special_instructions)
 
+    def _numero_embalagem(self):
+        """3º número do pedido: embalagem 1,2,3 na ordem da rota (zera por rota).
+
+        Usa a parada de ENTREGA do pedido — rota de próprio primeiro; senão
+        rota da plataforma. Coletas não numeram embalagem.
+        """
+        if self.own_driver_stops:
+            return self.own_driver_stops[0].stop_order
+        for parada in self.platform_route_stops:
+            if parada.stop_type == 'DELIVERY':
+                return parada.stop_order
+        return None
+
     def to_dict(self):
         result = {
             'id': self.id,
@@ -322,7 +335,9 @@ class Order(db.Model):
         'settlement_value': float(self.settlement_value) if self.settlement_value else None,
         'pix_proof_url': self.pix_proof_url,
         'seq_number': self.seq_number,
-        'package_number': (self.own_driver_stops[0].stop_order if self.own_driver_stops else None),
+        # Embalagem (3º número): parada de ENTREGA — rota de próprio primeiro,
+        # senão rota da plataforma (coletas não numeram)
+        'package_number': self._numero_embalagem(),
             'establishment_driver_id': self.establishment_driver_id,
             'own_driver_route_id': self.own_driver_route_id,
             'called_platform': self.called_platform or False,

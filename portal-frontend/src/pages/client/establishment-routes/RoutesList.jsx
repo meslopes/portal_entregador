@@ -115,9 +115,17 @@ const RoutesList = ({ routes, drivers, selectedDriver, onSetSelectedDriver, onAs
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: '0.8125rem', color: '#1e293b', fontWeight: 500 }}>{stop.address}</p>
                     <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {stop.stop_order != null && (
+                        <span style={{
+                          background: '#2563eb', color: 'white', borderRadius: '0.375rem',
+                          padding: '0.125rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, marginRight: '0.375rem'
+                        }}>
+                          📦 Embalagem {stop.stop_order}
+                        </span>
+                      )}
                       {stop.stop_type === 'PICKUP'
                         ? `Coleta — ${stop.store_name || 'loja'}`
-                        : `${stop.customer_name || ''} • Pedido #${stop.order_number}${stop.store_name ? ` · ${stop.store_name}` : ''}`}
+                        : `${stop.customer_name || ''} • Pedido #${stop.seq_number ?? stop.order_number ?? stop.order_id}${stop.store_name ? ` · ${stop.store_name}` : ''}`}
                     </p>
                   </div>
                   {stop.status === 'COMPLETED' && <CheckCircle size={16} style={{ color: '#22c55e' }} />}

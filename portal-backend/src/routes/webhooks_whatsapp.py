@@ -190,6 +190,9 @@ def create_order_from_whatsapp(phone, parts):
         )
 
         db.session.add(order)
+        # N1 — numeração curta (#37) também no pedido via WhatsApp
+        from src.services.order_helpers import atribuir_numero_curto
+        atribuir_numero_curto(order, restaurant)
         db.session.commit()
 
         # Notifica

@@ -45,7 +45,7 @@ const RouteStopCard = ({
         </div>
         <div style={{ flex: 1 }}>
           <p style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.75rem' }}>
-            #{order.order_number}
+            #{order.seq_number ?? order.order_number}
           </p>
         </div>
       </div>

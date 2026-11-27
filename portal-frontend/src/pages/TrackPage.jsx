@@ -93,7 +93,7 @@ const TrackPage = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
                 <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Pedido</p>
-                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>#{tracking.order_number}</p>
+                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>#{tracking.seq_number ?? tracking.order_number}</p>
               </div>
               <div>
                 <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Estabelecimento</p>

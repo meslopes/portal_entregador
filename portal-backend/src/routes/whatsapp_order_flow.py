@@ -447,6 +447,9 @@ def _create_order(restaurant, session, payment_method='PIX'):
             order.delivery_address_id = addr.id
 
         db.session.add(order)
+        # N1 — numeração curta (#37) também no pedido via WhatsApp
+        from src.services.order_helpers import atribuir_numero_curto
+        atribuir_numero_curto(order, restaurant)
         db.session.commit()
 
         logger.info(f'[WHATSAPP ORDER] Pedido {order.order_number} criado para {session.customer_phone}')

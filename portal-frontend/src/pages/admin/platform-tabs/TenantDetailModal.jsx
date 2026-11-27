@@ -97,7 +97,7 @@ const TenantDetailModal = ({ selectedTenant, onClose, onEdit, onDelete }) => {
                     padding: '0.5rem', background: '#f8fafc', borderRadius: '0.375rem'
                   }}>
                     <div>
-                      <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>#{order.order_number}</p>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e293b' }}>#{order.seq_number ?? order.order_number}</p>
                       <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{order.status}</p>
                     </div>
                     <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#16a34a' }}>

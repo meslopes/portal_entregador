@@ -77,9 +77,8 @@ def create_platform_route():
         db.session.add(route)
         db.session.flush()
 
-        # Criar paradas
+        # Criar paradas (numeração global + embalagem é atribuída após otimizar)
         stops = []
-        stop_order = 1
 
         # Parada de pickup no restaurante
         if restaurant:
@@ -87,7 +86,6 @@ def create_platform_route():
                 pickup_stop = PlatformDriverStop(
                     route_id=route.id,
                     order_id=order.id,
-                    stop_order=stop_order,
                     stop_type='PICKUP',
                     latitude=restaurant.latitude,
                     longitude=restaurant.longitude,
@@ -101,7 +99,6 @@ def create_platform_route():
                     'longitude': float(restaurant.longitude) if restaurant.longitude else None,
                     'address': restaurant.address
                 })
-                stop_order += 1
 
         # Paradas de delivery
         for order in orders:
@@ -109,7 +106,6 @@ def create_platform_route():
                 delivery_stop = PlatformDriverStop(
                     route_id=route.id,
                     order_id=order.id,
-                    stop_order=stop_order,
                     stop_type='DELIVERY',
                     latitude=order.delivery_address.latitude,
                     longitude=order.delivery_address.longitude,
@@ -123,20 +119,20 @@ def create_platform_route():
                     'longitude': float(order.delivery_address.longitude) if order.delivery_address.longitude else None,
                     'address': f"{order.delivery_address.street}, {order.delivery_address.neighborhood}"
                 })
-                stop_order += 1
 
-        # Otimizar ordem das paradas
+        # Otimizar ordem das paradas (já numera stop_seq global + embalagem)
         optimized_stops = optimize_stop_order(stops)
 
-        # Atualizar ordem no banco
-        for i, stop_data in enumerate(optimized_stops):
+        # Atualizar numeração no banco
+        for stop_data in optimized_stops:
             stop = PlatformDriverStop.query.filter_by(
                 route_id=route.id,
                 order_id=stop_data['order_id'],
                 stop_type=stop_data['stop_type']
             ).first()
             if stop:
-                stop.stop_order = i + 1
+                stop.stop_seq = stop_data['stop_seq']
+                stop.stop_order = stop_data['stop_order']
 
         # Atualizar pedidos
         for order in orders:
