@@ -42,7 +42,9 @@ const ToastContainer = () => {
 
   return (
     <div style={{
-      position: 'fixed', top: '1rem', right: '1rem', zIndex: 99999,
+      position: 'fixed', top: '1rem', right: '1rem',
+      // Toasts acima dos modais e do confirm (2026-11-27) — feedback nunca atrás
+      zIndex: 1000001,
       display: 'flex', flexDirection: 'column', gap: '0.5rem',
       maxWidth: '400px'
     }}>

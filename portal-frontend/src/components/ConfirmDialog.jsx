@@ -7,7 +7,9 @@ const ConfirmDialog = ({ message, onConfirm, onCancel, title }) => {
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 99999, padding: '1rem'
+      // Confirmação SEMPRE acima dos modais (máx. 100003) — 2026-11-27:
+      // z-index igual ao modal fazia o confirm abrir ATRÁS do quadro de informações
+      zIndex: 1000000, padding: '1rem'
     }}>
       <div style={{
         background: 'white', borderRadius: '0.75rem', width: '100%', maxWidth: '400px',

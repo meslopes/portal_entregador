@@ -374,7 +374,8 @@ def get_tenants():
     try:
         from src.models.portal_models import Driver, Order, Restaurant, Tenant
 
-        tenants = Tenant.query.all()
+        # Lixeira (2026-11-27): tenants excluídos não aparecem na lista
+        tenants = Tenant.query.filter(Tenant.deleted_at.is_(None)).all()
         result = []
 
         # Contagens em lote (evita N+1 — item "Índices + N+1" da auditoria)
@@ -757,124 +758,258 @@ def update_tenant(tenant_id):
         return jsonify({'error': str(e)}), 500
 
 
+def _excluir_tenant_definitivo(tenant):
+    """Hard delete do tenant e de tudo que deriva dele (uso: lixeira → permanente).
+
+    Estratégia genérica: o banco descobre sozinho todas as chaves estrangeiras
+    e apaga os dados que derivam do tenant na ordem certa (filhos antes dos
+    pais). Tabela nova criada no futuro entra automaticamente. Usuários são
+    mantidos no sistema — apenas desvinculados do tenant.
+    """
+    from collections import defaultdict
+
+    tenant_id = tenant.id
+
+    # 1) Mapa de ligações: filho.coluna -> pai (ex.: addresses.customer_id -> customers)
+    fks = db.session.execute(db.text("""
+        SELECT kcu.table_name, kcu.column_name, ccu.table_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+        JOIN information_schema.constraint_column_usage ccu
+          ON tc.constraint_name = ccu.constraint_name
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_schema = 'public'
+    """)).fetchall()
+
+    # 2) Coletar os IDs de tudo que deriva do tenant (caminhando as ligações)
+    ids_por_tabela = defaultdict(set)
+    ids_por_tabela['tenants'].add(tenant_id)
+    mudou = True
+    while mudou:
+        mudou = False
+        for filho, coluna, pai in fks:
+            if not ids_por_tabela.get(pai) or filho == pai:
+                continue
+            rows = db.session.execute(db.text(
+                f'SELECT id FROM "{filho}" WHERE "{coluna}" = ANY(:pids)'
+            ), {"pids": list(ids_por_tabela[pai])}).fetchall()
+            novos = {r[0] for r in rows} - ids_por_tabela[filho]
+            if novos:
+                ids_por_tabela[filho] |= novos
+                mudou = True
+
+    # 3) Ordem de exclusão: filho antes do pai (ordenação topológica).
+    #    'users' e 'tenants' ficam de fora: usuários são desvinculados (não
+    #    apagados) e o tenant é apagado no passo 6 — apagá-lo aqui falharia
+    #    na FK de users e geraria falso aviso de "tabela não limpa"
+    tabelas = {t for t in ids_por_tabela if ids_por_tabela[t] and t not in ('users', 'tenants')}
+    posteriores = defaultdict(set)
+    grau = defaultdict(int)
+    for filho, coluna, pai in fks:
+        if filho in tabelas and pai in tabelas and filho != pai and pai not in posteriores[filho]:
+            posteriores[filho].add(pai)
+            grau[pai] += 1
+    fila = [t for t in tabelas if grau[t] == 0]
+    ordem = []
+    while fila:
+        t = fila.pop()
+        ordem.append(t)
+        for pai in posteriores[t]:
+            grau[pai] -= 1
+            if grau[pai] == 0:
+                fila.append(pai)
+    # Sobras de ciclos (se houver) vão por último
+    ordem += [t for t in tabelas if t not in ordem]
+
+    # 4) Apagar na ordem (savepoint: uma falha não derruba as demais)
+    falhas = []
+    for tabela in ordem:
+        try:
+            with db.session.begin_nested():
+                db.session.execute(db.text(
+                    f'DELETE FROM "{tabela}" WHERE id = ANY(:ids)'
+                ), {"ids": list(ids_por_tabela[tabela])})
+        except Exception:
+            falhas.append(tabela)  # savepoint revertido — as demais exclusões seguem
+
+    # 5) Usuários são mantidos no sistema — apenas desvinculados do tenant
+    if ids_por_tabela.get('users'):
+        db.session.execute(db.text(
+            "UPDATE users SET tenant_id = NULL WHERE id = ANY(:ids)"
+        ), {"ids": list(ids_por_tabela['users'])})
+
+    # 6) O tenant SEMPRE é excluído
+    db.session.delete(tenant)
+    return falhas
+
+
 @platform_bp.route('/tenants/<int:tenant_id>', methods=['DELETE'])
 @jwt_required()
 @platform_admin_required
 def delete_tenant(tenant_id):
-    """Exclui um tenant"""
+    """Move um tenant para a LIXEIRA (soft delete — 2026-11-27).
+
+    Igual aos usuários: nada é apagado aqui; o tenant fica na lixeira pelo
+    prazo de retenção (padrão 90 dias) e pode ser restaurado. A exclusão
+    PERMANENTE (com os dados) só acontece pela lixeira.
+    """
     try:
-        from src.models.portal_models import Driver, Order, Restaurant, Tenant
+        from src.models.portal_models import Tenant
 
         tenant = Tenant.query.get(tenant_id)
         if not tenant:
             return jsonify({'error': 'Tenant não encontrado'}), 404
 
-        # Verificar se tem dados vinculados
-        drivers = Driver.query.filter_by(tenant_id=tenant_id).count()
-        restaurants = Restaurant.query.filter_by(tenant_id=tenant_id).count()
-        orders = Order.query.filter_by(tenant_id=tenant_id).count()
-        users = User.query.filter_by(tenant_id=tenant_id).count()
+        if tenant.deleted_at:
+            return jsonify({'error': 'Tenant já está na lixeira'}), 400
 
-        force = request.args.get('force', 'false').lower() == 'true'
+        current_user_id = None
+        try:
+            current_user_id = int(get_jwt_identity())
+        except Exception:
+            pass
 
-        if (drivers > 0 or restaurants > 0 or orders > 0 or users > 0) and not force:
-            return jsonify({
-                'error': 'Tenant possui dados vinculados',
-                'drivers': drivers,
-                'restaurants': restaurants,
-                'orders': orders,
-                'users': users,
-                'suggestion': 'Use ?force=true para excluir mesmo assim'
-            }), 400
-
-        # Excluir dados vinculados — estratégia genérica: o banco descobre sozinho
-        # todas as chaves estrangeiras e apaga os dados que derivam do tenant na
-        # ordem certa (filhos antes dos pais). Tabela nova criada no futuro entra
-        # automaticamente. Roda SEMPRE (mesmo sem force) — senão tenant "vazio"
-        # com linhas derivadas (ex.: route_settings) estourava FK no delete.
-        # O `force` acima continua valendo só para o aviso de dados vinculados.
-        falhas = []
-        from collections import defaultdict
-
-        # 1) Mapa de ligações: filho.coluna -> pai (ex.: addresses.customer_id -> customers)
-        fks = db.session.execute(db.text("""
-            SELECT kcu.table_name, kcu.column_name, ccu.table_name
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu
-              ON tc.constraint_name = kcu.constraint_name
-            JOIN information_schema.constraint_column_usage ccu
-              ON tc.constraint_name = ccu.constraint_name
-            WHERE tc.constraint_type = 'FOREIGN KEY'
-              AND tc.table_schema = 'public'
-        """)).fetchall()
-
-        # 2) Coletar os IDs de tudo que deriva do tenant (caminhando as ligações)
-        ids_por_tabela = defaultdict(set)
-        ids_por_tabela['tenants'].add(tenant_id)
-        mudou = True
-        while mudou:
-            mudou = False
-            for filho, coluna, pai in fks:
-                if not ids_por_tabela.get(pai) or filho == pai:
-                    continue
-                rows = db.session.execute(db.text(
-                    f'SELECT id FROM "{filho}" WHERE "{coluna}" = ANY(:pids)'
-                ), {"pids": list(ids_por_tabela[pai])}).fetchall()
-                novos = {r[0] for r in rows} - ids_por_tabela[filho]
-                if novos:
-                    ids_por_tabela[filho] |= novos
-                    mudou = True
-
-        # 3) Ordem de exclusão: filho antes do pai (ordenação topológica)
-        tabelas = {t for t in ids_por_tabela if ids_por_tabela[t] and t != 'users'}
-        posteriores = defaultdict(set)
-        grau = defaultdict(int)
-        for filho, coluna, pai in fks:
-            if filho in tabelas and pai in tabelas and filho != pai and pai not in posteriores[filho]:
-                posteriores[filho].add(pai)
-                grau[pai] += 1
-        fila = [t for t in tabelas if grau[t] == 0]
-        ordem = []
-        while fila:
-            t = fila.pop()
-            ordem.append(t)
-            for pai in posteriores[t]:
-                grau[pai] -= 1
-                if grau[pai] == 0:
-                    fila.append(pai)
-        # Sobras de ciclos (se houver) vão por último
-        ordem += [t for t in tabelas if t not in ordem]
-
-        # 4) Apagar na ordem (savepoint: uma falha não derruba as demais)
-        for tabela in ordem:
-            try:
-                with db.session.begin_nested():
-                    db.session.execute(db.text(
-                        f'DELETE FROM "{tabela}" WHERE id = ANY(:ids)'
-                    ), {"ids": list(ids_por_tabela[tabela])})
-            except Exception:
-                falhas.append(tabela)  # savepoint revertido — as demais exclusões seguem
-
-        # 5) Usuários são mantidos no sistema — apenas desvinculados do tenant
-        if ids_por_tabela.get('users'):
-            db.session.execute(db.text(
-                "UPDATE users SET tenant_id = NULL WHERE id = ANY(:ids)"
-            ), {"ids": list(ids_por_tabela['users'])})
-
-        # 6) O tenant SEMPRE é excluído (fix 2026-11-27: o delete estava
-        #    DENTRO do if de usuários E do if force — tenant sem usuário ou
-        #    sem dados "excluía" com sucesso mas continuava no banco)
-        db.session.delete(tenant)
+        tenant.deleted_at = datetime.now(timezone.utc)
+        tenant.deleted_by = current_user_id
+        # is_active=False bloqueia login/acesso imediatamente (os portões de
+        # status já existentes tratam tenant inativo); restaurar reverte
+        tenant.is_active = False
         db.session.commit()
 
-        msg = 'Tenant excluído com sucesso'
+        return jsonify({'message': 'Tenant movido para a lixeira'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao mover tenant para a lixeira: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/deleted', methods=['GET'])
+@jwt_required()
+@platform_admin_required
+def get_deleted_tenants():
+    """Lista os tenants na lixeira (soft delete) — igual à lixeira de usuários"""
+    try:
+        from src.models.portal_models import SystemConfig, Tenant
+
+        tenants = Tenant.query.filter(Tenant.deleted_at.isnot(None)).order_by(
+            Tenant.deleted_at.desc()).all()
+
+        itens = []
+        for tenant in tenants:
+            item = tenant.to_dict()
+            if tenant.deleted_by:
+                deleter = User.query.get(tenant.deleted_by)
+                item['deleted_by_name'] = f"{deleter.first_name} {deleter.last_name}" if deleter else 'Desconhecido'
+            else:
+                item['deleted_by_name'] = 'Sistema'
+            if tenant.deleted_at:
+                ref = tenant.deleted_at
+                if ref.tzinfo is None:
+                    ref = ref.replace(tzinfo=timezone.utc)
+                item['days_deleted'] = (datetime.now(timezone.utc) - ref).days
+            itens.append(item)
+
+        retention_config = SystemConfig.query.filter_by(config_key='retention_days').first()
+        retention_days = int(retention_config.config_value) if retention_config else 90
+
+        return jsonify({
+            'tenants': itens,
+            'total': len(itens),
+            'config': {'retention_days': retention_days}
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Erro ao listar lixeira de tenants: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/<int:tenant_id>/restore', methods=['POST'])
+@jwt_required()
+@platform_admin_required
+def restore_tenant(tenant_id):
+    """Restaura um tenant da lixeira"""
+    try:
+        from src.models.portal_models import Tenant
+
+        tenant = Tenant.query.get(tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Tenant não encontrado'}), 404
+        if not tenant.deleted_at:
+            return jsonify({'error': 'Tenant não está na lixeira'}), 400
+
+        tenant.deleted_at = None
+        tenant.deleted_by = None
+        tenant.is_active = True
+        db.session.commit()
+
+        return jsonify({'message': 'Tenant restaurado com sucesso'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao restaurar tenant: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/<int:tenant_id>/permanent', methods=['DELETE'])
+@jwt_required()
+@platform_admin_required
+def delete_tenant_permanent(tenant_id):
+    """Exclui PERMANENTEMENTE um tenant da lixeira (com todos os dados)"""
+    try:
+        from src.models.portal_models import Tenant
+
+        tenant = Tenant.query.get(tenant_id)
+        if not tenant:
+            return jsonify({'error': 'Tenant não encontrado'}), 404
+        if not tenant.deleted_at:
+            return jsonify({'error': 'Tenant deve estar na lixeira antes de ser excluído permanentemente'}), 400
+
+        falhas = _excluir_tenant_definitivo(tenant)
+        db.session.commit()
+
+        msg = 'Tenant excluído permanentemente'
         if falhas:
             msg += f' (atenção: tabelas não limpas: {", ".join(falhas)})'
         return jsonify({'message': msg}), 200
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Erro ao excluir tenant: {e}")
+        logger.error(f"Erro ao excluir tenant permanentemente: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@platform_bp.route('/tenants/cleanup-deleted', methods=['POST'])
+@jwt_required()
+@platform_admin_required
+def cleanup_deleted_tenants():
+    """Exclui permanentemente os tenants selecionados da lixeira"""
+    try:
+        from src.models.portal_models import Tenant
+
+        data = request.get_json() or {}
+        ids = data.get('tenant_ids') or []
+        if not ids:
+            return jsonify({'error': 'tenant_ids é obrigatório'}), 400
+
+        excluidos = 0
+        falhas = []
+        for tid in ids:
+            tenant = Tenant.query.get(tid)
+            if tenant and tenant.deleted_at:
+                falhas += _excluir_tenant_definitivo(tenant)
+                excluidos += 1
+
+        db.session.commit()
+        msg = f'{excluidos} tenant(s) excluído(s) permanentemente'
+        if falhas:
+            msg += f' (atenção: tabelas não limpas: {", ".join(sorted(set(falhas)))})'
+        return jsonify({'message': msg}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao limpar lixeira de tenants: {e}")
         return jsonify({'error': str(e)}), 500
 
 

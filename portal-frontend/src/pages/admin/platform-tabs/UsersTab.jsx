@@ -5,7 +5,7 @@ const cardStyle = {
   boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
 };
 
-export default function UsersTab({ users, usersLoading, tenants, selectedTenantFilter, onFilterChange, onRefresh, onEditUser, onDeleteUser }) {
+export default function UsersTab({ users, usersLoading, tenants, selectedTenantFilter, onFilterChange, onRefresh, onEditUser, onDeleteUser, onOpenTrash }) {
   return (
     <div style={cardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -19,6 +19,9 @@ export default function UsersTab({ users, usersLoading, tenants, selectedTenantF
             <option value="">Todos os Tenants</option>
             {tenants.map(t => (<option key={t.id} value={t.id}>{t.name}</option>))}
           </select>
+          <button onClick={onOpenTrash} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: '#64748b' }}>
+            <Trash2 size={14} /> Lixeira
+          </button>
           <button onClick={onRefresh} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontSize: '0.75rem', color: '#64748b' }}>
             <RefreshCw size={14} /> Atualizar
           </button>

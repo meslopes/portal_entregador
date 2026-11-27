@@ -1187,6 +1187,24 @@ with app.app_context():
         print(f"Migração prep_time_locked: {e}")
         db.session.rollback()
 
+    # Migration lixeira de tenants (2026-11-27) — soft delete igual aos usuários
+    try:
+        for col_sql in (
+            "deleted_at TIMESTAMP",
+            "deleted_by INTEGER",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'tenants' AND column_name = '{col}') "
+                f"THEN ALTER TABLE tenants ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Lixeira de tenants (deleted_at/deleted_by) adicionada")
+    except Exception as e:
+        print(f"Migração lixeira de tenants: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

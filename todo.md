@@ -297,6 +297,14 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
+## ✅ 2026-11-27 — Lixeira de tenants + botão Lixeira em Usuários do painel (CONCLUIDA)
+- [x] Relato do Mauro: lixeira não aparecia (nem para tenants, nem "ao lado de usuários") — a lixeira de usuários só existia em Admin→Usuários e aba Admins; exclusão de tenant era permanente
+- [x] TENANTS COMO USUÁRIOS: `deleted_at`/`deleted_by` em tenants (migração 2 entries) — excluir = soft delete ("movido para a lixeira", dados preservados, is_active=False bloqueia acesso); RESTAURAR devolve; PERMANENT (ou bulk cleanup) apaga com o walk genérico de FKs (usuários mantidos e desvinculados)
+- [x] Retenção igual: `retention_days` (padrão 90, configurável) — lixeira expõe dias + quem excluiu + aviso de registros antigos + seleção em lote (restaurar/excluir)
+- [x] UI: TenantTrashModal + botão "Lixeira" na aba Tenants; botão "Lixeira" ADICIONADO também na aba Usuários do painel da plataforma (faltava — era só em Admin→Usuários e aba Admins)
+- [x] Exclusão de tenant agora explica o fluxo no confirm ("mover para a lixeira... 90 dias... pode ser restaurado")
+- [x] Smoke 9/9 (_tmp_smoke_tenant_trash.py: lixeira/soft + restore + permanent + bulk + retenção 90d) + build + backend compila ✅
+
 ## ✅ 2026-11-27 — Fix: exclusão de tenant no painel da plataforma (CONCLUIDA)
 - [x] Relato do Mauro: excluir tenant "parecia acontecer" mas voltava após atualização
 - [x] CAUSA: `db.session.delete(tenant)` estava DENTRO do `if` de usuários E do `if force` — tenant sem usuário (ou sem dados) retornava 200 sem apagar nada; além disso, tenant "vazio" com linhas derivadas (route_settings) estouraria FK sem force

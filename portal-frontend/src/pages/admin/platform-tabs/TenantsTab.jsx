@@ -1,28 +1,41 @@
-import { Plus, Eye, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
+import { Plus, Eye, ToggleLeft, ToggleRight, RefreshCw, Trash2 } from 'lucide-react';
 
 const cardStyle = {
   background: 'white', borderRadius: '0.75rem', padding: '1.5rem',
   boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
 };
 
-export default function TenantsTab({ tenants, onCreateTenant, onToggleTenant, onViewTenant }) {
+export default function TenantsTab({ tenants, onCreateTenant, onToggleTenant, onViewTenant, onOpenTrash }) {
   return (
     <div style={cardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1e293b' }}>
           Todos os Tenants
         </h2>
-        <button
-          onClick={onCreateTenant}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
-            border: 'none', background: '#2563eb', color: 'white',
-            fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
-          }}
-        >
-          <Plus size={18} /> Novo Tenant
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={onOpenTrash}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0', background: 'white', color: '#64748b',
+              fontSize: '0.875rem', cursor: 'pointer'
+            }}
+          >
+            <Trash2 size={18} /> Lixeira
+          </button>
+          <button
+            onClick={onCreateTenant}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.625rem 1.25rem', borderRadius: '0.5rem',
+              border: 'none', background: '#2563eb', color: 'white',
+              fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer'
+            }}
+          >
+            <Plus size={18} /> Novo Tenant
+          </button>
+        </div>
       </div>
 
       <div style={{ overflowX: 'auto' }}>

@@ -37,6 +37,10 @@ class Tenant(db.Model):
     privacy_url = db.Column(db.String(500))  # URL da política de privacidade
     # Status
     is_active = db.Column(db.Boolean, default=True)
+    # Lixeira (2026-11-27): soft delete igual aos usuários — excluído vai para a
+    # lixeira (90 dias, retenção configurável) e pode ser restaurado
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_by = db.Column(db.Integer, nullable=True)  # users.id de quem excluiu
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -65,6 +69,7 @@ class Tenant(db.Model):
             'terms_url': self.terms_url,
             'privacy_url': self.privacy_url,
             'is_active': self.is_active,
+            'deleted_at': self.deleted_at.isoformat() if self.deleted_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

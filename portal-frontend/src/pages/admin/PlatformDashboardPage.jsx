@@ -3,6 +3,8 @@ import { confirmAsync } from '@/components/ConfirmDialog.utils';
 import api from '@/lib/api';
 import { showToast } from '@/components/Toast.utils';
 import { isCnpjValid } from '@/lib/cnpj';
+import TrashModal from '@/components/TrashModal';
+import TenantTrashModal from './TenantTrashModal';
 import {
   OverviewTab, TenantsTab, UsersTab, PendingTab, AdminsTab, PlatformBillingTab,
   PlatformHeader, TabNavigation, LoadingPage, DashboardModals
@@ -32,6 +34,9 @@ const PlatformDashboardPage = () => {
   const [userEditLoading, setUserEditLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // Lixeiras (2026-11-27): usuários e tenants — soft delete com restauração
+  const [showTrash, setShowTrash] = useState(false);
+  const [showTenantTrash, setShowTenantTrash] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -215,24 +220,23 @@ const PlatformDashboardPage = () => {
     if (tenant.orders_count > 0) dadosVinculados.push(`${tenant.orders_count} pedido(s)`);
     if (tenant.users?.length > 0) dadosVinculados.push(`${tenant.users.length} usuário(s)`);
 
-    let mensagem = `Tem certeza que deseja excluir o tenant "${tenant.name}"?`;
+    let mensagem = `Mover o tenant "${tenant.name}" para a LIXEIRA?`;
+    mensagem += `\n\nNada será apagado agora — fica na lixeira por 90 dias e pode ser restaurado.`;
     if (dadosVinculados.length > 0) {
-      mensagem += `\n\nATENÇÃO: Este tenant possui ${dadosVinculados.join(', ')} vinculados.`;
-      mensagem += `\nTodos os dados serão excluídos permanentemente.`;
+      mensagem += `\nEste tenant possui ${dadosVinculados.join(', ')} vinculados (ficam preservados até a exclusão permanente).`;
     }
 
     if (!(await confirmAsync(mensagem))) return;
 
     try {
-      const force = dadosVinculados.length > 0 ? '?force=true' : '';
-      await api.delete(`/api/platform/tenants/${tenant.id}${force}`);
-      showToast('Tenant excluído com sucesso!', 'success');
+      await api.delete(`/api/platform/tenants/${tenant.id}`);
+      showToast('Tenant movido para a lixeira!', 'success');
       setShowTenantModal(false);
       setSelectedTenant(null);
       loadTenants();
       loadDashboard();
     } catch (err) {
-      showToast(err.response?.data?.error || 'Erro ao excluir tenant', 'error');
+      showToast(err.response?.data?.error || 'Erro ao mover tenant para a lixeira', 'error');
     }
   };
 
@@ -316,12 +320,12 @@ const PlatformDashboardPage = () => {
 
       {/* Tenants Tab */}
       {activeTab === 'tenants' && (
-        <TenantsTab tenants={tenants} onCreateTenant={() => setShowCreateTenantModal(true)} onToggleTenant={handleToggleTenant} onViewTenant={handleViewTenant} />
+        <TenantsTab tenants={tenants} onCreateTenant={() => setShowCreateTenantModal(true)} onToggleTenant={handleToggleTenant} onViewTenant={handleViewTenant} onOpenTrash={() => setShowTenantTrash(true)} />
       )}
 
       {/* Users Tab */}
       {activeTab === 'users' && (
-        <UsersTab users={users} usersLoading={usersLoading} tenants={tenants} selectedTenantFilter={selectedTenantFilter} onFilterChange={setSelectedTenantFilter} onRefresh={loadUsers} onEditUser={handleEditUser} onDeleteUser={handleDeleteUser} />
+        <UsersTab users={users} usersLoading={usersLoading} tenants={tenants} selectedTenantFilter={selectedTenantFilter} onFilterChange={setSelectedTenantFilter} onRefresh={loadUsers} onEditUser={handleEditUser} onDeleteUser={handleDeleteUser} onOpenTrash={() => setShowTrash(true)} />
       )}
 
       {/* Admins Tab */}
@@ -364,6 +368,18 @@ const PlatformDashboardPage = () => {
         onCloseUserEdit={() => { setShowUserEditModal(false); setEditingUser(null); }}
         onUpdateUser={handleUpdateUser}
         onUserEditFormChange={setUserEditForm}
+      />
+
+      {/* Lixeiras (2026-11-27) — usuários e tenants */}
+      <TrashModal
+        isOpen={showTrash}
+        onClose={() => setShowTrash(false)}
+        onRestore={() => { loadUsers(); loadDashboard(); }}
+      />
+      <TenantTrashModal
+        isOpen={showTenantTrash}
+        onClose={() => setShowTenantTrash(false)}
+        onRestore={() => { loadTenants(); loadDashboard(); }}
       />
     </div>
   );

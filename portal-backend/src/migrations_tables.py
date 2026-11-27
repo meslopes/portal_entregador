@@ -159,6 +159,22 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration: lixeira de tenants (2026-11-27) — soft delete igual aos usuários
+    try:
+        for col_sql in (
+            "deleted_at TIMESTAMP",
+            "deleted_by INTEGER",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'tenants' AND column_name = '{col}') "
+                f"THEN ALTER TABLE tenants ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Migration: tabelas de assinatura (establishment_subscriptions e subscription_invoices)
     try:
         db.session.execute(db.text("""
