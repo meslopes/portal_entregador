@@ -787,83 +787,90 @@ def delete_tenant(tenant_id):
                 'suggestion': 'Use ?force=true para excluir mesmo assim'
             }), 400
 
-        # Excluir dados vinculados se force=true
-        # Estratégia genérica: o banco descobre sozinho todas as chaves
-        # estrangeiras e apaga os dados que derivam do tenant na ordem certa
-        # (filhos antes dos pais). Tabela nova criada no futuro entra
-        # automaticamente, sem precisar manter lista aqui.
-        if force:
-            from collections import defaultdict
+        # Excluir dados vinculados — estratégia genérica: o banco descobre sozinho
+        # todas as chaves estrangeiras e apaga os dados que derivam do tenant na
+        # ordem certa (filhos antes dos pais). Tabela nova criada no futuro entra
+        # automaticamente. Roda SEMPRE (mesmo sem force) — senão tenant "vazio"
+        # com linhas derivadas (ex.: route_settings) estourava FK no delete.
+        # O `force` acima continua valendo só para o aviso de dados vinculados.
+        falhas = []
+        from collections import defaultdict
 
-            # 1) Mapa de ligações: filho.coluna -> pai (ex.: addresses.customer_id -> customers)
-            fks = db.session.execute(db.text("""
-                SELECT kcu.table_name, kcu.column_name, ccu.table_name
-                FROM information_schema.table_constraints tc
-                JOIN information_schema.key_column_usage kcu
-                  ON tc.constraint_name = kcu.constraint_name
-                JOIN information_schema.constraint_column_usage ccu
-                  ON tc.constraint_name = ccu.constraint_name
-                WHERE tc.constraint_type = 'FOREIGN KEY'
-                  AND tc.table_schema = 'public'
-            """)).fetchall()
+        # 1) Mapa de ligações: filho.coluna -> pai (ex.: addresses.customer_id -> customers)
+        fks = db.session.execute(db.text("""
+            SELECT kcu.table_name, kcu.column_name, ccu.table_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+              ON tc.constraint_name = kcu.constraint_name
+            JOIN information_schema.constraint_column_usage ccu
+              ON tc.constraint_name = ccu.constraint_name
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+              AND tc.table_schema = 'public'
+        """)).fetchall()
 
-            # 2) Coletar os IDs de tudo que deriva do tenant (caminhando as ligações)
-            ids_por_tabela = defaultdict(set)
-            ids_por_tabela['tenants'].add(tenant_id)
-            mudou = True
-            while mudou:
-                mudou = False
-                for filho, coluna, pai in fks:
-                    if not ids_por_tabela.get(pai) or filho == pai:
-                        continue
-                    rows = db.session.execute(db.text(
-                        f'SELECT id FROM "{filho}" WHERE "{coluna}" = ANY(:pids)'
-                    ), {"pids": list(ids_por_tabela[pai])}).fetchall()
-                    novos = {r[0] for r in rows} - ids_por_tabela[filho]
-                    if novos:
-                        ids_por_tabela[filho] |= novos
-                        mudou = True
-
-            # 3) Ordem de exclusão: filho antes do pai (ordenação topológica)
-            tabelas = {t for t in ids_por_tabela if ids_por_tabela[t] and t != 'users'}
-            posteriores = defaultdict(set)
-            grau = defaultdict(int)
+        # 2) Coletar os IDs de tudo que deriva do tenant (caminhando as ligações)
+        ids_por_tabela = defaultdict(set)
+        ids_por_tabela['tenants'].add(tenant_id)
+        mudou = True
+        while mudou:
+            mudou = False
             for filho, coluna, pai in fks:
-                if filho in tabelas and pai in tabelas and filho != pai and pai not in posteriores[filho]:
-                    posteriores[filho].add(pai)
-                    grau[pai] += 1
-            fila = [t for t in tabelas if grau[t] == 0]
-            ordem = []
-            while fila:
-                t = fila.pop()
-                ordem.append(t)
-                for pai in posteriores[t]:
-                    grau[pai] -= 1
-                    if grau[pai] == 0:
-                        fila.append(pai)
-            # Sobras de ciclos (se houver) vão por último
-            ordem += [t for t in tabelas if t not in ordem]
+                if not ids_por_tabela.get(pai) or filho == pai:
+                    continue
+                rows = db.session.execute(db.text(
+                    f'SELECT id FROM "{filho}" WHERE "{coluna}" = ANY(:pids)'
+                ), {"pids": list(ids_por_tabela[pai])}).fetchall()
+                novos = {r[0] for r in rows} - ids_por_tabela[filho]
+                if novos:
+                    ids_por_tabela[filho] |= novos
+                    mudou = True
 
-            # 4) Apagar na ordem (savepoint: uma falha não derruba as demais)
-            for tabela in ordem:
-                try:
-                    with db.session.begin_nested():
-                        db.session.execute(db.text(
-                            f'DELETE FROM "{tabela}" WHERE id = ANY(:ids)'
-                        ), {"ids": list(ids_por_tabela[tabela])})
-                except Exception:
-                    pass  # savepoint revertido — as demais exclusões seguem
+        # 3) Ordem de exclusão: filho antes do pai (ordenação topológica)
+        tabelas = {t for t in ids_por_tabela if ids_por_tabela[t] and t != 'users'}
+        posteriores = defaultdict(set)
+        grau = defaultdict(int)
+        for filho, coluna, pai in fks:
+            if filho in tabelas and pai in tabelas and filho != pai and pai not in posteriores[filho]:
+                posteriores[filho].add(pai)
+                grau[pai] += 1
+        fila = [t for t in tabelas if grau[t] == 0]
+        ordem = []
+        while fila:
+            t = fila.pop()
+            ordem.append(t)
+            for pai in posteriores[t]:
+                grau[pai] -= 1
+                if grau[pai] == 0:
+                    fila.append(pai)
+        # Sobras de ciclos (se houver) vão por último
+        ordem += [t for t in tabelas if t not in ordem]
 
-            # 5) Usuários são mantidos no sistema — apenas desvinculados do tenant
-            if ids_por_tabela.get('users'):
-                db.session.execute(db.text(
-                    "UPDATE users SET tenant_id = NULL WHERE id = ANY(:ids)"
-                ), {"ids": list(ids_por_tabela['users'])})
+        # 4) Apagar na ordem (savepoint: uma falha não derruba as demais)
+        for tabela in ordem:
+            try:
+                with db.session.begin_nested():
+                    db.session.execute(db.text(
+                        f'DELETE FROM "{tabela}" WHERE id = ANY(:ids)'
+                    ), {"ids": list(ids_por_tabela[tabela])})
+            except Exception:
+                falhas.append(tabela)  # savepoint revertido — as demais exclusões seguem
 
-                db.session.delete(tenant)
+        # 5) Usuários são mantidos no sistema — apenas desvinculados do tenant
+        if ids_por_tabela.get('users'):
+            db.session.execute(db.text(
+                "UPDATE users SET tenant_id = NULL WHERE id = ANY(:ids)"
+            ), {"ids": list(ids_por_tabela['users'])})
+
+        # 6) O tenant SEMPRE é excluído (fix 2026-11-27: o delete estava
+        #    DENTRO do if de usuários E do if force — tenant sem usuário ou
+        #    sem dados "excluía" com sucesso mas continuava no banco)
+        db.session.delete(tenant)
         db.session.commit()
 
-        return jsonify({'message': 'Tenant excluído com sucesso'}), 200
+        msg = 'Tenant excluído com sucesso'
+        if falhas:
+            msg += f' (atenção: tabelas não limpas: {", ".join(falhas)})'
+        return jsonify({'message': msg}), 200
 
     except Exception as e:
         db.session.rollback()

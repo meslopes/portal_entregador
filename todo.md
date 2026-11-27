@@ -297,6 +297,12 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
+## ✅ 2026-11-27 — Fix: exclusão de tenant no painel da plataforma (CONCLUIDA)
+- [x] Relato do Mauro: excluir tenant "parecia acontecer" mas voltava após atualização
+- [x] CAUSA: `db.session.delete(tenant)` estava DENTRO do `if` de usuários E do `if force` — tenant sem usuário (ou sem dados) retornava 200 sem apagar nada; além disso, tenant "vazio" com linhas derivadas (route_settings) estouraria FK sem force
+- [x] FIX: delete do tenant SEMPRE executa (com ou sem force/usuários); limpeza genérica por FK roda sempre (force = só o aviso de dados vinculados); falhas de savepoint aparecem na resposta ("tabelas não limpas")
+- [x] Smoke 6/6 (_tmp_smoke_del_tenant2.py: tenant sem usuário some de verdade · gate 400 sem force · tenant com usuário+derivados some, usuário desvinculado e mantido, route_settings limpo)
+
 ## ✅ 2026-11-27 — Raiz lembra a área do usuário (CONCLUIDA)
 - [x] Relato do Mauro: links/atalhos/favoritos de www.muv.log.br sempre abriam a tela azul (o app/atalho antigo congela start_url=/; instalar da tela azul instala o app do estabelecimento — "Links compatíveis: www.muv.log.br/*")
 - [x] `muv_last_role` (localStorage): login do próprio grava 'own' (login + ativação + link cruzado); login azul grava 'platform' (AuthContext + link cruzado)
