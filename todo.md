@@ -297,7 +297,13 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
-## 📋 Pendencias Futuras
+## ⚠️ PENDÊNCIAS MANUAIS — ANTES DE PRODUÇÃO (2026-11-26)
+> **NÃO colocar em produção sem resolver.** Detalhes em MEMORY-auditoria-seguranca-2026-11.md
+- [ ] **1. ROTACIONAR CHAVES** (SECRET_KEY, JWT_SECRET_KEY, Google Maps, Supabase) — Cloud Run env vars. Risco: JWT forgery
+- [ ] **2. PURGAR GIT HISTORY** (.env + backup_supabase) — BFG Repo-Cleaner. Risco: senhas recuperáveis
+- [ ] **3. FLASK_ENV=production** no Cloud Run. Risco: CORS wildcard
+- [ ] **4. WHATSAPP_APP_SECRET** no Cloud Run. Risco: webhook aceita falso
+- [ ] **5. Supabase RLS** — verificar tabelas sem Row Level Security. Risco: banco aberto
 - [ ] INTEGRACAO WHATSAPP COMO CANAL DE PEDIDOS (2026-11-25, analise registrada): WhatsApp Business API (Meta) como canal de pedidos de cada EST — catalogo de produtos + localizacao GPS; MuvLog processa pedidos e gerencia entrega. 7 componentes: multi-credential, webhook handler, catalogo, parser pedido, criacao Order, notificacoes status, dashboard. Comparativo vs iFood: sem comissao, autonomia total, dados do cliente sao do EST. Chance de sucesso ALTA. Documento: docs/ANALISE_WHATSAPP_CANAL_PEDIDOS.md. NAO implementar ainda — Mauro vai iniciar depois.
 - [ ] INTEGRACAO IFOOD MULTI-TENANT (2026-11-25, analise registrada): integracao e dos ESTABELECIMENTOS (merchant no iFood), NAO da plataforma. MuvLog = camada tecnologica (conecta iFood de cada loja ao sistema de entregas). 8 requisitos, 5 fases. Modelo recomendado: layer tecnico (cada EST entra com suas credenciais). Documento: docs/ANALISE_IFOOD_MULTI_TENANT.md. NAO implementar ainda.
 - [ ] Integracao iFood - testar webhook com estabelecimento correto (Mauro: so quando o sistema estiver robusto)
