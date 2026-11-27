@@ -27,15 +27,19 @@ const ProtectedRoute = ({ children, requireAuth = true, requiredRole = null, req
   }
 
   // Verifica se o usuario tem o papel necessario
-  if (requiredRole && user?.user_type !== requiredRole) {
-    // Redireciona para a rota correta baseada no tipo de usuario
-    const userType = user?.user_type;
-    if (userType === 'ADMIN') {
-      return <Navigate to="/admin" replace />;
-    } else if (userType === 'CLIENT') {
-      return <Navigate to="/client" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
+  // SEGURANÇA: aceita string (um role) ou array (múltiplos roles)
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!roles.includes(user?.user_type)) {
+      // Redireciona para a rota correta baseada no tipo de usuario
+      const userType = user?.user_type;
+      if (userType === 'ADMIN') {
+        return <Navigate to="/admin" replace />;
+      } else if (userType === 'CLIENT') {
+        return <Navigate to="/client" replace />;
+      } else {
+        return <Navigate to="/dashboard" replace />;
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-﻿import { Route } from 'react-router-dom';
+import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ClientLayout from '@/components/ClientLayout';
 import ClientLoginPage from '@/pages/client/ClientLoginPage';
@@ -19,10 +19,10 @@ import ClientOrderLinkPage from '@/pages/client/ClientOrderLinkPage';
 import ClientGuidePage from '@/pages/client/ClientGuidePage';
 import PaymentReportsPage from '@/pages/PaymentReportsPage';
 
-// Rotas exclusivas de estabelecimentos — exige user_type=CLIENT
+// Rotas de estabelecimento — aceita CLIENT e ADMIN (admin pode lançar pedido)
 function WrappedRoute({ children }) {
   return (
-    <ProtectedRoute requiredRole="CLIENT">
+    <ProtectedRoute requiredRole={['CLIENT', 'ADMIN']}>
       <ClientLayout>{children}</ClientLayout>
     </ProtectedRoute>
   );
