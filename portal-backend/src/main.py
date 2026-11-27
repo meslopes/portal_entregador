@@ -1173,6 +1173,20 @@ with app.app_context():
         print(f"Migração reanálise roteirização: {e}")
         db.session.rollback()
 
+    # Migration bloqueio do tempo de preparo (2026-11-27) — admin fixa o valor
+    # e o estabelecimento não pode reconfigurar
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'restaurants' AND column_name = 'prep_time_locked') "
+            "THEN ALTER TABLE restaurants ADD COLUMN prep_time_locked BOOLEAN DEFAULT FALSE; END IF; END $$"
+        ))
+        db.session.commit()
+        print("Bloqueio do tempo de preparo (prep_time_locked) adicionado")
+    except Exception as e:
+        print(f"Migração prep_time_locked: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

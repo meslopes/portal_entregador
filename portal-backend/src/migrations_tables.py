@@ -148,6 +148,17 @@ def run_table_migrations():
     except Exception:
         db.session.rollback()
 
+    # Migration: bloqueio do tempo de preparo pelo admin (2026-11-27)
+    try:
+        db.session.execute(db.text(
+            "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+            "WHERE table_name = 'restaurants' AND column_name = 'prep_time_locked') "
+            "THEN ALTER TABLE restaurants ADD COLUMN prep_time_locked BOOLEAN DEFAULT FALSE; END IF; END $$"
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Migration: tabelas de assinatura (establishment_subscriptions e subscription_invoices)
     try:
         db.session.execute(db.text("""

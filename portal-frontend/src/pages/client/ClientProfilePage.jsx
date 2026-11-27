@@ -34,6 +34,7 @@ const ClientProfilePage = () => {
     seq_reset_mode: 'DAILY',
     fleet_sharing_enabled: false,
     preparation_minutes: 10,
+    prep_time_locked: false,
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -79,6 +80,7 @@ const ClientProfilePage = () => {
           seq_reset_mode: data.seq_reset_mode || 'DAILY',
           fleet_sharing_enabled: !!data.fleet_sharing_enabled,
           preparation_minutes: data.preparation_minutes ?? 10,
+          prep_time_locked: !!data.prep_time_locked,
         });
       }
     } catch (err) {

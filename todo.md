@@ -297,6 +297,12 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
+## ✅ 2026-11-27 — Tempo de preparo: override do admin + bloqueio (CONCLUIDA)
+- [x] `Restaurant.prep_time_locked` (migração nos 2 entries): admin FIXA o tempo de preparo e BLOQUEIA a reconfiguração pelo estabelecimento (protege contra loja reduzir demais e deixar o entregador esperando)
+- [x] Admin: campo "Tempo de Preparo" ganha checkbox "Bloquear alteração pelo estabelecimento" (form de estabelecimento) — endpoint PUT aceita prep_time_locked
+- [x] Estabelecimento: campo no perfil fica DESATIVADO com aviso "🔒 Fixado pelo administrador"; PUT rejeita mudança com 403 claro (salvar o MESMO valor não trava o formulário)
+- [x] Smoke 6/6 (_tmp_smoke_preplock.py: livre → admin fixa+bloqueia → 403 ao mudar → mesmo valor ok → GET expõe o bloqueio) + backend compila + build ✅
+
 ## ✅ 2026-11-27 — Roteirização: reanálise por evento + tempo de preparo (CONCLUIDA)
 - [x] REANÁLISE POR EVENTO (pedido do Mauro): cada pedido que entra na fila (SCHEDULED→PENDING, relançamento, link rápido, WhatsApp) AGENDA uma análise — janela até rodar = `preparation_minutes` do estabelecimento (agrupa pedidos que entram juntos; bebidas × lancheria, por loja); deadline mais cedo vence quando entram vários pedidos
 - [x] PISO CONFIGURÁVEL entre reanálises: `min_reroute_interval_min` (padrão 2 min, 1–60) em Config. Rotas (anti-thrash); ciclo periódico `auto_routing_interval_min` vira fallback para pedidos sem gatilho; loop do background tick de 30s com `agendamento_vencido`

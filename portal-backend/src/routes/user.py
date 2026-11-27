@@ -45,6 +45,7 @@ def get_profile():
                 user_data['seq_reset_mode'] = restaurant.seq_reset_mode or 'DAILY'
                 user_data['fleet_sharing_enabled'] = bool(restaurant.fleet_sharing_enabled)
                 user_data['preparation_minutes'] = restaurant.preparation_minutes or 10
+                user_data['prep_time_locked'] = bool(restaurant.prep_time_locked)
 
         return jsonify(user_data), 200
     except Exception as e:
@@ -147,6 +148,12 @@ def update_profile():
                         return jsonify({'error': 'preparation_minutes deve ser inteiro'}), 400
                     if not (1 <= val_prep <= 120):
                         return jsonify({'error': 'preparation_minutes deve estar entre 1 e 120 minutos'}), 400
+                    # Bloqueio do admin (2026-11-27): valor fixado não pode ser
+                    # reconfigurado pelo estabelecimento (ex.: reduzir demais e
+                    # deixar o entregador esperando o pedido). Salvar o MESMO
+                    # valor continua permitido (não trava o formulário).
+                    if restaurant.prep_time_locked and val_prep != (restaurant.preparation_minutes or 10):
+                        return jsonify({'error': 'Tempo de preparo bloqueado pelo administrador — fale com o suporte para ajustar'}), 403
                     restaurant.preparation_minutes = val_prep
 
                 # Dados cadastrais do estabelecimento (bug #3: eram ignorados)

@@ -127,13 +127,20 @@ const ClientEstablishmentForm = ({ establishmentData, setEstablishmentData, isSa
           <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Tempo de preparo (minutos)</label>
           <input
             type="number" min="1" max="120"
+            disabled={!!establishmentData.prep_time_locked}
             value={establishmentData.preparation_minutes ?? 10}
             onChange={e => setEstablishmentData({ ...establishmentData, preparation_minutes: e.target.value })}
-            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none' }}
+            style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.875rem', outline: 'none', background: establishmentData.prep_time_locked ? '#f1f5f9' : 'white', color: establishmentData.prep_time_locked ? '#64748b' : 'inherit' }}
           />
-          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0.25rem 0 0' }}>
-            Quanto sua loja leva para deixar o pedido pronto — também é a janela que o sistema espera para agrupar pedidos novos na mesma rota
-          </p>
+          {establishmentData.prep_time_locked ? (
+            <p style={{ fontSize: '0.6875rem', color: '#b45309', margin: '0.25rem 0 0' }}>
+              🔒 Fixado pelo administrador — para alterar, fale com o suporte
+            </p>
+          ) : (
+            <p style={{ fontSize: '0.6875rem', color: '#94a3b8', margin: '0.25rem 0 0' }}>
+              Quanto sua loja leva para deixar o pedido pronto — também é a janela que o sistema espera para agrupar pedidos novos na mesma rota
+            </p>
+          )}
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>Maquininha — acerto da máquina de cartão</label>

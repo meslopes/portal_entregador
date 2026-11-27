@@ -25,6 +25,10 @@ class Restaurant(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     # Tempo de preparo em minutos (configuravel por estabelecimento)
     preparation_minutes = db.Column(db.Integer, default=10)  # Tempo padrao: 10 minutos
+    # Bloqueio do admin (2026-11-27): o tempo de preparo do estabelecimento
+    # pode ser reduzido demais (entregador fica esperando) — quando o admin
+    # fixa o valor, o estabelecimento NÃO pode reconfigurar
+    prep_time_locked = db.Column(db.Boolean, default=False)
     # Praça
     square_id = db.Column(db.Integer, db.ForeignKey('squares.id'), nullable=True)
     # Tabela de preços (se vazio, usa a padrão da praça)
@@ -101,6 +105,7 @@ class Restaurant(db.Model):
             'opening_hours': self.opening_hours,
             'is_active': self.is_active,
             'preparation_minutes': self.preparation_minutes or 10,
+            'prep_time_locked': bool(self.prep_time_locked),
             'square_id': self.square_id,
             'pricing_table_id': self.pricing_table_id,
             'has_own_drivers': self.has_own_drivers,

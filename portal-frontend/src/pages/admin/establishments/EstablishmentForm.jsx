@@ -17,7 +17,8 @@ const EMPTY_FORM = {
   preparation_minutes: '10',
   pickup_confirmation_type: 'code', delivery_confirmation_type: 'code',
   has_own_drivers: false,
-  fleet_sharing_enabled: false
+  fleet_sharing_enabled: false,
+  prep_time_locked: false
 };
 
 const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, onSave }) => {
@@ -55,7 +56,8 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         pickup_confirmation_type: editing.pickup_confirmation_type || 'code',
         delivery_confirmation_type: editing.delivery_confirmation_type || 'code',
         has_own_drivers: !!editing.has_own_drivers,
-        fleet_sharing_enabled: !!editing.fleet_sharing_enabled
+        fleet_sharing_enabled: !!editing.fleet_sharing_enabled,
+        prep_time_locked: !!editing.prep_time_locked
       });
       if (editing.square_id) loadPricingTables(editing.square_id);
     } else {
@@ -117,6 +119,7 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
         delivery_confirmation_type: formData.delivery_confirmation_type || 'code',
         has_own_drivers: !!formData.has_own_drivers,
         fleet_sharing_enabled: !!formData.fleet_sharing_enabled,
+        prep_time_locked: !!formData.prep_time_locked,
       };
 
       if (isSuperAdmin && formData.tenant_id) {
@@ -344,6 +347,17 @@ const EstablishmentForm = ({ editing, isSuperAdmin, squares, tenants, onClose, o
           <input type="number" name="preparation_minutes" value={formData.preparation_minutes} onChange={handleChange} style={inputStyle} placeholder="10" min="1" max="120" />
           <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
             Tempo estimado que o estabelecimento leva para preparar um pedido. O entregador é notificado após este tempo para buscar o pedido.
+          </p>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', color: '#374151' }}>
+            <input
+              type="checkbox"
+              checked={!!formData.prep_time_locked}
+              onChange={e => setFormData(prev => ({ ...prev, prep_time_locked: e.target.checked }))}
+            />
+            Bloquear alteração pelo estabelecimento
+          </label>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+            Marcado: o estabelecimento vê o campo desativado no perfil e não consegue reconfigurar (protege contra tempo reduzido demais, que deixa o entregador esperando).
           </p>
         </FormField>
 

@@ -725,6 +725,10 @@ def update_establishment(establishment_id):
 
             est.preparation_minutes = int(data['preparation_minutes']) if data['preparation_minutes'] else 10
 
+        if 'prep_time_locked' in data:
+
+            est.prep_time_locked = bool(data['prep_time_locked'])
+
         if 'pickup_confirmation_type' in data:
 
             est.pickup_confirmation_type = data['pickup_confirmation_type']
