@@ -1150,7 +1150,7 @@
   <!-- AUDITORIA - ITENS PENDENTES    -->
   <!-- ============================== -->
   <div class="hierarchy" style="border-left: 4px solid #22c55e;">
-    <div class="hierarchy-title" style="color: #22c55e;">Auditoria de Segurança — Status (Atualizado 12/09/2026)</div>
+    <div class="hierarchy-title" style="color: #22c55e;">Auditoria de Segurança — Status (Atualizado 26/11/2026)</div>
     <div style="display: grid; gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem';">
       <div style="margin-bottom: 1rem;">
         <h4 style="color: #16a34a; margin-bottom: 0.5rem;">Críticos — TODOS RESOLVIDOS</h4>
@@ -1229,6 +1229,8 @@
           <li>2FA para admins (TOTP via Google Authenticator)</li>
           <li>Rate limiting (5/min no login, 300/min global)</li>
           <li>JWT com expiração de 4 horas</li>
+          <li><strong>Auditoria 2026-11-26 (20 itens):</strong> IDOR ownership checks ✅ · tenant isolation ✅ · server-side price recalc ✅ · quantity validation ✅ · WhatsApp HMAC ✅ · setup locked ✅ · PIN rate limit ✅ · XSS escapeHtml ✅ · AI guardrails ✅ · history leak fix ✅ · pay_invoice role ✅ · sensitive files removed ✅</li>
+          <li><strong>Pendente manual:</strong> rotacionar chaves (git history), FLASK_ENV=production, WHATSAPP_APP_SECRET, Supabase RLS</li>
         </ul>
       </div>
       <div style="margin-bottom: 1rem;">
