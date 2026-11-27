@@ -6,6 +6,7 @@ from functools import wraps
 import jwt
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from src.utils.rate_limit import limiter
 
 from src.models.portal_models import (
     EstablishmentDriver,
@@ -85,6 +86,7 @@ def own_driver_required(f):
 # ==================== AUTH ====================
 
 @own_driver_bp.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")  # SEGURANÇA: rate limit no PIN login (4 dígitos)
 def login():
     """Login do entregador próprio com telefone + PIN"""
     data = request.get_json()

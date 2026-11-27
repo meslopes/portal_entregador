@@ -4,6 +4,7 @@ Recebe mensagens da Meta e roteia para o estabelecimento correto (multi-tenant).
 """
 import json
 import logging
+import os
 from flask import Blueprint, jsonify, request
 
 from src.models.portal_models import (
@@ -45,8 +46,23 @@ def verify_webhook():
 
 @whatsapp_webhook_bp.route('/whatsapp/webhook', methods=['POST'])
 def receive_webhook():
-    """Recebe mensagens da Meta e roteia para o EST correto."""
+    """Recebe mensagens da Meta e roteia para o EST correto.
+    SEGURANÇA (auditoria 2026-11-26): verificar X-Hub-Signature-256 (HMAC)."""
     try:
+        # Verificar assinatura HMAC do Meta (se app secret configurado)
+        import hmac
+        import hashlib
+        app_secret = os.getenv('WHATSAPP_APP_SECRET', '')
+        if app_secret:
+            signature = request.headers.get('X-Hub-Signature-256', '')
+            if signature:
+                expected = 'sha256=' + hmac.new(
+                    app_secret.encode(), request.get_data(), hashlib.sha256
+                ).hexdigest()
+                if not hmac.compare_digest(signature, expected):
+                    logger.warning('[WHATSAPP] Assinatura HMAC inválida')
+                    return jsonify({'error': 'Invalid signature'}), 403
+
         data = request.get_json()
         if not data or data.get('object') != 'whatsapp_business_account':
             return jsonify({'status': 'ignored'}), 200

@@ -321,9 +321,13 @@ def setup_super_admin():
     """
     Endpoint para promover um admin a super admin.
     Requer ADMIN_SETUP_TOKEN como secret.
+    SEGURANÇA: desabilitado após bootstrap (se já existe super admin).
     """
     import os
     try:
+        # Bloquear se já existe super admin (evita comprometimento do token)
+        if User.query.filter_by(is_super_admin=True).first():
+            return jsonify({'error': 'Setup já concluído — use o painel do super admin'}), 403
         data = request.get_json()
         email = data.get('email')
         secret = data.get('secret')
