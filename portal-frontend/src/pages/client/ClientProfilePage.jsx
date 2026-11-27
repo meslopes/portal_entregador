@@ -33,6 +33,7 @@ const ClientProfilePage = () => {
     machine_settlement_mode: 'PER_SHIFT',
     seq_reset_mode: 'DAILY',
     fleet_sharing_enabled: false,
+    preparation_minutes: 10,
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -77,6 +78,7 @@ const ClientProfilePage = () => {
           machine_settlement_mode: data.machine_settlement_mode || 'PER_SHIFT',
           seq_reset_mode: data.seq_reset_mode || 'DAILY',
           fleet_sharing_enabled: !!data.fleet_sharing_enabled,
+          preparation_minutes: data.preparation_minutes ?? 10,
         });
       }
     } catch (err) {

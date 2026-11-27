@@ -33,7 +33,15 @@ const RouteSettingsForm = ({ settings, handleChange, saving, handleSave, loadSet
           onChange={e => handleChange('auto_routing_interval_min', parseInt(e.target.value) || 5)}
           style={inputStyle}
         />
-        <p style={{ ...hintStyle, marginTop: '0.25rem' }}>De 1 a 60 minutos</p>
+        <p style={{ ...hintStyle, marginTop: '0.25rem' }}>De 1 a 60 minutos — usado como fallback quando não há pedido novo agendando a análise</p>
+      </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={labelStyle}>Intervalo mínimo entre reanálises (minutos)</label>
+        <input type="number" min="1" max="60" value={settings.min_reroute_interval_min ?? 2}
+          onChange={e => handleChange('min_reroute_interval_min', parseInt(e.target.value) || 2)}
+          style={inputStyle}
+        />
+        <p style={{ ...hintStyle, marginTop: '0.25rem' }}>Piso entre duas análises (anti-thrash). Cada pedido novo agenda uma análise — a janela até rodar é o tempo de preparo do estabelecimento</p>
       </div>
     </SettingsCard>
 

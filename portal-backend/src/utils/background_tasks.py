@@ -106,7 +106,12 @@ def start_background_tasks(app):
             time.sleep(60)
 
     def run_auto_routing():
-        """Run auto-routing analysis every 5 minutes."""
+        """Reanálise de roteirização — gatilho por evento (2026-11-27).
+
+        Tick curto de 30s; a análise só roda quando `agendamento_vencido`
+        liberar (deadline do gatilho por pedido + piso entre análises), com
+        fallback periódico para pedidos sem gatilho.
+        """
         logger.info("[BG_TASK] Auto-routing processor waiting 60s for DB readiness...")
         time.sleep(60)
         logger.info("[BG_TASK] Auto-routing processor started")
@@ -116,12 +121,17 @@ def start_background_tasks(app):
                 try:
                     with app.app_context():
                         from src.models.portal_models import RouteSettings
-                        from src.services.auto_routing import run_auto_routing
+                        from src.services.auto_routing import (
+                            agendamento_vencido,
+                            run_auto_routing,
+                        )
 
                         # Get all tenants with auto-routing enabled
                         settings_list = RouteSettings.query.filter_by(auto_routing_enabled=True).all()
 
                         for settings in settings_list:
+                            if not agendamento_vencido(settings):
+                                continue
                             result = run_auto_routing(settings.tenant_id)
                             if result['status'] == 'created':
                                 logger.info(f"[AUTO-ROUTE] {result['message']}")
@@ -135,16 +145,8 @@ def start_background_tasks(app):
             else:
                 logger.debug("[BG_TASK] auto_routing lock held by another process, skipping")
 
-            # Wait for configured interval (default 5 minutes)
-            try:
-                with app.app_context():
-                    from src.models.portal_models import RouteSettings
-                    settings = RouteSettings.query.first()
-                    interval = (settings.auto_routing_interval_min if settings else 5) * 60
-            except Exception:
-                interval = 300
-
-            time.sleep(interval)
+            # Tick curto — o momento exato da análise é definido pelo gatilho
+            time.sleep(30)
 
     # Daemon threads die when main process exits
     t1 = threading.Thread(target=run_expired_offers, daemon=True, name="bg-expired-offers")

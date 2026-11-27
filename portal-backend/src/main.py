@@ -1153,6 +1153,26 @@ with app.app_context():
         print(f"Migração embalagem rota plataforma: {e}")
         db.session.rollback()
 
+    # Migration reanálise por evento da roteirização (2026-11-27) — janela de
+    # preparo do estabelecimento + piso entre análises + gatilho agendado
+    try:
+        for col_sql in (
+            "min_reroute_interval_min INTEGER DEFAULT 2",
+            "pending_reroute_at TIMESTAMP",
+            "last_analysis_at TIMESTAMP",
+        ):
+            col = col_sql.split()[0]
+            db.session.execute(db.text(
+                "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns "
+                f"WHERE table_name = 'route_settings' AND column_name = '{col}') "
+                f"THEN ALTER TABLE route_settings ADD COLUMN {col_sql}; END IF; END $$"
+            ))
+        db.session.commit()
+        print("Reanálise por evento da roteirização adicionada")
+    except Exception as e:
+        print(f"Migração reanálise roteirização: {e}")
+        db.session.rollback()
+
 # Iniciar background tasks apenas em produção
 if flask_env == 'production':
     try:

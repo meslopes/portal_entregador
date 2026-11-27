@@ -316,6 +316,14 @@ class RouteSettings(db.Model):
     min_time_savings_min = db.Column(db.Integer, default=10)  # mínimo de minutos economizados
     min_clusterization = db.Column(db.Numeric(3, 2), default=0.70)  # proximidade mínima (0-1)
 
+    # Reanálise por evento (2026-11-27, pedido do Mauro): cada pedido que entra
+    # agenda uma análise — a janela até rodar é o preparation_minutes do
+    # estabelecimento (agrupa pedidos que entram juntos; teto do tempo de
+    # preparo). min_reroute_interval_min = piso entre duas análises (anti-thrash).
+    min_reroute_interval_min = db.Column(db.Integer, default=2)  # mínimo de minutos entre reanálises
+    pending_reroute_at = db.Column(db.DateTime)  # deadline da análise agendada (gatilho por evento)
+    last_analysis_at = db.Column(db.DateTime)  # última análise executada
+
     # Status de pedidos para roteirização
     include_scheduled = db.Column(db.Boolean, default=False)  # incluir agendados
     scheduled_advance_min = db.Column(db.Integer, default=30)  # minutos antes do horário agendado para incluir
@@ -344,6 +352,9 @@ class RouteSettings(db.Model):
             'distance_weight': float(self.distance_weight) if self.distance_weight else 0.30,
             'min_time_savings_min': self.min_time_savings_min,
             'min_clusterization': float(self.min_clusterization) if self.min_clusterization else 0.70,
+            'min_reroute_interval_min': self.min_reroute_interval_min or 2,
+            'pending_reroute_at': self.pending_reroute_at.isoformat() if self.pending_reroute_at else None,
+            'last_analysis_at': self.last_analysis_at.isoformat() if self.last_analysis_at else None,
             'include_scheduled': self.include_scheduled,
             'scheduled_advance_min': self.scheduled_advance_min,
             'include_pending': self.include_pending,

@@ -44,6 +44,7 @@ def get_profile():
                 user_data['machine_settlement_mode'] = restaurant.machine_settlement_mode or 'PER_SHIFT'
                 user_data['seq_reset_mode'] = restaurant.seq_reset_mode or 'DAILY'
                 user_data['fleet_sharing_enabled'] = bool(restaurant.fleet_sharing_enabled)
+                user_data['preparation_minutes'] = restaurant.preparation_minutes or 10
 
         return jsonify(user_data), 200
     except Exception as e:
@@ -139,6 +140,14 @@ def update_profile():
                     if modo_seq not in ('DAILY', 'CONTINUOUS'):
                         return jsonify({'error': 'seq_reset_mode deve ser DAILY ou CONTINUOUS'}), 400
                     restaurant.seq_reset_mode = modo_seq
+                if 'preparation_minutes' in data:
+                    try:
+                        val_prep = int(data['preparation_minutes'])
+                    except (TypeError, ValueError):
+                        return jsonify({'error': 'preparation_minutes deve ser inteiro'}), 400
+                    if not (1 <= val_prep <= 120):
+                        return jsonify({'error': 'preparation_minutes deve estar entre 1 e 120 minutos'}), 400
+                    restaurant.preparation_minutes = val_prep
 
                 # Dados cadastrais do estabelecimento (bug #3: eram ignorados)
                 # CUIDADO: Customer.name ↔ Restaurant.name — busca por nome!

@@ -334,9 +334,11 @@ def process_scheduled_orders():
             Order.scheduled_at <= now
         ).all()
 
+        convertidos = []
         for order in scheduled_orders:
             order.status = OrderStatus.PENDING
             order.updated_at = now
+            convertidos.append(order)
 
             # Calcula distância e ganhos
             km_total = 0
@@ -443,6 +445,11 @@ def process_scheduled_orders():
 
         if scheduled_orders:
             db.session.commit()
+            # Reanálise por evento: pedidos que entraram na fila → agenda
+            # roteirização (janela = tempo de preparo de cada estabelecimento)
+            from src.services.auto_routing import agendar_analise_roteirizacao
+            for pedido_convertido in convertidos:
+                agendar_analise_roteirizacao(pedido_convertido)
 
         # A (2026-11-24) — retentativa automática: pedidos PENDING de estab. com
         # distribuição AUTO que ficaram sem oferta (ex.: sem candidato no ciclo

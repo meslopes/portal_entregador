@@ -452,6 +452,13 @@ def _create_order(restaurant, session, payment_method='PIX'):
         atribuir_numero_curto(order, restaurant)
         db.session.commit()
 
+        # Reanálise por evento: pedido entrou na fila → agenda roteirização
+        try:
+            from src.services.auto_routing import agendar_analise_roteirizacao
+            agendar_analise_roteirizacao(order)
+        except Exception:
+            pass
+
         logger.info(f'[WHATSAPP ORDER] Pedido {order.order_number} criado para {session.customer_phone}')
         return order
 

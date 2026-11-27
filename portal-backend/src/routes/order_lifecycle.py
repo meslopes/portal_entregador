@@ -755,6 +755,14 @@ def relaunch_order(order_id):
             pass
 
         db.session.commit()
+
+        # Reanálise por evento: pedido voltou à fila → agenda roteirização
+        try:
+            from src.services.auto_routing import agendar_analise_roteirizacao
+            agendar_analise_roteirizacao(order)
+        except Exception as _e:
+            logger.warning(f'[AUTO-ROUTE] gatilho do relançamento falhou: {_e}')
+
         return jsonify({
             'message': 'Pedido relançado — de volta à fila para os entregadores',
             'order_id': order.id,

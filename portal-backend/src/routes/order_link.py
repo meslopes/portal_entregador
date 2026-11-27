@@ -161,6 +161,10 @@ def create_order_from_link(token):
         atribuir_numero_curto(order, restaurant)
         db.session.commit()
 
+        # Reanálise por evento: pedido entrou na fila → agenda roteirização
+        from src.services.auto_routing import agendar_analise_roteirizacao
+        agendar_analise_roteirizacao(order)
+
         return jsonify({
             'message': 'Pedido criado com sucesso',
             'order_number': order.order_number,

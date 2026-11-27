@@ -297,6 +297,14 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
+## ✅ 2026-11-27 — Roteirização: reanálise por evento + tempo de preparo (CONCLUIDA)
+- [x] REANÁLISE POR EVENTO (pedido do Mauro): cada pedido que entra na fila (SCHEDULED→PENDING, relançamento, link rápido, WhatsApp) AGENDA uma análise — janela até rodar = `preparation_minutes` do estabelecimento (agrupa pedidos que entram juntos; bebidas × lancheria, por loja); deadline mais cedo vence quando entram vários pedidos
+- [x] PISO CONFIGURÁVEL entre reanálises: `min_reroute_interval_min` (padrão 2 min, 1–60) em Config. Rotas (anti-thrash); ciclo periódico `auto_routing_interval_min` vira fallback para pedidos sem gatilho; loop do background tick de 30s com `agendamento_vencido`
+- [x] TEMPO DE PREPARO: campo `preparation_minutes` já existia (cadastro + admin) — agora também editável no PERFIL do estabelecimento e usado na roteirização (estimate_delivery_time deixou de usar "+5 min fixo")
+- [x] PARIDADE COM PRÓPRIOS (humano decide): proposta de rota automática continua PENDING até o entregador aceitar + NÃOVA notificação ao ESTABELECIMENTO ("Proposta de rota automática — aguardando aceite"); alterações de rota seguem só por ação manual
+- [x] Confirmação técnica: auto-routing da plataforma JÁ agrupa pedidos de várias lojas e a ordenação considera coletas de outros ESTs com precedência (entrega só depois da própria coleta) — criação manual multi-loja já suportada em /api/platform-routes/create
+- [x] Smoke 8/8 (_tmp_smoke_reroute.py: janela do preparo 7min/3min, deadline mais cedo vence, piso, deadline vencido, fallback periódico, consumo do gatilho, PUT do piso) + backend compila + build ✅
+
 ## ✅ 2026-11-26 — Numeração dos pedidos estendida à plataforma (CONCLUIDA)
 - [x] DIAGNÓSTICO (relato do Mauro em testes): o ciclo N1–N4 (24/11) tinha ficado preso às entregas PRÓPRIAS — nº longo `PED...` continuava no app do entregador da plataforma, admin, dashboard do estab., modais de detalhe e páginas públicas; "Embalagem N" não existia nas rotas da plataforma
 - [x] GERAÇÃO do #seq: helper único `atribuir_numero_curto()` (services/order_helpers.py) — create_order + Link Rápido + WhatsApp (2 fluxos) + importação CSV (coluna opcional "estabelecimento" também passa a preencher restaurant_id); pedido sem loja não ganha #seq (numeração é por estabelecimento)

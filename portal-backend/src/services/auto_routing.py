@@ -1,9 +1,16 @@
 """
 Serviço de auto-roteirização inteligente.
 Analisa pedidos pendentes e cria rotas automaticamente quando vantajoso.
+
+Reanálise por evento (2026-11-27, pedido do Mauro): cada pedido que entra
+AGENDA uma análise (`agendar_analise_roteirizacao`) — a janela até rodar é o
+`preparation_minutes` do estabelecimento (agrupa pedidos que entram juntos;
+teto = tempo de preparo — bebidas × lancheria, por loja). O piso entre duas
+análises é `min_reroute_interval_min` (anti-thrash). O ciclo periódico
+(`auto_routing_interval_min`) vira fallback para pedidos sem gatilho.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from src.models.portal_models import (
     Driver,
@@ -29,6 +36,73 @@ def get_route_settings(tenant_id=None):
         db.session.add(settings)
         db.session.commit()
     return settings
+
+
+def _agora_naive():
+    """Agora em UTC naive — timestamps do banco são naive (lição 22)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def agendar_analise_roteirizacao(order):
+    """Gatilho por evento: agenda uma análise de roteirização para o pedido.
+
+    O deadline é `now + preparation_minutes` do estabelecimento (a janela
+    agrupa pedidos que entram juntos; cada loja tem o seu tempo de preparo).
+    Vários pedidos = o deadline mais próximo vence (min entre os agendados).
+    Nunca derruba o fluxo do pedido em caso de erro.
+    """
+    try:
+        tenant_id = order.tenant_id
+        settings = RouteSettings.query.filter_by(tenant_id=tenant_id).first()
+        if not settings:
+            settings = RouteSettings(tenant_id=tenant_id)
+            db.session.add(settings)
+        if not settings.auto_routing_enabled:
+            return
+
+        prep_min = 10
+        if order.restaurant and order.restaurant.preparation_minutes:
+            prep_min = int(order.restaurant.preparation_minutes)
+        deadline = _agora_naive() + timedelta(minutes=prep_min)
+
+        atual = settings.pending_reroute_at
+        if atual is not None and atual.tzinfo is not None:
+            atual = atual.replace(tzinfo=None)
+        # O deadline mais cedo vence (janela do pedido mais "urgente")
+        settings.pending_reroute_at = min(atual, deadline) if atual else deadline
+        db.session.commit()
+    except Exception as e:
+        logger.warning(f"[AUTO-ROUTE] agendar_analise falhou: {e}")
+
+
+def agendamento_vencido(settings):
+    """Decide se a análise deve rodar agora.
+
+    Regras: (1) piso `min_reroute_interval_min` entre análises SEMPRE;
+    (2) se há gatilho agendado, roda quando o deadline vence;
+    (3) sem gatilho, fallback periódico `auto_routing_interval_min`.
+    """
+    agora = _agora_naive()
+
+    ultimo = settings.last_analysis_at
+    if ultimo is not None and ultimo.tzinfo is not None:
+        ultimo = ultimo.replace(tzinfo=None)
+
+    piso = max(1, int(settings.min_reroute_interval_min or 2))
+    if ultimo and (agora - ultimo).total_seconds() < piso * 60:
+        return False
+
+    if settings.pending_reroute_at is not None:
+        prazo = settings.pending_reroute_at
+        if prazo.tzinfo is not None:
+            prazo = prazo.replace(tzinfo=None)
+        return agora >= prazo
+
+    # Fallback periódico (comportamento antigo) para pedidos sem gatilho
+    ciclo = max(1, int(settings.auto_routing_interval_min or 5))
+    if ultimo is None:
+        return True
+    return (agora - ultimo).total_seconds() >= ciclo * 60
 
 
 def get_pending_orders(tenant_id=None, settings=None):
@@ -130,8 +204,9 @@ def estimate_delivery_time(order, driver_pos=None):
     # Distância restaurante → entrega
     distance = haversine_distance(rest_lat, rest_lng, del_lat, del_lng)
 
-    # Tempo estimado: 2 min/km + 5 min de preparo
-    time_min = distance * 2 + 5
+    # Tempo estimado: 2 min/km + tempo de preparo do estabelecimento
+    prep_min = int((order.restaurant.preparation_minutes if order.restaurant else None) or 10)
+    time_min = distance * 2 + prep_min
 
     # Se tem posição do entregador, adicionar distância até restaurante
     if driver_pos:
@@ -480,6 +555,25 @@ def create_auto_route(orders, driver, settings):
                 )
                 db.session.add(notification)
 
+        # Paridade com entregas próprias (2026-11-27): o estabelecimento fica
+        # sabendo da PROPOSTA de rota — quem decide é o humano (aceite do
+        # entregador + alterações só por ação manual)
+        from src.models.portal_models import Notification, NotificationType, User, UserType
+        tenant_id = orders[0].tenant_id if orders[0].tenant_id else None
+        clientes = User.query.filter_by(
+            user_type=UserType.CLIENT,
+            tenant_id=tenant_id,
+            status=UserStatus.ACTIVE
+        ).all()
+        for cliente in clientes:
+            db.session.add(Notification(
+                user_id=cliente.id,
+                title='Proposta de rota automática',
+                message=f'Rota #{route.id} proposta para {driver.user.first_name} com {len(orders)} pedidos — aguardando aceite do entregador',
+                type=NotificationType.SYSTEM,
+                related_id=route.id
+            ))
+
         db.session.commit()
 
         logger.info(f"[AUTO-ROUTE] Rota #{route.id} criada para {driver.user.first_name} com {len(orders)} pedidos")
@@ -496,6 +590,12 @@ def run_auto_routing(tenant_id=None):
     """Executa análise de auto-roteirização"""
     try:
         settings = get_route_settings(tenant_id)
+
+        # Registro do ciclo: marca a análise e consome o gatilho agendado
+        # (início da análise = momento do ciclo; evita reentrar no próximo tick)
+        settings.last_analysis_at = _agora_naive()
+        settings.pending_reroute_at = None
+        db.session.commit()
 
         if not settings.auto_routing_enabled:
             return {'status': 'disabled', 'message': 'Auto-roteirização desabilitada'}

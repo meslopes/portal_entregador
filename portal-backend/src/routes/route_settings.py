@@ -78,6 +78,8 @@ def update_settings():
             settings.min_time_savings_min = max(1, min(60, data['min_time_savings_min']))
         if 'min_clusterization' in data:
             settings.min_clusterization = max(0, min(1, data['min_clusterization']))
+        if 'min_reroute_interval_min' in data:
+            settings.min_reroute_interval_min = max(1, min(60, int(data['min_reroute_interval_min'] or 2)))
         if 'include_scheduled' in data:
             settings.include_scheduled = data['include_scheduled']
         if 'scheduled_advance_min' in data:
