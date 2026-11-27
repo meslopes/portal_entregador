@@ -254,7 +254,7 @@ const LoginPage = () => {
               </Link>
             </div>
             <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
-              <Link to="/own-driver/login" className="auth-footer-link">
+              <Link to="/own-driver/login" className="auth-footer-link" onClick={() => localStorage.setItem('muv_last_role', 'own')}>
                 Sou entregador próprio — entrar com telefone e PIN
               </Link>
             </div>

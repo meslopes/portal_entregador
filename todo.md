@@ -297,6 +297,12 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
+## ✅ 2026-11-27 — Raiz lembra a área do usuário (CONCLUIDA)
+- [x] Relato do Mauro: links/atalhos/favoritos de www.muv.log.br sempre abriam a tela azul (o app/atalho antigo congela start_url=/; instalar da tela azul instala o app do estabelecimento — "Links compatíveis: www.muv.log.br/*")
+- [x] `muv_last_role` (localStorage): login do próprio grava 'own' (login + ativação + link cruzado); login azul grava 'platform' (AuthContext + link cruzado)
+- [x] `RootEntry` na rota `/`: last_role=own → /own-driver (sessão 48h válida) ou /own-driver/login; senão comportamento antigo (ProtectedRoute + SmartRedirect)
+- [x] Roteiro ao usuário: DESINSTALAR app/atalho antigo e reinstalar a partir de /own-driver/login (instalar da tela azul = app do estabelecimento)
+
 ## ✅ 2026-11-27 — PWA do entregador + chaves de storage (CONCLUIDA)
 - [x] BUG GRAVE (colateral da proteção A de 2026-11-26): 53 chamadas de storage com chave VAZIA `getItem('')` em 21 arquivos — token × user JSON × token do próprio colidiam ("token cruzado"). Todas restauradas: plataforma = sessionStorage 'token'/'user'; próprio = localStorage 'own_driver_token' (decisão C2)
 - [x] PWA DO ENTREGADOR: manifesto próprio (`/own-driver-manifest.json` — start_url /own-driver/login, nome "muv.log - Entregador", tema verde) trocado dinamicamente por PwaManifestSwitch nas rotas /own-driver — instalar a partir das telas do próprio gera o app do entregador (o azul continua o do estabelecimento)

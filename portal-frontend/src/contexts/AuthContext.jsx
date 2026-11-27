@@ -146,6 +146,8 @@ export const AuthProvider = ({ children }) => {
       // Salva no sessionStorage (isola por aba)
       sessionStorage.setItem('token', response.access_token);
       sessionStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
+      // Área do usuário (2026-11-27): raiz do site lembra o último login
+      localStorage.setItem('muv_last_role', 'platform');
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
@@ -188,6 +190,8 @@ export const AuthProvider = ({ children }) => {
       // Salva no sessionStorage (isola por aba)
       sessionStorage.setItem('token', response.access_token);
       sessionStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.user)));
+      // Área do usuário (2026-11-27): raiz do site lembra o último login
+      localStorage.setItem('muv_last_role', 'platform');
 
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,

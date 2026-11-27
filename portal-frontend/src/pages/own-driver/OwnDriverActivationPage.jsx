@@ -50,6 +50,8 @@ const OwnDriverActivationPage = () => {
       const res = await api.post(`/api/own-driver/activation/${token}`, { pin });
       // Auto-login � mesmo formato do login com telefone + PIN
       localStorage.setItem('own_driver_token', res.data.token);
+      // Área do usuário (2026-11-27): raiz do site lembra o último login
+      localStorage.setItem('muv_last_role', 'own');
       localStorage.setItem('own_driver_data', JSON.stringify({
         id: res.data.driver?.id,
         name: res.data.driver?.name,

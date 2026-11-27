@@ -44,6 +44,21 @@ function SmartRedirect() {
   }
 }
 
+// Raiz do site (2026-11-27): lembra a área do último login — links/atalhos
+// de www.muv.log.br caem no app certo (entregador próprio × estabelecimento)
+function RootEntry() {
+  const lastRole = localStorage.getItem('muv_last_role');
+  if (lastRole === 'own') {
+    const logado = !!localStorage.getItem('own_driver_token');
+    return <Navigate to={logado ? '/own-driver' : '/own-driver/login'} replace />;
+  }
+  return (
+    <ProtectedRoute>
+      <SmartRedirect />
+    </ProtectedRoute>
+  );
+}
+
 function App() {
   useEffect(() => {
     initOfflineSync();
@@ -67,11 +82,7 @@ function App() {
               {adminRoutes}
 
               {/* Redirecionamento padrao */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <SmartRedirect />
-                </ProtectedRoute>
-              } />
+              <Route path="/" element={<RootEntry />} />
               <Route path="*" element={
                 <ProtectedRoute>
                   <SmartRedirect />

@@ -29,6 +29,8 @@ const OwnDriverLoginPage = () => {
       setLoading(true);
       const res = await api.post('/api/own-driver/login', { phone, pin });
       localStorage.setItem('own_driver_token', res.data.token);
+      // Área do usuário (2026-11-27): raiz do site lembra o último login
+      localStorage.setItem('muv_last_role', 'own');
 
       // Registrar FCM token para push notifications (ofertas)
       try {
@@ -170,6 +172,7 @@ const OwnDriverLoginPage = () => {
         <p style={{ textAlign: 'center', fontSize: '0.75rem', marginTop: '0.75rem' }}>
           <a
             href="/login"
+            onClick={() => localStorage.setItem('muv_last_role', 'platform')}
             style={{ color: '#0d9488', textDecoration: 'none', fontWeight: 600 }}
           >
             Entrar como estabelecimento/plataforma →
