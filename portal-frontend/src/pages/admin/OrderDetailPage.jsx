@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { confirmAsync } from '@/components/ConfirmDialog.utils';
+import { escapeHtml } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
 import api, { adminService, orderService, utils } from '@/lib/api';
@@ -173,13 +174,13 @@ const OrderDetailPage = () => {
     if (order.pickup_latitude && order.pickup_longitude) {
       const pickupMarker = L.marker([order.pickup_latitude, order.pickup_longitude])
         .addTo(map)
-        .bindPopup(`<b>Coleta</b><br>${order.restaurant?.name || 'Estabelecimento'}`);
+        .bindPopup(`<b>Coleta</b><br>${escapeHtml(order.restaurant?.name) || 'Estabelecimento'}`);
       markers.push(pickupMarker);
     }
     if (order.delivery_latitude && order.delivery_longitude) {
       const deliveryMarker = L.marker([order.delivery_latitude, order.delivery_longitude])
         .addTo(map)
-        .bindPopup(`<b>Entrega</b><br>${order.delivery_address?.street || 'Endereço de entrega'}`);
+        .bindPopup(`<b>Entrega</b><br>${escapeHtml(order.delivery_address?.street) || 'Endereço de entrega'}`);
       markers.push(deliveryMarker);
     }
     if (markers.length > 0) {

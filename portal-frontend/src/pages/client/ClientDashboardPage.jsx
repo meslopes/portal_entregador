@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { escapeHtml } from '@/lib/utils';
 import {
   Plus, AlertCircle
 } from 'lucide-react';
@@ -178,7 +179,7 @@ const ClientDashboardPage = () => {
 
       const restaurantMarker = L.marker([restaurantData.latitude, restaurantData.longitude], { icon: restaurantIcon })
         .addTo(map)
-        .bindPopup(`<div style="min-width:160px"><strong>${restaurantData.name}</strong><br><small>${restaurantData.address || ''}</small><br><span style="color:#f59e0b;font-weight:600">Seu Estabelecimento</span></div>`);
+        .bindPopup(`<div style="min-width:160px"><strong>${escapeHtml(restaurantData.name)}</strong><br><small>${escapeHtml(restaurantData.address) || ''}</small><br><span style="color:#f59e0b;font-weight:600">Seu Estabelecimento</span></div>`);
 
       markersRef.current.push(restaurantMarker);
       bounds.push([restaurantData.latitude, restaurantData.longitude]);
@@ -201,7 +202,7 @@ const ClientDashboardPage = () => {
 
       const deliveryMarker = L.marker([addr.latitude, addr.longitude], { icon: deliveryIcon })
         .addTo(map)
-        .bindPopup(`<div style="min-width:160px"><strong>Pedido #${addr.order_number}</strong><br><small>${addr.customer_name}</small><br><small>${addr.street || ''}, ${addr.neighborhood || ''}</small><br><span style="color:${color};font-weight:600">${addr.order_status}</span></div>`);
+        .bindPopup(`<div style="min-width:160px"><strong>Pedido #${escapeHtml(addr.order_number)}</strong><br><small>${escapeHtml(addr.customer_name)}</small><br><small>${escapeHtml(addr.street) || ''}, ${escapeHtml(addr.neighborhood) || ''}</small><br><span style="color:${color};font-weight:600">${escapeHtml(addr.order_status)}</span></div>`);
 
       markersRef.current.push(deliveryMarker);
       bounds.push([addr.latitude, addr.longitude]);

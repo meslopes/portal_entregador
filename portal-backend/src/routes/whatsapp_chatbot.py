@@ -219,11 +219,13 @@ def _try_ai_response(restaurant, cred, phone, text, responses):
             logger.warning(f'[AI] Limite mensal atingido para {restaurant.name}')
             return False
 
-        # Montar histórico da conversa (últimas 10 mensagens)
+        # Montar histórico da conversa (últimas 10 mensagens DESTE cliente)
+        # SEGURANÇA: filtrar por telefone para não vazar contexto de outros clientes
         from src.models.portal_models import WhatsAppMessage
         history_msgs = WhatsAppMessage.query.filter_by(
             restaurant_id=restaurant.id,
             direction='outbound',
+            to_number=phone,
         ).order_by(WhatsAppMessage.created_at.desc()).limit(10).all()
 
         history = []

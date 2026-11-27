@@ -6,6 +6,20 @@ export function cn(...inputs) {
 }
 
 /**
+ * Escapa HTML para prevenir XSS em popups/tooltips do Leaflet.
+ * SEGURANÇA (auditoria 2026-11-26): usar em TODO bindPopup/bindTooltip.
+ */
+export function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Reduz o objeto de usuário ao mínimo necessário para o localStorage.
  * NUNCA persistir CPF, telefone, senha ou outros dados sensíveis (LGPD).
  * O objeto completo fica só em memória (AuthContext), vindo de getProfile().

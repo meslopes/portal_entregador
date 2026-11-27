@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { abrirGoogleMaps } from '@/lib/maps';
+import { escapeHtml } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { orderService } from '@/lib/api';
@@ -128,7 +129,7 @@ const DriverRouteMap = () => {
 
         const restMarker = L.marker([order.restaurant.latitude, order.restaurant.longitude], { icon: restIcon })
           .addTo(map)
-          .bindPopup(`<b>${index + 1}. Coletar</b><br>${order.restaurant.name}<br>${order.restaurant.address || ''}`);
+          .bindPopup(`<b>${index + 1}. Coletar</b><br>${escapeHtml(order.restaurant.name)}<br>${escapeHtml(order.restaurant.address) || ''}`);
         markersRef.current.push(restMarker);
         allPoints.push([order.restaurant.latitude, order.restaurant.longitude]);
       }
@@ -144,7 +145,7 @@ const DriverRouteMap = () => {
 
         const delivMarker = L.marker([order.delivery_address.latitude, order.delivery_address.longitude], { icon: delivIcon })
           .addTo(map)
-          .bindPopup(`<b>${index + 1}. Entregar</b><br>${order.customer?.name}<br>${order.delivery_address.street || ''}`);
+          .bindPopup(`<b>${index + 1}. Entregar</b><br>${escapeHtml(order.customer?.name)}<br>${escapeHtml(order.delivery_address.street) || ''}`);
         markersRef.current.push(delivMarker);
         allPoints.push([order.delivery_address.latitude, order.delivery_address.longitude]);
       }
