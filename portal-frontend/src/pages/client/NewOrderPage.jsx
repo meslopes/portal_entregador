@@ -80,6 +80,18 @@ const NewOrderPage = () => {
   }, [isAdmin]);
 
   useEffect(() => {
+    if (isAdmin) {
+      import('@/lib/api').then(({ default: api }) => {
+        api.get('/api/admin/establishments?per_page=100').then(res => {
+          const data = res.data;
+          console.log('Estabs:', data.establishments?.length);
+          setEstablishments(data.establishments || []);
+        }).catch(err => console.error('Erro estabs:', err));
+      });
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
     if (form.selected_establishment) {
       const est = establishments.find(e => e.id === parseInt(form.selected_establishment));
       if (est && est.pricing_table_id) {
