@@ -249,7 +249,19 @@
     por id (ex.: `Restaurant.query.get(75)`) apodrece com o tempo — smoke
     deve criar as próprias fixtures (com nome único por pid).
 
+49. **Replace em massa × aspas de chaves** — a varredura `localStorage →
+    sessionStorage` (proteção A, 2026-11-26) engoliu os NOMES das chaves em
+    53 chamadas (`getItem('token')` → `getItem('')`): token, user JSON e
+    token do próprio colidiram na chave vazia ("token cruzado" real).
+    Sintoma sutil: fluxo funciona por acaso (grava e lê na mesma chave
+    quebrada) até dois dados colidirem. Regras: (a) troca de storage se faz
+    por ARQUIVO com mapa de chaves explícito, nunca replace global; (b)
+    após qualquer sweep de storage, rodar varredura por `Item('')` (script
+    `_tmp_scan_storage_keys.py`) e exigir ZERO. PWA com start_url fixo no
+    manifest SEMPRE abre naquela tela — instalar de outra rota não muda
+    nada (manifest separado por área é a solução).
+
 ---
 
-_Atualizado em 2026-11-27 — 48 lições. Próxima sessão: adicionar novas
+_Atualizado em 2026-11-27 — 49 lições. Próxima sessão: adicionar novas
 lições aqui no mesmo commit da correção que as gerou._

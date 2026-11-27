@@ -297,6 +297,13 @@
 - [x] FRETE POR MODELO DE ENTREGA: toggle Proprio/Plataforma no calculo do frete + delivery_model no estimate_fee (`80c08b26`)
 - [x] Tudo 0-0: branch-mauro = main = origin; www.muv.log.br + Cloud Run 00094-fkj
 
+## ✅ 2026-11-27 — PWA do entregador + chaves de storage (CONCLUIDA)
+- [x] BUG GRAVE (colateral da proteção A de 2026-11-26): 53 chamadas de storage com chave VAZIA `getItem('')` em 21 arquivos — token × user JSON × token do próprio colidiam ("token cruzado"). Todas restauradas: plataforma = sessionStorage 'token'/'user'; próprio = localStorage 'own_driver_token' (decisão C2)
+- [x] PWA DO ENTREGADOR: manifesto próprio (`/own-driver-manifest.json` — start_url /own-driver/login, nome "muv.log - Entregador", tema verde) trocado dinamicamente por PwaManifestSwitch nas rotas /own-driver — instalar a partir das telas do próprio gera o app do entregador (o azul continua o do estabelecimento)
+- [x] SESSÃO 48H (C2, decidido pelo Mauro após análise de risco): token do próprio 7d → 48h (server-side); sessão em localStorage (PWA não desloga ao fechar); login do próprio redireciona para o app quando já há sessão válida
+- [x] Segurança: chaves separadas eliminam o cruzamento; admin/plataforma permanecem em sessionStorage (proteção multi-aba intacta); risco do C2 explicitado ao Mauro (aparelho desbloqueado em mão errada = janela de 48h)
+- [x] Verificação: scan 0 chaves vazias + build ✅ + token 48h confirmado em runtime + lição 49 registrada
+
 ## ✅ 2026-11-27 — Tempo de preparo: override do admin + bloqueio (CONCLUIDA)
 - [x] `Restaurant.prep_time_locked` (migração nos 2 entries): admin FIXA o tempo de preparo e BLOQUEIA a reconfiguração pelo estabelecimento (protege contra loja reduzir demais e deixar o entregador esperando)
 - [x] Admin: campo "Tempo de Preparo" ganha checkbox "Bloquear alteração pelo estabelecimento" (form de estabelecimento) — endpoint PUT aceita prep_time_locked

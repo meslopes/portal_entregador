@@ -7,7 +7,7 @@ import { Navigate } from 'react-router-dom';
  * GPS: broadcast 15s (baixa precisão) + persist 30s (alta precisão) — economiza bateria.
  */
 const OwnDriverProtectedRoute = ({ children }) => {
-  const token = sessionStorage.getItem('');
+  const token = localStorage.getItem('own_driver_token');
   const gpsHttpRef = useRef(null);
   const gpsBroadcastRef = useRef(null);
   // 'checking' | 'valid' | 'invalid' — evita renderizar antes de validar o token
@@ -45,7 +45,7 @@ const OwnDriverProtectedRoute = ({ children }) => {
         if (cancelled) return;
         // Token inválido/expirado — limpar e forçar novo login
         if (err?.response?.status === 401) {
-          sessionStorage.removeItem('');
+          localStorage.removeItem('own_driver_token');
           localStorage.removeItem('own_driver_data');
           localStorage.removeItem('own_driver_restaurant');
           setAuthState('invalid');

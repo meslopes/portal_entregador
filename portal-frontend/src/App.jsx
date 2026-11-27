@@ -8,6 +8,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import ToastContainer from '@/components/Toast';
 import ConfirmDialogContainer from '@/components/ConfirmDialog';
 import InstallPwaBanner from '@/components/InstallPwaBanner';
+import PwaManifestSwitch from '@/components/PwaManifestSwitch';
 import { initOfflineSync } from '@/lib/offline';
 import {
   publicRoutes,
@@ -53,6 +54,7 @@ function App() {
       <AuthProvider>
         <SquareProvider>
           <Router>
+            <PwaManifestSwitch />
             <ToastContainer />
             <ConfirmDialogContainer />
             <InstallPwaBanner />

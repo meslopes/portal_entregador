@@ -25,7 +25,7 @@ const OwnDriverOrdersPage = () => {
   const handleOffer = async (e, order, aceitar) => {
     e.stopPropagation();
     try {
-      const token = sessionStorage.getItem('');
+      const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       await api.post(`/api/own-driver/orders/${order.id}/${aceitar ? 'accept' : 'reject'}`, {}, { headers });
       loadOrders();
@@ -38,7 +38,7 @@ const OwnDriverOrdersPage = () => {
     try {
       setLoading(true);
       setError('');
-      const token = sessionStorage.getItem('');
+      const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get(`/api/own-driver/orders?status=${filter}`, { headers });
       setOrders(res.data.orders || []);

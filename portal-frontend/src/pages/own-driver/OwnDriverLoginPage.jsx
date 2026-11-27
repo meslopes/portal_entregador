@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Lock, AlertCircle, Bike, Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/api';
@@ -11,6 +11,13 @@ const OwnDriverLoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // PWA do entregador (2026-11-27): já logado (sessão 48h) → entra direto no app
+  useEffect(() => {
+    if (localStorage.getItem('own_driver_token')) {
+      navigate('/own-driver', { replace: true });
+    }
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -21,7 +28,7 @@ const OwnDriverLoginPage = () => {
     try {
       setLoading(true);
       const res = await api.post('/api/own-driver/login', { phone, pin });
-      sessionStorage.setItem('', res.data.token);
+      localStorage.setItem('own_driver_token', res.data.token);
 
       // Registrar FCM token para push notifications (ofertas)
       try {

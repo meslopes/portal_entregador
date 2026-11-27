@@ -215,11 +215,11 @@ const RegisterPage = () => {
         return;
       }
       // Limpar token antigo e salvar token do novo cadastro
-      sessionStorage.removeItem('');
-      sessionStorage.removeItem('');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       if (data.access_token) {
-        sessionStorage.setItem('', data.access_token);
-        sessionStorage.setItem('', JSON.stringify(sanitizeUserForStorage(data.user)));
+        sessionStorage.setItem('token', data.access_token);
+        sessionStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(data.user)));
       }
       // Guardar o status_token para a tela de aguardo consultar o status
       // mesmo sem login (sobrevive a refresh dentro da aba)

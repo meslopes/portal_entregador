@@ -85,13 +85,13 @@ api.interceptors.response.use(
       // Verificar se é rota de own-driver
       const isOwnDriverRequest = error.config?.url?.includes('/api/own-driver/');
       if (isOwnDriverRequest) {
-        sessionStorage.removeItem('own_driver_token');
+        localStorage.removeItem('own_driver_token');
         localStorage.removeItem('own_driver_data');
         localStorage.removeItem('own_driver_restaurant');
         window.location.href = '/own-driver/login';
       } else {
         sessionStorage.removeItem('token');
-        sessionStorage.removeItem('');
+        sessionStorage.removeItem('user');
         window.location.href = '/login';
       }
       // Reseta flag após 2s para permitir novo redirect se necessário
@@ -100,8 +100,9 @@ api.interceptors.response.use(
 
     // Entregador convertido de plataforma para próprio — forçar redirect
     if (error.response?.status === 409 && error.response?.data?.error === 'convertido_proprio') {
-      sessionStorage.removeItem('');
-      sessionStorage.removeItem('');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      localStorage.removeItem('own_driver_token');
       alert('Você foi transferido para entregador próprio. Faça login novamente pelo aplicativo de entregador próprio.');
       window.location.href = '/own-driver/login';
       return Promise.reject(error);

@@ -50,7 +50,7 @@ const OwnDriverDashboardPage = () => {
   const loadData = useCallback(async (isRefresh = false) => {
     try {
       if (!isRefresh) setLoading(true);
-      const token = sessionStorage.getItem('');
+      const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
 
       const [statsRes, routesRes, ordersRes, acertoRes] = await Promise.all([
@@ -108,7 +108,7 @@ const OwnDriverDashboardPage = () => {
       }
     } catch (err) {
       if (err.response?.status === 401) {
-        sessionStorage.removeItem('');
+        localStorage.removeItem('own_driver_token');
         navigate('/own-driver/login');
       } else {
         setError('Erro ao carregar dados');
@@ -119,7 +119,7 @@ const OwnDriverDashboardPage = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('');
+    const token = localStorage.getItem('own_driver_token');
     if (!token) {
       navigate('/own-driver/login');
       return;
@@ -216,7 +216,7 @@ const OwnDriverDashboardPage = () => {
         async (pos) => {
           if (cancelled) return;
           try {
-            const token = sessionStorage.getItem('');
+            const token = localStorage.getItem('own_driver_token');
             await api.post('/api/own-driver/location', {
               latitude: pos.coords.latitude,
               longitude: pos.coords.longitude
@@ -242,7 +242,7 @@ const OwnDriverDashboardPage = () => {
   const toggleOnline = async () => {
     try {
       setToggling(true);
-      const token = sessionStorage.getItem('');
+      const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
 
       // Tentar obter localização
@@ -269,7 +269,7 @@ const OwnDriverDashboardPage = () => {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('');
+    localStorage.removeItem('own_driver_token');
     localStorage.removeItem('own_driver_data');
     localStorage.removeItem('own_driver_restaurant');
     navigate('/own-driver/login');
@@ -348,7 +348,7 @@ const OwnDriverDashboardPage = () => {
               r.onerror = rej;
               r.readAsDataURL(file);
             });
-            const token = sessionStorage.getItem('');
+            const token = localStorage.getItem('own_driver_token');
             await api.post(`/api/own-driver/orders/${pixAlvoRef.current}/pix-proof`,
               { proof: b64 }, { headers: { Authorization: `Bearer ${token}` } });
             loadData(false);

@@ -38,7 +38,7 @@ def create_own_driver_token(driver_id, restaurant_id):
         'driver_id': driver_id,
         'restaurant_id': restaurant_id,
         'type': 'own_driver',
-        'exp': datetime.now(timezone.utc) + timedelta(days=7)  # SEGURANÇA: reduzido de 30 para 7 dias
+        'exp': datetime.now(timezone.utc) + timedelta(hours=48)  # SEGURANÇA: 48h (C2, 2026-11-27) — sessão persiste no PWA mas com janela curta
     }
     return jwt.encode(payload, OWN_DRIVER_SECRET, algorithm='HS256')
 

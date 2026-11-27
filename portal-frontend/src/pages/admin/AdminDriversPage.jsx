@@ -33,7 +33,7 @@ const AdminDriversPage = () => {
   const [establishments, setEstablishments] = useState([]);
 
   // Verificar se é super admin
-  const user = JSON.parse(sessionStorage.getItem('') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const isSuperAdmin = user?.user_type === 'ADMIN' && user?.is_super_admin;
 
   // Modal states

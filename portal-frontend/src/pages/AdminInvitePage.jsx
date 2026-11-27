@@ -99,8 +99,8 @@ const AdminInvitePage = () => {
       }
 
       // Login automático — mesmas chaves e higienização do AuthContext
-      sessionStorage.setItem('', response.data.access_token);
-      sessionStorage.setItem('', JSON.stringify(sanitizeUserForStorage(response.data.user)));
+      sessionStorage.setItem('token', response.data.access_token);
+      sessionStorage.setItem('user', JSON.stringify(sanitizeUserForStorage(response.data.user)));
 
       // Recarrega a página: o AuthContext hidrata a sessão no mount e o
       // ProtectedRoute deixa entrar no painel (navigate() não re-hidrata)

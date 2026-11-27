@@ -12,7 +12,7 @@ const NotificationBell = () => {
 
   // Verificar se é admin
   const isAdmin = useCallback(() => {
-    const user = JSON.parse(sessionStorage.getItem('') || '{}');
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
     return user?.user_type === 'ADMIN';
   }, []);
 

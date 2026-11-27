@@ -24,7 +24,7 @@ const OwnDriverEarningsPage = () => {
     try {
       setLoading(true);
       setError('');
-      const token = sessionStorage.getItem('');
+      const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.get(`/api/own-driver/earnings?period=${period}`, { headers });
       setEarnings(res.data.earnings || []);
@@ -32,7 +32,7 @@ const OwnDriverEarningsPage = () => {
     } catch (err) {
       console.error('Erro ao carregar ganhos:', err);
       if (err.response?.status === 401) {
-        sessionStorage.removeItem('');
+        localStorage.removeItem('own_driver_token');
         navigate('/own-driver/login');
         return;
       }
@@ -50,7 +50,7 @@ const OwnDriverEarningsPage = () => {
     try {
       setWithdrawing(true);
       setError('');
-      const token = sessionStorage.getItem('');
+      const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       const res = await api.post('/api/own-driver/withdraw', {}, { headers });
       setSuccess(res.data.message);
@@ -70,7 +70,7 @@ const OwnDriverEarningsPage = () => {
     }
     try {
       setError('');
-      const token = sessionStorage.getItem('');
+      const token = localStorage.getItem('own_driver_token');
       const headers = { Authorization: `Bearer ${token}` };
       await api.put('/api/own-driver/pix-key', { pix_key: pixKey }, { headers });
       setSuccess('Chave PIX atualizada!');
